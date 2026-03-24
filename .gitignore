@@ -42,3 +42,8 @@ next-env.d.ts
 
 # Local Netlify folder
 .netlify
+
+# Firebase
+functions/node_modules
+firebase-debug.log
+firebase-debug.*.log
