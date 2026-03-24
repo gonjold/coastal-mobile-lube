@@ -20,6 +20,7 @@ const serviceCards = [
     description:
       "Oil changes, tire services, and routine maintenance at your home or office.",
     href: "/services",
+    accent: "#1A5FAC",
   },
   {
     icon: Truck,
@@ -27,6 +28,7 @@ const serviceCards = [
     description:
       "From company sedans to heavy-duty box trucks. Scheduled maintenance that keeps your fleet moving.",
     href: "/fleet",
+    accent: "#E07B2D",
   },
   {
     icon: Anchor,
@@ -34,6 +36,7 @@ const serviceCards = [
     description:
       "Dockside and boat ramp service for outboard and inboard engines across Tampa.",
     href: "/marine",
+    accent: "#0D8A8F",
   },
 ];
 
@@ -42,18 +45,21 @@ const steps = [
     num: "1",
     title: "Book Online or Call",
     description: "Pick your service and choose a time that works for you.",
+    detail: "Online booking or call 813-722-LUBE",
   },
   {
     num: "2",
     title: "We Come to You",
     description:
       "Our fully equipped van arrives at your location, ready to work.",
+    detail: "Fully stocked van with pro-grade equipment",
   },
   {
     num: "3",
     title: "Drive Away Done",
     description:
       "No waiting rooms, no drop-offs. Get back to your day.",
+    detail: "Most services completed in under an hour",
   },
 ];
 
@@ -117,7 +123,7 @@ export default function Home() {
             </Button>
             <a
               href="tel:8137225823"
-              className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold border-2 border-white text-white rounded-[var(--radius-button)] hover:bg-white hover:text-navy transition-all"
+              className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold bg-white text-[#0B2040] rounded-[var(--radius-button)] hover:bg-gray-100 transition-all"
             >
               Call 813-722-LUBE
             </a>
@@ -129,7 +135,7 @@ export default function Home() {
 
       {/* ── Service Cards Section ── */}
       <section className="bg-sand">
-        <div className="section">
+        <div className="section py-20">
           <div className="section-inner">
             <div className="text-center mb-10">
               <h2 className="text-2xl md:text-3xl font-bold mb-3">
@@ -142,18 +148,19 @@ export default function Home() {
                 <Link
                   key={card.title}
                   href={card.href}
-                  className="bg-white rounded-[var(--radius-card)] p-6 shadow-sm hover:shadow-lg transition-shadow flex flex-col group"
+                  className="bg-white rounded-[var(--radius-card)] shadow-sm hover:shadow-lg transition-shadow flex flex-col group border border-gray-200 overflow-hidden"
                 >
-                  <div className="w-12 h-12 rounded-full bg-teal-soft flex items-center justify-center mb-4">
-                    <card.icon size={24} className="text-teal" />
+                  <div className="h-1" style={{ backgroundColor: card.accent }} />
+                  <div className="p-6 flex flex-col flex-1" style={{ borderLeft: `3px solid ${card.accent}` }}>
+                    <card.icon size={48} style={{ color: card.accent }} className="mb-4" />
+                    <h3 className="text-xl font-bold mb-2">{card.title}</h3>
+                    <p className="text-text-mid text-base leading-relaxed mb-4 flex-1">
+                      {card.description}
+                    </p>
+                    <span className="inline-flex items-center font-semibold group-hover:gap-2 gap-1 transition-all" style={{ color: card.accent }}>
+                      Learn More <ChevronRight size={16} />
+                    </span>
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">{card.title}</h3>
-                  <p className="text-text-mid text-sm leading-relaxed mb-4 flex-1">
-                    {card.description}
-                  </p>
-                  <span className="inline-flex items-center text-blue text-sm font-medium group-hover:gap-2 gap-1 transition-all">
-                    Learn More <ChevronRight size={16} />
-                  </span>
                 </Link>
               ))}
             </div>
@@ -165,7 +172,7 @@ export default function Home() {
 
       {/* ── How It Works Section ── */}
       <section className="bg-white">
-        <div className="section">
+        <div className="section py-16">
           <div className="section-inner">
             <h2 className="text-2xl md:text-3xl font-bold text-center mb-12">
               How It Works
@@ -182,9 +189,12 @@ export default function Home() {
                   <div className="w-12 h-12 rounded-full bg-teal text-white flex items-center justify-center text-lg font-bold mb-4 relative z-10">
                     {step.num}
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">{step.title}</h3>
+                  <h3 className="text-lg font-bold mb-2">{step.title}</h3>
                   <p className="text-text-mid text-sm leading-relaxed max-w-[280px]">
                     {step.description}
+                  </p>
+                  <p className="text-text-soft text-xs italic mt-2 max-w-[280px]">
+                    {step.detail}
                   </p>
                 </div>
               ))}
@@ -193,10 +203,10 @@ export default function Home() {
         </div>
       </section>
 
-      <WaveDivider color="#FFFDF8" />
+      <WaveDivider color="#F4EEE3" />
 
       {/* ── Why Coastal Mobile Section ── */}
-      <section className="bg-cream">
+      <section className="bg-sand">
         <div className="section">
           <div className="section-inner">
             <h2 className="text-2xl md:text-3xl font-bold text-center mb-10">
@@ -204,12 +214,10 @@ export default function Home() {
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
               {trustPoints.map((point) => (
-                <div key={point.title} className="flex gap-4">
-                  <div className="w-11 h-11 rounded-full bg-teal-soft flex items-center justify-center shrink-0">
-                    <point.icon size={22} className="text-teal" />
-                  </div>
+                <div key={point.title} className="border-l-[3px] border-teal pl-4 flex gap-4">
+                  <point.icon size={32} className="text-teal shrink-0 mt-0.5" />
                   <div>
-                    <h3 className="text-base font-semibold mb-1">
+                    <h3 className="text-lg font-bold text-text-dark mb-1">
                       {point.title}
                     </h3>
                     <p className="text-text-mid text-sm leading-relaxed">

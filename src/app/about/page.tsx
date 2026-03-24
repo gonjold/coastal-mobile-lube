@@ -10,18 +10,18 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <>
-      <section className="bg-navy py-16 md:py-20 px-6 text-center">
+      <section className="bg-navy py-20 md:py-24 px-6 text-center">
         <div className="max-w-[680px] mx-auto">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-4">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-4">
             About Coastal Mobile
           </h1>
-          <p className="text-white/80 text-lg">
+          <p className="text-[#CBD5E1] text-lg">
             30 years of dealership expertise, brought directly to you.
           </p>
         </div>
       </section>
       <WaveDivider color="#FFFFFF" />
-      <section className="section">
+      <section className="section pt-12">
         <div className="section-narrow">
           <p className="text-text-mid leading-relaxed">
             Coastal Mobile Lube & Tire was founded on a simple idea:

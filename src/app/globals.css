@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
-
 @import "tailwindcss";
 
 /* ── Tailwind v4 theme tokens ── */
@@ -24,8 +22,8 @@
   --color-border: #E2DBCE;
   --color-border-light: #EDE8DF;
 
-  --font-heading: "Plus Jakarta Sans", sans-serif;
-  --font-body: "Plus Jakarta Sans", sans-serif;
+  --font-heading: var(--font-jakarta), sans-serif;
+  --font-body: var(--font-jakarta), sans-serif;
 
   --radius-card: 14px;
   --radius-button: 8px;
@@ -64,8 +62,8 @@
   --color-border: #E2DBCE;
   --color-border-light: #EDE8DF;
 
-  --font-heading: "Plus Jakarta Sans", sans-serif;
-  --font-body: "Plus Jakarta Sans", sans-serif;
+  --font-heading: var(--font-jakarta), sans-serif;
+  --font-body: var(--font-jakarta), sans-serif;
 
   --radius-card: 14px;
   --radius-button: 8px;
@@ -106,13 +104,15 @@ body {
 }
 
 /* ── Headings ── */
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-heading);
-  color: var(--color-text-dark);
-  line-height: var(--line-height-heading);
-  letter-spacing: -0.5px;
-  font-weight: 700;
-  margin: 0;
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    color: var(--color-text-dark);
+    line-height: var(--line-height-heading);
+    letter-spacing: -0.5px;
+    font-weight: 700;
+    margin: 0;
+  }
 }
 
 /* ── Links ── */
@@ -127,22 +127,24 @@ img {
 }
 
 /* ── Section utilities ── */
-.section {
-  padding: var(--spacing-section-y) var(--spacing-section-x);
-}
+@layer components {
+  .section {
+    padding: var(--spacing-section-y) var(--spacing-section-x);
+  }
 
-.section-inner {
-  max-width: var(--max-width);
-  margin-left: auto;
-  margin-right: auto;
-  width: 100%;
-}
+  .section-inner {
+    max-width: var(--max-width);
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+  }
 
-.section-narrow {
-  max-width: var(--max-width-narrow);
-  margin-left: auto;
-  margin-right: auto;
-  width: 100%;
+  .section-narrow {
+    max-width: var(--max-width-narrow);
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+  }
 }
 
 /* ── Hull stripe ── */

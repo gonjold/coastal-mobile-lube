@@ -57,7 +57,7 @@ export default function Footer() {
 
             {/* Column 2 - Quick Links */}
             <div>
-              <h3 className="text-xs font-semibold uppercase tracking-widest text-white mb-4">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-white mb-4">
                 Quick Links
               </h3>
               <ul className="flex flex-col gap-2.5">
@@ -65,7 +65,7 @@ export default function Footer() {
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-[#D1D5DB] text-sm hover:text-white transition-colors"
+                      className="text-[#CBD5E1] text-sm hover:text-white transition-colors"
                     >
                       {link.label}
                     </Link>
@@ -76,7 +76,7 @@ export default function Footer() {
 
             {/* Column 3 - Service Areas */}
             <div>
-              <h3 className="text-xs font-semibold uppercase tracking-widest text-white mb-4">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-white mb-4">
                 Service Areas
               </h3>
               <ul className="flex flex-col gap-2.5">
@@ -84,7 +84,7 @@ export default function Footer() {
                   <li key={area}>
                     <Link
                       href="/service-areas"
-                      className="text-[#D1D5DB] text-sm hover:text-white transition-colors"
+                      className="text-[#CBD5E1] text-sm hover:text-white transition-colors"
                     >
                       {area}
                     </Link>

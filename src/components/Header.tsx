@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Phone, Menu, X } from "lucide-react";
 import HullStripe from "./HullStripe";
@@ -20,6 +21,7 @@ const navLinks = [
 export default function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     function handleScroll() {
@@ -63,7 +65,7 @@ export default function Header() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-text-body font-medium text-sm hover:text-blue transition-colors"
+                className={`font-medium text-sm transition-colors ${pathname === link.href ? "text-teal" : "text-text-body hover:text-blue"}`}
               >
                 {link.label}
               </Link>
@@ -129,7 +131,7 @@ export default function Header() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setDrawerOpen(false)}
-                  className="py-3 text-text-body font-medium text-base hover:text-blue border-b border-border-light"
+                  className={`py-3 font-medium text-base border-b border-border-light transition-colors ${pathname === link.href ? "text-teal" : "text-text-body hover:text-blue"}`}
                 >
                   {link.label}
                 </Link>

@@ -8,7 +8,7 @@ const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
   display: "swap",
-  variable: "--font-plus-jakarta",
+  variable: "--font-jakarta",
 });
 
 export const metadata: Metadata = {
@@ -27,7 +27,7 @@ export default function RootLayout({
     <html lang="en" className={`${plusJakarta.variable} antialiased`}>
       <body
         className="min-h-screen flex flex-col"
-        style={{ fontFamily: "var(--font-plus-jakarta), var(--font-body)" }}
+        style={{ fontFamily: "var(--font-body)" }}
       >
         <Header />
         <main className="flex-1">{children}</main>
