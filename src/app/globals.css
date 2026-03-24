@@ -1,26 +1,173 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* ── Tailwind v4 theme tokens ── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-navy: #0B2040;
+  --color-navy-mid: #132E54;
+  --color-blue: #1A5FAC;
+  --color-blue-light: #2E7ECC;
+  --color-orange: #E07B2D;
+  --color-orange-hover: #CC6A1F;
+  --color-gold: #D9A441;
+  --color-teal: #0D8A8F;
+  --color-teal-soft: #E1F4F3;
+  --color-seafoam: #E1F4F3;
+  --color-sand: #F4EEE3;
+  --color-sand-light: #FAF7F2;
+  --color-cream: #FFFDF8;
+  --color-text-dark: #161616;
+  --color-text-body: #2C2C2C;
+  --color-text-mid: #555555;
+  --color-text-soft: #7A7A7A;
+  --color-border: #E2DBCE;
+  --color-border-light: #EDE8DF;
+
+  --font-heading: "Plus Jakarta Sans", sans-serif;
+  --font-body: "Plus Jakarta Sans", sans-serif;
+
+  --radius-card: 14px;
+  --radius-button: 8px;
+  --radius-pill: 20px;
+  --radius-input: 8px;
+
+  --max-width-content: 1100px;
+  --max-width-narrow: 680px;
+
+  --line-height-heading: 1.15;
+  --line-height-body: 1.65;
+
+  --letter-spacing-heading: -0.5px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ── CSS custom properties ── */
+:root {
+  --color-navy: #0B2040;
+  --color-navy-mid: #132E54;
+  --color-blue: #1A5FAC;
+  --color-blue-light: #2E7ECC;
+  --color-orange: #E07B2D;
+  --color-orange-hover: #CC6A1F;
+  --color-gold: #D9A441;
+  --color-teal: #0D8A8F;
+  --color-teal-soft: #E1F4F3;
+  --color-seafoam: #E1F4F3;
+  --color-sand: #F4EEE3;
+  --color-sand-light: #FAF7F2;
+  --color-cream: #FFFDF8;
+  --color-white: #FFFFFF;
+  --color-text-dark: #161616;
+  --color-text-body: #2C2C2C;
+  --color-text-mid: #555555;
+  --color-text-soft: #7A7A7A;
+  --color-border: #E2DBCE;
+  --color-border-light: #EDE8DF;
+
+  --font-heading: "Plus Jakarta Sans", sans-serif;
+  --font-body: "Plus Jakarta Sans", sans-serif;
+
+  --radius-card: 14px;
+  --radius-button: 8px;
+  --radius-pill: 20px;
+  --radius-input: 8px;
+
+  --spacing-section-y: 60px;
+  --spacing-section-x: 24px;
+  --max-width: 1100px;
+  --max-width-narrow: 680px;
+
+  --line-height-heading: 1.15;
+  --line-height-body: 1.65;
+
+  --hull-stripe-height: 3px;
+  --wave-height: 36px;
+}
+
+/* ── Global reset ── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
+  color: var(--color-text-body);
+  line-height: var(--line-height-body);
+  background: #ffffff;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+}
+
+/* ── Headings ── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  color: var(--color-text-dark);
+  line-height: var(--line-height-heading);
+  letter-spacing: -0.5px;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* ── Links ── */
+a {
+  transition: color 0.2s ease;
+}
+
+/* ── Images ── */
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* ── Section utilities ── */
+.section {
+  padding: var(--spacing-section-y) var(--spacing-section-x);
+}
+
+.section-inner {
+  max-width: var(--max-width);
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+}
+
+.section-narrow {
+  max-width: var(--max-width-narrow);
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+}
+
+/* ── Hull stripe ── */
+.hull-stripe {
+  display: flex;
+  height: var(--hull-stripe-height);
+  width: 100%;
+}
+
+.hs-blue-1 {
+  flex: 2;
+  background: var(--color-blue);
+}
+
+.hs-orange {
+  flex: 1;
+  background: var(--color-orange);
+}
+
+.hs-gold {
+  flex: 1;
+  background: var(--color-gold);
+}
+
+.hs-blue-2 {
+  flex: 3;
+  background: var(--color-blue);
 }
