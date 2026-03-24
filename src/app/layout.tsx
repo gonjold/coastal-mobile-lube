@@ -35,7 +35,7 @@ export default function RootLayout({
         <Footer />
 
         {/* Mobile Sticky Bottom Bar — visible on all pages */}
-        <div className="fixed bottom-0 left-0 right-0 flex lg:hidden items-center gap-3 px-4 py-3 bg-white border-t border-[#eee] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] z-[100]">
+        <div id="site-sticky-bar" className="fixed bottom-0 left-0 right-0 flex lg:hidden items-center gap-3 px-4 py-3 bg-white border-t border-[#eee] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] z-[100]">
           <a
             href="tel:8137225823"
             className="inline-flex items-center justify-center w-12 h-12 shrink-0 text-[#0B2040] border-2 border-[#e8e8e8] rounded-[10px]"

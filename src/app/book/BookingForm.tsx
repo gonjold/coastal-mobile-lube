@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import TrustBar from "@/components/TrustBar";
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -244,16 +243,12 @@ export default function BookingForm() {
         </div>
       </section>
 
-      {/* Trust Bar */}
-      <TrustBar />
-
       {/* Form */}
       <section className="bg-[#FAFBFC]">
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
-          <p className="text-center text-[14px] text-[#888] mb-6">
-            For fleet or marine service, visit our{" "}
-            <Link href="/fleet" className="text-[#E07B2D] font-semibold hover:underline">Fleet</Link> or{" "}
-            <Link href="/marine" className="text-[#E07B2D] font-semibold hover:underline">Marine</Link> pages for a custom quote.
+          <p className="text-center text-[13px] text-[#888] mb-6">
+            Looking for <Link href="/fleet" className="text-[#E07B2D] font-semibold hover:underline">fleet</Link> or{" "}
+            <Link href="/marine" className="text-[#E07B2D] font-semibold hover:underline">marine</Link> service? Get a custom quote on those pages.
           </p>
           <div className="max-w-[700px] mx-auto">
             <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-6 md:p-8 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
