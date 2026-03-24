@@ -177,7 +177,7 @@ export default function FleetContent() {
             </div>
             <div>
               <img
-                src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_600,h_450,c_fill,q_auto,f_auto/v1774318456/commercial-service_wbgfog.jpg"
+                src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_1600,h_450,c_fill,q_auto:good,f_auto/v1774318456/commercial-service_wbgfog.jpg"
                 alt="Commercial fleet mobile service"
                 className="w-full h-auto rounded-[14px] shadow-[0_8px_30px_rgba(0,0,0,0.08)]"
               />

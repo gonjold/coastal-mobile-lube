@@ -9,7 +9,7 @@ import { cloudinaryUrl, images } from "@/lib/cloudinary";
 const serviceCards = [
   {
     name: "Synthetic Oil Change",
-    image: cloudinaryUrl(images.oilChangeService, { width: 500, height: 380 }),
+    image: cloudinaryUrl(images.oilChangeService, { width: 800, height: 600 }),
     description:
       "We perform full synthetic oil changes using factory-recommended oil and filters right in your driveway or parking lot. Our vacuum extraction system means no drain plug removal, no mess, and no risk of cross-threading. Most oil changes take about 30 minutes.",
     details: [
@@ -25,7 +25,7 @@ const serviceCards = [
   },
   {
     name: "Tire Sales, Installation & Rotation",
-    image: cloudinaryUrl(images.tireService, { width: 500, height: 380 }),
+    image: cloudinaryUrl(images.tireService, { width: 800, height: 600 }),
     description:
       "Need new tires? We source tires from major brands and install them on-site. No trip to the tire shop, no sitting in a waiting room. We also handle rotations, balancing, and pressure checks as part of routine maintenance.",
     details: [
@@ -41,7 +41,7 @@ const serviceCards = [
   },
   {
     name: "Brake Inspection & Service",
-    image: cloudinaryUrl(images.drivewayServiceAlt, { width: 500, height: 380 }),
+    image: cloudinaryUrl(images.drivewayServiceAlt, { width: 800, height: 600 }),
     description:
       "Squealing, grinding, or just overdue? We inspect your brake pads, rotors, and fluid levels on-site and give you a straight answer on what needs attention. No upselling, no shop pressure. If the work can be done mobile, we handle it right there.",
     details: [
@@ -57,7 +57,7 @@ const serviceCards = [
   },
   {
     name: "Battery Testing & Replacement",
-    image: cloudinaryUrl(images.oilChangeServiceAlt, { width: 500, height: 380 }),
+    image: cloudinaryUrl(images.oilChangeServiceAlt, { width: 800, height: 600 }),
     description:
       "We test your battery and charging system on the spot. If you need a replacement, we carry common sizes on the van and can install a new battery the same visit. No jump start runaround, no tow to a shop.",
     details: [
@@ -73,7 +73,7 @@ const serviceCards = [
   },
   {
     name: "Fluid Top-Off & Inspection",
-    image: cloudinaryUrl(images.vanInteriorEquipment, { width: 500, height: 380 }),
+    image: cloudinaryUrl(images.vanInteriorEquipment, { width: 800, height: 600 }),
     description:
       "Every visit includes a multi-point fluid check. We top off washer fluid, check coolant, brake fluid, power steering, and transmission levels. If something looks off, we tell you before it becomes a problem.",
     details: [

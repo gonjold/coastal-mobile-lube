@@ -13,10 +13,10 @@ export function cloudinaryUrl(
   options: CloudinaryOptions = {}
 ): string {
   const {
-    width,
+    width = 800,
     height,
     crop = "fill",
-    quality = "auto",
+    quality = "auto:good",
     format = "auto",
   } = options;
 

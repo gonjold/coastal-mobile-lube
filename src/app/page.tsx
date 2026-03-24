@@ -308,7 +308,7 @@ export default function Home() {
 
             <div className="relative rounded-[14px] overflow-hidden">
               <img
-                src={cloudinaryUrl(currentService.image, { width: 600, height: 450 })}
+                src={cloudinaryUrl(currentService.image, { width: 800, height: 600 })}
                 alt={currentService.title}
                 className="w-full h-auto"
               />
