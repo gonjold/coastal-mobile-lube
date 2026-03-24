@@ -20,7 +20,7 @@ const areaLinks = ["Tampa", "Brandon", "Riverview", "Wesley Chapel", "Plant City
 export default function Footer() {
   return (
     <footer className="bg-[#0B2040]">
-      <div className="section-inner px-6 py-12 lg:py-16">
+      <div className="section-inner px-6 pt-12 pb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr] gap-10 lg:gap-8">
           {/* Column 1 - Brand */}
           <div className="flex flex-col gap-3">
@@ -49,7 +49,7 @@ export default function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-sm text-white/65 hover:text-white transition-colors"
+                    className="text-sm text-[#aaa] hover:text-white transition-colors"
                   >
                     {link.label}
                   </Link>
@@ -68,7 +68,7 @@ export default function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-sm text-white/65 hover:text-white transition-colors"
+                    className="text-sm text-[#aaa] hover:text-white transition-colors"
                   >
                     {link.label}
                   </Link>
@@ -87,7 +87,7 @@ export default function Footer() {
                 <li key={area}>
                   <Link
                     href="/service-areas"
-                    className="text-sm text-white/65 hover:text-white transition-colors"
+                    className="text-sm text-[#aaa] hover:text-white transition-colors"
                   >
                     {area}
                   </Link>
@@ -99,12 +99,12 @@ export default function Footer() {
       </div>
 
       {/* Bottom bar */}
-      <div className="border-t border-white/[0.08]">
+      <div className="border-t border-white/[0.1]">
         <div className="section-inner px-6 py-5 pb-24 lg:pb-5 flex flex-col md:flex-row items-center justify-between gap-3">
-          <p className="text-[11px] text-white/25">
+          <p className="text-[12px] text-white/40">
             2026 Coastal Mobile Lube & Tire. All rights reserved.
           </p>
-          <p className="text-[11px] text-white/25">
+          <p className="text-[12px] text-white/40">
             Website by JG Systems
           </p>
         </div>

@@ -148,16 +148,16 @@ export default function FleetContent() {
     <>
       {/* Section 1: Hero */}
       <section className="bg-white">
-        <div className="max-w-[1100px] mx-auto px-4 lg:px-6 pt-12 pb-8 md:pt-16 md:pb-12">
+        <div className="max-w-[1100px] mx-auto px-4 lg:px-6 pt-10 pb-4 md:pt-14 md:pb-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-12 items-center">
             <div>
-              <p className="text-[12px] uppercase font-bold text-[#1A5FAC] tracking-[2px] mb-3">
+              <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
                 Fleet & Commercial
               </p>
               <h1 className="text-[30px] md:text-[42px] font-[800] leading-[1.08] text-[#0B2040] tracking-[-1px] mb-5">
                 Keep your fleet on the road
               </h1>
-              <p className="text-[16px] leading-[1.65] text-[#666] max-w-[480px] mb-8">
+              <p className="text-[16px] leading-[1.7] text-[#444] max-w-[480px] mb-8">
                 Scheduled mobile maintenance for company vehicles, box trucks,
                 vans, and commercial fleets. We come to your yard, your lot, or
                 your job site. No vehicle downtime, no shop visits.
@@ -179,7 +179,7 @@ export default function FleetContent() {
               <img
                 src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_1600,h_450,c_fill,q_auto:good,f_auto/v1774318456/commercial-service_wbgfog.jpg"
                 alt="Commercial fleet mobile service"
-                className="w-full h-auto rounded-[14px] shadow-[0_8px_30px_rgba(0,0,0,0.08)]"
+                className="w-full h-auto rounded-[12px] shadow-[0_8px_30px_rgba(0,0,0,0.08)]"
               />
             </div>
           </div>
@@ -188,8 +188,8 @@ export default function FleetContent() {
 
       {/* Section 2: What We Cover */}
       <section className="bg-[#FAFBFC]">
-        <div className="section-inner px-4 lg:px-6 py-12 md:py-16">
-          <p className="text-[12px] uppercase font-bold text-[#1A5FAC] tracking-[2px] mb-3">
+        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
+          <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
             Vehicle Types
           </p>
           <h2 className="text-[28px] font-extrabold text-[#0B2040] mb-8">
@@ -199,12 +199,12 @@ export default function FleetContent() {
             {vehicleTypes.map((type) => (
               <div
                 key={type.title}
-                className="bg-white border border-[#eee] rounded-[14px] p-6 border-t-[3px] border-t-[#0B2040]"
+                className="bg-white border border-[#e8e8e8] rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-6 border-t-[3px] border-t-[#0B2040]"
               >
                 <h3 className="text-[18px] font-bold text-[#0B2040] mb-2">
                   {type.title}
                 </h3>
-                <p className="text-[14px] text-[#666] leading-[1.65]">
+                <p className="text-[14px] text-[#444] leading-[1.7]">
                   {type.description}
                 </p>
               </div>
@@ -215,9 +215,9 @@ export default function FleetContent() {
 
       {/* Section 3: How Fleet Service Works */}
       <section className="bg-white">
-        <div className="section-inner px-4 lg:px-6 py-12 md:py-16">
+        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
           <div className="text-center mb-12">
-            <p className="text-[12px] uppercase font-bold text-[#1A5FAC] tracking-[2px] mb-3">
+            <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
               The Process
             </p>
             <h2 className="text-[28px] font-extrabold text-[#0B2040]">
@@ -247,7 +247,7 @@ export default function FleetContent() {
                   <h3 className="text-[18px] font-bold text-[#0B2040] mb-2">
                     {step.title}
                   </h3>
-                  <p className="text-[14px] leading-relaxed text-[#666] max-w-[280px]">
+                  <p className="text-[14px] leading-[1.7] text-[#444] max-w-[280px]">
                     {step.desc}
                   </p>
                 </div>
@@ -258,21 +258,21 @@ export default function FleetContent() {
       </section>
 
       {/* Section 4: Why Fleets Choose Us */}
-      <section className="bg-[#FAFBFC]">
-        <div className="section-inner px-4 lg:px-6 py-12 md:py-16">
-          <h2 className="text-[28px] font-extrabold text-[#0B2040] mb-8">
+      <section className="bg-[#0B2040]">
+        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
+          <h2 className="text-[28px] font-extrabold text-white mb-8">
             Why fleet managers choose Coastal Mobile
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {valueProps.map((prop) => (
               <div
                 key={prop.title}
-                className="border-l-[3px] border-l-[#0B2040] pl-4"
+                className="border-l-[3px] border-l-[#E07B2D] pl-4"
               >
-                <h3 className="text-[16px] font-bold text-[#0B2040] mb-1">
+                <h3 className="text-[16px] font-bold text-white mb-1">
                   {prop.title}
                 </h3>
-                <p className="text-[14px] text-[#666] leading-[1.65]">
+                <p className="text-[14px] text-white/70 leading-[1.7]">
                   {prop.desc}
                 </p>
               </div>
@@ -282,9 +282,9 @@ export default function FleetContent() {
       </section>
 
       {/* Section 5: Fleet Services List */}
-      <section className="bg-white">
-        <div className="section-inner px-4 lg:px-6 py-12 md:py-16">
-          <p className="text-[12px] uppercase font-bold text-[#1A5FAC] tracking-[2px] mb-3">
+      <section className="bg-[#FAFBFC]">
+        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
+          <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
             Services
           </p>
           <h2 className="text-[28px] font-extrabold text-[#0B2040] mb-8">
@@ -294,7 +294,7 @@ export default function FleetContent() {
             {fleetServices.map((service) => (
               <div
                 key={service.name}
-                className="flex items-start gap-2.5 bg-white border border-[#eee] rounded-[10px] px-[14px] py-[14px]"
+                className="flex items-start gap-2.5 bg-white border border-[#e8e8e8] rounded-[10px] px-[14px] py-[14px]"
               >
                 <span className="inline-block shrink-0 w-1.5 h-1.5 rounded-full bg-[#E07B2D] mt-[7px]" />
                 <div>
@@ -314,7 +314,7 @@ export default function FleetContent() {
 
       {/* Section 6: Fleet CTA */}
       <section className="bg-[#0B2040]">
-        <div className="section-inner px-4 lg:px-6 py-12 md:py-16 text-center">
+        <div className="section-inner px-4 lg:px-6 py-10 md:py-14 text-center">
           <h2 className="text-[28px] font-extrabold text-white mb-3">
             Let&apos;s talk about your fleet.
           </h2>
@@ -339,12 +339,12 @@ export default function FleetContent() {
 
       {/* Section 7: Fleet FAQs */}
       <section className="bg-white">
-        <div className="section-inner px-4 lg:px-6 py-12 md:py-16">
+        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
           <div className="max-w-[700px] mx-auto">
-            <p className="text-[12px] uppercase font-bold text-[#1A5FAC] tracking-[2px] mb-3">
+            <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
               Common Questions
             </p>
-            <h2 className="text-[28px] font-bold text-[#0B2040] mb-8">
+            <h2 className="text-[28px] font-extrabold text-[#0B2040] mb-8">
               Fleet Service FAQs
             </h2>
             <div>
@@ -359,13 +359,13 @@ export default function FleetContent() {
                     </span>
                     <ChevronDown
                       size={18}
-                      className={`shrink-0 text-[#999] transition-transform ${
+                      className={`shrink-0 text-[#888] transition-transform ${
                         openFaq === i ? "rotate-180" : ""
                       }`}
                     />
                   </button>
                   {openFaq === i && (
-                    <p className="text-[14px] text-[#666] leading-[1.65] pb-4">
+                    <p className="text-[14px] text-[#444] leading-[1.7] pb-4">
                       {faq.a}
                     </p>
                   )}
@@ -378,13 +378,13 @@ export default function FleetContent() {
 
       {/* Section 8: Other Services Teaser */}
       <section className="bg-[#FAFBFC]">
-        <div className="section-inner px-4 lg:px-6 py-12 md:py-16">
+        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white border border-[#eee] rounded-[14px] p-7 hover:shadow-md transition-shadow border-t-[3px] border-t-[#E07B2D]">
+            <div className="bg-white border border-[#e8e8e8] rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-7 hover:shadow-md transition-shadow border-t-[3px] border-t-[#E07B2D]">
               <h3 className="text-[20px] font-bold text-[#0B2040] mb-2">
                 Automotive
               </h3>
-              <p className="text-[14px] text-[#666] leading-[1.65] mb-4">
+              <p className="text-[14px] text-[#444] leading-[1.7] mb-4">
                 Personal vehicle maintenance at your home or office.
               </p>
               <Link
@@ -395,11 +395,11 @@ export default function FleetContent() {
                 <ArrowRight size={15} />
               </Link>
             </div>
-            <div className="bg-white border border-[#eee] rounded-[14px] p-7 hover:shadow-md transition-shadow border-t-[3px] border-t-[#0B2040]">
+            <div className="bg-white border border-[#e8e8e8] rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-7 hover:shadow-md transition-shadow border-t-[3px] border-t-[#0B2040]">
               <h3 className="text-[20px] font-bold text-[#0B2040] mb-2">
                 Marine
               </h3>
-              <p className="text-[14px] text-[#666] leading-[1.65] mb-4">
+              <p className="text-[14px] text-[#444] leading-[1.7] mb-4">
                 Outboard and inboard engine service at the marina or boat ramp.
               </p>
               <Link

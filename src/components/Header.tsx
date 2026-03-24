@@ -11,8 +11,6 @@ const navLinks = [
   { label: "Fleet", href: "/fleet" },
   { label: "Marine", href: "/marine" },
   { label: "About", href: "/about" },
-  { label: "Areas", href: "/service-areas" },
-  { label: "FAQ", href: "/faq" },
   { label: "Contact", href: "/contact" },
 ];
 

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import TrustBar from "@/components/TrustBar";
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -210,7 +211,7 @@ export default function BookingForm() {
     "w-full text-[15px] rounded-[10px] px-3.5 py-3 outline-none border-2 border-[#eee] bg-white focus:border-[#E07B2D] transition-colors";
 
   const labelClass =
-    "block text-[12px] uppercase font-semibold text-[#999] tracking-[0.5px] mb-1.5";
+    "block text-[12px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5";
 
   /* ─── Render ─────────────────────────────────────────────────── */
 
@@ -218,15 +219,15 @@ export default function BookingForm() {
     <>
       {/* Hero */}
       <section className="bg-white">
-        <div className="section-inner px-4 lg:px-6 pt-12 pb-8 md:pt-16 md:pb-10">
+        <div className="section-inner px-4 lg:px-6 pt-10 pb-4 md:pt-14 md:pb-6">
           <div className="max-w-[700px]">
-            <p className="text-[12px] uppercase font-bold text-[#1A5FAC] tracking-[2px] mb-3">
+            <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
               Book Service
             </p>
             <h1 className="text-[28px] md:text-[34px] font-[800] leading-[1.1] text-[#0B2040] tracking-[-1px] mb-4">
               Schedule your service
             </h1>
-            <p className="text-[16px] leading-[1.65] text-[#666] max-w-[520px]">
+            <p className="text-[16px] leading-[1.7] text-[#444] max-w-[520px]">
               Pick a service, choose a date, and we will confirm your
               appointment within 2 hours.
             </p>
@@ -234,12 +235,15 @@ export default function BookingForm() {
         </div>
       </section>
 
+      {/* Trust Bar */}
+      <TrustBar />
+
       {/* Form + Sidebar */}
       <section className="bg-[#FAFBFC]">
-        <div className="section-inner px-4 lg:px-6 py-12 md:py-16">
+        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
           <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-8 lg:gap-12 max-w-[1100px] mx-auto">
             {/* ── Left Column: Form ── */}
-            <div className="bg-white border border-[#eee] rounded-[16px] p-6 md:p-8 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+            <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-6 md:p-8 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
               {submitted ? (
                 /* ── Confirmation ── */
                 <div className="flex flex-col items-center text-center py-8">
@@ -260,7 +264,7 @@ export default function BookingForm() {
                   <h2 className="text-[28px] font-[800] text-[#0B2040] mb-3">
                     You&apos;re all set!
                   </h2>
-                  <p className="text-[15px] text-[#666] max-w-[440px] mb-2 leading-relaxed">
+                  <p className="text-[15px] text-[#444] max-w-[440px] mb-2 leading-relaxed">
                     We received your request for{" "}
                     <span className="font-semibold text-[#0B2040]">
                       {formData.service}
@@ -305,7 +309,7 @@ export default function BookingForm() {
                   {/* Returning customer lookup */}
                   <div>
                     {!showLookup ? (
-                      <p className="text-[14px] text-[#666]">
+                      <p className="text-[14px] text-[#444]">
                         Been here before?{" "}
                         <button
                           type="button"
@@ -316,9 +320,9 @@ export default function BookingForm() {
                         </button>
                       </p>
                     ) : (
-                      <div className="bg-[#FAFBFC] border border-[#eee] rounded-[10px] p-4">
+                      <div className="bg-[#FAFBFC] border border-[#e8e8e8] rounded-[10px] p-4">
                         <div className="flex items-center justify-between mb-3">
-                          <span className="text-[13px] font-semibold text-[#666]">
+                          <span className="text-[13px] font-semibold text-[#444]">
                             Find your info
                           </span>
                           <button
@@ -327,7 +331,7 @@ export default function BookingForm() {
                               setShowLookup(false);
                               setLookupMessage(null);
                             }}
-                            className="text-[12px] text-[#999] hover:text-[#666]"
+                            className="text-[12px] text-[#888] hover:text-[#444]"
                           >
                             Dismiss
                           </button>
@@ -357,7 +361,7 @@ export default function BookingForm() {
                             className={`mt-2 text-[13px] font-medium ${
                               lookupMessage.type === "success"
                                 ? "text-[#22c55e]"
-                                : "text-[#666]"
+                                : "text-[#444]"
                             }`}
                           >
                             {lookupMessage.text}
@@ -381,12 +385,17 @@ export default function BookingForm() {
                           key={s.name}
                           type="button"
                           onClick={() => updateField("service", s.name)}
-                          className={`text-left rounded-[10px] p-3.5 border-2 transition-all cursor-pointer ${
+                          className={`relative text-left rounded-[10px] p-3.5 border-2 transition-all duration-150 cursor-pointer ${
                             formData.service === s.name
-                              ? "border-[#E07B2D] bg-[rgba(224,123,45,0.04)]"
-                              : "border-[#eee] hover:border-[#ddd]"
+                              ? "border-[#E07B2D] bg-[rgba(224,123,45,0.02)] border-l-[3px] border-l-[#E07B2D]"
+                              : "border-[#eee] hover:border-[#E07B2D] hover:bg-[rgba(224,123,45,0.02)] hover:-translate-y-[1px]"
                           }`}
                         >
+                          {formData.service === s.name && (
+                            <span className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[#E07B2D] flex items-center justify-center">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                            </span>
+                          )}
                           <span className="block text-[15px] font-semibold text-[#0B2040]">
                             {s.name}
                           </span>
@@ -399,12 +408,12 @@ export default function BookingForm() {
                     {/* Fleet / Marine CTA */}
                     <Link
                       href="/contact"
-                      className="mt-3 flex items-center justify-between w-full rounded-[10px] p-3.5 bg-[#0B2040] text-white hover:bg-[#132E54] transition-colors"
+                      className="mt-3 flex items-center justify-between w-full rounded-[12px] px-5 py-4 bg-[#0B2040] text-white hover:bg-[#132E54] transition-colors"
                     >
-                      <span className="text-[15px] font-semibold">
+                      <span className="text-[15px] font-semibold text-white">
                         Fleet or Marine Service
                       </span>
-                      <span className="text-[13px] opacity-80">
+                      <span className="text-[13px] font-semibold text-[#E07B2D]">
                         Request a custom quote &rarr;
                       </span>
                     </Link>
@@ -446,7 +455,7 @@ export default function BookingForm() {
                           className={`flex-1 py-3 rounded-[10px] text-[14px] font-semibold border-2 transition-all cursor-pointer ${
                             formData.timeWindow === tw.value
                               ? "bg-[#E07B2D] text-white border-[#E07B2D]"
-                              : "border-[#eee] text-[#666] hover:border-[#ddd]"
+                              : "border-[#eee] text-[#444] hover:border-[#ddd]"
                           }`}
                         >
                           {tw.label}
@@ -572,7 +581,7 @@ export default function BookingForm() {
             {/* ── Right Column: Info Sidebar ── */}
             <div className="flex flex-col gap-6">
               {/* Block 1: How it works */}
-              <div className="bg-white border border-[#eee] rounded-[16px] p-6 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+              <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-6 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
                 <h3 className="text-[16px] font-bold text-[#0B2040] mb-5">
                   How it works
                 </h3>
@@ -604,7 +613,7 @@ export default function BookingForm() {
                         <p className="text-[14px] font-semibold text-[#0B2040]">
                           {step.title}
                         </p>
-                        <p className="text-[13px] text-[#666]">{step.desc}</p>
+                        <p className="text-[13px] text-[#444]">{step.desc}</p>
                       </div>
                     </div>
                   ))}
@@ -612,7 +621,7 @@ export default function BookingForm() {
               </div>
 
               {/* Block 2: What's included */}
-              <div className="bg-white border border-[#eee] rounded-[16px] p-6 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+              <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-6 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
                 <h3 className="text-[16px] font-bold text-[#0B2040] mb-4">
                   What&apos;s included
                 </h3>
@@ -644,7 +653,7 @@ export default function BookingForm() {
               </div>
 
               {/* Block 3: Prefer to call? */}
-              <div className="bg-white border border-[#eee] rounded-[16px] p-6 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+              <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-6 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
                 <h3 className="text-[16px] font-bold text-[#0B2040] mb-3">
                   Prefer to call?
                 </h3>

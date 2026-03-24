@@ -41,15 +41,15 @@ export default function ContactPage() {
     <>
       {/* Page Hero */}
       <section className="bg-white">
-        <div className="section-inner px-4 lg:px-6 pt-12 pb-8 md:pt-16 md:pb-10">
+        <div className="section-inner px-4 lg:px-6 pt-10 pb-4 md:pt-14 md:pb-6">
           <div className="max-w-[700px]">
-            <p className="text-[12px] uppercase font-bold text-[#1A5FAC] tracking-[2px] mb-3">
+            <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
               Contact
             </p>
             <h1 className="text-[30px] md:text-[42px] font-extrabold leading-[1.1] text-[#0B2040] tracking-[-1px] mb-4">
               Get in touch
             </h1>
-            <p className="text-[16px] leading-[1.65] text-[#666] max-w-[520px]">
+            <p className="text-[16px] leading-[1.7] text-[#444] max-w-[520px]">
               Have a question, need a quote, or want to talk about fleet
               services? We respond to every inquiry within one business day.
             </p>
@@ -59,17 +59,17 @@ export default function ContactPage() {
 
       {/* Form + Contact Info */}
       <section className="bg-[#FAFBFC]">
-        <div className="section-inner px-4 lg:px-6 py-12 md:py-16">
+        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
           <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-8 lg:gap-12 max-w-[1100px] mx-auto">
             {/* Left Column: Form */}
-            <div className="bg-white border border-[#eee] rounded-[14px] p-6 md:p-8">
+            <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-6 md:p-8">
               {submitted ? (
                 <div className="flex flex-col items-center justify-center text-center py-12">
                   <CheckCircle size={48} color="#2d7a2d" className="mb-5" />
                   <h2 className="text-[24px] font-bold text-[#0B2040] mb-3">
                     Message sent.
                   </h2>
-                  <p className="text-[15px] text-[#666] max-w-[360px] mb-6">
+                  <p className="text-[15px] text-[#444] max-w-[360px] mb-6">
                     We will get back to you within one business day. For
                     immediate help, call{" "}
                     <a
@@ -104,7 +104,7 @@ export default function ContactPage() {
                     {/* Row 1: Name + Phone */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-[11px] uppercase font-semibold text-[#999] tracking-[0.5px] mb-1.5">
+                        <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
                           Name
                         </label>
                         <input
@@ -116,7 +116,7 @@ export default function ContactPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[11px] uppercase font-semibold text-[#999] tracking-[0.5px] mb-1.5">
+                        <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
                           Phone
                         </label>
                         <input
@@ -131,7 +131,7 @@ export default function ContactPage() {
 
                     {/* Row 2: Email */}
                     <div>
-                      <label className="block text-[11px] uppercase font-semibold text-[#999] tracking-[0.5px] mb-1.5">
+                      <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
                         Email
                       </label>
                       <input
@@ -145,7 +145,7 @@ export default function ContactPage() {
 
                     {/* Row 3: Interest */}
                     <div>
-                      <label className="block text-[11px] uppercase font-semibold text-[#999] tracking-[0.5px] mb-1.5">
+                      <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
                         I am interested in
                       </label>
                       <select name="interest" className={inputClasses}>
@@ -159,7 +159,7 @@ export default function ContactPage() {
 
                     {/* Row 4: Message */}
                     <div>
-                      <label className="block text-[11px] uppercase font-semibold text-[#999] tracking-[0.5px] mb-1.5">
+                      <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
                         Message
                       </label>
                       <textarea
@@ -179,7 +179,7 @@ export default function ContactPage() {
                       Send Message
                     </button>
 
-                    <p className="text-center text-[12px] text-[#aaa]">
+                    <p className="text-center text-[12px] text-[#888]">
                       We respond to every message within one business day.
                     </p>
                   </div>
@@ -265,7 +265,7 @@ export default function ContactPage() {
                       <span className="font-semibold text-[#0B2040]">
                         {row.day}
                       </span>
-                      <span className="text-[#666]">{row.hours}</span>
+                      <span className="text-[#444]">{row.hours}</span>
                     </div>
                   ))}
                 </div>
@@ -276,12 +276,12 @@ export default function ContactPage() {
       </section>
 
       {/* CTA */}
-      <section className="bg-white">
-        <div className="section-inner px-4 lg:px-6 py-12 text-center">
-          <h2 className="text-[24px] font-bold text-[#0B2040] mb-2">
+      <section className="bg-[#0B2040]">
+        <div className="section-inner px-4 lg:px-6 py-10 text-center">
+          <h2 className="text-[24px] font-extrabold text-white mb-2">
             Prefer to book directly?
           </h2>
-          <p className="text-[14px] text-[#888] mb-6">
+          <p className="text-[14px] text-white/70 mb-6">
             Skip the form and schedule your service now.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -293,7 +293,7 @@ export default function ContactPage() {
             </Link>
             <a
               href="tel:8137225823"
-              className="inline-flex items-center justify-center gap-2 px-[30px] py-[14px] font-semibold text-[#0B2040] bg-white border-2 border-[#ddd] rounded-[var(--radius-button)] hover:border-[#bbb] transition-all"
+              className="inline-flex items-center justify-center gap-2 px-[30px] py-[14px] font-semibold text-white bg-transparent border-2 border-white/40 rounded-[var(--radius-button)] hover:border-white/70 transition-all"
             >
               <Phone size={16} />
               Call 813-722-LUBE

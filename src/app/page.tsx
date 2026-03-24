@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Phone, Check } from "lucide-react";
 import Button from "@/components/Button";
+import TrustBar from "@/components/TrustBar";
 import { cloudinaryUrl, images } from "@/lib/cloudinary";
 
 const bookingServices = {
@@ -126,14 +127,14 @@ export default function Home() {
     <>
       {/* Hero */}
       <section className="bg-white">
-        <div className="section-inner px-4 lg:px-6 pt-12 pb-12 md:pt-20 md:pb-16">
+        <div className="section-inner px-4 lg:px-6 pt-10 pb-10 md:pt-16 md:pb-12">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-10 lg:gap-12 items-start">
             {/* Left Column */}
             <div>
               <h1 className="text-[34px] md:text-[50px] font-extrabold leading-[1.06] text-[#0B2040] tracking-[-1.5px] mb-5">
                 The shop comes to <span className="text-[#E07B2D]">you.</span>
               </h1>
-              <p className="text-[17px] leading-[1.65] text-[#666] max-w-[460px] mb-8">
+              <p className="text-[17px] leading-[1.7] text-[#444] max-w-[460px] mb-8">
                 Mobile oil changes, tire sales and service, and marine engine
                 maintenance. At your driveway, your parking lot, or your marina.
                 Tampa and surrounding areas.
@@ -165,11 +166,11 @@ export default function Home() {
             </div>
 
             {/* Booking Widget */}
-            <div className="bg-white border border-[#e4e4e4] rounded-[16px] p-7 shadow-[0_8px_40px_rgba(0,0,0,0.06)]">
+            <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-7 shadow-[0_8px_40px_rgba(0,0,0,0.06)]">
               <h2 className="text-[19px] font-bold text-[#0B2040] mb-1">
                 Get a quick quote
               </h2>
-              <p className="text-[13px] text-[#999] mb-5">
+              <p className="text-[13px] text-[#888] mb-5">
                 Tell us what you need. We will get back to you fast.
               </p>
 
@@ -181,7 +182,7 @@ export default function Home() {
                     className={`flex-1 text-[13px] font-semibold py-2 rounded-md transition-all ${
                       bookingTab === tab.key
                         ? "bg-white text-[#0B2040] shadow-sm"
-                        : "text-[#999]"
+                        : "text-[#888]"
                     }`}
                   >
                     {tab.label}
@@ -191,7 +192,7 @@ export default function Home() {
 
               <div className="flex flex-col gap-4">
                 <div>
-                  <label className="block text-[11px] uppercase font-semibold text-[#999] tracking-[0.5px] mb-1.5">
+                  <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
                     Service Needed
                   </label>
                   <select className={inputClasses}>
@@ -204,13 +205,13 @@ export default function Home() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] uppercase font-semibold text-[#999] tracking-[0.5px] mb-1.5">
+                    <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
                       Zip Code
                     </label>
                     <input type="text" placeholder="e.g. 33601" className={inputClasses} />
                   </div>
                   <div>
-                    <label className="block text-[11px] uppercase font-semibold text-[#999] tracking-[0.5px] mb-1.5">
+                    <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
                       Phone
                     </label>
                     <input type="tel" placeholder="(555) 555-5555" className={inputClasses} />
@@ -218,7 +219,7 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] uppercase font-semibold text-[#999] tracking-[0.5px] mb-1.5">
+                  <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
                     Notes (optional)
                   </label>
                   <textarea
@@ -232,7 +233,7 @@ export default function Home() {
                   Get My Quote
                 </button>
 
-                <p className="text-center text-[12px] text-[#999]">
+                <p className="text-center text-[12px] text-[#888]">
                   or call{" "}
                   <a href="tel:8137225823" className="font-medium text-[#1A5FAC]">
                     813-722-LUBE
@@ -247,15 +248,15 @@ export default function Home() {
 
       {/* Services */}
       <section className="bg-[#FAFBFC]">
-        <div className="section-inner px-4 lg:px-6 pt-12 pb-16 md:pt-16">
+        <div className="section-inner px-4 lg:px-6 pt-10 pb-14 md:pt-14">
           <div className="text-center mb-10">
-            <p className="text-[12px] uppercase font-bold text-[#1A5FAC] tracking-[2px] mb-3">
+            <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
               Services
             </p>
             <h2 className="text-[28px] md:text-[34px] font-extrabold text-[#0B2040] mb-3">
               What we handle on-site
             </h2>
-            <p className="text-[15px] text-[#888] mx-auto max-w-[480px]">
+            <p className="text-[15px] text-[#444] mx-auto max-w-[480px]">
               Everything your vehicle, fleet, or boat needs. Brought directly to
               your location by a factory-trained technician.
             </p>
@@ -269,7 +270,7 @@ export default function Home() {
                 className={`text-[14px] font-semibold pb-3 -mb-px transition-colors ${
                   servicesTab === tab.key
                     ? "text-[#0B2040] border-b-2 border-[#0B2040]"
-                    : "text-[#999] border-b-2 border-transparent"
+                    : "text-[#888] border-b-2 border-transparent"
                 }`}
               >
                 {tab.label}
@@ -282,11 +283,11 @@ export default function Home() {
               <h3 className="text-[22px] font-bold text-[#0B2040] mb-3">
                 {currentService.title}
               </h3>
-              <p className="text-[15px] text-[#666] leading-relaxed mb-5">
+              <p className="text-[15px] text-[#444] leading-[1.7] mb-5">
                 {currentService.description}
               </p>
               <div className="mb-6">
-                <span className="text-[12px] text-[#999]">
+                <span className="text-[12px] text-[#888]">
                   {currentService.pricingLabel}
                 </span>
                 <span className="text-[28px] font-extrabold text-[#0B2040] ml-2">
@@ -297,7 +298,7 @@ export default function Home() {
                 {currentService.items.map((item) => (
                   <div
                     key={item}
-                    className="flex items-center gap-2 text-[13px] text-[#555] bg-white border border-[#f0f0f0] rounded-lg px-3 py-[9px]"
+                    className="flex items-center gap-2 text-[13px] text-[#555] bg-white border border-[#e8e8e8] rounded-[12px] px-3 py-[9px]"
                   >
                     <span className="inline-block shrink-0 w-1.5 h-1.5 rounded-full bg-[#E07B2D]" />
                     {item}
@@ -306,7 +307,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="relative rounded-[14px] overflow-hidden">
+            <div className="relative rounded-[12px] overflow-hidden">
               <img
                 src={cloudinaryUrl(currentService.image, { width: 800, height: 600 })}
                 alt={currentService.title}
@@ -330,9 +331,9 @@ export default function Home() {
 
       {/* How It Works */}
       <section className="bg-white">
-        <div className="section-inner px-4 lg:px-6 py-12 md:py-16">
-          <div className="text-center mb-12">
-            <p className="text-[12px] uppercase font-bold text-[#1A5FAC] tracking-[2px] mb-3">
+        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
+          <div className="text-center mb-10">
+            <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
               How It Works
             </p>
             <h2 className="text-[28px] md:text-[34px] font-extrabold text-[#0B2040]">
@@ -376,7 +377,7 @@ export default function Home() {
                   <h3 className="text-[18px] font-bold text-[#0B2040] mb-2">
                     {step.title}
                   </h3>
-                  <p className="text-[14px] leading-relaxed text-[#666] max-w-[280px]">
+                  <p className="text-[14px] leading-[1.7] text-[#444] max-w-[280px]">
                     {step.desc}
                   </p>
                 </div>
@@ -387,7 +388,7 @@ export default function Home() {
       </section>
 
       {/* Stats Bar */}
-      <section className="bg-[#0B2040] py-11 px-6">
+      <section className="bg-[#0B2040] py-10 px-6">
         <div className="section-inner">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
@@ -407,16 +408,19 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Trust Bar */}
+      <TrustBar />
+
       {/* CTA */}
       <section className="bg-[#FAFBFC]">
-        <div className="section-inner px-4 lg:px-6 py-12 md:py-16 text-center">
-          <p className="text-[12px] uppercase font-bold text-[#1A5FAC] tracking-[2px] mb-3">
+        <div className="section-inner px-4 lg:px-6 py-10 md:py-14 text-center">
+          <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
             Ready?
           </p>
           <h2 className="text-[28px] md:text-[34px] font-extrabold text-[#0B2040] mb-3">
             Skip the shop.
           </h2>
-          <p className="text-[15px] text-[#999] mb-8 mx-auto max-w-[460px]">
+          <p className="text-[15px] text-[#888] mb-8 mx-auto max-w-[460px]">
             Book your mobile service today. Most appointments available within
             the week.
           </p>

@@ -158,9 +158,9 @@ export default function ServicesContent() {
     <>
       {/* Hero */}
       <section className="bg-white">
-        <div className="section-inner px-4 lg:px-6 pt-12 pb-8 md:pt-16 md:pb-12">
+        <div className="section-inner px-4 lg:px-6 pt-10 pb-4 md:pt-14 md:pb-8">
           <div className="max-w-[700px]">
-            <p className="text-[12px] uppercase font-bold text-[#1A5FAC] tracking-[2px] mb-3">
+            <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
               Automotive Services
             </p>
             <h1 className="text-[30px] md:text-[42px] font-extrabold leading-[1.08] text-[#0B2040] tracking-[-1px] mb-5">
@@ -190,12 +190,12 @@ export default function ServicesContent() {
 
       {/* Service Cards */}
       <section className="bg-[#FAFBFC]">
-        <div className="section-inner px-4 lg:px-6 py-12 md:py-16">
+        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
           <div className="flex flex-col gap-6">
             {serviceCards.map((card) => (
               <div
                 key={card.name}
-                className="bg-white border border-[#eee] rounded-[14px] overflow-hidden"
+                className="bg-white border border-[#e8e8e8] rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden"
               >
                 <div
                   className={`grid grid-cols-1 ${card.image ? "lg:grid-cols-[1fr_340px]" : ""} gap-0`}
@@ -205,7 +205,7 @@ export default function ServicesContent() {
                     <h2 className="text-[22px] font-bold text-[#0B2040] mb-3">
                       {card.name}
                     </h2>
-                    <p className="text-[15px] text-[#666] leading-[1.65] mb-5">
+                    <p className="text-[15px] text-[#444] leading-[1.7] mb-5">
                       {card.description}
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-6">
@@ -223,7 +223,7 @@ export default function ServicesContent() {
                       <div>
                         {card.price ? (
                           <>
-                            <span className="text-[12px] text-[#999]">
+                            <span className="text-[12px] text-[#888]">
                               {card.priceLabel}
                             </span>
                             <span className="text-[28px] font-extrabold text-[#0B2040] ml-2">
@@ -265,8 +265,8 @@ export default function ServicesContent() {
 
       {/* Not Sure CTA */}
       <section className="bg-white">
-        <div className="section-inner px-4 lg:px-6 py-12 md:py-16 text-center">
-          <h2 className="text-[28px] font-bold text-[#0B2040] mb-3">
+        <div className="section-inner px-4 lg:px-6 py-10 md:py-14 text-center">
+          <h2 className="text-[28px] font-extrabold text-[#0B2040] mb-3">
             Not sure what you need?
           </h2>
           <p className="text-[15px] text-[#888] mb-8 mx-auto max-w-[480px]">
@@ -289,13 +289,13 @@ export default function ServicesContent() {
       </section>
 
       {/* FAQ Accordion */}
-      <section className="bg-[#FAFBFC]">
-        <div className="section-inner px-4 lg:px-6 py-12 md:py-16">
+      <section className="bg-white">
+        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
           <div className="max-w-[700px] mx-auto">
-            <p className="text-[12px] uppercase font-bold text-[#1A5FAC] tracking-[2px] mb-3">
+            <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
               Common Questions
             </p>
-            <h2 className="text-[28px] font-bold text-[#0B2040] mb-8">
+            <h2 className="text-[28px] font-extrabold text-[#0B2040] mb-8">
               Automotive Service FAQs
             </h2>
             <div>
@@ -310,13 +310,13 @@ export default function ServicesContent() {
                     </span>
                     <ChevronDown
                       size={18}
-                      className={`shrink-0 text-[#999] transition-transform ${
+                      className={`shrink-0 text-[#888] transition-transform ${
                         openFaq === i ? "rotate-180" : ""
                       }`}
                     />
                   </button>
                   {openFaq === i && (
-                    <p className="text-[14px] text-[#666] leading-[1.65] pb-4">
+                    <p className="text-[14px] text-[#444] leading-[1.7] pb-4">
                       {faq.a}
                     </p>
                   )}
@@ -328,35 +328,35 @@ export default function ServicesContent() {
       </section>
 
       {/* Other Services Teaser */}
-      <section className="bg-white">
-        <div className="section-inner px-4 lg:px-6 py-12 md:py-16">
+      <section className="bg-[#0B2040]">
+        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white border border-[#eee] rounded-[14px] p-7 hover:shadow-md transition-shadow border-t-[3px] border-t-[#E07B2D]">
-              <h3 className="text-[20px] font-bold text-[#0B2040] mb-2">
+            <div className="bg-white/[0.08] border border-white/[0.12] rounded-[12px] p-7 hover:bg-white/[0.12] transition-colors">
+              <h3 className="text-[20px] font-bold text-white mb-2">
                 Fleet & Commercial
               </h3>
-              <p className="text-[14px] text-[#666] leading-[1.65] mb-4">
+              <p className="text-[14px] text-white/70 leading-[1.7] mb-4">
                 From company cars to box trucks. Scheduled maintenance programs
                 built around your fleet.
               </p>
               <Link
                 href="/fleet"
-                className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#E07B2D] hover:text-[#CC6A1F] transition-colors"
+                className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#E07B2D] hover:text-[#f09450] transition-colors"
               >
                 Learn about fleet services
                 <ArrowRight size={15} />
               </Link>
             </div>
-            <div className="bg-white border border-[#eee] rounded-[14px] p-7 hover:shadow-md transition-shadow border-t-[3px] border-t-[#0B2040]">
-              <h3 className="text-[20px] font-bold text-[#0B2040] mb-2">
+            <div className="bg-white/[0.08] border border-white/[0.12] rounded-[12px] p-7 hover:bg-white/[0.12] transition-colors">
+              <h3 className="text-[20px] font-bold text-white mb-2">
                 Marine
               </h3>
-              <p className="text-[14px] text-[#666] leading-[1.65] mb-4">
+              <p className="text-[14px] text-white/70 leading-[1.7] mb-4">
                 Outboard and inboard engine service at the marina or boat ramp.
               </p>
               <Link
                 href="/marine"
-                className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#E07B2D] hover:text-[#CC6A1F] transition-colors"
+                className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#E07B2D] hover:text-[#f09450] transition-colors"
               >
                 Learn about marine services
                 <ArrowRight size={15} />
