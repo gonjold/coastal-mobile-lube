@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Phone, ChevronDown } from "lucide-react";
 import Button from "@/components/Button";
+import TrustBar from "@/components/TrustBar";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
@@ -182,6 +183,8 @@ export default function FleetContent() {
           />
         </div>
       </section>
+
+      <TrustBar />
 
       {/* Section 2: What We Cover */}
       <section className="bg-[#FAFBFC]">

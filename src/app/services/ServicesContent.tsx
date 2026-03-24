@@ -36,7 +36,7 @@ const serviceCards = [
       "Pressure check and adjustment",
       "Seasonal tire swap available",
     ],
-    priceLabel: 'Starting at $29 (rotation) / Call for tire pricing',
+    priceLabel: 'Starting at $75 / Rotation from $29',
     price: null,
   },
   {
@@ -52,7 +52,7 @@ const serviceCards = [
       "Mobile brake pad replacement available",
       "Written report on brake condition",
     ],
-    priceLabel: "Inspection included with any service / Brake pads from $149",
+    priceLabel: "Inspection included with any service / Brake pads from $199",
     price: null,
   },
   {
@@ -289,7 +289,7 @@ export default function ServicesContent() {
       </section>
 
       {/* FAQ Accordion */}
-      <section className="bg-white">
+      <section className="bg-[#FAFBFC]">
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
           <div className="max-w-[700px] mx-auto">
             <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">

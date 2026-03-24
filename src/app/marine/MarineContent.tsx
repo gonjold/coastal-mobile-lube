@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Phone } from "lucide-react";
 import Button from "@/components/Button";
+import TrustBar from "@/components/TrustBar";
 import { cloudinaryUrl, images } from "@/lib/cloudinary";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
@@ -119,7 +120,7 @@ export default function MarineContent() {
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Button href="#marine-quote" variant="primary" size="lg" className="whitespace-nowrap">
-                Request Marine Quote
+                Get Marine Quote
               </Button>
               <a
                 href="tel:8137225823"
@@ -137,6 +138,8 @@ export default function MarineContent() {
           />
         </div>
       </section>
+
+      <TrustBar />
 
       {/* Section 2: Service Packages */}
       <section className="bg-[#FAFBFC]">
