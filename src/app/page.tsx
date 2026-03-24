@@ -59,7 +59,7 @@ const servicesData = {
       "Filter Replacement",
       "Wiper Blades",
     ],
-    image: images.oilChangeService,
+    image: images.drivewayService,
   },
   fleet: {
     title: "Fleet & Commercial",
@@ -77,7 +77,7 @@ const servicesData = {
       "Volume Pricing",
       "Multi-Vehicle Discounts",
     ],
-    image: images.fleetVehicles,
+    image: images.commercialService,
   },
   marine: {
     title: "Marine Services",
@@ -95,7 +95,7 @@ const servicesData = {
       "Fuel System Service",
       "Cooling System Flush",
     ],
-    image: images.marinaBoats,
+    image: images.marinaBoatsAlt,
   },
 };
 
@@ -126,7 +126,7 @@ export default function Home() {
     <>
       {/* Hero */}
       <section className="bg-white">
-        <div className="section-inner px-4 lg:px-6 py-12 md:py-20">
+        <div className="section-inner px-4 lg:px-6 pt-12 pb-12 md:pt-20 md:pb-16">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-10 lg:gap-12 items-start">
             {/* Left Column */}
             <div>
@@ -247,7 +247,7 @@ export default function Home() {
 
       {/* Services */}
       <section className="bg-[#FAFBFC]">
-        <div className="section-inner px-4 lg:px-6 py-16 md:py-20">
+        <div className="section-inner px-4 lg:px-6 pt-12 pb-16 md:pt-16">
           <div className="text-center mb-10">
             <p className="text-[12px] uppercase font-bold text-[#1A5FAC] tracking-[2px] mb-3">
               Services
@@ -330,7 +330,7 @@ export default function Home() {
 
       {/* How It Works */}
       <section className="bg-white">
-        <div className="section-inner px-4 lg:px-6 py-16 md:py-20">
+        <div className="section-inner px-4 lg:px-6 py-12 md:py-16">
           <div className="text-center mb-12">
             <p className="text-[12px] uppercase font-bold text-[#1A5FAC] tracking-[2px] mb-3">
               How It Works
@@ -409,7 +409,7 @@ export default function Home() {
 
       {/* CTA */}
       <section className="bg-[#FAFBFC]">
-        <div className="section-inner px-4 lg:px-6 py-16 md:py-20 text-center">
+        <div className="section-inner px-4 lg:px-6 py-12 md:py-16 text-center">
           <p className="text-[12px] uppercase font-bold text-[#1A5FAC] tracking-[2px] mb-3">
             Ready?
           </p>
