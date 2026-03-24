@@ -125,6 +125,8 @@ export default function Home() {
   const [selectedService, setSelectedService] = useState("");
   const [zipValue, setZipValue] = useState("");
   const [phoneValue, setPhoneValue] = useState("");
+  const [emailValue, setEmailValue] = useState("");
+  const [contactPreference, setContactPreference] = useState<"call" | "text" | "email">("call");
   const [notesValue, setNotesValue] = useState("");
   const [quoteSubmitting, setQuoteSubmitting] = useState(false);
   const [quoteSubmitted, setQuoteSubmitted] = useState(false);
@@ -150,6 +152,8 @@ export default function Home() {
         serviceCategory: bookingTab,
         zip: zipValue,
         phone: strippedPhone,
+        email: emailValue.trim().toLowerCase(),
+        contactPreference,
         notes: notesValue,
         status: "pending",
         source: "homepage-widget",
@@ -158,7 +162,7 @@ export default function Home() {
       });
       setQuoteSubmitted(true);
     } catch {
-      setQuoteError("Something went wrong. Please try again.");
+      setQuoteError("Something went wrong. Please call us instead.");
     } finally {
       setQuoteSubmitting(false);
     }
@@ -289,6 +293,41 @@ export default function Home() {
                           value={phoneValue}
                           onChange={(e) => setPhoneValue(e.target.value)}
                         />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="you@email.com"
+                        className={inputClasses}
+                        value={emailValue}
+                        onChange={(e) => setEmailValue(e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
+                        Best Way to Reach You
+                      </label>
+                      <div className="flex rounded-lg p-1 bg-[#f5f5f5]">
+                        {(["call", "text", "email"] as const).map((method) => (
+                          <button
+                            key={method}
+                            type="button"
+                            onClick={() => setContactPreference(method)}
+                            className={`flex-1 text-[13px] font-semibold py-2 rounded-md transition-all ${
+                              contactPreference === method
+                                ? "bg-[#0B2040] text-white shadow-sm"
+                                : "text-[#888]"
+                            }`}
+                          >
+                            {method.charAt(0).toUpperCase() + method.slice(1)}
+                          </button>
+                        ))}
                       </div>
                     </div>
 

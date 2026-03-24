@@ -61,6 +61,8 @@ interface FormData {
   timeWindow: string;
   name: string;
   phone: string;
+  email: string;
+  contactPreference: "call" | "text" | "email";
   address: string;
   notes: string;
 }
@@ -76,6 +78,8 @@ export default function BookingForm() {
     timeWindow: "",
     name: "",
     phone: "",
+    email: "",
+    contactPreference: "call",
     address: "",
     notes: "",
   });
@@ -137,6 +141,7 @@ export default function BookingForm() {
           ...prev,
           name: data.name || prev.name,
           phone: data.phone || prev.phone,
+          email: data.email || prev.email,
           address: data.address || prev.address,
         }));
         setReturningCustomer(true);
@@ -172,6 +177,8 @@ export default function BookingForm() {
         timeWindow: formData.timeWindow,
         name: formData.name.trim(),
         phone: stripPhone(formData.phone),
+        email: formData.email.trim().toLowerCase(),
+        contactPreference: formData.contactPreference,
         address: formData.address.trim(),
         notes: formData.notes.trim() || "",
         status: "pending",
@@ -195,6 +202,8 @@ export default function BookingForm() {
       timeWindow: "",
       name: "",
       phone: "",
+      email: "",
+      contactPreference: "call",
       address: "",
       notes: "",
     });
@@ -499,7 +508,40 @@ export default function BookingForm() {
                     )}
                   </div>
 
-                  {/* Field 6: Address */}
+                  {/* Field 6: Email */}
+                  <div>
+                    <label className={labelClass}>Email</label>
+                    <input
+                      type="email"
+                      placeholder="you@email.com"
+                      value={formData.email}
+                      onChange={(e) => updateField("email", e.target.value)}
+                      className={inputBase}
+                    />
+                  </div>
+
+                  {/* Field 7: Contact Preference */}
+                  <div>
+                    <label className={labelClass}>Best way to reach you</label>
+                    <div className="flex gap-2">
+                      {(["call", "text", "email"] as const).map((method) => (
+                        <button
+                          key={method}
+                          type="button"
+                          onClick={() => updateField("contactPreference", method)}
+                          className={`flex-1 py-3 rounded-[10px] text-[14px] font-semibold border-2 transition-all cursor-pointer ${
+                            formData.contactPreference === method
+                              ? "bg-[#E07B2D] text-white border-[#E07B2D]"
+                              : "border-[#eee] text-[#444] hover:border-[#ddd]"
+                          }`}
+                        >
+                          {method.charAt(0).toUpperCase() + method.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Field 8: Address */}
                   <div>
                     <label className={labelClass}>Service Address</label>
                     <input

@@ -370,6 +370,7 @@ function FleetQuoteForm() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [contactPreference, setContactPreference] = useState<"call" | "text" | "email">("call");
   const [fleetSize, setFleetSize] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -391,7 +392,8 @@ function FleetQuoteForm() {
       await addDoc(collection(db, "bookings"), {
         name: name.trim(),
         phone: digits,
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
+        contactPreference,
         fleetSize,
         notes,
         service: "Fleet Consultation",
@@ -465,6 +467,25 @@ function FleetQuoteForm() {
                   onChange={(e) => setEmail(e.target.value)}
                   className={fleetInputBase}
                 />
+              </div>
+              <div>
+                <label className={fleetLabelClass}>Best Way to Reach You</label>
+                <div className="flex gap-2">
+                  {(["call", "text", "email"] as const).map((method) => (
+                    <button
+                      key={method}
+                      type="button"
+                      onClick={() => setContactPreference(method)}
+                      className={`flex-1 py-3 rounded-[10px] text-[14px] font-semibold border-2 transition-all cursor-pointer ${
+                        contactPreference === method
+                          ? "bg-[#E07B2D] text-white border-[#E07B2D]"
+                          : "border-[#eee] text-[#444] hover:border-[#ddd]"
+                      }`}
+                    >
+                      {method.charAt(0).toUpperCase() + method.slice(1)}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div>
                 <label className={fleetLabelClass}>Fleet Size</label>
