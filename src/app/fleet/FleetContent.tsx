@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { Phone, ChevronDown, ArrowRight } from "lucide-react";
+import { Phone, ChevronDown } from "lucide-react";
 import Button from "@/components/Button";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 const vehicleTypes = [
   {
@@ -162,7 +163,7 @@ export default function FleetContent() {
               your job site. No vehicle downtime, no shop visits.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button href="/contact" variant="primary" size="lg">
+              <Button href="#fleet-quote" variant="primary" size="lg">
                 Get Fleet Quote
               </Button>
               <a
@@ -308,30 +309,8 @@ export default function FleetContent() {
         </div>
       </section>
 
-      {/* Section 6: Fleet CTA */}
-      <section className="bg-[#0B2040]">
-        <div className="section-inner px-4 lg:px-6 py-10 md:py-14 text-center">
-          <h2 className="text-[28px] font-extrabold text-white mb-3">
-            Let&apos;s talk about your fleet.
-          </h2>
-          <p className="text-[15px] text-white/70 mb-8 mx-auto max-w-[520px]">
-            Tell us your fleet size and vehicle types. We will put together a
-            custom maintenance plan and pricing proposal within 48 hours.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Button href="/contact" variant="primary" size="lg">
-              Get Fleet Quote
-            </Button>
-            <a
-              href="tel:8137225823"
-              className="inline-flex items-center justify-center gap-2 px-[30px] py-[14px] font-semibold text-white bg-transparent border-2 border-white/40 rounded-[var(--radius-button)] hover:border-white/70 transition-all"
-            >
-              <Phone size={16} />
-              Call 813-722-LUBE
-            </a>
-          </div>
-        </div>
-      </section>
+      {/* Section 6: Fleet Quote Form */}
+      <FleetQuoteForm />
 
       {/* Section 7: Fleet FAQs */}
       <section className="bg-white">
@@ -372,43 +351,154 @@ export default function FleetContent() {
         </div>
       </section>
 
-      {/* Section 8: Other Services Teaser */}
-      <section className="bg-[#FAFBFC]">
-        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white border border-[#e8e8e8] rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-7 hover:border-[#E07B2D] hover:-translate-y-[2px] transition-all duration-200">
-              <h3 className="text-[20px] font-bold text-[#0B2040] mb-2">
-                Automotive
-              </h3>
-              <p className="text-[14px] text-[#444] leading-[1.7] mb-4">
-                Personal vehicle maintenance at your home or office.
-              </p>
-              <Link
-                href="/services"
-                className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#E07B2D] hover:text-[#CC6A1F] transition-colors"
-              >
-                Learn about automotive services
-                <ArrowRight size={15} />
-              </Link>
-            </div>
-            <div className="bg-white border border-[#e8e8e8] rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-7 hover:border-[#E07B2D] hover:-translate-y-[2px] transition-all duration-200">
-              <h3 className="text-[20px] font-bold text-[#0B2040] mb-2">
-                Marine
-              </h3>
-              <p className="text-[14px] text-[#444] leading-[1.7] mb-4">
-                Outboard and inboard engine service at the marina or boat ramp.
-              </p>
-              <Link
-                href="/marine"
-                className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#E07B2D] hover:text-[#CC6A1F] transition-colors"
-              >
-                Learn about marine services
-                <ArrowRight size={15} />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
     </>
+  );
+}
+
+/* ─── Fleet Quote Form Component ─────────────────────────────── */
+
+const fleetInputBase =
+  "w-full text-[15px] rounded-[10px] px-3.5 py-3 outline-none border-2 border-[#eee] bg-white focus:border-[#E07B2D] transition-colors";
+
+const fleetLabelClass =
+  "block text-[12px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5";
+
+function FleetQuoteForm() {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [fleetSize, setFleetSize] = useState("");
+  const [notes, setNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [errors, setErrors] = useState<{ name?: boolean; phone?: boolean }>({});
+
+  async function handleSubmit() {
+    const newErrors: { name?: boolean; phone?: boolean } = {};
+    if (!name.trim()) newErrors.name = true;
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length < 10) newErrors.phone = true;
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+    setErrors({});
+    setSubmitting(true);
+    try {
+      await addDoc(collection(db, "bookings"), {
+        name: name.trim(),
+        phone: digits,
+        email: email.trim(),
+        fleetSize,
+        notes,
+        service: "Fleet Consultation",
+        serviceCategory: "fleet",
+        status: "pending",
+        source: "fleet-page",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+      setSubmitted(true);
+    } catch {
+      // allow retry
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <section id="fleet-quote" className="bg-[#0B2040]">
+      <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
+        <div className="text-center mb-8">
+          <h2 className="text-[28px] font-[800] text-white mb-3">
+            Get a fleet quote
+          </h2>
+          <p className="text-[15px] text-white/70 mx-auto max-w-[520px]">
+            Tell us about your fleet and we will put together a custom maintenance plan within 48 hours.
+          </p>
+        </div>
+
+        <div className="bg-white rounded-[12px] p-8 max-w-[560px] mx-auto">
+          {submitted ? (
+            <div className="flex flex-col items-center text-center py-6">
+              <div className="w-12 h-12 rounded-full bg-[#22c55e] flex items-center justify-center mb-4">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+              </div>
+              <p className="text-[16px] font-semibold text-[#0B2040] mb-2">
+                We will call you within 48 hours to discuss your fleet program.
+              </p>
+              <a href="tel:8137225823" className="text-[#E07B2D] font-semibold hover:underline">
+                Call now: 813-722-LUBE
+              </a>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-5">
+              <div>
+                <label className={fleetLabelClass}>Your Name</label>
+                <input
+                  type="text"
+                  placeholder="First and last name"
+                  value={name}
+                  onChange={(e) => { setName(e.target.value); setErrors((p) => ({ ...p, name: false })); }}
+                  className={`${fleetInputBase} ${errors.name ? "border-red-500" : ""}`}
+                />
+              </div>
+              <div>
+                <label className={fleetLabelClass}>Phone</label>
+                <input
+                  type="tel"
+                  placeholder="(555) 555-5555"
+                  value={phone}
+                  onChange={(e) => { setPhone(e.target.value); setErrors((p) => ({ ...p, phone: false })); }}
+                  className={`${fleetInputBase} ${errors.phone ? "border-red-500" : ""}`}
+                />
+              </div>
+              <div>
+                <label className={fleetLabelClass}>Email</label>
+                <input
+                  type="email"
+                  placeholder="you@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={fleetInputBase}
+                />
+              </div>
+              <div>
+                <label className={fleetLabelClass}>Fleet Size</label>
+                <select
+                  value={fleetSize}
+                  onChange={(e) => setFleetSize(e.target.value)}
+                  className={fleetInputBase}
+                >
+                  <option value="">Select fleet size</option>
+                  <option value="1-5 vehicles">1-5 vehicles</option>
+                  <option value="6-15 vehicles">6-15 vehicles</option>
+                  <option value="16-50 vehicles">16-50 vehicles</option>
+                  <option value="50+ vehicles">50+ vehicles</option>
+                </select>
+              </div>
+              <div>
+                <label className={fleetLabelClass}>Tell us about your fleet</label>
+                <textarea
+                  rows={3}
+                  placeholder="Vehicle types, current maintenance schedule, locations, anything that helps us build your plan..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className={`${fleetInputBase} resize-none`}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={submitting}
+                className="w-full py-4 rounded-[10px] bg-[#E07B2D] text-white font-bold text-[16px] hover:bg-[#cc6a1f] transition-colors disabled:opacity-60"
+              >
+                {submitting ? "Submitting..." : "Get Fleet Quote"}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }

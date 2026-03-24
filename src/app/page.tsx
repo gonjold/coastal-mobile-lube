@@ -173,7 +173,7 @@ export default function Home() {
             {/* Left Column */}
             <div>
               <h1 className="text-[34px] md:text-[50px] font-extrabold leading-[1.06] text-[#0B2040] tracking-[-1.5px] mb-5">
-                The shop comes to <span className="text-[#E07B2D]">you.</span>
+                The shop that comes to <span className="text-[#E07B2D]">you.</span>
               </h1>
               <p className="text-[17px] leading-[1.7] text-[#444] max-w-[460px] mb-8">
                 Mobile oil changes, tire sales and service, and marine engine

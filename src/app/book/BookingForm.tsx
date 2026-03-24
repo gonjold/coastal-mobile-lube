@@ -222,10 +222,10 @@ export default function BookingForm() {
         <div className="section-inner px-4 lg:px-6 pt-10 pb-4 md:pt-14 md:pb-6">
           <div className="max-w-[700px]">
             <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
-              Book Service
+              Automotive Service
             </p>
             <h1 className="text-[28px] md:text-[34px] font-[800] leading-[1.1] text-[#0B2040] tracking-[-1px] mb-4">
-              Schedule your service
+              Book your service
             </h1>
             <p className="text-[16px] leading-[1.7] text-[#444] max-w-[520px]">
               Pick a service, choose a date, and we will confirm your
@@ -238,11 +238,15 @@ export default function BookingForm() {
       {/* Trust Bar */}
       <TrustBar />
 
-      {/* Form + Sidebar */}
+      {/* Form */}
       <section className="bg-[#FAFBFC]">
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
-          <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-8 lg:gap-12 max-w-[1100px] mx-auto">
-            {/* ── Left Column: Form ── */}
+          <p className="text-center text-[14px] text-[#888] mb-6">
+            For fleet or marine service, visit our{" "}
+            <Link href="/fleet" className="text-[#E07B2D] font-semibold hover:underline">Fleet</Link> or{" "}
+            <Link href="/marine" className="text-[#E07B2D] font-semibold hover:underline">Marine</Link> pages for a custom quote.
+          </p>
+          <div className="max-w-[700px] mx-auto">
             <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-6 md:p-8 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
               {submitted ? (
                 /* ── Confirmation ── */
@@ -405,18 +409,6 @@ export default function BookingForm() {
                         </button>
                       ))}
                     </div>
-                    {/* Fleet / Marine CTA */}
-                    <Link
-                      href="/contact"
-                      className="mt-3 flex items-center justify-between w-full rounded-[12px] px-5 py-4 bg-[#0B2040] text-white hover:bg-[#132E54] transition-colors"
-                    >
-                      <span className="text-[15px] font-semibold text-white">
-                        Fleet or Marine Service
-                      </span>
-                      <span className="text-[13px] font-semibold text-[#E07B2D]">
-                        Request a custom quote &rarr;
-                      </span>
-                    </Link>
                   </div>
 
                   {/* Field 2: Preferred Date */}
@@ -577,110 +569,50 @@ export default function BookingForm() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      </section>
 
-            {/* ── Right Column: Info Sidebar ── */}
-            <div className="flex flex-col gap-6">
-              {/* Block 1: How it works */}
-              <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-6 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-                <h3 className="text-[16px] font-bold text-[#0B2040] mb-5">
-                  How it works
-                </h3>
-                <div className="flex flex-col gap-4">
-                  {[
-                    {
-                      num: "1",
-                      title: "You request",
-                      desc: "Pick your service and preferred time",
-                    },
-                    {
-                      num: "2",
-                      title: "We confirm",
-                      desc: "Our team confirms within 2 hours",
-                    },
-                    {
-                      num: "3",
-                      title: "We show up",
-                      desc: "Fully equipped service van at your door",
-                    },
-                  ].map((step) => (
-                    <div key={step.num} className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-[#0B2040] flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <span className="text-[12px] font-bold text-white">
-                          {step.num}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="text-[14px] font-semibold text-[#0B2040]">
-                          {step.title}
-                        </p>
-                        <p className="text-[13px] text-[#444]">{step.desc}</p>
-                      </div>
-                    </div>
-                  ))}
+      {/* How it works + What's included */}
+      <section className="bg-[#FAFBFC]">
+        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
+          <div className="max-w-[700px] mx-auto">
+            <h3 className="text-[20px] font-bold text-[#0B2040] mb-6 text-center">
+              How it works
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+              {[
+                { num: "1", title: "You request", desc: "Pick your service and preferred time" },
+                { num: "2", title: "We confirm", desc: "Our team confirms within 2 hours" },
+                { num: "3", title: "We show up", desc: "Fully equipped service van at your door" },
+              ].map((step) => (
+                <div key={step.num} className="flex flex-col items-center text-center">
+                  <div className="w-10 h-10 rounded-full bg-[#0B2040] flex items-center justify-center mb-3">
+                    <span className="text-[14px] font-bold text-white">{step.num}</span>
+                  </div>
+                  <p className="text-[15px] font-semibold text-[#0B2040] mb-1">{step.title}</p>
+                  <p className="text-[13px] text-[#444]">{step.desc}</p>
                 </div>
-              </div>
+              ))}
+            </div>
 
-              {/* Block 2: What's included */}
-              <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-6 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-                <h3 className="text-[16px] font-bold text-[#0B2040] mb-4">
-                  What&apos;s included
-                </h3>
-                <div className="flex flex-col gap-2.5">
-                  {[
-                    "Factory-grade parts and fluids",
-                    "Certified master technicians",
-                    "12-month service warranty",
-                    "No hidden fees, ever",
-                  ].map((item) => (
-                    <div key={item} className="flex items-center gap-2.5">
-                      <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#22c55e"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="flex-shrink-0"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      <span className="text-[14px] text-[#444]">{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Block 3: Prefer to call? */}
-              <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-6 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-                <h3 className="text-[16px] font-bold text-[#0B2040] mb-3">
-                  Prefer to call?
-                </h3>
-                <div className="flex items-center gap-2 mb-1">
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#E07B2D"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" />
+            <h3 className="text-[20px] font-bold text-[#0B2040] mb-5 text-center">
+              What&apos;s included
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                "Factory-grade parts and fluids",
+                "Certified master technicians",
+                "12-month service warranty",
+                "No hidden fees, ever",
+              ].map((item) => (
+                <div key={item} className="flex items-center gap-2">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+                    <polyline points="20 6 9 17 4 12" />
                   </svg>
-                  <a
-                    href="tel:8137225823"
-                    className="text-[20px] font-bold text-[#E07B2D] hover:underline"
-                  >
-                    813-722-LUBE
-                  </a>
+                  <span className="text-[14px] text-[#444]">{item}</span>
                 </div>
-                <p className="text-[13px] text-[#888]">
-                  Available Monday through Saturday
-                </p>
-              </div>
+              ))}
             </div>
           </div>
         </div>

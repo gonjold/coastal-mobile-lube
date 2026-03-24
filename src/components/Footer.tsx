@@ -21,9 +21,11 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr] gap-10 lg:gap-8">
           {/* Column 1 - Brand */}
           <div className="flex flex-col gap-3">
-            <p className="font-bold text-white text-lg">
-              Coastal Mobile Lube & Tire
-            </p>
+            <img
+              src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_200,q_auto:good,f_auto/v1774315498/Coastal_Lube_logo_v1_zbx9qs.png"
+              alt="Coastal Mobile Lube & Tire"
+              style={{ maxHeight: '50px', width: 'auto', objectFit: 'contain' }}
+            />
             <p className="text-sm text-white/40">
               Automotive. Fleet. Marine.
             </p>

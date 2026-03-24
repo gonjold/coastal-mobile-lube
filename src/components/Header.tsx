@@ -46,18 +46,12 @@ export default function Header() {
     >
       <div className="section-inner flex items-center justify-between px-4 py-3 lg:px-6">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-3 shrink-0">
-          <div className="flex items-center justify-center w-[42px] h-[42px] rounded-[11px] bg-[#0B2040] text-white text-sm font-bold">
-            CM
-          </div>
-          <div className="hidden sm:block">
-            <div className="font-bold text-[#0B2040] text-[15px] leading-tight">
-              Coastal Mobile
-            </div>
-            <div className="text-[10px] uppercase tracking-[1.5px] text-[#999] leading-tight">
-              Lube & Tire
-            </div>
-          </div>
+        <Link href="/" className="shrink-0">
+          <img
+            src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_280,q_auto:good,f_auto/v1774369663/CMLT_pin_horiz_troiyw.png"
+            alt="Coastal Mobile Lube & Tire"
+            style={{ height: '40px', width: 'auto' }}
+          />
         </Link>
 
         {/* Desktop Nav */}

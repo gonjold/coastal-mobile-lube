@@ -50,8 +50,10 @@ export default function ContactPage() {
               Get in touch
             </h1>
             <p className="text-[16px] leading-[1.7] text-[#444] max-w-[520px]">
-              Have a question, need a quote, or want to talk about fleet
-              services? We respond to every inquiry within one business day.
+              Have a question or want to learn more about our services? We respond within one business day. For service bookings, use our{" "}
+              <Link href="/book" className="text-[#E07B2D] font-semibold hover:underline">Book Service</Link> page. For fleet or marine quotes, visit{" "}
+              <Link href="/fleet" className="text-[#E07B2D] font-semibold hover:underline">Fleet</Link> or{" "}
+              <Link href="/marine" className="text-[#E07B2D] font-semibold hover:underline">Marine</Link>.
             </p>
           </div>
         </div>
@@ -289,7 +291,7 @@ export default function ContactPage() {
               href="/book"
               className="inline-flex items-center justify-center px-[30px] py-[14px] font-semibold text-white rounded-[var(--radius-button)] bg-[#E07B2D] hover:bg-[#CC6A1F] transition-colors"
             >
-              Book Online
+              Book Service
             </Link>
             <a
               href="tel:8137225823"
