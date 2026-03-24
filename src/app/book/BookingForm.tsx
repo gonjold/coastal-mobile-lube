@@ -16,7 +16,7 @@ import {
 /* ─── Data ─────────────────────────────────────────────────────── */
 
 const services = [
-  { name: "Oil Change", price: "$89" },
+  { name: "Oil Change", price: "$49" },
   { name: "Tire Service", price: "$75" },
   { name: "Brake Service", price: "$199" },
   { name: "A/C Service", price: "$149" },

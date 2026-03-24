@@ -10,18 +10,14 @@ const serviceLinks = [
 
 const companyLinks = [
   { label: "About", href: "/about" },
-  { label: "Service Areas", href: "/service-areas" },
-  { label: "FAQ", href: "/faq" },
   { label: "Contact", href: "/contact" },
 ];
-
-const areaLinks = ["Tampa", "Brandon", "Riverview", "Wesley Chapel", "Plant City", "Lutz"];
 
 export default function Footer() {
   return (
     <footer className="bg-[#0B2040]">
       <div className="section-inner px-6 pt-12 pb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr] gap-10 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr] gap-10 lg:gap-8">
           {/* Column 1 - Brand */}
           <div className="flex flex-col gap-3">
             <p className="font-bold text-white text-lg">
@@ -77,24 +73,6 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Column 4 - Service Areas */}
-          <div>
-            <h3 className="text-[11px] uppercase text-white/35 tracking-[1.5px] mb-4">
-              Service Areas
-            </h3>
-            <ul className="flex flex-col gap-2.5">
-              {areaLinks.map((area) => (
-                <li key={area}>
-                  <Link
-                    href="/service-areas"
-                    className="text-sm text-[#aaa] hover:text-white transition-colors"
-                  >
-                    {area}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
       </div>
 

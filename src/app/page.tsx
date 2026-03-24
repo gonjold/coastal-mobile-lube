@@ -6,6 +6,8 @@ import { Phone, Check } from "lucide-react";
 import Button from "@/components/Button";
 import TrustBar from "@/components/TrustBar";
 import { cloudinaryUrl, images } from "@/lib/cloudinary";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 const bookingServices = {
   automotive: [
@@ -120,8 +122,47 @@ const inputClasses =
 export default function Home() {
   const [bookingTab, setBookingTab] = useState<TabKey>("automotive");
   const [servicesTab, setServicesTab] = useState<TabKey>("automotive");
+  const [selectedService, setSelectedService] = useState("");
+  const [zipValue, setZipValue] = useState("");
+  const [phoneValue, setPhoneValue] = useState("");
+  const [notesValue, setNotesValue] = useState("");
+  const [quoteSubmitting, setQuoteSubmitting] = useState(false);
+  const [quoteSubmitted, setQuoteSubmitted] = useState(false);
+  const [quoteError, setQuoteError] = useState("");
 
   const currentService = servicesData[servicesTab];
+
+  async function handleQuoteSubmit() {
+    setQuoteError("");
+    if (!selectedService) {
+      setQuoteError("Please select a service.");
+      return;
+    }
+    const strippedPhone = phoneValue.replace(/\D/g, "");
+    if (strippedPhone.length < 10) {
+      setQuoteError("Please enter a valid phone number.");
+      return;
+    }
+    setQuoteSubmitting(true);
+    try {
+      await addDoc(collection(db, "bookings"), {
+        service: selectedService,
+        serviceCategory: bookingTab,
+        zip: zipValue,
+        phone: strippedPhone,
+        notes: notesValue,
+        status: "pending",
+        source: "homepage-widget",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+      setQuoteSubmitted(true);
+    } catch {
+      setQuoteError("Something went wrong. Please try again.");
+    } finally {
+      setQuoteSubmitting(false);
+    }
+  }
 
   return (
     <>
@@ -167,80 +208,127 @@ export default function Home() {
 
             {/* Booking Widget */}
             <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-7 shadow-[0_8px_40px_rgba(0,0,0,0.06)]">
-              <h2 className="text-[19px] font-bold text-[#0B2040] mb-1">
-                Get a quick quote
-              </h2>
-              <p className="text-[13px] text-[#888] mb-5">
-                Tell us what you need. We will get back to you fast.
-              </p>
-
-              <div className="flex rounded-lg p-1 bg-[#f5f5f5] mb-5">
-                {bookingTabs.map((tab) => (
-                  <button
-                    key={tab.key}
-                    onClick={() => setBookingTab(tab.key)}
-                    className={`flex-1 text-[13px] font-semibold py-2 rounded-md transition-all ${
-                      bookingTab === tab.key
-                        ? "bg-white text-[#0B2040] shadow-sm"
-                        : "text-[#888]"
-                    }`}
+              {quoteSubmitted ? (
+                <div className="flex flex-col items-center text-center py-6">
+                  <div className="w-12 h-12 rounded-full bg-[#22c55e] flex items-center justify-center mb-4">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                  </div>
+                  <h2 className="text-[19px] font-bold text-[#0B2040] mb-2">
+                    We&apos;ll call you back within 2 hours
+                  </h2>
+                  <a
+                    href="tel:8137225823"
+                    className="text-[#E07B2D] font-semibold hover:underline"
                   >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
+                    Call now: 813-722-LUBE
+                  </a>
+                </div>
+              ) : (
+                <>
+                  <h2 className="text-[19px] font-bold text-[#0B2040] mb-1">
+                    Get a quick quote
+                  </h2>
+                  <p className="text-[13px] text-[#888] mb-5">
+                    Tell us what you need. We will get back to you fast.
+                  </p>
 
-              <div className="flex flex-col gap-4">
-                <div>
-                  <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
-                    Service Needed
-                  </label>
-                  <select className={inputClasses}>
-                    <option value="">Select a service</option>
-                    {bookingServices[bookingTab].map((s) => (
-                      <option key={s} value={s}>{s}</option>
+                  <div className="flex rounded-lg p-1 bg-[#f5f5f5] mb-5">
+                    {bookingTabs.map((tab) => (
+                      <button
+                        key={tab.key}
+                        onClick={() => { setBookingTab(tab.key); setSelectedService(""); }}
+                        className={`flex-1 text-[13px] font-semibold py-2 rounded-md transition-all ${
+                          bookingTab === tab.key
+                            ? "bg-white text-[#0B2040] shadow-sm"
+                            : "text-[#888]"
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
                     ))}
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
-                      Zip Code
-                    </label>
-                    <input type="text" placeholder="e.g. 33601" className={inputClasses} />
                   </div>
-                  <div>
-                    <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
-                      Phone
-                    </label>
-                    <input type="tel" placeholder="(555) 555-5555" className={inputClasses} />
+
+                  <div className="flex flex-col gap-4">
+                    <div>
+                      <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
+                        Service Needed
+                      </label>
+                      <select
+                        className={inputClasses}
+                        value={selectedService}
+                        onChange={(e) => setSelectedService(e.target.value)}
+                      >
+                        <option value="">Select a service</option>
+                        {bookingServices[bookingTab].map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
+                          Zip Code
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. 33601"
+                          className={inputClasses}
+                          value={zipValue}
+                          onChange={(e) => setZipValue(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
+                          Phone
+                        </label>
+                        <input
+                          type="tel"
+                          placeholder="(555) 555-5555"
+                          className={inputClasses}
+                          value={phoneValue}
+                          onChange={(e) => setPhoneValue(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
+                        Notes (optional)
+                      </label>
+                      <textarea
+                        rows={3}
+                        placeholder="Vehicle year/make/model, tire size, special requests, etc."
+                        className={`${inputClasses} resize-none`}
+                        value={notesValue}
+                        onChange={(e) => setNotesValue(e.target.value)}
+                      />
+                    </div>
+
+                    <button
+                      onClick={handleQuoteSubmit}
+                      disabled={quoteSubmitting}
+                      className="w-full font-semibold text-white rounded-[var(--radius-button)] py-3.5 bg-[#E07B2D] hover:bg-[#CC6A1F] transition-colors disabled:opacity-60"
+                    >
+                      {quoteSubmitting ? "Submitting..." : "Get My Quote"}
+                    </button>
+
+                    {quoteError && (
+                      <p className="text-center text-[13px] text-red-500 font-medium">
+                        {quoteError}
+                      </p>
+                    )}
+
+                    <p className="text-center text-[12px] text-[#888]">
+                      or call{" "}
+                      <a href="tel:8137225823" className="font-medium text-[#1A5FAC]">
+                        813-722-LUBE
+                      </a>{" "}
+                      for immediate help
+                    </p>
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
-                    Notes (optional)
-                  </label>
-                  <textarea
-                    rows={3}
-                    placeholder="Vehicle year/make/model, tire size, special requests, etc."
-                    className={`${inputClasses} resize-none`}
-                  />
-                </div>
-
-                <button className="w-full font-semibold text-white rounded-[var(--radius-button)] py-3.5 bg-[#E07B2D] hover:bg-[#CC6A1F] transition-colors">
-                  Get My Quote
-                </button>
-
-                <p className="text-center text-[12px] text-[#888]">
-                  or call{" "}
-                  <a href="tel:8137225823" className="font-medium text-[#1A5FAC]">
-                    813-722-LUBE
-                  </a>{" "}
-                  for immediate help
-                </p>
-              </div>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -439,25 +527,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Mobile Sticky Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 flex lg:hidden items-center gap-3 px-4 py-3 bg-white border-t border-[#eee] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] z-[100]">
-        <a
-          href="tel:8137225823"
-          className="inline-flex items-center justify-center w-12 h-12 shrink-0 text-[#0B2040] border-2 border-[#e8e8e8] rounded-[10px]"
-          aria-label="Call 813-722-LUBE"
-        >
-          <Phone size={20} />
-        </a>
-        <Link
-          href="/book"
-          className="flex-1 inline-flex items-center justify-center font-semibold text-white rounded-[var(--radius-button)] py-3.5 bg-[#E07B2D] hover:bg-[#CC6A1F] transition-colors"
-        >
-          Book Online
-        </Link>
-      </div>
-
-      {/* Spacer for mobile sticky bar */}
-      <div className="h-20 lg:hidden" />
     </>
   );
 }

@@ -24,8 +24,9 @@ export default function FAQPage() {
           <p className="text-text-mid leading-relaxed">
             Have questions about how mobile service works, what we can handle
             on-site, or how to book? Our full FAQ section with detailed answers
-            is coming soon. In the meantime, call us at 813-722-LUBE and we are
-            happy to help.
+            is coming soon. In the meantime, call us at{" "}
+            <a href="tel:8137225823" className="text-orange font-bold hover:underline">813-722-LUBE</a>{" "}
+            and we are happy to help.
           </p>
         </div>
       </section>
