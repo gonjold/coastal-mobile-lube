@@ -62,6 +62,7 @@ interface FormData {
   phone: string;
   email: string;
   contactPreference: "call" | "text" | "email";
+  datesFlexible: boolean;
   address: string;
   notes: string;
 }
@@ -79,6 +80,7 @@ export default function BookingForm() {
     phone: "",
     email: "",
     contactPreference: "call",
+    datesFlexible: false,
     address: "",
     notes: "",
   });
@@ -178,6 +180,7 @@ export default function BookingForm() {
         phone: stripPhone(formData.phone),
         email: formData.email.trim().toLowerCase(),
         contactPreference: formData.contactPreference,
+        datesFlexible: formData.datesFlexible,
         address: formData.address.trim(),
         notes: formData.notes.trim() || "",
         status: "pending",
@@ -203,6 +206,7 @@ export default function BookingForm() {
       phone: "",
       email: "",
       contactPreference: "call",
+      datesFlexible: false,
       address: "",
       notes: "",
     });
@@ -438,6 +442,21 @@ export default function BookingForm() {
                       </p>
                     )}
                   </div>
+
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <span className={`w-[18px] h-[18px] rounded border-2 flex items-center justify-center transition-colors ${formData.datesFlexible ? "bg-[#E07B2D] border-[#E07B2D]" : "border-[#ddd]"}`}>
+                      {formData.datesFlexible && (
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                      )}
+                    </span>
+                    <span className="text-[14px] text-[#888]">My dates are flexible</span>
+                    <input
+                      type="checkbox"
+                      checked={formData.datesFlexible}
+                      onChange={(e) => updateField("datesFlexible", e.target.checked)}
+                      className="sr-only"
+                    />
+                  </label>
 
                   {/* Field 3: Time Window */}
                   <div>

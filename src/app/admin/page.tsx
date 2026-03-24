@@ -10,7 +10,11 @@ import {
   doc,
   updateDoc,
   serverTimestamp,
+  arrayUnion,
 } from "firebase/firestore";
+import ToastContainer, { type ToastItem } from "./Toast";
+import CommsLog from "./CommsLog";
+import NotificationButtons from "./NotificationButtons";
 
 /* ─── Types ──────────────────────────────────────────────── */
 
@@ -26,6 +30,7 @@ interface Booking {
   status?: string;
   address?: string;
   preferredDate?: string;
+  datesFlexible?: boolean;
   timeWindow?: string;
   zip?: string;
   notes?: string;
@@ -33,6 +38,7 @@ interface Booking {
   engineType?: string;
   engineCount?: string;
   adminNotes?: string;
+  commsLog?: Array<{ id: string; type: "call" | "text" | "email" | "note"; direction: "outbound" | "inbound"; summary: string; createdAt: string; createdBy: string }>;
   returningCustomer?: boolean;
   createdAt?: FirestoreTimestamp;
   updatedAt?: FirestoreTimestamp;
@@ -69,7 +75,7 @@ function toISODate(d: Date): string {
 }
 
 function getBookingCalendarDate(b: Booking): string | null {
-  if (b.source === "website" && b.preferredDate) return b.preferredDate;
+  if (b.preferredDate) return b.preferredDate;
   if (b.createdAt?.toDate) return toISODate(b.createdAt.toDate());
   return null;
 }
@@ -112,6 +118,21 @@ function getCalendarDays(year: number, month: number): (number | null)[] {
   return days;
 }
 
+function generateGCalUrl(booking: Booking): string {
+  const title = encodeURIComponent(`Coastal Mobile - ${booking.service || "Service"} - ${booking.name || "Customer"}`);
+  const dateStr = booking.preferredDate || new Date(Date.now() + 86400000).toISOString().split("T")[0];
+  let startHour = "09";
+  if (booking.timeWindow === "midday") startHour = "11";
+  if (booking.timeWindow === "afternoon") startHour = "14";
+  const startDate = dateStr.replace(/-/g, "") + "T" + startHour + "0000";
+  const endDate = dateStr.replace(/-/g, "") + "T" + (parseInt(startHour) + 1).toString().padStart(2, "0") + "0000";
+  const details = encodeURIComponent(
+    `Service: ${booking.service || "TBD"}\nCustomer: ${booking.name || "N/A"}\nPhone: ${booking.phone || "N/A"}\nEmail: ${booking.email || "N/A"}\nContact Pref: ${booking.contactPreference || "N/A"}\nSource: ${booking.source || "N/A"}\nNotes: ${booking.notes || "None"}\nAdmin: https://coastal-mobile-lube.netlify.app/admin`
+  );
+  const location = encodeURIComponent(booking.address || booking.zip || "Tampa, FL");
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDate}/${endDate}&details=${details}&location=${location}`;
+}
+
 /* ─── Component ──────────────────────────────────────────── */
 
 export default function AdminDashboard() {
@@ -139,6 +160,17 @@ export default function AdminDashboard() {
   /* Admin notes */
   const [editingNotes, setEditingNotes] = useState<Record<string, string>>({});
   const [savingNotes, setSavingNotes] = useState<Record<string, boolean>>({});
+
+  /* Toasts */
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+  function addToast(message: string, type: "success" | "info" = "success", action?: { label: string; url: string }) {
+    const id = crypto.randomUUID();
+    setToasts((prev) => [...prev, { id, message, type, action }]);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3000);
+  }
+  function removeToast(id: string) {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }
 
   /* ── Firestore real-time listener ── */
   useEffect(() => {
@@ -189,15 +221,33 @@ export default function AdminDashboard() {
   };
 
   /* ── Status update (optimistic) ── */
-  async function updateStatus(id: string, newStatus: string) {
+  async function updateStatus(id: string, newStatus: string, booking?: Booking) {
     setBookings((prev) =>
       prev.map((b) => (b.id === id ? { ...b, status: newStatus } : b))
     );
     try {
-      await updateDoc(doc(db, "bookings", id), {
-        status: newStatus,
-        updatedAt: serverTimestamp(),
-      });
+      if (newStatus === "confirmed" && booking) {
+        const entry = {
+          id: crypto.randomUUID(),
+          type: "note" as const,
+          direction: "outbound" as const,
+          summary: "Booking confirmed",
+          createdAt: new Date().toISOString(),
+          createdBy: "admin",
+        };
+        await updateDoc(doc(db, "bookings", id), {
+          status: newStatus,
+          commsLog: arrayUnion(entry),
+          updatedAt: serverTimestamp(),
+        });
+        const calUrl = generateGCalUrl(booking);
+        addToast("Booking confirmed!", "success", { label: "Add to Calendar", url: calUrl });
+      } else {
+        await updateDoc(doc(db, "bookings", id), {
+          status: newStatus,
+          updatedAt: serverTimestamp(),
+        });
+      }
     } catch {
       /* onSnapshot will correct */
     }
@@ -211,6 +261,7 @@ export default function AdminDashboard() {
         adminNotes: editingNotes[id] ?? "",
         updatedAt: serverTimestamp(),
       });
+      addToast("Notes saved");
     } catch {
       /* silent */
     } finally {
@@ -410,6 +461,7 @@ export default function AdminDashboard() {
                     "Phone",
                     "Email",
                     "Service",
+                    "Preferred Date",
                     "Source",
                     "Pref",
                     "Status",
@@ -444,6 +496,9 @@ export default function AdminDashboard() {
                         </td>
                         <td className="px-4 py-3 text-[14px] font-semibold text-[#0B2040] whitespace-nowrap">
                           {b.name || "—"}
+                          {b.datesFlexible && (
+                            <span className="ml-2 inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold text-[#888] bg-[#f0f0f0]">Flexible</span>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-[13px] whitespace-nowrap">
                           {b.phone ? (
@@ -463,6 +518,12 @@ export default function AdminDashboard() {
                         </td>
                         <td className="px-4 py-3 text-[13px] text-[#444] whitespace-nowrap max-w-[180px] truncate">
                           {b.service || "—"}
+                        </td>
+                        <td className="px-4 py-3 text-[13px] text-[#444] whitespace-nowrap">
+                          {b.preferredDate
+                            ? new Date(b.preferredDate + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                            : "—"}
+                          {b.datesFlexible && <span className="text-[11px] text-[#888] ml-1">(flex)</span>}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <span
@@ -494,7 +555,7 @@ export default function AdminDashboard() {
                         >
                           <StatusActions
                             status={b.status}
-                            onConfirm={() => updateStatus(b.id, "confirmed")}
+                            onConfirm={() => updateStatus(b.id, "confirmed", b)}
                             onComplete={() => updateStatus(b.id, "completed")}
                           />
                         </td>
@@ -503,7 +564,7 @@ export default function AdminDashboard() {
                       {/* ── Expanded detail ── */}
                       {isExpanded && (
                         <tr>
-                          <td colSpan={9} className="p-0">
+                          <td colSpan={10} className="p-0">
                             <ExpandedDetail
                               booking={b}
                               editingNotes={editingNotes}
@@ -515,6 +576,7 @@ export default function AdminDashboard() {
                                 }))
                               }
                               onSaveNotes={() => saveAdminNotes(b.id)}
+                              onToast={addToast}
                             />
                           </td>
                         </tr>
@@ -651,6 +713,9 @@ export default function AdminDashboard() {
                       <div>
                         <p className="text-[15px] font-semibold text-[#0B2040]">
                           {b.name || "—"}
+                          {b.datesFlexible && (
+                            <span className="ml-2 inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold text-[#888] bg-[#f0f0f0]">Flexible</span>
+                          )}
                         </p>
                         <p className="text-[13px] text-[#444]">
                           {b.service || "—"}
@@ -680,6 +745,8 @@ export default function AdminDashboard() {
           )}
         </div>
       )}
+
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   );
 }
@@ -745,12 +812,14 @@ function ExpandedDetail({
   savingNotes,
   onNotesChange,
   onSaveNotes,
+  onToast,
 }: {
   booking: Booking;
   editingNotes: Record<string, string>;
   savingNotes: Record<string, boolean>;
   onNotesChange: (val: string) => void;
   onSaveNotes: () => void;
+  onToast: (message: string, type?: "success" | "info") => void;
 }) {
   const fields = [
     { label: "Name", value: b.name },
@@ -762,6 +831,7 @@ function ExpandedDetail({
     { label: "Source", value: b.source },
     { label: "Address", value: b.address },
     { label: "Preferred Date", value: b.preferredDate },
+    { label: "Dates Flexible", value: b.datesFlexible ? "Yes" : undefined },
     { label: "Time Window", value: b.timeWindow },
     { label: "Zip Code", value: b.zip },
     { label: "Fleet Size", value: b.fleetSize },
@@ -787,6 +857,27 @@ function ExpandedDetail({
         ))}
       </div>
 
+      {/* Notification buttons */}
+      <NotificationButtons
+        bookingId={b.id}
+        phone={b.phone}
+        email={b.email}
+        onToast={onToast}
+      />
+
+      {/* Google Calendar button */}
+      {(b.status === "confirmed" || b.status === "completed") && (
+        <div className="mb-5">
+          <button
+            onClick={() => window.open(generateGCalUrl(b), "_blank")}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-[8px] text-[13px] font-semibold text-[#0B2040] bg-white border-2 border-[#0B2040] hover:bg-[#0B2040] hover:text-white transition-colors"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Add to Google Calendar
+          </button>
+        </div>
+      )}
+
       {/* Admin notes */}
       <div>
         <p className="text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
@@ -807,6 +898,13 @@ function ExpandedDetail({
           {savingNotes[b.id] ? "Saving..." : "Save Notes"}
         </button>
       </div>
+
+      {/* Communication Log */}
+      <CommsLog
+        bookingId={b.id}
+        commsLog={b.commsLog || []}
+        onToast={onToast}
+      />
     </div>
   );
 }

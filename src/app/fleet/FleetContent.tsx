@@ -371,6 +371,8 @@ function FleetQuoteForm() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [contactPreference, setContactPreference] = useState<"call" | "text" | "email">("call");
+  const [preferredDate, setPreferredDate] = useState("");
+  const [datesFlexible, setDatesFlexible] = useState(false);
   const [fleetSize, setFleetSize] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -394,6 +396,8 @@ function FleetQuoteForm() {
         phone: digits,
         email: email.trim().toLowerCase(),
         contactPreference,
+        preferredDate: preferredDate || "",
+        datesFlexible,
         fleetSize,
         notes,
         service: "Fleet Consultation",
@@ -487,6 +491,30 @@ function FleetQuoteForm() {
                   ))}
                 </div>
               </div>
+              <div>
+                <label className={fleetLabelClass}>Preferred Date</label>
+                <input
+                  type="date"
+                  min={(() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split("T")[0]; })()}
+                  value={preferredDate}
+                  onChange={(e) => setPreferredDate(e.target.value)}
+                  className={fleetInputBase}
+                />
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <span className={`w-[18px] h-[18px] rounded border-2 flex items-center justify-center transition-colors ${datesFlexible ? "bg-[#E07B2D] border-[#E07B2D]" : "border-[#ddd]"}`}>
+                  {datesFlexible && (
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                  )}
+                </span>
+                <span className="text-[14px] text-[#888]">My dates are flexible</span>
+                <input
+                  type="checkbox"
+                  checked={datesFlexible}
+                  onChange={(e) => setDatesFlexible(e.target.checked)}
+                  className="sr-only"
+                />
+              </label>
               <div>
                 <label className={fleetLabelClass}>Fleet Size</label>
                 <select
