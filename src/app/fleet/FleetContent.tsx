@@ -149,40 +149,36 @@ export default function FleetContent() {
       {/* Section 1: Hero */}
       <section className="bg-white">
         <div className="max-w-[1100px] mx-auto px-4 lg:px-6 pt-10 pb-4 md:pt-14 md:pb-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-12 items-center">
-            <div>
-              <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
-                Fleet & Commercial
-              </p>
-              <h1 className="text-[30px] md:text-[42px] font-[800] leading-[1.08] text-[#0B2040] tracking-[-1px] mb-5">
-                Keep your fleet on the road
-              </h1>
-              <p className="text-[16px] leading-[1.7] text-[#444] max-w-[480px] mb-8">
-                Scheduled mobile maintenance for company vehicles, box trucks,
-                vans, and commercial fleets. We come to your yard, your lot, or
-                your job site. No vehicle downtime, no shop visits.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button href="/contact" variant="primary" size="lg">
-                  Get Fleet Quote
-                </Button>
-                <a
-                  href="tel:8137225823"
-                  className="inline-flex items-center justify-center gap-2 px-[30px] py-[14px] font-semibold text-[#0B2040] bg-white border-2 border-[#ddd] rounded-[var(--radius-button)] hover:border-[#bbb] transition-all"
-                >
-                  <Phone size={16} />
-                  Call 813-722-LUBE
-                </a>
-              </div>
-            </div>
-            <div>
-              <img
-                src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_1600,h_450,c_fill,q_auto:good,f_auto/v1774318456/commercial-service_wbgfog.jpg"
-                alt="Commercial fleet mobile service"
-                className="w-full h-auto rounded-[12px] shadow-[0_8px_30px_rgba(0,0,0,0.08)]"
-              />
+          <div>
+            <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
+              Fleet & Commercial
+            </p>
+            <h1 className="text-[30px] md:text-[42px] font-[800] leading-[1.08] text-[#0B2040] tracking-[-1px] mb-5">
+              Keep your fleet on the road
+            </h1>
+            <p className="text-[16px] leading-[1.7] text-[#444] max-w-[480px] mb-8">
+              Scheduled mobile maintenance for company vehicles, box trucks,
+              vans, and commercial fleets. We come to your yard, your lot, or
+              your job site. No vehicle downtime, no shop visits.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button href="/contact" variant="primary" size="lg">
+                Get Fleet Quote
+              </Button>
+              <a
+                href="tel:8137225823"
+                className="inline-flex items-center justify-center gap-2 px-[30px] py-[14px] font-semibold text-[#0B2040] bg-white border-2 border-[#ddd] rounded-[var(--radius-button)] hover:border-[#bbb] transition-all"
+              >
+                <Phone size={16} />
+                Call 813-722-LUBE
+              </a>
             </div>
           </div>
+          <img
+            src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_1600,h_450,c_fill,q_auto:good,f_auto/v1774318456/commercial-service_wbgfog.jpg"
+            alt="Commercial fleet mobile service"
+            className="w-full rounded-[12px] max-h-[400px] object-cover mt-10"
+          />
         </div>
       </section>
 
@@ -324,7 +320,7 @@ export default function FleetContent() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button href="/contact" variant="primary" size="lg">
-              Request Consultation
+              Get Fleet Quote
             </Button>
             <a
               href="tel:8137225823"
@@ -380,7 +376,7 @@ export default function FleetContent() {
       <section className="bg-[#FAFBFC]">
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white border border-[#e8e8e8] rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-7 hover:shadow-md transition-shadow border-t-[3px] border-t-[#E07B2D]">
+            <div className="bg-white border border-[#e8e8e8] rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-7 hover:border-[#E07B2D] hover:-translate-y-[2px] transition-all duration-200">
               <h3 className="text-[20px] font-bold text-[#0B2040] mb-2">
                 Automotive
               </h3>
@@ -395,7 +391,7 @@ export default function FleetContent() {
                 <ArrowRight size={15} />
               </Link>
             </div>
-            <div className="bg-white border border-[#e8e8e8] rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-7 hover:shadow-md transition-shadow border-t-[3px] border-t-[#0B2040]">
+            <div className="bg-white border border-[#e8e8e8] rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-7 hover:border-[#E07B2D] hover:-translate-y-[2px] transition-all duration-200">
               <h3 className="text-[20px] font-bold text-[#0B2040] mb-2">
                 Marine
               </h3>

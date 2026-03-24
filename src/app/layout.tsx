@@ -47,7 +47,7 @@ export default function RootLayout({
             href="/book"
             className="flex-1 inline-flex items-center justify-center font-semibold text-white rounded-[var(--radius-button)] py-3.5 bg-[#E07B2D] hover:bg-[#CC6A1F] transition-colors"
           >
-            Book Online
+            Book Service
           </Link>
         </div>
       </body>

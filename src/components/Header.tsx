@@ -87,7 +87,7 @@ export default function Header() {
             813-722-LUBE
           </a>
           <Button href="/book" variant="primary" size="sm">
-            Book Now
+            Book Service
           </Button>
         </div>
 
@@ -157,7 +157,7 @@ export default function Header() {
                 size="md"
                 className="w-full justify-center"
               >
-                Book Online
+                Book Service
               </Button>
             </div>
           </div>

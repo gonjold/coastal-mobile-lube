@@ -148,9 +148,9 @@ export default function AboutPage() {
             {valueProps.map((prop) => (
               <div
                 key={prop.number}
-                className="bg-white border border-[#e8e8e8] rounded-[12px] p-7"
+                className="bg-white border border-[#e8e8e8] rounded-[12px] p-7 border-l-[3px] border-l-[#E07B2D] pl-8"
               >
-                <span className="inline-block text-[13px] font-bold text-[#0B2040] bg-[#F0F4F8] rounded-[6px] px-2.5 py-1 mb-4">
+                <span className="inline-block text-[13px] font-bold text-[#E07B2D] bg-[#F0F4F8] rounded-[6px] px-2.5 py-1 mb-4">
                   {prop.number}
                 </span>
                 <h3 className="text-[18px] font-bold text-[#0B2040] mb-2">
@@ -212,7 +212,7 @@ export default function AboutPage() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button href="/book" variant="primary" size="lg">
-              Book Online
+              Book Service
             </Button>
             <Button href="tel:8137225823" variant="secondary" size="lg">
               <Phone size={16} className="mr-2" />

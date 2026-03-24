@@ -181,9 +181,9 @@ export default function Home() {
                 Tampa and surrounding areas.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-3 mb-8">
+              <div className="flex flex-col sm:flex-row gap-3 mb-0 sm:mb-8">
                 <Button href="/book" variant="primary" size="lg">
-                  Book Online
+                  Book Service
                 </Button>
                 <a
                   href="tel:8137225823"
@@ -194,7 +194,7 @@ export default function Home() {
                 </a>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pt-7 border-t border-[#eee]">
+              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pt-4 sm:pt-7 border-t border-[#eee]">
                 {["Factory-trained techs", "Licensed & insured", "Same-week availability"].map((item) => (
                   <div key={item} className="flex items-center gap-2.5">
                     <div className="flex items-center justify-center shrink-0 w-[22px] h-[22px] rounded-[6px] bg-[#EBF4FF]">
@@ -514,7 +514,7 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button href="/book" variant="primary" size="lg">
-              Book Online
+              Book Service
             </Button>
             <a
               href="tel:8137225823"

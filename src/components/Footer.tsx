@@ -5,12 +5,13 @@ const serviceLinks = [
   { label: "Automotive", href: "/services" },
   { label: "Fleet & Commercial", href: "/fleet" },
   { label: "Marine", href: "/marine" },
-  { label: "Book Online", href: "/book" },
+  { label: "Book Service", href: "/book" },
 ];
 
 const companyLinks = [
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
+  { label: "Book Service", href: "/book" },
 ];
 
 export default function Footer() {
