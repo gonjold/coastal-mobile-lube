@@ -4,18 +4,15 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Phone, Menu, X } from "lucide-react";
-import HullStripe from "./HullStripe";
 import Button from "./Button";
-import { cloudinaryUrl, images } from "@/lib/cloudinary";
 
 const navLinks = [
   { label: "Services", href: "/services" },
-  { label: "Fleet & Commercial", href: "/fleet" },
+  { label: "Fleet", href: "/fleet" },
   { label: "Marine", href: "/marine" },
   { label: "About", href: "/about" },
-  { label: "Service Areas", href: "/service-areas" },
+  { label: "Areas", href: "/service-areas" },
   { label: "FAQ", href: "/faq" },
-  { label: "Contact", href: "/contact" },
 ];
 
 export default function Header() {
@@ -43,70 +40,76 @@ export default function Header() {
   }, [drawerOpen]);
 
   return (
-    <div className="sticky top-0 z-50">
-      <header
-        className={`bg-white transition-shadow ${
-          scrolled ? "shadow-md" : ""
-        }`}
-      >
-        <div className="section-inner flex items-center justify-between px-4 py-3 lg:px-6">
-          {/* Logo */}
-          <Link href="/" className="shrink-0">
-            <img
-              src={cloudinaryUrl(images.logo, { width: 200, quality: "auto", format: "auto" })}
-              alt="Coastal Mobile Lube & Tire"
-              className="h-10 w-auto md:h-12"
-            />
-          </Link>
-
-          {/* Desktop Nav */}
-          <nav className="hidden lg:flex items-center gap-6">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`font-medium text-sm transition-colors ${pathname === link.href ? "text-teal" : "text-text-body hover:text-blue"}`}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-
-          {/* Desktop Actions */}
-          <div className="hidden lg:flex items-center gap-3">
-            <a
-              href="tel:8137225823"
-              className="inline-flex items-center gap-2 bg-teal text-white rounded-[var(--radius-pill)] px-4 py-1.5 text-sm font-semibold hover:opacity-90 transition-opacity"
-            >
-              <Phone size={14} />
-              813-722-LUBE
-            </a>
-            <Button href="/book" variant="primary" size="sm">
-              Book Now
-            </Button>
+    <header
+      className={`sticky top-0 z-50 bg-white border-b border-[#f0f0f0] transition-shadow ${
+        scrolled ? "shadow-sm" : ""
+      }`}
+    >
+      <div className="section-inner flex items-center justify-between px-4 py-3 lg:px-6">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center justify-center w-[42px] h-[42px] rounded-[11px] bg-[#0B2040] text-white text-sm font-bold">
+            CM
           </div>
-
-          {/* Mobile Actions */}
-          <div className="flex lg:hidden items-center gap-3">
-            <a
-              href="tel:8137225823"
-              className="inline-flex items-center justify-center w-10 h-10 bg-teal text-white rounded-full"
-              aria-label="Call 813-722-LUBE"
-            >
-              <Phone size={18} />
-            </a>
-            <button
-              onClick={() => setDrawerOpen(true)}
-              className="inline-flex items-center justify-center w-10 h-10 text-text-body"
-              aria-label="Open menu"
-            >
-              <Menu size={24} />
-            </button>
+          <div className="hidden sm:block">
+            <div className="font-bold text-[#0B2040] text-[15px] leading-tight">
+              Coastal Mobile
+            </div>
+            <div className="text-[10px] uppercase tracking-[1.5px] text-[#999] leading-tight">
+              Lube & Tire
+            </div>
           </div>
+        </Link>
+
+        {/* Desktop Nav */}
+        <nav className="hidden lg:flex items-center gap-6">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`text-sm font-medium transition-colors ${
+                pathname === link.href
+                  ? "text-[#0B2040]"
+                  : "text-[#666] hover:text-[#0B2040]"
+              }`}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+
+        {/* Desktop Actions */}
+        <div className="hidden lg:flex items-center gap-3">
+          <a
+            href="tel:8137225823"
+            className="inline-flex items-center gap-2 text-sm font-medium text-[#0B2040] border-2 border-[#e8e8e8] rounded-[10px] px-4 py-2"
+          >
+            <Phone size={14} />
+            813-722-LUBE
+          </a>
+          <Button href="/book" variant="primary" size="sm">
+            Book Now
+          </Button>
         </div>
-      </header>
 
-      <HullStripe />
+        {/* Mobile Actions */}
+        <div className="flex lg:hidden items-center gap-3">
+          <a
+            href="tel:8137225823"
+            className="inline-flex items-center justify-center w-10 h-10 text-[#0B2040] border-2 border-[#e8e8e8] rounded-full"
+            aria-label="Call 813-722-LUBE"
+          >
+            <Phone size={18} />
+          </a>
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="inline-flex items-center justify-center w-10 h-10 text-[#333]"
+            aria-label="Open menu"
+          >
+            <Menu size={24} />
+          </button>
+        </div>
+      </div>
 
       {/* Mobile Drawer */}
       {drawerOpen && (
@@ -119,7 +122,7 @@ export default function Header() {
             <div className="flex items-center justify-end p-4">
               <button
                 onClick={() => setDrawerOpen(false)}
-                className="inline-flex items-center justify-center w-10 h-10 text-text-body"
+                className="inline-flex items-center justify-center w-10 h-10 text-[#333]"
                 aria-label="Close menu"
               >
                 <X size={24} />
@@ -131,7 +134,11 @@ export default function Header() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setDrawerOpen(false)}
-                  className={`py-3 font-medium text-base border-b border-border-light transition-colors ${pathname === link.href ? "text-teal" : "text-text-body hover:text-blue"}`}
+                  className={`py-3 font-medium text-base border-b border-[#f0f0f0] transition-colors ${
+                    pathname === link.href
+                      ? "text-[#0B2040]"
+                      : "text-[#333] hover:text-[#0B2040]"
+                  }`}
                 >
                   {link.label}
                 </Link>
@@ -140,7 +147,7 @@ export default function Header() {
             <div className="mt-6 px-6 flex flex-col gap-3">
               <a
                 href="tel:8137225823"
-                className="inline-flex items-center justify-center gap-2 bg-teal text-white rounded-[var(--radius-pill)] px-4 py-2.5 text-sm font-semibold"
+                className="inline-flex items-center justify-center gap-2 font-medium text-sm text-[#0B2040] border-2 border-[#e8e8e8] rounded-[10px] py-2.5 px-4"
               >
                 <Phone size={16} />
                 813-722-LUBE
@@ -151,12 +158,12 @@ export default function Header() {
                 size="md"
                 className="w-full justify-center"
               >
-                Book Now
+                Book Online
               </Button>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </header>
   );
 }

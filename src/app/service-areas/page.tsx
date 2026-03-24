@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import WaveDivider from "@/components/WaveDivider";
 
 export const metadata: Metadata = {
   title: "Service Areas | Coastal Mobile Lube & Tire",
@@ -20,7 +19,6 @@ export default function ServiceAreasPage() {
           </p>
         </div>
       </section>
-      <WaveDivider color="#FFFFFF" />
       <section className="section pt-12">
         <div className="section-narrow">
           <p className="text-text-mid leading-relaxed">

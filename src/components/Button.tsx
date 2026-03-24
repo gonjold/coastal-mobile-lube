@@ -4,7 +4,7 @@ import { type ReactNode } from "react";
 interface ButtonProps {
   children: ReactNode;
   href?: string;
-  variant?: "primary" | "secondary" | "teal";
+  variant?: "primary" | "secondary";
   size?: "sm" | "md" | "lg";
   className?: string;
   onClick?: () => void;
@@ -16,7 +16,6 @@ const variantStyles = {
     "bg-orange text-white hover:bg-orange-hover focus:ring-orange/40",
   secondary:
     "border-2 border-navy text-navy hover:bg-navy hover:text-white focus:ring-navy/40",
-  teal: "bg-teal text-white hover:opacity-90 focus:ring-teal/40",
 };
 
 const sizeStyles = {

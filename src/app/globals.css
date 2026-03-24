@@ -8,13 +8,7 @@
   --color-blue-light: #2E7ECC;
   --color-orange: #E07B2D;
   --color-orange-hover: #CC6A1F;
-  --color-gold: #D9A441;
-  --color-teal: #0D8A8F;
-  --color-teal-soft: #E1F4F3;
-  --color-seafoam: #E1F4F3;
-  --color-sand: #F4EEE3;
-  --color-sand-light: #FAF7F2;
-  --color-cream: #FFFDF8;
+  --color-surface: #FAFBFC;
   --color-text-dark: #161616;
   --color-text-body: #2C2C2C;
   --color-text-mid: #555555;
@@ -47,13 +41,7 @@
   --color-blue-light: #2E7ECC;
   --color-orange: #E07B2D;
   --color-orange-hover: #CC6A1F;
-  --color-gold: #D9A441;
-  --color-teal: #0D8A8F;
-  --color-teal-soft: #E1F4F3;
-  --color-seafoam: #E1F4F3;
-  --color-sand: #F4EEE3;
-  --color-sand-light: #FAF7F2;
-  --color-cream: #FFFDF8;
+  --color-surface: #FAFBFC;
   --color-white: #FFFFFF;
   --color-text-dark: #161616;
   --color-text-body: #2C2C2C;
@@ -77,9 +65,6 @@
 
   --line-height-heading: 1.15;
   --line-height-body: 1.65;
-
-  --hull-stripe-height: 3px;
-  --wave-height: 36px;
 }
 
 /* ── Global reset ── */
@@ -130,6 +115,12 @@ img {
 @layer components {
   .section {
     padding: var(--spacing-section-y) var(--spacing-section-x);
+    background: #ffffff;
+  }
+
+  .section-alt {
+    padding: var(--spacing-section-y) var(--spacing-section-x);
+    background: var(--color-surface);
   }
 
   .section-inner {
@@ -145,31 +136,4 @@ img {
     margin-right: auto;
     width: 100%;
   }
-}
-
-/* ── Hull stripe ── */
-.hull-stripe {
-  display: flex;
-  height: var(--hull-stripe-height);
-  width: 100%;
-}
-
-.hs-blue-1 {
-  flex: 2;
-  background: var(--color-blue);
-}
-
-.hs-orange {
-  flex: 1;
-  background: var(--color-orange);
-}
-
-.hs-gold {
-  flex: 1;
-  background: var(--color-gold);
-}
-
-.hs-blue-2 {
-  flex: 3;
-  background: var(--color-blue);
 }

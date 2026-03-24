@@ -1,110 +1,112 @@
 import Link from "next/link";
 import { Phone } from "lucide-react";
-import HullStripe from "./HullStripe";
-import { cloudinaryUrl, images } from "@/lib/cloudinary";
 
-const quickLinks = [
-  { label: "Services", href: "/services" },
+const serviceLinks = [
+  { label: "Automotive", href: "/services" },
   { label: "Fleet & Commercial", href: "/fleet" },
   { label: "Marine", href: "/marine" },
+  { label: "Book Online", href: "/book" },
+];
+
+const companyLinks = [
   { label: "About", href: "/about" },
   { label: "Service Areas", href: "/service-areas" },
   { label: "FAQ", href: "/faq" },
   { label: "Contact", href: "/contact" },
 ];
 
-const serviceAreas = [
-  "Tampa",
-  "Brandon",
-  "Riverview",
-  "Wesley Chapel",
-  "Plant City",
-  "Temple Terrace",
-  "Lutz",
-  "Land O' Lakes",
-];
+const areaLinks = ["Tampa", "Brandon", "Riverview", "Wesley Chapel", "Plant City", "Lutz"];
 
 export default function Footer() {
   return (
-    <footer>
-      <HullStripe />
-      <div className="bg-navy text-white">
-        <div className="section-inner px-6 py-12 lg:py-16">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 lg:gap-12">
-            {/* Column 1 - Brand */}
-            <div className="flex flex-col gap-4">
-              <img
-                src={cloudinaryUrl(images.logo, { width: 180, quality: "auto", format: "auto" })}
-                alt="Coastal Mobile Lube & Tire"
-                className="h-10 w-auto"
-              />
-              <p className="font-semibold text-white text-base">
-                Coastal Mobile Lube &amp; Tire
-              </p>
-              <p className="text-[#9CA3AF] text-sm">
-                Automotive. Fleet. Marine.
-              </p>
-              <a
-                href="tel:8137225823"
-                className="inline-flex items-center gap-2 text-white text-lg font-semibold hover:text-teal-soft transition-colors"
-              >
-                <Phone size={18} />
-                813-722-LUBE
-              </a>
-              {/* Social media placeholder */}
-              <div className="flex gap-3 mt-2" aria-label="Social media links coming soon" />
-            </div>
+    <footer className="bg-[#0B2040]">
+      <div className="section-inner px-6 py-12 lg:py-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr] gap-10 lg:gap-8">
+          {/* Column 1 - Brand */}
+          <div className="flex flex-col gap-3">
+            <p className="font-bold text-white text-lg">
+              Coastal Mobile Lube & Tire
+            </p>
+            <p className="text-sm text-white/40">
+              Automotive. Fleet. Marine.
+            </p>
+            <a
+              href="tel:8137225823"
+              className="inline-flex items-center gap-2 font-bold text-lg text-[#E07B2D]"
+            >
+              <Phone size={18} />
+              813-722-LUBE
+            </a>
+          </div>
 
-            {/* Column 2 - Quick Links */}
-            <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-white mb-4">
-                Quick Links
-              </h3>
-              <ul className="flex flex-col gap-2.5">
-                {quickLinks.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="text-[#CBD5E1] text-sm hover:text-white transition-colors"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {/* Column 2 - Services */}
+          <div>
+            <h3 className="text-[11px] uppercase text-white/35 tracking-[1.5px] mb-4">
+              Services
+            </h3>
+            <ul className="flex flex-col gap-2.5">
+              {serviceLinks.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="text-sm text-white/65 hover:text-white transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-            {/* Column 3 - Service Areas */}
-            <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-white mb-4">
-                Service Areas
-              </h3>
-              <ul className="flex flex-col gap-2.5">
-                {serviceAreas.map((area) => (
-                  <li key={area}>
-                    <Link
-                      href="/service-areas"
-                      className="text-[#CBD5E1] text-sm hover:text-white transition-colors"
-                    >
-                      {area}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {/* Column 3 - Company */}
+          <div>
+            <h3 className="text-[11px] uppercase text-white/35 tracking-[1.5px] mb-4">
+              Company
+            </h3>
+            <ul className="flex flex-col gap-2.5">
+              {companyLinks.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="text-sm text-white/65 hover:text-white transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Column 4 - Service Areas */}
+          <div>
+            <h3 className="text-[11px] uppercase text-white/35 tracking-[1.5px] mb-4">
+              Service Areas
+            </h3>
+            <ul className="flex flex-col gap-2.5">
+              {areaLinks.map((area) => (
+                <li key={area}>
+                  <Link
+                    href="/service-areas"
+                    className="text-sm text-white/65 hover:text-white transition-colors"
+                  >
+                    {area}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
+      </div>
 
-        {/* Bottom bar */}
-        <div className="border-t border-white/10">
-          <div className="section-inner px-6 py-5 flex flex-col md:flex-row items-center justify-between gap-3 text-sm text-[#9CA3AF]">
-            <p className="text-center md:text-left">
-              &copy; 2026 Coastal Mobile Lube &amp; Tire. All rights reserved.
-            </p>
-            <p className="text-center md:text-right">
-              Website by JG Systems
-            </p>
-          </div>
+      {/* Bottom bar */}
+      <div className="border-t border-white/[0.08]">
+        <div className="section-inner px-6 py-5 pb-24 lg:pb-5 flex flex-col md:flex-row items-center justify-between gap-3">
+          <p className="text-[11px] text-white/25">
+            2026 Coastal Mobile Lube & Tire. All rights reserved.
+          </p>
+          <p className="text-[11px] text-white/25">
+            Website by JG Systems
+          </p>
         </div>
       </div>
     </footer>
