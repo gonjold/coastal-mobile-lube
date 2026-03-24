@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { db } from "@/lib/firebase";
+import { db, app } from "@/lib/firebase";
 import { doc, updateDoc, arrayUnion } from "firebase/firestore";
+import { getFunctions, httpsCallable } from "firebase/functions";
 
 function formatPhoneDisplay(phone?: string): string {
   if (!phone) return "—";
@@ -12,19 +13,41 @@ function formatPhoneDisplay(phone?: string): string {
   return phone;
 }
 
+const functions = getFunctions(app, "us-east1");
+const sendConfirmationEmailFn = httpsCallable(functions, "sendConfirmationEmail");
+
+interface BookingData {
+  id: string;
+  name?: string;
+  phone?: string;
+  email?: string;
+  contactPreference?: string;
+  service?: string;
+  serviceCategory?: string;
+  source?: string;
+  status?: string;
+  address?: string;
+  preferredDate?: string;
+  timeWindow?: string;
+  notes?: string;
+}
+
 export default function NotificationButtons({
   bookingId,
+  booking,
   phone,
   email,
   onToast,
 }: {
   bookingId: string;
+  booking: BookingData;
   phone?: string;
   email?: string;
   onToast: (message: string, type?: "success" | "info") => void;
 }) {
   const [confirmEmail, setConfirmEmail] = useState(false);
   const [confirmText, setConfirmText] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   async function logComms(
     type: "call" | "text" | "email" | "note",
@@ -44,12 +67,20 @@ export default function NotificationButtons({
   }
 
   async function handleEmailConfirmation() {
+    setSendingEmail(true);
     try {
-      await logComms("email", `Confirmation email sent to ${email}`);
-      onToast("Email logged. (Email delivery coming soon)");
+      const result = await sendConfirmationEmailFn({ booking, bookingId });
+      const data = result.data as { success: boolean; error?: string };
+      if (data.success) {
+        await logComms("email", `Confirmation email sent to ${email}`);
+        onToast(`Confirmation email sent to ${email}`, "success");
+      } else {
+        onToast(`Failed to send email: ${data.error || "Unknown error"}`, "info");
+      }
     } catch {
-      /* silent */
+      onToast("Error sending email", "info");
     }
+    setSendingEmail(false);
     setConfirmEmail(false);
   }
 
@@ -106,21 +137,24 @@ export default function NotificationButtons({
             onClick={() => (phone ? setConfirmText(true) : undefined)}
             disabled={!phone}
             title={!phone ? "No phone on file" : undefined}
-            className="flex items-center justify-center gap-2 py-3 rounded-[8px] text-[13px] font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-[#16a34a] text-white hover:bg-[#15803d]"
+            className="flex flex-col items-center justify-center gap-1 py-3 rounded-[8px] text-[13px] font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-[#16a34a] text-white hover:bg-[#15803d]"
           >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
-            Send Confirmation Text
+            <span className="flex items-center gap-2">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              Send Confirmation Text
+            </span>
+            <span className="text-[10px] font-normal opacity-75">(Coming soon)</span>
           </button>
           <a
             href={phone ? `tel:${phone}` : undefined}
@@ -173,9 +207,10 @@ export default function NotificationButtons({
               </button>
               <button
                 onClick={handleEmailConfirmation}
-                className="px-4 py-2 text-[13px] font-semibold text-white bg-[#1A5FAC] rounded-md hover:bg-[#164d8a]"
+                disabled={sendingEmail}
+                className="px-4 py-2 text-[13px] font-semibold text-white bg-[#1A5FAC] rounded-md hover:bg-[#164d8a] disabled:opacity-50"
               >
-                Send
+                {sendingEmail ? "Sending..." : "Send"}
               </button>
             </div>
           </div>

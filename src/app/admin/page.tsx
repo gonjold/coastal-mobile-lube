@@ -42,6 +42,7 @@ interface Booking {
   returningCustomer?: boolean;
   createdAt?: FirestoreTimestamp;
   updatedAt?: FirestoreTimestamp;
+  lastViewedAt?: FirestoreTimestamp;
 }
 
 interface FirestoreTimestamp {
@@ -116,6 +117,13 @@ function getCalendarDays(year: number, month: number): (number | null)[] {
   for (let d = 1; d <= daysInMonth; d++) days.push(d);
   while (days.length % 7 !== 0) days.push(null);
   return days;
+}
+
+function isNewBooking(b: Booking): boolean {
+  if (b.status !== "pending") return false;
+  if (!b.createdAt?.toDate) return false;
+  const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
+  return b.createdAt.toDate().getTime() > twoHoursAgo;
 }
 
 function generateGCalUrl(booking: Booking): string {
@@ -210,6 +218,21 @@ export default function AdminDashboard() {
       if (created > new Date(dateTo + "T23:59:59")) return false;
     }
     return true;
+  });
+
+  /* ── Sort: NEW pending → pending → confirmed → completed ── */
+  filtered.sort((a, b) => {
+    const priority = (bk: Booking) => {
+      if (isNewBooking(bk)) return 0;
+      if (bk.status === "pending") return 1;
+      if (bk.status === "confirmed") return 2;
+      return 3;
+    };
+    const diff = priority(a) - priority(b);
+    if (diff !== 0) return diff;
+    const aTime = a.createdAt?.toDate?.()?.getTime() ?? 0;
+    const bTime = b.createdAt?.toDate?.()?.getTime() ?? 0;
+    return bTime - aTime;
   });
 
   /* ── Stats (unfiltered) ── */
@@ -481,14 +504,20 @@ export default function AdminDashboard() {
                   const source = getSourceLabel(b.source);
                   const status = getStatusStyle(b.status);
                   const isExpanded = expandedId === b.id;
+                  const bIsNew = isNewBooking(b);
                   return (
                     <Fragment key={b.id}>
                       <tr
-                        onClick={() =>
-                          setExpandedId(isExpanded ? null : b.id)
-                        }
+                        onClick={() => {
+                          setExpandedId(isExpanded ? null : b.id);
+                          if (!isExpanded) {
+                            updateDoc(doc(db, "bookings", b.id), { lastViewedAt: serverTimestamp() }).catch(() => {});
+                          }
+                        }}
                         className={`border-b border-[#f0f0f0] cursor-pointer transition-colors ${
-                          isExpanded ? "bg-[#FAFBFC]" : "hover:bg-[#FAFBFC]"
+                          bIsNew
+                            ? "bg-[#FFF8F0] border-l-4 border-l-[#E07B2D]"
+                            : isExpanded ? "bg-[#FAFBFC]" : "hover:bg-[#FAFBFC]"
                         }`}
                       >
                         <td className="px-4 py-3 text-[13px] text-[#444] whitespace-nowrap">
@@ -496,6 +525,9 @@ export default function AdminDashboard() {
                         </td>
                         <td className="px-4 py-3 text-[14px] font-semibold text-[#0B2040] whitespace-nowrap">
                           {b.name || "—"}
+                          {bIsNew && (
+                            <span className="ml-2 inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold text-white bg-[#E07B2D]">NEW</span>
+                          )}
                           {b.datesFlexible && (
                             <span className="ml-2 inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold text-[#888] bg-[#f0f0f0]">Flexible</span>
                           )}
@@ -705,20 +737,29 @@ export default function AdminDashboard() {
                 {bookingsByDate[selectedDay].map((b) => {
                   const status = getStatusStyle(b.status);
                   const source = getSourceLabel(b.source);
+                  const calIsNew = isNewBooking(b);
                   return (
                     <div
                       key={b.id}
-                      className="flex items-center justify-between bg-[#FAFBFC] border border-[#e8e8e8] rounded-[10px] p-4"
+                      className={`flex items-center justify-between bg-[#FAFBFC] border border-[#e8e8e8] rounded-[10px] p-4 ${
+                        calIsNew ? "border-l-4 border-l-[#E07B2D] bg-[#FFF8F0]" : ""
+                      }`}
                     >
                       <div>
                         <p className="text-[15px] font-semibold text-[#0B2040]">
                           {b.name || "—"}
+                          {calIsNew && (
+                            <span className="ml-2 inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold text-white bg-[#E07B2D]">NEW</span>
+                          )}
                           {b.datesFlexible && (
                             <span className="ml-2 inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold text-[#888] bg-[#f0f0f0]">Flexible</span>
                           )}
                         </p>
                         <p className="text-[13px] text-[#444]">
                           {b.service || "—"}
+                          {calIsNew && (
+                            <span className="ml-2 inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold text-white bg-[#E07B2D]">NEW</span>
+                          )}
                         </p>
                         <p className="text-[12px] text-[#888]">
                           {formatPhone(b.phone)}
@@ -860,6 +901,7 @@ function ExpandedDetail({
       {/* Notification buttons */}
       <NotificationButtons
         bookingId={b.id}
+        booking={b}
         phone={b.phone}
         email={b.email}
         onToast={onToast}
