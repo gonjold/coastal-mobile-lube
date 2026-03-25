@@ -285,10 +285,12 @@ export default function BookingForm() {
                     <span className="font-semibold text-[#0B2040]">
                       {formatDateDisplay(formData.preferredDate)}
                     </span>
-                    . Our team will call you at{" "}
-                    <span className="font-semibold text-[#0B2040]">
-                      {formData.phone}
-                    </span>{" "}
+                    .{" "}
+                    {formData.contactPreference === "email" ? (
+                      <>We&apos;ll email you at{" "}<span className="font-semibold text-[#0B2040]">{formData.email}</span></>
+                    ) : (
+                      <>We&apos;ll {formData.contactPreference === "text" ? "text" : "call"} you at{" "}<span className="font-semibold text-[#0B2040]">{(() => { const d = formData.phone.replace(/\D/g, ""); return d.length === 10 ? `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}` : formData.phone; })()}</span></>
+                    )}{" "}
                     within 2 hours to confirm your appointment.
                   </p>
                   <p className="text-[14px] text-[#888] mb-8">

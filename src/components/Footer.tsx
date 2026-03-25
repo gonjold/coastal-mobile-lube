@@ -24,7 +24,9 @@ export default function Footer() {
             <img
               src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_200,q_auto:good,f_auto/v1774315498/Coastal_Lube_logo_v1_zbx9qs.png"
               alt="Coastal Mobile Lube & Tire"
-              style={{ maxHeight: '50px', width: 'auto', objectFit: 'contain' }}
+              width={180}
+              height={50}
+              className="max-w-[180px] h-auto object-contain mb-1"
             />
             <p className="text-sm text-white/40">
               Automotive. Fleet. Marine.
