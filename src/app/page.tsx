@@ -214,6 +214,11 @@ export default function Home() {
                   </div>
                 ))}
               </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '20px' }} className="hidden md:flex">
+                <img src="/images/ase-badge.png" alt="ASE Certified" style={{ width: '55px', height: '55px', objectFit: 'contain', flexShrink: 0 }} />
+                <img src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_400,q_auto:good,f_auto/v1774317068/Van_mockup_ln68oh.png" alt="Coastal Mobile service van" style={{ width: '220px', height: 'auto', objectFit: 'contain', flexShrink: 0 }} />
+              </div>
             </div>
 
             {/* Booking Widget */}
