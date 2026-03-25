@@ -1,3 +1,93 @@
+# WO: New Lead Styling + Email Notifications via Firebase Cloud Functions
+## Coastal Mobile Lube & Tire — 2026-03-24
+
+This WO has THREE parts:
+- Part A: New lead visual treatment in admin dashboard
+- Part B: Firebase Cloud Function for email notifications
+- Part C: Wire admin "Send Confirmation Email" button to the real Cloud Function
+
+Read all target files IN FULL before making changes. Surgical edits only on existing files.
+
+---
+
+## PART A — New Lead Styling in Admin Dashboard
+
+**File:** `src/app/admin/page.tsx`
+
+### A1 — "NEW" badge on recent pending bookings
+In the booking list (both list view and calendar view), add a "NEW" indicator for bookings that are:
+- status === "pending" AND
+- createdAt is within the last 2 hours (compare against Date.now())
+
+Visual treatment in list view:
+- Orange left border (4px solid #E07B2D) on the table row
+- Small "NEW" badge (orange bg, white text, rounded-full, text-xs, px-2 py-0.5) next to the customer name
+- Slightly bolder row background: bg-orange-50 or bg-[#FFF8F0]
+
+Visual treatment in calendar view day panel:
+- Same orange left border on the booking card
+- "NEW" badge next to service name
+
+### A2 — Sort pending bookings to top
+In the list view, sort bookings with this priority:
+1. NEW pending bookings (< 2 hours old, pending) — at the very top
+2. Other pending bookings — next
+3. Confirmed bookings — next
+4. Completed bookings — last
+
+Within each group, sort by createdAt descending (newest first).
+
+### A3 — "Seen" tracking
+When an admin expands a booking detail (clicks the row), update the Firestore doc:
+- `lastViewedAt`: serverTimestamp()
+
+Once `lastViewedAt` is set and is more recent than `createdAt`, the "NEW" badge can optionally fade to a subtler "Pending" badge (standard orange, no highlight row). This is nice-to-have — implement if straightforward, skip if complex.
+
+---
+
+## PART B — Firebase Cloud Function for Email Notifications
+
+### B1 — Initialize Firebase Functions in the project
+
+Run these commands in the project root (~/coastal-mobile-lube):
+
+```bash
+cd ~/coastal-mobile-lube
+firebase init functions
+```
+
+When prompted:
+- Language: JavaScript
+- ESLint: No
+- Install dependencies: Yes
+
+This creates a `functions/` directory with `index.js` and `package.json`.
+
+### B2 — Install Nodemailer
+
+```bash
+cd functions
+npm install nodemailer
+cd ..
+```
+
+### B3 — Set Gmail credentials as Firebase secrets
+
+Use the SAME Gmail app password that ServiceFlow uses. The sender email is jonrgold@gmail.com.
+
+```bash
+firebase functions:secrets:set GMAIL_USER --project=coastal-mobile-lube
+# Enter: jonrgold@gmail.com
+
+firebase functions:secrets:set GMAIL_APP_PASSWORD --project=coastal-mobile-lube
+# Enter: [the same app password from ServiceFlow — Jon knows this]
+```
+
+### B4 — Write the Cloud Function
+
+**File:** `functions/index.js`
+
+```javascript
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { defineSecret } = require("firebase-functions/params");
 const nodemailer = require("nodemailer");
@@ -120,7 +210,7 @@ exports.onNewBooking = onDocumentCreated(
             </tr>` : ''}
           </table>
           <div style="margin-top: 20px; text-align: center;">
-            <a href="https://coastal-mobile-lube.netlify.app/admin"
+            <a href="https://coastal-mobile-lube.netlify.app/admin" 
                style="display: inline-block; background: #E07B2D; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600;">
               View in Admin Dashboard
             </a>
@@ -151,7 +241,6 @@ exports.sendConfirmationEmail = require("firebase-functions/v2/https").onCall(
   {
     region: "us-east1",
     secrets: [gmailUser, gmailAppPassword],
-    cors: true,
   },
   async (request) => {
     const { booking, bookingId } = request.data;
@@ -244,3 +333,67 @@ exports.sendConfirmationEmail = require("firebase-functions/v2/https").onCall(
     }
   }
 );
+```
+
+### B5 — Deploy the Cloud Functions
+
+```bash
+cd ~/coastal-mobile-lube
+firebase deploy --only functions --project=coastal-mobile-lube
+```
+
+---
+
+## PART C — Wire Admin Dashboard to Call the Cloud Function
+
+**File:** `src/app/admin/NotificationButtons.tsx`
+
+### C1 — Import Firebase Functions
+Add to the top of the file:
+```javascript
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { app } from '@/lib/firebase';
+```
+
+### C2 — Update "Send Confirmation Email" button
+Replace the current mock behavior (which just logs a comms entry) with a real Cloud Function call:
+
+```javascript
+const functions = getFunctions(app, 'us-east1');
+const sendConfirmationEmail = httpsCallable(functions, 'sendConfirmationEmail');
+
+// In the button handler:
+try {
+  const result = await sendConfirmationEmail({ booking, bookingId: booking.id });
+  if (result.data.success) {
+    // Log comms entry (keep existing behavior)
+    // Show toast: "Confirmation email sent to {email}"
+  } else {
+    // Show toast: "Failed to send email: {error}"
+  }
+} catch (error) {
+  // Show toast: "Error sending email"
+}
+```
+
+### C3 — Keep "Send Confirmation Text" as mock
+Leave the text button as a comms logger only for now. Add a small "(Coming soon)" subtitle text under the button text so Jason knows it's on the roadmap.
+
+---
+
+## DEPLOY SEQUENCE
+
+This WO requires TWO deploys:
+
+**Deploy 1 — Cloud Functions:**
+```bash
+cd ~/coastal-mobile-lube
+firebase deploy --only functions --project=coastal-mobile-lube
+```
+
+**Deploy 2 — Frontend (admin dashboard updates):**
+```bash
+npm run build && netlify deploy --prod && git add -A && git commit -m "feat: new lead styling, email notifications via Cloud Functions, admin alerts" && git push origin main
+```
+
+Run Deploy 1 first, then Deploy 2.
