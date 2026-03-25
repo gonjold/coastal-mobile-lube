@@ -186,6 +186,161 @@
       box-shadow: none !important;
     }
 
+    /* --- COG ICON --- */
+    .cog-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 100;
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      opacity: 0.3;
+      transition: opacity 0.2s;
+      padding: 4px;
+      line-height: 1;
+    }
+    .cog-btn:hover { opacity: 0.6; }
+
+    /* --- PASSCODE MODAL --- */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(0,0,0,0.5);
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-card {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 32px 28px;
+      max-width: 300px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.15);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .modal-card h4 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 16px;
+    }
+    .pin-input {
+      width: 140px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 8px;
+      padding: 10px 12px;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      outline: none;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: var(--navy);
+      transition: border-color 0.2s;
+    }
+    .pin-input:focus { border-color: var(--blue); }
+    .pin-input.error { border-color: #ef4444; }
+    .pin-error {
+      color: #ef4444;
+      font-size: 13px;
+      font-weight: 600;
+      margin-top: 8px;
+      height: 18px;
+    }
+    .modal-submit {
+      display: block;
+      width: 100%;
+      margin-top: 16px;
+      padding: 10px;
+      background: var(--orange);
+      color: var(--white);
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .modal-submit:hover { background: #c96a22; }
+    .modal-btn-gray {
+      display: block;
+      width: 100%;
+      margin-top: 8px;
+      padding: 10px;
+      background: var(--white);
+      color: #6b7280;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .modal-btn-gray:hover { color: var(--navy); border-color: var(--navy); }
+    .modal-cancel {
+      display: inline-block;
+      margin-top: 12px;
+      background: none;
+      border: none;
+      font-size: 13px;
+      color: #9ca3af;
+      cursor: pointer;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      text-decoration: underline;
+    }
+    .modal-cancel:hover { color: var(--navy); }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+    .pin-input.shake { animation: shake 0.4s ease; }
+
+    /* --- EDITOR BAR (unlocked floating bar) --- */
+    .editor-bar {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 100;
+      background: var(--white);
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 8px 14px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      align-items: center;
+      gap: 10px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .editor-bar.visible { display: flex; }
+    .editor-bar-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--blue);
+    }
+    .editor-bar-save {
+      background: var(--orange);
+      color: var(--white);
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .editor-bar-save:hover { background: #c96a22; }
+
     /* --- CARDS --- */
     .card-row {
       display: grid;
@@ -519,59 +674,9 @@
     }
     .tip-banner .dismiss:hover { color: var(--navy); }
 
-    /* --- RESET BUTTON --- */
-    .reset-btn {
-      position: fixed;
-      bottom: 20px;
-      left: 20px;
-      z-index: 100;
-      background: var(--white);
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      padding: 8px 14px;
-      font-size: 12px;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-weight: 600;
-      color: #6b7280;
-      cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      transition: color 0.2s, border-color 0.2s;
-    }
-    .reset-btn:hover {
-      color: var(--orange);
-      border-color: var(--orange);
-    }
-
-    /* --- FLOATING TOOLBAR (bottom-right) --- */
-    .floating-toolbar {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 100;
-      display: flex;
-      gap: 8px;
-    }
-    .floating-toolbar button {
-      background: var(--white);
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      padding: 8px 14px;
-      font-size: 12px;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-weight: 600;
-      color: #6b7280;
-      cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      transition: color 0.2s, border-color 0.2s;
-    }
-    .floating-toolbar button:hover {
-      color: var(--orange);
-      border-color: var(--orange);
-    }
-
     /* --- PRINT --- */
     @media print {
-      nav, .tip-banner, .reset-btn, .floating-toolbar { display: none !important; }
+      nav, .tip-banner, .cog-btn, .editor-bar, .modal-backdrop { display: none !important; }
       .container { padding-top: 24px; }
       .btn { border: 1px solid var(--orange); }
       section { page-break-inside: avoid; }
@@ -632,13 +737,20 @@
   <a href="#next">Next Steps</a>
 </nav>
 
-<!-- RESET PRICES BUTTON -->
-<button class="reset-btn" id="resetPrices">Reset Prices</button>
+<!-- COG ICON -->
+<button class="cog-btn" id="cogBtn" aria-label="Settings">&#9881;</button>
 
-<!-- FLOATING TOOLBAR -->
-<div class="floating-toolbar" id="floatingToolbar">
-  <button id="lockBtn">&#128274; Unlock Editing</button>
-  <button id="printBtn">Print View</button>
+<!-- EDITOR BAR (shown when unlocked) -->
+<div class="editor-bar" id="editorBar">
+  <span class="editor-bar-label">Editing Mode</span>
+  <button class="editor-bar-save" id="editorSaveBtn">Save &amp; Exit</button>
+</div>
+
+<!-- PASSCODE MODAL -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal-card" id="modalCard">
+    <!-- Content injected by JS based on lock state -->
+  </div>
 </div>
 
 <div class="container">
@@ -1034,53 +1146,150 @@
 
 <script>
 (function() {
-  // --- LOCK/UNLOCK EDITING ---
-  var lockBtn = document.getElementById('lockBtn');
+  var cogBtn = document.getElementById('cogBtn');
+  var editorBar = document.getElementById('editorBar');
+  var editorSaveBtn = document.getElementById('editorSaveBtn');
+  var backdrop = document.getElementById('modalBackdrop');
+  var modalCard = document.getElementById('modalCard');
+  var PASSCODE = '8788';
+
   var isLocked = localStorage.getItem('coastal_editing_locked') !== '0'; // default: locked
 
-  function setLocked(locked) {
-    isLocked = locked;
-    localStorage.setItem('coastal_editing_locked', locked ? '1' : '0');
-    if (locked) {
-      document.body.classList.add('locked');
-      document.querySelectorAll('[contenteditable]').forEach(function(el) {
-        el.contentEditable = 'false';
-      });
-      lockBtn.innerHTML = '&#128274; Unlock Editing';
+  // --- LOCK / UNLOCK HELPERS ---
+  function lockEditing() {
+    isLocked = true;
+    localStorage.setItem('coastal_editing_locked', '1');
+    document.body.classList.add('locked');
+    document.querySelectorAll('[contenteditable]').forEach(function(el) {
+      el.contentEditable = 'false';
+    });
+    editorBar.classList.remove('visible');
+    cogBtn.style.display = 'block';
+  }
+
+  function unlockEditing() {
+    isLocked = false;
+    localStorage.setItem('coastal_editing_locked', '0');
+    document.body.classList.remove('locked');
+    document.querySelectorAll('[contenteditable]').forEach(function(el) {
+      el.contentEditable = 'true';
+    });
+    cogBtn.style.display = 'none';
+    editorBar.classList.add('visible');
+  }
+
+  function saveAllPrices() {
+    document.querySelectorAll('.editable[data-price-id]').forEach(function(el) {
+      localStorage.setItem('coastal_price_' + el.dataset.priceId, el.textContent);
+    });
+  }
+
+  function resetAll() {
+    document.querySelectorAll('.editable[data-price-id]').forEach(function(el) {
+      localStorage.removeItem('coastal_price_' + el.dataset.priceId);
+    });
+    localStorage.removeItem('coastal_tip_dismissed');
+    localStorage.setItem('coastal_editing_locked', '1');
+    location.reload();
+  }
+
+  // --- MODAL RENDERING ---
+  function openModal() {
+    if (isLocked) {
+      modalCard.innerHTML =
+        '<h4>Enter Passcode</h4>' +
+        '<input type="password" class="pin-input" id="pinInput" maxlength="4" inputmode="numeric" autocomplete="off" placeholder="----">' +
+        '<div class="pin-error" id="pinError"></div>' +
+        '<button class="modal-submit" id="pinSubmit">Submit</button>' +
+        '<button class="modal-cancel" id="modalCancel">Cancel</button>';
     } else {
-      document.body.classList.remove('locked');
-      document.querySelectorAll('[contenteditable]').forEach(function(el) {
-        el.contentEditable = 'true';
+      modalCard.innerHTML =
+        '<h4>Editor Options</h4>' +
+        '<button class="modal-submit" id="modalSaveExit">Save &amp; Exit Editor</button>' +
+        '<button class="modal-btn-gray" id="modalReset">Reset All Changes</button>' +
+        '<button class="modal-cancel" id="modalCancel">Cancel</button>';
+    }
+    backdrop.classList.add('open');
+
+    // Bind events after render
+    var cancelBtn = document.getElementById('modalCancel');
+    cancelBtn.addEventListener('click', closeModal);
+
+    if (isLocked) {
+      var pinInput = document.getElementById('pinInput');
+      var pinSubmit = document.getElementById('pinSubmit');
+      var pinError = document.getElementById('pinError');
+      setTimeout(function() { pinInput.focus(); }, 50);
+
+      function tryUnlock() {
+        if (pinInput.value === PASSCODE) {
+          closeModal();
+          unlockEditing();
+        } else {
+          pinInput.classList.add('shake', 'error');
+          pinError.textContent = 'Incorrect';
+          setTimeout(function() {
+            pinInput.classList.remove('shake');
+            pinError.textContent = '';
+            pinInput.value = '';
+            pinInput.classList.remove('error');
+            pinInput.focus();
+          }, 1000);
+        }
+      }
+      pinSubmit.addEventListener('click', tryUnlock);
+      pinInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') tryUnlock();
       });
-      lockBtn.innerHTML = '&#128275; Lock Editing';
+    } else {
+      document.getElementById('modalSaveExit').addEventListener('click', function() {
+        saveAllPrices();
+        closeModal();
+        lockEditing();
+      });
+      document.getElementById('modalReset').addEventListener('click', function() {
+        closeModal();
+        resetAll();
+      });
     }
   }
 
-  // Apply initial state
-  setLocked(isLocked);
+  function closeModal() {
+    backdrop.classList.remove('open');
+  }
 
-  lockBtn.addEventListener('click', function() {
-    setLocked(!isLocked);
+  // Close modal on backdrop click (not card click)
+  backdrop.addEventListener('click', function(e) {
+    if (e.target === backdrop) closeModal();
   });
 
-  // --- PRICE localStorage (restore/save) ---
+  // --- APPLY INITIAL STATE ---
+  if (isLocked) {
+    lockEditing();
+  } else {
+    unlockEditing();
+  }
+
+  // --- COG BUTTON ---
+  cogBtn.addEventListener('click', openModal);
+
+  // --- EDITOR BAR: Save & Exit ---
+  editorSaveBtn.addEventListener('click', function() {
+    saveAllPrices();
+    lockEditing();
+  });
+
+  // --- PRICE localStorage (restore) ---
   document.querySelectorAll('.editable[data-price-id]').forEach(function(el) {
     var saved = localStorage.getItem('coastal_price_' + el.dataset.priceId);
     if (saved !== null) el.textContent = saved;
   });
 
+  // --- PRICE localStorage (save on blur) ---
   document.addEventListener('focusout', function(e) {
     if (e.target.classList.contains('editable') && e.target.dataset.priceId) {
       localStorage.setItem('coastal_price_' + e.target.dataset.priceId, e.target.textContent);
     }
-  });
-
-  document.getElementById('resetPrices').addEventListener('click', function() {
-    document.querySelectorAll('.editable[data-price-id]').forEach(function(el) {
-      localStorage.removeItem('coastal_price_' + el.dataset.priceId);
-    });
-    localStorage.removeItem('coastal_tip_dismissed');
-    location.reload();
   });
 
   // --- TIP BANNER (first visit) ---
@@ -1090,17 +1299,6 @@
   document.getElementById('dismissTip').addEventListener('click', function() {
     document.getElementById('tipBanner').style.display = 'none';
     localStorage.setItem('coastal_tip_dismissed', '1');
-  });
-
-  // --- PRINT VIEW ---
-  document.getElementById('printBtn').addEventListener('click', function() {
-    document.getElementById('floatingToolbar').style.display = 'none';
-    document.getElementById('resetPrices').style.display = 'none';
-    window.print();
-    setTimeout(function() {
-      document.getElementById('floatingToolbar').style.display = 'flex';
-      document.getElementById('resetPrices').style.display = 'block';
-    }, 500);
   });
 })();
 </script>
