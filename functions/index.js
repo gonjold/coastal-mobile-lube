@@ -146,6 +146,59 @@ exports.onNewBooking = onDocumentCreated(
   }
 );
 
+// ─── Helpers for confirmation emails ────────────────────────────
+
+function formatDateNice(isoDate) {
+  if (!isoDate) return null;
+  const [y, m, d] = isoDate.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const months = ["January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"];
+  return `${days[date.getDay()]}, ${months[date.getMonth()]} ${d}, ${y}`;
+}
+
+function parseArrivalWindow(window) {
+  if (!window) return null;
+  const match = window.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (!match) return null;
+  let [, sh, sm, eh, em, period] = match;
+  sh = parseInt(sh); sm = parseInt(sm); eh = parseInt(eh); em = parseInt(em);
+  const isPM = period.toUpperCase() === "PM";
+  if (isPM && sh < 12) sh += 12;
+  if (isPM && eh < 12) eh += 12;
+  if (!isPM && sh === 12) sh = 0;
+  if (!isPM && eh === 12) eh = 0;
+  return { startHour: sh, startMin: sm, endHour: eh, endMin: em };
+}
+
+function buildGoogleCalendarUrl(booking) {
+  const date = booking.confirmedDate || booking.preferredDate;
+  if (!date) return null;
+  const title = `Coastal Mobile - ${booking.service || "Service Appointment"}`;
+  const location = booking.address || (booking.zip ? `${booking.zip}, Tampa, FL` : "Tampa, FL");
+  const description = `Service: ${booking.service || "TBD"}\n\nNeed to reschedule? Call 813-722-LUBE`;
+  const parsed = parseArrivalWindow(booking.confirmedArrivalWindow);
+  const dateClean = date.replace(/-/g, "");
+  let startDT, endDT;
+  if (parsed) {
+    const pad = (n) => String(n).padStart(2, "0");
+    startDT = `${dateClean}T${pad(parsed.startHour)}${pad(parsed.startMin)}00`;
+    endDT = `${dateClean}T${pad(parsed.endHour)}${pad(parsed.endMin)}00`;
+  } else {
+    startDT = dateClean;
+    endDT = dateClean;
+  }
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: title,
+    dates: `${startDT}/${endDT}`,
+    location,
+    details: description,
+  });
+  return `https://calendar.google.com/calendar/event?${params.toString()}`;
+}
+
 // Email sent to CUSTOMER when admin confirms a booking
 const { onRequest } = require("firebase-functions/v2/https");
 
@@ -176,6 +229,15 @@ exports.sendConfirmationEmail = onRequest(
       ? `(${phone.slice(0, 3)}) ${phone.slice(3, 6)}-${phone.slice(6)}`
       : phone;
 
+    // Compute display values — prefer confirmed details over original request
+    const displayDate = booking.confirmedDate
+      ? formatDateNice(booking.confirmedDate)
+      : (booking.preferredDate ? (formatDateNice(booking.preferredDate) || booking.preferredDate) : null);
+    const displayTime = booking.confirmedArrivalWindow || booking.timeWindow || null;
+    const displayDuration = booking.estimatedDuration || null;
+    const calendarUrl = buildGoogleCalendarUrl(booking);
+    const locationDisplay = booking.address || (booking.zip ? `${booking.zip}, Tampa, FL` : null);
+
     const customerHtml = `
       <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #0B2040; padding: 20px 24px; border-radius: 8px 8px 0 0;">
@@ -188,37 +250,49 @@ exports.sendConfirmationEmail = onRequest(
           <p style="color: #666; line-height: 1.6;">
             Your mobile service appointment has been confirmed. Here are your details:
           </p>
-          <div style="background: #FAFBFC; border-radius: 8px; padding: 16px; margin: 16px 0;">
+          <div style="background: #FAFBFC; border: 1px solid #e8e8e8; border-radius: 8px; padding: 20px; margin: 16px 0;">
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
-                <td style="padding: 6px 0; color: #666;">Service</td>
-                <td style="padding: 6px 0; font-weight: 600;">${booking.service || "TBD"}</td>
+                <td style="padding: 8px 0; color: #666; width: 120px; vertical-align: top;">Service</td>
+                <td style="padding: 8px 0; font-weight: 600; color: #0B2040;">${booking.service || "TBD"}</td>
               </tr>
-              ${booking.preferredDate ? `
+              ${displayDate ? `
               <tr>
-                <td style="padding: 6px 0; color: #666;">Date</td>
-                <td style="padding: 6px 0; font-weight: 600;">${booking.preferredDate}</td>
+                <td style="padding: 8px 0; color: #666; vertical-align: top;">Date</td>
+                <td style="padding: 8px 0; font-weight: 700; color: #0B2040; font-size: 15px;">${displayDate}</td>
               </tr>` : ''}
-              ${booking.timeWindow ? `
+              ${displayTime ? `
               <tr>
-                <td style="padding: 6px 0; color: #666;">Time</td>
-                <td style="padding: 6px 0;">${booking.timeWindow}</td>
+                <td style="padding: 8px 0; color: #666; vertical-align: top;">Arrival Window</td>
+                <td style="padding: 8px 0; font-weight: 700; color: #0B2040; font-size: 15px;">${displayTime}</td>
               </tr>` : ''}
-              ${booking.address ? `
+              ${displayDuration ? `
               <tr>
-                <td style="padding: 6px 0; color: #666;">Location</td>
-                <td style="padding: 6px 0;">${booking.address}</td>
+                <td style="padding: 8px 0; color: #666; vertical-align: top;">Est. Duration</td>
+                <td style="padding: 8px 0; font-weight: 600;">${displayDuration}</td>
+              </tr>` : ''}
+              ${locationDisplay ? `
+              <tr>
+                <td style="padding: 8px 0; color: #666; vertical-align: top;">Location</td>
+                <td style="padding: 8px 0;">${locationDisplay}</td>
               </tr>` : ''}
             </table>
           </div>
+          ${calendarUrl ? `
+          <div style="text-align: center; margin: 16px 0 24px;">
+            <a href="${calendarUrl}" target="_blank"
+               style="display: inline-block; background: #E07B2D; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;">
+              Add to Your Calendar
+            </a>
+          </div>` : ''}
           <p style="color: #666; line-height: 1.6;">
-            Our technician will arrive at your location at the scheduled time with everything needed to complete your service. Most services take under an hour.
+            Our technician will arrive at your location during the scheduled window with everything needed to complete your service.
           </p>
           <p style="color: #666; line-height: 1.6;">
             Need to reschedule or have questions? Call or text us:
           </p>
           <div style="text-align: center; margin: 20px 0;">
-            <a href="tel:8137225823" style="display: inline-block; background: #E07B2D; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+            <a href="tel:8137225823" style="display: inline-block; background: #0B2040; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600;">
               Call 813-722-LUBE
             </a>
           </div>

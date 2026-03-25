@@ -9,6 +9,7 @@ import {
   query,
   doc,
   updateDoc,
+  deleteDoc,
   serverTimestamp,
   arrayUnion,
 } from "firebase/firestore";
@@ -43,6 +44,7 @@ interface Booking {
   confirmedArrivalWindow?: string;
   estimatedDuration?: string;
   confirmedAt?: FirestoreTimestamp;
+  cancelledAt?: FirestoreTimestamp;
   returningCustomer?: boolean;
   createdAt?: FirestoreTimestamp;
   updatedAt?: FirestoreTimestamp;
@@ -109,6 +111,8 @@ function getStatusStyle(status?: string) {
       return { label: "Confirmed", cls: "bg-[#1A5FAC] text-white" };
     case "completed":
       return { label: "Completed", cls: "bg-[#16a34a] text-white" };
+    case "cancelled":
+      return { label: "Cancelled", cls: "bg-[#999] text-white" };
     default:
       return { label: status || "—", cls: "bg-[#eee] text-[#444]" };
   }
@@ -196,6 +200,10 @@ export default function AdminDashboard() {
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
+  /* Cancel / Delete confirmation */
+  const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
   /* Admin notes */
   const [editingNotes, setEditingNotes] = useState<Record<string, string>>({});
   const [savingNotes, setSavingNotes] = useState<Record<string, boolean>>({});
@@ -251,12 +259,13 @@ export default function AdminDashboard() {
     return true;
   });
 
-  /* ── Sort: NEW pending → pending → confirmed → completed ── */
+  /* ── Sort: NEW pending → pending → confirmed → completed → cancelled ── */
   filtered.sort((a, b) => {
     const priority = (bk: Booking) => {
       if (isNewBooking(bk)) return 0;
       if (bk.status === "pending") return 1;
       if (bk.status === "confirmed") return 2;
+      if (bk.status === "cancelled") return 4;
       return 3;
     };
     const diff = priority(a) - priority(b);
@@ -267,11 +276,13 @@ export default function AdminDashboard() {
   });
 
   /* ── Stats (unfiltered) ── */
+  const cancelled = bookings.filter((b) => b.status === "cancelled").length;
   const stats = {
-    total: bookings.length,
+    total: bookings.length - cancelled,
     pending: bookings.filter((b) => b.status === "pending").length,
     confirmed: bookings.filter((b) => b.status === "confirmed").length,
     completed: bookings.filter((b) => b.status === "completed").length,
+    cancelled,
   };
 
   /* ── Status update (optimistic) ── */
@@ -380,6 +391,46 @@ export default function AdminDashboard() {
     }
   }
 
+  /* ── Cancel booking ── */
+  async function cancelBooking(id: string) {
+    setCancelConfirmId(null);
+    setBookings((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b))
+    );
+    try {
+      const entry = {
+        id: crypto.randomUUID(),
+        type: "note" as const,
+        direction: "outbound" as const,
+        summary: "Booking cancelled",
+        createdAt: new Date().toISOString(),
+        createdBy: "admin",
+      };
+      await updateDoc(doc(db, "bookings", id), {
+        status: "cancelled",
+        cancelledAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        commsLog: arrayUnion(entry),
+      });
+      addToast("Booking cancelled");
+    } catch {
+      /* onSnapshot will correct */
+    }
+  }
+
+  /* ── Delete booking ── */
+  async function deleteBooking(id: string) {
+    setDeleteConfirmId(null);
+    setBookings((prev) => prev.filter((b) => b.id !== id));
+    if (expandedId === id) setExpandedId(null);
+    try {
+      await deleteDoc(doc(db, "bookings", id));
+      addToast("Booking deleted");
+    } catch {
+      /* onSnapshot will correct */
+    }
+  }
+
   /* ── Calendar data ── */
   const calYear = calendarDate.getFullYear();
   const calMonth = calendarDate.getMonth();
@@ -413,13 +464,14 @@ export default function AdminDashboard() {
   return (
     <div className="px-4 lg:px-8 py-6 max-w-[1400px] mx-auto">
       {/* ═══ Stats ═══ */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
         {(
           [
-            { label: "Total Bookings", value: stats.total, color: "text-[#0B2040]" },
+            { label: "Active Bookings", value: stats.total, color: "text-[#0B2040]" },
             { label: "Pending", value: stats.pending, color: "text-[#E07B2D]" },
             { label: "Confirmed", value: stats.confirmed, color: "text-[#1A5FAC]" },
             { label: "Completed", value: stats.completed, color: "text-[#16a34a]" },
+            { label: "Cancelled", value: stats.cancelled, color: "text-[#999]" },
           ] as const
         ).map((s) => (
           <div
@@ -461,7 +513,7 @@ export default function AdminDashboard() {
             Status
           </label>
           <div className="flex rounded-lg overflow-hidden border border-[#e8e8e8]">
-            {["all", "pending", "confirmed", "completed"].map((v) => (
+            {["all", "pending", "confirmed", "completed", "cancelled"].map((v) => (
               <button
                 key={v}
                 onClick={() => setStatusFilter(v)}
@@ -680,6 +732,8 @@ export default function AdminDashboard() {
                               setExpandedId(b.id);
                             }}
                             onComplete={() => updateStatus(b.id, "completed")}
+                            onCancel={() => setCancelConfirmId(b.id)}
+                            onDelete={() => setDeleteConfirmId(b.id)}
                           />
                         </td>
                       </tr>
@@ -800,7 +854,9 @@ export default function AdminDashboard() {
                               ? "bg-[#E07B2D]"
                               : b.status === "confirmed"
                                 ? "bg-[#1A5FAC]"
-                                : "bg-[#16a34a]"
+                                : b.status === "cancelled"
+                                  ? "bg-[#999]"
+                                  : "bg-[#16a34a]"
                           }`}
                         />
                       ))}
@@ -883,6 +939,70 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* ═══ Cancel Confirmation Dialog ═══ */}
+      {cancelConfirmId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-[14px] shadow-xl max-w-[400px] w-full mx-4 p-6">
+            <h3 className="text-[18px] font-bold text-[#0B2040] mb-2">Cancel this booking?</h3>
+            <p className="text-[14px] text-[#666] mb-6">
+              The customer will not be notified automatically.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setCancelConfirmId(null)}
+                className="px-4 py-2.5 text-[13px] font-semibold text-[#444] border border-[#ddd] rounded-md hover:bg-[#f5f5f5] transition-colors"
+              >
+                Never mind
+              </button>
+              <button
+                onClick={() => cancelBooking(cancelConfirmId)}
+                className="px-4 py-2.5 text-[13px] font-semibold text-white bg-[#dc2626] rounded-md hover:bg-[#b91c1c] transition-colors"
+              >
+                Cancel Booking
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ Delete Confirmation Dialog ═══ */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-[14px] shadow-xl max-w-[440px] w-full mx-4 p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-[#fef2f2] flex items-center justify-center shrink-0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </div>
+              <h3 className="text-[18px] font-bold text-[#0B2040]">Permanently delete this booking?</h3>
+            </div>
+            <p className="text-[14px] text-[#dc2626] font-medium mb-1">
+              This cannot be undone.
+            </p>
+            <p className="text-[14px] text-[#666] mb-6">
+              All data and communication logs will be lost.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setDeleteConfirmId(null)}
+                className="px-4 py-2.5 text-[13px] font-semibold text-[#444] border border-[#ddd] rounded-md hover:bg-[#f5f5f5] transition-colors"
+              >
+                Keep It
+              </button>
+              <button
+                onClick={() => deleteBooking(deleteConfirmId)}
+                className="px-4 py-2.5 text-[13px] font-semibold text-white bg-[#dc2626] rounded-md hover:bg-[#b91c1c] transition-colors"
+              >
+                Delete Forever
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   );
@@ -894,14 +1014,31 @@ function StatusActions({
   status,
   onConfirm,
   onComplete,
+  onCancel,
+  onDelete,
 }: {
   status?: string;
   onConfirm: () => void;
   onComplete: () => void;
+  onCancel: () => void;
+  onDelete: () => void;
 }) {
+  const trashBtn = (
+    <button
+      onClick={onDelete}
+      className="ml-2 p-1.5 text-[#aaa] hover:text-[#dc2626] transition-colors rounded"
+      title="Delete booking"
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="3 6 5 6 21 6" />
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      </svg>
+    </button>
+  );
+
   if (status === "pending") {
     return (
-      <div className="flex gap-2">
+      <div className="flex items-center gap-2">
         <button
           onClick={onConfirm}
           className="px-3 py-1.5 text-[12px] font-semibold text-white bg-[#1A5FAC] rounded-md hover:bg-[#164d8a] transition-colors"
@@ -914,32 +1051,59 @@ function StatusActions({
         >
           Complete
         </button>
+        <button
+          onClick={onCancel}
+          className="px-3 py-1.5 text-[12px] font-semibold text-[#dc2626] hover:bg-[#fef2f2] rounded-md transition-colors"
+        >
+          Cancel
+        </button>
+        {trashBtn}
       </div>
     );
   }
   if (status === "confirmed") {
     return (
-      <button
-        onClick={onComplete}
-        className="px-3 py-1.5 text-[12px] font-semibold text-white bg-[#16a34a] rounded-md hover:bg-[#15803d] transition-colors"
-      >
-        Complete
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={onComplete}
+          className="px-3 py-1.5 text-[12px] font-semibold text-white bg-[#16a34a] rounded-md hover:bg-[#15803d] transition-colors"
+        >
+          Complete
+        </button>
+        <button
+          onClick={onCancel}
+          className="px-3 py-1.5 text-[12px] font-semibold text-[#dc2626] hover:bg-[#fef2f2] rounded-md transition-colors"
+        >
+          Cancel
+        </button>
+        {trashBtn}
+      </div>
+    );
+  }
+  if (status === "cancelled") {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-[12px] text-[#999]">Cancelled</span>
+        {trashBtn}
+      </div>
     );
   }
   return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="#16a34a"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
+    <div className="flex items-center gap-2">
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#16a34a"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <polyline points="20 6 9 17 4 12" />
+      </svg>
+      {trashBtn}
+    </div>
   );
 }
 
