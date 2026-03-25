@@ -186,9 +186,9 @@ export default function Home() {
                 The shop that comes to <span className="text-[#E07B2D]">you.</span>
               </h1>
               <p className="text-[17px] leading-[1.7] text-[#444] max-w-[460px] mb-8">
-                Mobile oil changes, tire sales and service, and marine engine
-                maintenance. At your driveway, your parking lot, or your marina.
-                Tampa and surrounding areas.
+                Mobile oil changes, tire service, fleet maintenance, and marine engine
+                care. We come to your driveway, your parking lot, or your dock.
+                No shop visit needed.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 mb-0 sm:mb-8">
@@ -204,6 +204,11 @@ export default function Home() {
                 </a>
               </div>
 
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '24px', marginBottom: '16px' }} className="hidden md:flex">
+                <img src="/images/ase-badge.png" alt="ASE Certified" style={{ width: '70px', height: '70px', objectFit: 'contain', flexShrink: 0 }} />
+                <img src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_400,q_auto:good,f_auto/v1774317068/Van_mockup_ln68oh.png" alt="Coastal Mobile service van" style={{ width: '280px', height: 'auto', objectFit: 'contain', flexShrink: 0 }} />
+              </div>
+
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pt-4 sm:pt-7 border-t border-[#eee]">
                 {["Factory-trained techs", "Licensed & insured", "Same-day availability"].map((item) => (
                   <div key={item} className="flex items-center gap-2.5">
@@ -213,11 +218,6 @@ export default function Home() {
                     <span className="text-sm text-[#555] font-medium">{item}</span>
                   </div>
                 ))}
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '20px' }} className="hidden md:flex">
-                <img src="/images/ase-badge.png" alt="ASE Certified" style={{ width: '55px', height: '55px', objectFit: 'contain', flexShrink: 0 }} />
-                <img src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_400,q_auto:good,f_auto/v1774317068/Van_mockup_ln68oh.png" alt="Coastal Mobile service van" style={{ width: '220px', height: 'auto', objectFit: 'contain', flexShrink: 0 }} />
               </div>
             </div>
 
