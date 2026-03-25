@@ -113,12 +113,12 @@ export default function NotificationButtons({
         <p className="text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-2">
           Send Notification
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => (email ? setConfirmEmail(true) : undefined)}
             disabled={!email}
             title={!email ? "No email on file" : undefined}
-            className="flex items-center justify-center gap-2 py-3 rounded-[8px] text-[13px] font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-[#1A5FAC] text-white hover:bg-[#164d8a]"
+            className="flex items-center justify-center gap-2 py-2 px-4 rounded-[8px] text-[12px] font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-[#1A5FAC] text-white hover:bg-[#164d8a]"
           >
             <svg
               width="14"
@@ -139,7 +139,7 @@ export default function NotificationButtons({
             onClick={() => (phone ? setConfirmText(true) : undefined)}
             disabled={!phone}
             title={!phone ? "No phone on file" : undefined}
-            className="flex flex-col items-center justify-center gap-1 py-3 rounded-[8px] text-[13px] font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-[#16a34a] text-white hover:bg-[#15803d]"
+            className="flex flex-col items-center justify-center gap-1 py-2 px-4 rounded-[8px] text-[12px] font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-[#16a34a] text-white hover:bg-[#15803d]"
           >
             <span className="flex items-center gap-2">
               <svg
@@ -161,7 +161,7 @@ export default function NotificationButtons({
           <a
             href={phone ? `tel:${phone}` : undefined}
             onClick={phone ? handleCall : undefined}
-            className={`flex items-center justify-center gap-2 py-3 rounded-[8px] text-[13px] font-semibold transition-colors ${
+            className={`flex items-center justify-center gap-2 py-2 px-4 rounded-[8px] text-[12px] font-semibold transition-colors ${
               phone
                 ? "bg-[#E07B2D] text-white hover:bg-[#cc6a1f] cursor-pointer"
                 : "bg-[#E07B2D] text-white opacity-40 cursor-not-allowed"

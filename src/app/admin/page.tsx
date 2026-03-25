@@ -567,6 +567,7 @@ export default function AdminDashboard() {
             [
               { key: "list", label: "List View" },
               { key: "calendar", label: "Calendar View" },
+              { key: "customers", label: "Customers" },
             ] as const
           ).map((v) => (
             <button
@@ -748,7 +749,7 @@ export default function AdminDashboard() {
             </table>
           </div>
         </div>
-      ) : (
+      ) : viewMode === "calendar" ? (
         /* ═══ CALENDAR VIEW ═══ */
         <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-6">
           {/* Month navigation */}
@@ -915,6 +916,9 @@ export default function AdminDashboard() {
             </div>
           )}
         </div>
+      ) : (
+        /* ═══ CUSTOMERS VIEW ═══ */
+        <CustomersView bookings={bookings} addToast={addToast} />
       )}
 
       {/* ═══ Cancel Confirmation Dialog ═══ */}
@@ -1131,32 +1135,61 @@ function ExpandedDetail({
   );
   const [apptDuration, setApptDuration] = useState("Under 1 hour");
 
-  const fields = [
+  const customerRows: { label: string; value?: string; href?: string }[] = [
     { label: "Name", value: b.name },
-    { label: "Phone", value: formatPhone(b.phone) },
-    { label: "Email", value: b.email },
-    { label: "Contact Preference", value: b.contactPreference },
-    { label: "Service", value: b.service },
-    { label: "Service Category", value: b.serviceCategory },
-    { label: "Source", value: b.source },
+    { label: "Phone", value: formatPhone(b.phone), href: b.phone ? `tel:${b.phone}` : undefined },
+    { label: "Email", value: b.email, href: b.email ? `mailto:${b.email}` : undefined },
     { label: "Address", value: b.address },
+    { label: "Contact Pref", value: b.contactPreference },
+    { label: "Source", value: b.source },
     { label: "Preferred Date", value: b.preferredDate },
     { label: "Dates Flexible", value: b.datesFlexible ? "Yes" : undefined },
+    { label: "Notes", value: b.notes },
+    { label: "Status", value: b.status },
+    { label: "Service", value: b.service },
+    { label: "Category", value: b.serviceCategory },
     { label: "Time Window", value: b.timeWindow },
-    { label: "Zip Code", value: b.zip },
+    { label: "Zip", value: b.zip },
     { label: "Fleet Size", value: b.fleetSize },
     { label: "Engine Type", value: b.engineType },
     { label: "Engine Count", value: b.engineCount },
-    { label: "Notes", value: b.notes },
-    { label: "Returning Customer", value: b.returningCustomer ? "Yes" : undefined },
-    { label: "Status", value: b.status },
+    { label: "Returning", value: b.returningCustomer ? "Yes" : undefined },
     { label: "Created", value: formatTimestamp(b.createdAt) },
     { label: "Updated", value: formatTimestamp(b.updatedAt) },
   ].filter((f) => f.value);
 
   return (
     <div className="bg-[#FAFBFC] border-t border-[#eee] px-6 py-5">
-      {/* Confirmed appointment details (B3) */}
+      <div className="flex flex-col md:flex-row gap-6">
+        {/* LEFT COLUMN - Customer Info */}
+        <div className="w-full md:w-1/3 shrink-0">
+          <div className="bg-white border border-[#e8e8e8] rounded-[10px] p-4">
+            <h4 className="text-[14px] font-bold text-[#0B2040] mb-3 pb-2 border-b border-[#eee]">Customer Info</h4>
+            {customerRows.map((r) => (
+              <div key={r.label} className="flex justify-between items-start py-1.5 border-b border-[#f5f5f5] last:border-0">
+                <span className="text-[12px] text-[#888] font-medium shrink-0">{r.label}</span>
+                {r.href ? (
+                  <a href={r.href} className="text-[13px] text-[#1A5FAC] font-medium hover:underline text-right" onClick={(e) => e.stopPropagation()}>{r.value}</a>
+                ) : (
+                  <span className="text-[13px] text-[#0B2040] font-medium text-right max-w-[60%] break-words">{r.value}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN - Actions & Communications */}
+        <div className="w-full md:w-2/3">
+      {/* Notification buttons */}
+      <NotificationButtons
+        bookingId={b.id}
+        booking={b}
+        phone={b.phone}
+        email={b.email}
+        onToast={onToast}
+      />
+
+      {/* Confirmed appointment details */}
       {(b.status === "confirmed" || b.status === "completed") && b.confirmedDate && (
         <div className="mb-5 border-l-4 border-l-[#1A5FAC] bg-[#EBF4FF] rounded-r-[8px] p-4">
           <p className="text-[11px] uppercase font-semibold text-[#1A5FAC] tracking-[0.5px] mb-2">
@@ -1257,26 +1290,6 @@ function ExpandedDetail({
         </div>
       )}
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-5">
-        {fields.map((f) => (
-          <div key={f.label}>
-            <p className="text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1">
-              {f.label}
-            </p>
-            <p className="text-[14px] text-[#0B2040]">{f.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Notification buttons */}
-      <NotificationButtons
-        bookingId={b.id}
-        booking={b}
-        phone={b.phone}
-        email={b.email}
-        onToast={onToast}
-      />
-
       {/* Google Calendar button */}
       {(b.status === "confirmed" || b.status === "completed") && (
         <div className="mb-5">
@@ -1317,6 +1330,313 @@ function ExpandedDetail({
         commsLog={b.commsLog || []}
         onToast={onToast}
       />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Customers View ─────────────────────────────────────── */
+
+interface Customer {
+  key: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  totalBookings: number;
+  lastBookingDate: string;
+  lastBookingStatus?: string;
+  bookings: Booking[];
+}
+
+function buildCustomerList(bookings: Booking[]): Customer[] {
+  const map = new Map<string, Booking[]>();
+  bookings.forEach((b) => {
+    const key = b.phone?.replace(/\D/g, "") || b.email?.toLowerCase() || b.id;
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(b);
+  });
+
+  const customers: Customer[] = [];
+  map.forEach((bks, key) => {
+    const sorted = [...bks].sort((a, b) => {
+      const aTime = a.createdAt?.toDate?.()?.getTime() ?? 0;
+      const bTime = b.createdAt?.toDate?.()?.getTime() ?? 0;
+      return bTime - aTime;
+    });
+    const latest = sorted[0];
+    customers.push({
+      key,
+      name: latest.name || "—",
+      phone: latest.phone,
+      email: latest.email,
+      address: latest.address,
+      totalBookings: sorted.length,
+      lastBookingDate: formatTimestamp(latest.createdAt),
+      lastBookingStatus: latest.status,
+      bookings: sorted,
+    });
+  });
+
+  customers.sort((a, b) => {
+    const aTime = a.bookings[0]?.createdAt?.toDate?.()?.getTime() ?? 0;
+    const bTime = b.bookings[0]?.createdAt?.toDate?.()?.getTime() ?? 0;
+    return bTime - aTime;
+  });
+
+  return customers;
+}
+
+function CustomersView({
+  bookings,
+  addToast,
+}: {
+  bookings: Booking[];
+  addToast: (message: string, type?: "success" | "info") => void;
+}) {
+  const [search, setSearch] = useState("");
+  const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
+  const [editingCustomer, setEditingCustomer] = useState<Record<string, { name: string; phone: string; email: string; address: string }>>({});
+  const [savingCustomer, setSavingCustomer] = useState<string | null>(null);
+
+  const customers = buildCustomerList(bookings);
+
+  const filtered = search.trim()
+    ? customers.filter((c) => {
+        const q = search.toLowerCase();
+        return (
+          c.name.toLowerCase().includes(q) ||
+          (c.phone && formatPhone(c.phone).includes(q)) ||
+          (c.phone && c.phone.includes(q)) ||
+          (c.email && c.email.toLowerCase().includes(q))
+        );
+      })
+    : customers;
+
+  async function handleSaveCustomer(customer: Customer) {
+    const edit = editingCustomer[customer.key];
+    if (!edit) return;
+    setSavingCustomer(customer.key);
+    try {
+      await Promise.all(
+        customer.bookings.map((b) =>
+          updateDoc(doc(db, "bookings", b.id), {
+            name: edit.name.trim() || undefined,
+            phone: edit.phone.replace(/\D/g, "") || undefined,
+            email: edit.email.trim().toLowerCase() || undefined,
+            address: edit.address.trim() || undefined,
+            updatedAt: serverTimestamp(),
+          })
+        )
+      );
+      addToast(`Updated ${customer.bookings.length} booking(s) for ${edit.name || customer.name}`);
+    } catch {
+      addToast("Failed to update customer info", "info");
+    } finally {
+      setSavingCustomer(null);
+    }
+  }
+
+  function getCombinedCommsLog(customer: Customer) {
+    const all: Array<{ id: string; type: string; direction: string; summary: string; createdAt: string; createdBy: string; bookingService?: string }> = [];
+    customer.bookings.forEach((b) => {
+      (b.commsLog || []).forEach((entry) => {
+        all.push({ ...entry, bookingService: b.service || b.name || b.id });
+      });
+    });
+    return all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  return (
+    <div className="bg-white border border-[#e8e8e8] rounded-[12px] overflow-hidden">
+      {/* Search */}
+      <div className="p-4 border-b border-[#eee]">
+        <input
+          type="text"
+          placeholder="Search by name, phone, or email..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full text-[14px] rounded-[8px] px-4 py-2.5 border border-[#ddd] outline-none focus:border-[#1A5FAC] transition-colors"
+        />
+      </div>
+
+      {/* Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="border-b border-[#eee]">
+              {["Name", "Phone", "Email", "Bookings", "Last Booking", "Status"].map((h) => (
+                <th key={h} className="px-4 py-3 text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] whitespace-nowrap">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-4 py-8 text-center text-[14px] text-[#888]">
+                  {search ? "No customers match your search" : "No customers yet"}
+                </td>
+              </tr>
+            ) : (
+              filtered.map((c) => {
+                const isExpanded = expandedCustomer === c.key;
+                const status = getStatusStyle(c.lastBookingStatus);
+                return (
+                  <Fragment key={c.key}>
+                    <tr
+                      onClick={() => setExpandedCustomer(isExpanded ? null : c.key)}
+                      className={`border-b border-[#f0f0f0] cursor-pointer transition-colors ${isExpanded ? "bg-[#FAFBFC]" : "hover:bg-[#FAFBFC]"}`}
+                    >
+                      <td className="px-4 py-3 text-[14px] font-semibold text-[#0B2040] whitespace-nowrap">{c.name}</td>
+                      <td className="px-4 py-3 text-[13px] whitespace-nowrap">
+                        {c.phone ? (
+                          <a href={`tel:${c.phone}`} className="text-[#1A5FAC] hover:underline" onClick={(e) => e.stopPropagation()}>
+                            {formatPhone(c.phone)}
+                          </a>
+                        ) : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-[13px] text-[#444] whitespace-nowrap">{c.email || "—"}</td>
+                      <td className="px-4 py-3 text-[14px] font-semibold text-[#0B2040]">{c.totalBookings}</td>
+                      <td className="px-4 py-3 text-[13px] text-[#444] whitespace-nowrap">{c.lastBookingDate}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className={`inline-block px-3 py-1 rounded-full text-[11px] font-semibold ${status.cls}`}>{status.label}</span>
+                      </td>
+                    </tr>
+
+                    {isExpanded && (
+                      <tr>
+                        <td colSpan={6} className="p-0">
+                          <CustomerExpanded
+                            customer={c}
+                            editingCustomer={editingCustomer}
+                            savingCustomer={savingCustomer}
+                            onEditChange={(val) => setEditingCustomer((p) => ({ ...p, [c.key]: val }))}
+                            onSave={() => handleSaveCustomer(c)}
+                            commsLog={getCombinedCommsLog(c)}
+                          />
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function CustomerExpanded({
+  customer,
+  editingCustomer,
+  savingCustomer,
+  onEditChange,
+  onSave,
+  commsLog,
+}: {
+  customer: Customer;
+  editingCustomer: Record<string, { name: string; phone: string; email: string; address: string }>;
+  savingCustomer: string | null;
+  onEditChange: (val: { name: string; phone: string; email: string; address: string }) => void;
+  onSave: () => void;
+  commsLog: Array<{ id: string; type: string; direction: string; summary: string; createdAt: string; bookingService?: string }>;
+}) {
+  const edit = editingCustomer[customer.key] || {
+    name: customer.name === "—" ? "" : customer.name,
+    phone: customer.phone ? formatPhone(customer.phone) : "",
+    email: customer.email || "",
+    address: customer.address || "",
+  };
+
+  const typeLabels: Record<string, string> = { call: "Call", text: "Text", email: "Email", note: "Note" };
+  const typeColors: Record<string, string> = { call: "bg-[#E07B2D]", text: "bg-[#16a34a]", email: "bg-[#1A5FAC]", note: "bg-[#888]" };
+
+  return (
+    <div className="bg-[#FAFBFC] border-t border-[#eee] px-6 py-5">
+      <div className="flex flex-col md:flex-row gap-6">
+        {/* Editable Customer Info */}
+        <div className="w-full md:w-1/3 shrink-0">
+          <div className="bg-white border border-[#e8e8e8] rounded-[10px] p-4">
+            <h4 className="text-[14px] font-bold text-[#0B2040] mb-3 pb-2 border-b border-[#eee]">Edit Customer</h4>
+            {(["name", "phone", "email", "address"] as const).map((field) => (
+              <div key={field} className="mb-3">
+                <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1">
+                  {field}
+                </label>
+                <input
+                  type={field === "email" ? "email" : field === "phone" ? "tel" : "text"}
+                  value={edit[field]}
+                  onChange={(e) => onEditChange({ ...edit, [field]: e.target.value })}
+                  className="w-full text-[13px] rounded-[6px] px-3 py-1.5 border border-[#ddd] outline-none focus:border-[#1A5FAC] transition-colors"
+                />
+              </div>
+            ))}
+            <button
+              onClick={onSave}
+              disabled={savingCustomer === customer.key}
+              className="w-full mt-1 px-4 py-2 text-[13px] font-semibold text-white bg-[#0B2040] rounded-md hover:bg-[#132E54] transition-colors disabled:opacity-50"
+            >
+              {savingCustomer === customer.key ? "Saving..." : `Save (updates ${customer.totalBookings} booking${customer.totalBookings !== 1 ? "s" : ""})`}
+            </button>
+          </div>
+        </div>
+
+        {/* Bookings + Comms Log */}
+        <div className="w-full md:w-2/3">
+          {/* All Bookings */}
+          <h4 className="text-[14px] font-bold text-[#0B2040] mb-3">All Bookings</h4>
+          <div className="flex flex-col gap-2 mb-6">
+            {customer.bookings.map((b) => {
+              const st = getStatusStyle(b.status);
+              const src = getSourceLabel(b.source);
+              return (
+                <div key={b.id} className="flex items-center justify-between bg-white border border-[#e8e8e8] rounded-[8px] px-4 py-3">
+                  <div>
+                    <p className="text-[13px] font-semibold text-[#0B2040]">{b.service || "—"}</p>
+                    <p className="text-[12px] text-[#888]">{formatTimestamp(b.createdAt)}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 ml-4">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold text-white ${src.color}`}>{src.label}</span>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${st.cls}`}>{st.label}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Combined Communication Log */}
+          <h4 className="text-[14px] font-bold text-[#0B2040] mb-3">Communication History</h4>
+          {commsLog.length === 0 ? (
+            <p className="text-[13px] text-[#888] italic">No communication logged</p>
+          ) : (
+            <div className="flex flex-col gap-1">
+              {commsLog.map((entry, i) => {
+                const date = new Date(entry.createdAt);
+                return (
+                  <div key={`${entry.id}-${i}`} className="flex items-center gap-3 py-2 border-b border-[#f0f0f0] last:border-0">
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold text-white ${typeColors[entry.type] || "bg-[#888]"}`}>
+                      {typeLabels[entry.type] || entry.type}
+                    </span>
+                    <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold text-[#444] bg-[#f0f0f0]">
+                      {entry.direction.charAt(0).toUpperCase() + entry.direction.slice(1)}
+                    </span>
+                    <span className="text-[13px] text-[#444] flex-1">{entry.summary}</span>
+                    <span className="text-[12px] text-[#888] whitespace-nowrap">
+                      {date.toLocaleDateString("en-US", { month: "short", day: "numeric" })},{" "}
+                      {date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
