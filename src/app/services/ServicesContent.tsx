@@ -166,7 +166,7 @@ export default function ServicesContent() {
             <h1 className="text-[30px] md:text-[42px] font-extrabold leading-[1.08] text-[#0B2040] tracking-[-1px] mb-5">
               Mobile maintenance at your door
             </h1>
-            <p className="text-[16px] leading-[1.65] text-[#666] max-w-[580px] mb-8">
+            <p className="text-[16px] leading-[1.65] text-[#666] max-w-[700px] mb-8">
               From synthetic oil changes to tire sales and installation, we
               handle everything your vehicle needs without the trip to the shop.
               Factory-trained technicians, professional equipment, and

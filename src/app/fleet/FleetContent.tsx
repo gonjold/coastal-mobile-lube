@@ -158,7 +158,7 @@ export default function FleetContent() {
             <h1 className="text-[30px] md:text-[42px] font-[800] leading-[1.08] text-[#0B2040] tracking-[-1px] mb-5">
               Keep your fleet on the road
             </h1>
-            <p className="text-[16px] leading-[1.7] text-[#444] max-w-[480px] mb-8">
+            <p className="text-[16px] leading-[1.7] text-[#444] max-w-[700px] mb-8">
               Scheduled mobile maintenance for company vehicles, box trucks,
               vans, and commercial fleets. We come to your yard, your lot, or
               your job site. No vehicle downtime, no shop visits.

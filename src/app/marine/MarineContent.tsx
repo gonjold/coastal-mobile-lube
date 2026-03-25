@@ -113,7 +113,7 @@ export default function MarineContent() {
             <h1 className="text-[30px] md:text-[42px] font-[800] leading-[1.08] text-[#0B2040] tracking-[-1px] mb-5">
               Dockside service for your boat
             </h1>
-            <p className="text-[16px] leading-[1.7] text-[#444] max-w-[480px] mb-8">
+            <p className="text-[16px] leading-[1.7] text-[#444] max-w-[700px] mb-8">
               We service outboard and inboard engines right at the marina or
               boat ramp. No hauling, no waiting. Factory-grade parts, certified
               technicians, and a 12-month service warranty on every job.

@@ -71,7 +71,7 @@ export default function AboutPage() {
               <h1 className="text-[30px] md:text-[42px] font-extrabold leading-[1.08] text-[#0B2040] tracking-[-1px] mb-5">
                 30 years of dealership expertise, on wheels
               </h1>
-              <p className="text-[16px] leading-[1.65] text-[#444] max-w-[600px]">
+              <p className="text-[16px] leading-[1.65] text-[#444] max-w-[700px]">
                 Coastal Mobile Lube and Tire was built on a simple idea:
                 dealership-quality maintenance should not require a dealership
                 visit. Our team brings three decades of franchise fixed
@@ -202,7 +202,7 @@ export default function AboutPage() {
 
       {/* Section 5 — CTA */}
       <section className="bg-[#FAFBFC]">
-        <div className="max-w-[1100px] mx-auto px-4 lg:px-6 py-12 md:py-16 text-center">
+        <div className="max-w-[1100px] mx-auto px-4 lg:px-6 py-12 text-center">
           <h2 className="text-[28px] md:text-[34px] font-extrabold leading-[1.1] text-[#0B2040] tracking-[-0.5px] mb-4">
             Ready to skip the shop?
           </h2>

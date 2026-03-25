@@ -14,29 +14,36 @@ import {
 
 /* ─── Data ─────────────────────────────────────────────────────── */
 
-const services = [
-  { name: "Synthetic Oil Change", price: "$49" },
-  { name: "Conventional Oil Change", price: "$39" },
-  { name: "Tire Rotation & Balance", price: "$29" },
-  { name: "Tire Sales & Installation", price: "$75" },
+const mainServices = [
+  { name: "Synthetic Oil Change", price: "$89" },
+  { name: "Tire Rotation & Balance", price: "$49" },
+  { name: "Tire Sales & Installation", price: "$99" },
   { name: "Brake Pads (per axle)", price: "$199" },
-  { name: "Brake Pads & Rotors", price: "$349" },
-  { name: "Battery Replacement", price: "$149" },
+  { name: "Battery Replacement", price: "$225" },
+  { name: "Full Service Package", price: "$189" },
+];
+
+const moreServices = [
+  { name: "Conventional Oil Change", price: "$69" },
+  { name: "Brake Pads & Rotors", price: "$399" },
   { name: "A/C Recharge", price: "$149" },
-  { name: "Spark Plugs", price: "$89" },
-  { name: "Suspension/Struts (per strut)", price: "$149" },
-  { name: "Full Maintenance Package", price: "$179" },
+  { name: "Spark Plugs & Coils", price: "$149" },
+  { name: "Suspension/Struts", price: "$199" },
   { name: "Coolant Flush", price: "$99" },
-  { name: "Transmission Fluid Change", price: "$129" },
+  { name: "Transmission Fluid Change", price: "$149" },
   { name: "Power Steering Flush", price: "$89" },
-  { name: "Diagnostic Visit", price: "$49" },
+  { name: "Diagnostic Visit", price: "$75" },
+  { name: "Wiper Blades", price: "$29" },
+  { name: "Air Filter", price: "$29" },
   { name: "Other (describe below)", price: "Quote" },
-] as const;
+];
 
 const timeWindows = [
-  { value: "morning", label: "Morning (7–10)" },
-  { value: "midday", label: "Midday (10–1)" },
-  { value: "afternoon", label: "Afternoon (1–5)" },
+  { value: "early-morning", label: "Early Morning (7-9)" },
+  { value: "morning", label: "Morning (9-11)" },
+  { value: "midday", label: "Midday (11-1)" },
+  { value: "afternoon", label: "Afternoon (1-3)" },
+  { value: "late-afternoon", label: "Late Afternoon (3-5)" },
 ] as const;
 
 /* ─── Helpers ──────────────────────────────────────────────────── */
@@ -65,7 +72,7 @@ function formatDateDisplay(iso: string): string {
 /* ─── Types ────────────────────────────────────────────────────── */
 
 interface FormData {
-  service: string;
+  services: string[];
   preferredDate: string;
   timeWindow: string;
   name: string;
@@ -82,8 +89,9 @@ type Errors = Partial<Record<keyof FormData, string>>;
 /* ─── Component ────────────────────────────────────────────────── */
 
 export default function BookingForm() {
+  const [showMoreServices, setShowMoreServices] = useState(false);
   const [formData, setFormData] = useState<FormData>({
-    service: "",
+    services: [],
     preferredDate: "",
     timeWindow: "",
     name: "",
@@ -115,10 +123,20 @@ export default function BookingForm() {
     if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
   }
 
+  function toggleService(serviceName: string) {
+    setFormData((prev) => ({
+      ...prev,
+      services: prev.services.includes(serviceName)
+        ? prev.services.filter((s) => s !== serviceName)
+        : [...prev.services, serviceName],
+    }));
+    if (errors.services) setErrors((prev) => ({ ...prev, services: undefined }));
+  }
+
   /* ── Validation ── */
   function validate(): Errors {
     const errs: Errors = {};
-    if (!formData.service) errs.service = "Please select a service";
+    if (formData.services.length === 0) errs.services = "Please select at least one service";
     if (!formData.preferredDate) errs.preferredDate = "Please pick a date";
     if (!formData.timeWindow) errs.timeWindow = "Please choose a time window";
     if (!formData.name.trim()) errs.name = "Name is required";
@@ -183,7 +201,8 @@ export default function BookingForm() {
     setSubmitting(true);
     try {
       await addDoc(collection(db, "bookings"), {
-        service: formData.service,
+        services: formData.services,
+        service: formData.services.join(", "),
         preferredDate: formData.preferredDate,
         timeWindow: formData.timeWindow,
         name: formData.name.trim(),
@@ -201,7 +220,7 @@ export default function BookingForm() {
       });
       setSubmitted(true);
     } catch {
-      setErrors({ service: "Something went wrong. Please try again." });
+      setErrors({ services: "Something went wrong. Please try again." });
     } finally {
       setSubmitting(false);
     }
@@ -209,7 +228,7 @@ export default function BookingForm() {
 
   function resetForm() {
     setFormData({
-      service: "",
+      services: [],
       preferredDate: "",
       timeWindow: "",
       name: "",
@@ -249,7 +268,7 @@ export default function BookingForm() {
             <h1 className="text-[28px] md:text-[34px] font-[800] leading-[1.1] text-[#0B2040] tracking-[-1px] mb-4">
               Book your service
             </h1>
-            <p className="text-[16px] leading-[1.7] text-[#444] max-w-[520px]">
+            <p className="text-[16px] leading-[1.7] text-[#444] max-w-[700px]">
               Pick a service, choose a date, and we will confirm your
               appointment within 2 hours.
             </p>
@@ -289,7 +308,7 @@ export default function BookingForm() {
                   <p className="text-[15px] text-[#444] max-w-[440px] mb-2 leading-relaxed">
                     We received your request for{" "}
                     <span className="font-semibold text-[#0B2040]">
-                      {formData.service}
+                      {formData.services.join(", ")}
                     </span>{" "}
                     on{" "}
                     <span className="font-semibold text-[#0B2040]">
@@ -395,27 +414,27 @@ export default function BookingForm() {
                     )}
                   </div>
 
-                  {/* Field 1: Service Type */}
+                  {/* Field 1: Service Type (multi-select) */}
                   <div>
                     <label className={labelClass}>What do you need?</label>
-                    {errors.service && (
+                    {errors.services && (
                       <p className="text-[12px] text-red-500 mb-2">
-                        {errors.service}
+                        {errors.services}
                       </p>
                     )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {services.map((s) => (
+                      {mainServices.map((s) => (
                         <button
                           key={s.name}
                           type="button"
-                          onClick={() => updateField("service", s.name)}
+                          onClick={() => toggleService(s.name)}
                           className={`relative text-left rounded-[10px] p-3.5 border-2 transition-all duration-150 cursor-pointer ${
-                            formData.service === s.name
+                            formData.services.includes(s.name)
                               ? "border-[#E07B2D] bg-[rgba(224,123,45,0.02)] border-l-[3px] border-l-[#E07B2D]"
                               : "border-[#eee] hover:border-[#E07B2D] hover:bg-[rgba(224,123,45,0.02)] hover:-translate-y-[1px]"
                           }`}
                         >
-                          {formData.service === s.name && (
+                          {formData.services.includes(s.name) && (
                             <span className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[#E07B2D] flex items-center justify-center">
                               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                             </span>
@@ -424,11 +443,37 @@ export default function BookingForm() {
                             {s.name}
                           </span>
                           <span className="block text-[13px] font-semibold text-[#E07B2D]">
-                            {s.price === "Quote" ? "Get a quote" : `starting at ${s.price}`}
+                            starting at {s.price}
                           </span>
                         </button>
                       ))}
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowMoreServices(!showMoreServices)}
+                      className="mt-3 text-[14px] font-semibold text-[#1A5FAC] hover:text-[#0B2040] transition-colors"
+                    >
+                      {showMoreServices ? "Show less \u2212" : "More Services +"}
+                    </button>
+                    {showMoreServices && (
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {moreServices.map((s) => (
+                          <button
+                            key={s.name}
+                            type="button"
+                            onClick={() => toggleService(s.name)}
+                            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] font-medium border transition-all cursor-pointer ${
+                              formData.services.includes(s.name)
+                                ? "border-[#E07B2D] bg-[#E07B2D] text-white"
+                                : "border-[#e8e8e8] text-[#444] hover:border-[#E07B2D]"
+                            }`}
+                          >
+                            {s.name}
+                            <span className="text-[12px] opacity-70">{s.price === "Quote" ? "Quote" : s.price}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Field 2: Preferred Date */}
@@ -473,13 +518,13 @@ export default function BookingForm() {
                   {/* Field 3: Time Window */}
                   <div>
                     <label className={labelClass}>Preferred Time</label>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {timeWindows.map((tw) => (
                         <button
                           key={tw.value}
                           type="button"
                           onClick={() => updateField("timeWindow", tw.value)}
-                          className={`flex-1 py-3 rounded-[10px] text-[14px] font-semibold border-2 transition-all cursor-pointer ${
+                          className={`px-4 py-3 rounded-[10px] text-[13px] font-semibold border-2 transition-all cursor-pointer whitespace-nowrap ${
                             formData.timeWindow === tw.value
                               ? "bg-[#E07B2D] text-white border-[#E07B2D]"
                               : "border-[#eee] text-[#444] hover:border-[#ddd]"

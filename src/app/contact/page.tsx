@@ -49,7 +49,7 @@ export default function ContactPage() {
             <h1 className="text-[30px] md:text-[42px] font-extrabold leading-[1.1] text-[#0B2040] tracking-[-1px] mb-4">
               Get in touch
             </h1>
-            <p className="text-[16px] leading-[1.7] text-[#444] max-w-[520px]">
+            <p className="text-[16px] leading-[1.7] text-[#444] max-w-[700px]">
               Have a question or want to learn more about our services? We respond within one business day. For service bookings, use our{" "}
               <Link href="/book" className="text-[#E07B2D] font-semibold hover:underline">Book Service</Link> page. For fleet or marine quotes, visit{" "}
               <Link href="/fleet" className="text-[#E07B2D] font-semibold hover:underline">Fleet</Link> or{" "}
@@ -206,7 +206,7 @@ export default function ContactPage() {
                   813-722-LUBE
                 </a>
                 <p className="text-[13px] text-[#888] mt-1">
-                  Available Monday through Saturday
+                  Available Monday through Friday
                 </p>
               </div>
 
@@ -256,8 +256,8 @@ export default function ContactPage() {
                 </div>
                 <div className="flex flex-col gap-1.5">
                   {[
-                    { day: "Monday - Saturday", hours: "7:00 AM - 6:00 PM" },
-                    { day: "Sunday", hours: "By appointment" },
+                    { day: "Monday - Friday", hours: "8:00 AM - 5:00 PM" },
+                    { day: "Saturday - Sunday", hours: "Closed" },
                   ].map((row) => (
                     <div
                       key={row.day}
