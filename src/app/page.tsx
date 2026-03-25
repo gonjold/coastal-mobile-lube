@@ -223,6 +223,12 @@ export default function Home() {
                 />
                 <span className="text-[12px] text-[#888] font-medium leading-tight">ASE Certified<br />Technicians</span>
               </div>
+
+              <img
+                src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_600,q_auto:good,f_auto/van-mockup"
+                alt="Coastal Mobile Lube and Tire service van"
+                className="hidden md:block w-full rounded-[12px] mt-6"
+              />
             </div>
 
             {/* Booking Widget */}
