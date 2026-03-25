@@ -181,7 +181,7 @@ export default function Home() {
         <div className="section-inner px-4 lg:px-6 pt-10 pb-10 md:pt-16 md:pb-12">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-10 lg:gap-12 items-start">
             {/* Left Column */}
-            <div>
+            <div className="lg:sticky lg:top-[100px] lg:self-start">
               <h1 className="text-[34px] md:text-[50px] font-extrabold leading-[1.06] text-[#0B2040] tracking-[-1.5px] mb-5">
                 The shop that comes to <span className="text-[#E07B2D]">you.</span>
               </h1>
@@ -213,6 +213,15 @@ export default function Home() {
                     <span className="text-sm text-[#555] font-medium">{item}</span>
                   </div>
                 ))}
+              </div>
+
+              <div className="hidden md:block mt-6">
+                <img
+                  src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_600,q_auto:good,f_auto/van-interior-equipment"
+                  alt="Fully equipped mobile service unit"
+                  className="w-full rounded-[12px]"
+                />
+                <p className="text-[12px] text-[#888] mt-2">Fully equipped mobile service unit</p>
               </div>
             </div>
 
