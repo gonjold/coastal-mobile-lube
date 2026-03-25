@@ -68,6 +68,7 @@
       padding: 60px 0;
       page-break-inside: avoid;
       border-bottom: 1px solid #eee;
+      position: relative;
     }
     section:nth-of-type(even) {
       background: var(--surface);
@@ -78,7 +79,7 @@
     }
     section:last-of-type { border-bottom: none; }
 
-    /* --- TYPOGRAPHY (Change 4) --- */
+    /* --- TYPOGRAPHY --- */
     h1 {
       font-size: 48px;
       font-weight: 800;
@@ -92,6 +93,7 @@
       margin-bottom: 12px;
       margin-top: 0;
       line-height: 1.2;
+      position: relative;
     }
     h3 {
       font-size: 22px;
@@ -127,7 +129,7 @@
       margin-bottom: 28px;
     }
 
-    /* --- EDITABLE SPANS (Change 6a) --- */
+    /* --- EDITABLE: price spans get pencil hover --- */
     .editable {
       outline: none;
       cursor: text;
@@ -151,6 +153,34 @@
     .editable:focus::after {
       content: "";
     }
+
+    /* --- ALL contenteditable text: silent editing --- */
+    [contenteditable="true"]:not(.editable) {
+      outline: none;
+      cursor: text;
+    }
+    [contenteditable="true"]:not(.editable):focus {
+      background: rgba(26, 95, 172, 0.04);
+      border-radius: 3px;
+    }
+
+    /* --- SECTION TOGGLE BUTTON --- */
+    .section-toggle {
+      position: absolute;
+      right: 0;
+      top: 4px;
+      background: none;
+      border: none;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: #9ca3af;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: color 0.2s;
+    }
+    .section-toggle:hover { color: var(--navy); }
 
     /* --- CARDS --- */
     .card-row {
@@ -254,7 +284,7 @@
       font-weight: 800;
     }
 
-    /* --- FLOW DIAGRAM (Change 5e) --- */
+    /* --- FLOW DIAGRAM --- */
     .flow {
       display: flex;
       align-items: center;
@@ -317,6 +347,14 @@
     }
     .col-card li:last-child { border-bottom: none; }
 
+    /* --- TWO COLUMNS --- */
+    .col-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+      margin: 28px 0;
+    }
+
     /* --- CHECKLIST --- */
     .checklist {
       list-style: none;
@@ -365,7 +403,7 @@
     tbody tr:last-child td:first-child { border-radius: 0 0 0 8px; }
     tbody tr:last-child td:last-child { border-radius: 0 0 8px 0; }
 
-    /* --- COMPETITIVE TABLE (Change 5d) --- */
+    /* --- COMPETITIVE TABLE --- */
     .comp-table .coastal-col {
       background: #FFF8F0;
       font-weight: 700;
@@ -450,7 +488,7 @@
       margin: 0;
     }
 
-    /* --- TOOLTIP BANNER (Change 6c) --- */
+    /* --- TIP BANNER --- */
     .tip-banner {
       position: fixed;
       top: 46px;
@@ -477,7 +515,7 @@
     }
     .tip-banner .dismiss:hover { color: var(--navy); }
 
-    /* --- RESET BUTTON (Change 6b) --- */
+    /* --- RESET BUTTON --- */
     .reset-btn {
       position: fixed;
       bottom: 20px;
@@ -500,12 +538,45 @@
       border-color: var(--orange);
     }
 
+    /* --- FLOATING TOOLBAR (bottom-right) --- */
+    .floating-toolbar {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 100;
+      display: flex;
+      gap: 8px;
+    }
+    .floating-toolbar button {
+      background: var(--white);
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 600;
+      color: #6b7280;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .floating-toolbar button:hover {
+      color: var(--orange);
+      border-color: var(--orange);
+    }
+
+    /* --- HIDDEN SECTION CONTENT --- */
+    section.collapsed > *:not(h2):not(.section-toggle) {
+      display: none !important;
+    }
+
     /* --- PRINT --- */
     @media print {
-      nav, .tip-banner, .reset-btn { display: none; }
+      nav, .tip-banner, .reset-btn, .floating-toolbar, .section-toggle { display: none !important; }
       .container { padding-top: 24px; }
       .btn { border: 1px solid var(--orange); }
       section { page-break-inside: avoid; }
+      section.collapsed > * { display: block !important; }
       section:nth-of-type(even) {
         margin-left: 0;
         margin-right: 0;
@@ -516,7 +587,7 @@
 
     /* --- RESPONSIVE --- */
     @media (max-width: 768px) {
-      .card-row, .card-grid-2, .card-grid-3, .col-3 {
+      .card-row, .card-grid-2, .card-grid-3, .col-3, .col-2 {
         grid-template-columns: 1fr;
       }
       h1 { font-size: 34px; }
@@ -539,9 +610,9 @@
 </head>
 <body>
 
-<!-- TIP BANNER (Change 6c) -->
+<!-- TIP BANNER -->
 <div class="tip-banner" id="tipBanner" style="display:none;">
-  <span>Tip: Click any highlighted price to edit it before your meeting.</span>
+  <span>Tip: Click any text to edit it. Prices are highlighted on hover.</span>
   <button class="dismiss" id="dismissTip" aria-label="Dismiss">&times;</button>
 </div>
 
@@ -550,10 +621,12 @@
   <a href="#cover">Home</a>
   <a href="#opportunity">Opportunity</a>
   <a href="#built">What We Built</a>
+  <a href="#need-from-you">What We Need</a>
   <a href="#bookings">Bookings</a>
   <a href="#roadmap">Roadmap</a>
   <a href="#gbp">Google Profile</a>
   <a href="#email">Email</a>
+  <a href="#content-seo">Content &amp; SEO</a>
   <a href="#ads">Advertising</a>
   <a href="#advantage">Advantage</a>
   <a href="#vision">Vision</a>
@@ -561,374 +634,420 @@
   <a href="#next">Next Steps</a>
 </nav>
 
-<!-- RESET PRICES BUTTON (Change 6b) -->
+<!-- RESET PRICES BUTTON -->
 <button class="reset-btn" id="resetPrices">Reset Prices</button>
+
+<!-- FLOATING TOOLBAR -->
+<div class="floating-toolbar" id="floatingToolbar">
+  <button id="showAllBtn">Show All Sections</button>
+  <button id="printBtn">Print View</button>
+</div>
 
 <div class="container">
 
-  <!-- SECTION 1: COVER (Change 5f - larger logo, more spacing, gradient) -->
+  <!-- SECTION 1: COVER -->
   <section id="cover" style="text-align:center; padding: 80px 0 60px; background: linear-gradient(180deg, #f8faff 0%, #ffffff 100%); margin-left:-32px; margin-right:-32px; padding-left:32px; padding-right:32px; border-bottom: 1px solid #eee;">
     <img src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_200,q_auto:good,f_auto/v1774315498/Coastal_Lube_logo_v1_zbx9qs.png" alt="Coastal Mobile Lube & Tire" style="width:220px; margin-bottom:40px;">
-    <h1>Coastal Mobile Lube &amp; Tire</h1>
-    <p class="subtitle">Digital Launch Strategy &amp; Partnership Proposal</p>
-    <p class="meta">Prepared for Jason &nbsp;|&nbsp; March 2026</p>
-    <p class="byline">Presented by Jon Gold - JG Systems</p>
+    <h1 contenteditable="true">Coastal Mobile Lube &amp; Tire</h1>
+    <p class="subtitle" contenteditable="true">Digital Launch Strategy &amp; Partnership Proposal</p>
+    <p class="meta" contenteditable="true">Prepared for Jason &nbsp;|&nbsp; March 2026</p>
+    <p class="byline" contenteditable="true">Presented by Jon Gold - JG Systems</p>
   </section>
 
   <!-- SECTION 2: THE OPPORTUNITY -->
   <section id="opportunity">
-    <h2>The Market Gap Is Real</h2>
+    <h2 contenteditable="true">The Market Gap Is Real</h2>
     <div class="card-row">
       <div class="card">
-        <h3>"Mobile Lube" is Wide Open</h3>
-        <p>Google "mobile lube Tampa." You get brick-and-mortar Mobil 1 locations, not actual mobile services. Your business name IS the keyword. That's an SEO gift.</p>
+        <h3 contenteditable="true">"Mobile Lube" is Wide Open</h3>
+        <p contenteditable="true">Google "mobile lube Tampa." You get brick-and-mortar Mobil 1 locations, not actual mobile services. Your business name IS the keyword. That's an SEO gift.</p>
       </div>
       <div class="card">
-        <h3>No One Combines All Three</h3>
-        <p>Nobody in Tampa bundles mobile oil changes, tire service, and marine engine maintenance. You're the only one covering automotive, fleet, and marine under one brand.</p>
+        <h3 contenteditable="true">No One Combines All Three</h3>
+        <p contenteditable="true">Nobody in Tampa bundles mobile oil changes, tire service, and marine engine maintenance. You're the only one covering automotive, fleet, and marine under one brand.</p>
       </div>
       <div class="card">
-        <h3>Competitors Are Stuck in 2015</h3>
-        <p>Solo operators with basic websites. No online booking. Hidden pricing. A professional system with real-time booking and transparent pricing puts you ahead instantly.</p>
+        <h3 contenteditable="true">Competitors Are Stuck in 2015</h3>
+        <p contenteditable="true">Solo operators with basic websites. No online booking. Hidden pricing. A professional system with real-time booking and transparent pricing puts you ahead instantly.</p>
       </div>
     </div>
-    <div class="callout">
+    <div class="callout" contenteditable="true">
       95,000+ registered boats in Tampa Bay. A booming fleet segment underserved by heavy-diesel providers. A consumer market rapidly adopting mobile services. The window is right now.
     </div>
   </section>
 
   <!-- SECTION 3: WHAT WE BUILT -->
   <section id="built">
-    <h2>Your Website Is Live</h2>
-    <p class="section-sub">Every link below opens the real site. This is not a mockup.</p>
+    <h2 contenteditable="true">Your Website Is Live</h2>
+    <p class="section-sub" contenteditable="true">Every link below opens the real site. This is not a mockup.</p>
     <div class="card-grid-3">
       <div class="link-card">
-        <h3>Homepage</h3>
-        <p>The shop that comes to you. Hero section with instant quote widget, tabbed service overview, trust signals. Mobile-first.</p>
+        <h3 contenteditable="true">Homepage</h3>
+        <p contenteditable="true">The shop that comes to you. Hero section with instant quote widget, tabbed service overview, trust signals. Mobile-first.</p>
         <a href="https://coastal-mobile-lube.netlify.app" target="_blank" class="btn">View Live Page</a>
       </div>
       <div class="link-card">
-        <h3>Services</h3>
-        <p>7 automotive services with transparent pricing, detailed descriptions, and a FAQ section.</p>
+        <h3 contenteditable="true">Services</h3>
+        <p contenteditable="true">7 automotive services with transparent pricing, detailed descriptions, and a FAQ section.</p>
         <a href="https://coastal-mobile-lube.netlify.app/services" target="_blank" class="btn">View Live Page</a>
       </div>
       <div class="link-card">
-        <h3>Fleet</h3>
-        <p>Dedicated page for commercial clients. Inline quote form, fleet process overview, volume pricing.</p>
+        <h3 contenteditable="true">Fleet</h3>
+        <p contenteditable="true">Dedicated page for commercial clients. Inline quote form, fleet process overview, volume pricing.</p>
         <a href="https://coastal-mobile-lube.netlify.app/fleet" target="_blank" class="btn">View Live Page</a>
       </div>
       <div class="link-card">
-        <h3>Marine</h3>
-        <p>Three marine packages: Dock Ready, Captain's Choice, Season Opener. Inline quote form.</p>
+        <h3 contenteditable="true">Marine</h3>
+        <p contenteditable="true">Three marine packages: Dock Ready, Captain's Choice, Season Opener. Inline quote form.</p>
         <a href="https://coastal-mobile-lube.netlify.app/marine" target="_blank" class="btn">View Live Page</a>
       </div>
       <div class="link-card">
-        <h3>Booking</h3>
-        <p>Full booking flow with date preference, time window, contact preference, and email capture.</p>
+        <h3 contenteditable="true">Booking</h3>
+        <p contenteditable="true">Full booking flow with date preference, time window, contact preference, and email capture.</p>
         <a href="https://coastal-mobile-lube.netlify.app/book" target="_blank" class="btn">View Live Page</a>
       </div>
       <div class="link-card">
-        <h3>Admin Dashboard</h3>
-        <p>Real-time booking management. Calendar view, status workflow, communication log.</p>
+        <h3 contenteditable="true">Admin Dashboard</h3>
+        <p contenteditable="true">Real-time booking management. Calendar view, status workflow, communication log.</p>
         <a href="https://coastal-mobile-lube.netlify.app/admin" target="_blank" class="btn">View Live Page</a>
       </div>
     </div>
 
     <ul class="feature-list">
-      <li>All forms write to a real database (Firebase/Firestore)</li>
-      <li>Every new booking triggers an instant email alert to you</li>
-      <li>One-click confirm, Google Calendar sync, and communication logging</li>
-      <li>Mobile-optimized with sticky call/book bar on every page</li>
-      <li>Customers pick their preferred contact method (call, text, or email)</li>
-      <li>Preferred dates feed directly into your admin calendar</li>
+      <li contenteditable="true">All forms write to a real database (Firebase/Firestore)</li>
+      <li contenteditable="true">Every new booking triggers an instant email alert to you</li>
+      <li contenteditable="true">One-click confirm, Google Calendar sync, and communication logging</li>
+      <li contenteditable="true">Mobile-optimized with sticky call/book bar on every page</li>
+      <li contenteditable="true">Customers pick their preferred contact method (call, text, or email)</li>
+      <li contenteditable="true">Preferred dates feed directly into your admin calendar</li>
     </ul>
   </section>
 
-  <!-- SECTION 4: HOW BOOKINGS WORK -->
-  <section id="bookings">
-    <h2>From Website to Wrench</h2>
-    <div class="flow">
-      <div class="flow-step">Customer books online</div>
-      <span class="flow-arrow">&rarr;</span>
-      <div class="flow-step">Instant email alert to you</div>
-      <span class="flow-arrow">&rarr;</span>
-      <div class="flow-step">Review in admin dashboard</div>
-      <span class="flow-arrow">&rarr;</span>
-      <div class="flow-step">Confirm &amp; add to Google Calendar</div>
-      <span class="flow-arrow">&rarr;</span>
-      <div class="flow-step">Customer gets confirmation email</div>
-      <span class="flow-arrow">&rarr;</span>
-      <div class="flow-step">Show up and do the work</div>
-      <span class="flow-arrow">&rarr;</span>
-      <div class="flow-step">Mark complete</div>
+  <!-- SECTION 4: WHAT WE NEED FROM YOU (NEW) -->
+  <section id="need-from-you">
+    <h2 contenteditable="true">What We Need From You</h2>
+    <p class="section-sub" contenteditable="true">The site is built with placeholder content. Here is what we need to make it yours.</p>
+    <div class="card-row">
+      <div class="card">
+        <h3 contenteditable="true">Real Photos</h3>
+        <p contenteditable="true">Every image on the site right now is stock. We need photos of your actual van (interior and exterior), you or your tech working on a vehicle, your equipment setup, and a few action shots at a driveway, parking lot, and marina. Phone photos are fine to start. Professional shoot recommended at the 30-day mark (budget ~$200-400).</p>
+      </div>
+      <div class="card">
+        <h3 contenteditable="true">Your Pricing</h3>
+        <p contenteditable="true">All service prices on the site are estimates based on Tampa market rates. We need your real numbers for every service - oil change, tires, brakes, battery, marine packages, fleet rates. We can update them in minutes.</p>
+      </div>
+      <div class="card">
+        <h3 contenteditable="true">Branding Direction</h3>
+        <p contenteditable="true">The current logo is your original design. If you want to explore new directions, we have a few options:</p>
+        <ul class="feature-list" style="margin:12px 0 0;">
+          <li contenteditable="true">Keep the current oval badge (no cost, ready now)</li>
+          <li contenteditable="true">Professional vector redraw of the current logo (~$30-50, Fiverr, 3-5 days)</li>
+          <li contenteditable="true">Full rebrand with new logo concepts (~$150-300, includes brand guidelines)</li>
+        </ul>
+        <p contenteditable="true" style="margin-top:12px;">We can also adjust the site colors, fonts, or overall feel. The design system is modular - changes take hours, not weeks.</p>
+      </div>
     </div>
-    <p style="text-align:center; color:#6b7280; font-size:16px; margin-top:16px;">Every step is tracked. Every interaction is logged. Full audit trail from first click to completed service.</p>
+    <p contenteditable="true">Other items we will finalize together: business hours (currently showing Mon-Sat 7-6, Sun by appointment), service radius and neighborhood list, tire brands you will carry, marine engine brands and HP range, certifications to display (ASE, manufacturer-specific), and the business email address.</p>
   </section>
 
-  <!-- SECTION 5: GROWTH ROADMAP (Change 2 - trimmed) -->
+  <!-- SECTION 5: HOW BOOKINGS WORK -->
+  <section id="bookings">
+    <h2 contenteditable="true">From Website to Wrench</h2>
+    <div class="flow">
+      <div class="flow-step" contenteditable="true">Customer books online</div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step" contenteditable="true">Instant email alert to you</div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step" contenteditable="true">Review in admin dashboard</div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step" contenteditable="true">Confirm &amp; add to Google Calendar</div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step" contenteditable="true">Customer gets confirmation email</div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step" contenteditable="true">Show up and do the work</div>
+      <span class="flow-arrow">&rarr;</span>
+      <div class="flow-step" contenteditable="true">Mark complete</div>
+    </div>
+    <p contenteditable="true" style="text-align:center; color:#6b7280; font-size:16px; margin-top:16px;">Every step is tracked. Every interaction is logged. Full audit trail from first click to completed service.</p>
+  </section>
+
+  <!-- SECTION 6: GROWTH ROADMAP -->
   <section id="roadmap">
-    <h2>30-60-90 Day Launch Plan</h2>
+    <h2 contenteditable="true">30-60-90 Day Launch Plan</h2>
     <div class="col-3">
       <div class="col-card">
-        <h3>Days 1-30: Foundation</h3>
+        <h3 contenteditable="true">Days 1-30: Foundation</h3>
         <ul>
-          <li>Website live on custom domain</li>
-          <li>Google Business Profile optimized</li>
-          <li>Professional email setup</li>
-          <li>First 5 blog posts + 10 service area pages</li>
-          <li>Google Local Service Ads submitted</li>
-          <li>Social accounts created</li>
+          <li contenteditable="true">Website live on custom domain</li>
+          <li contenteditable="true">Google Business Profile optimized</li>
+          <li contenteditable="true">Professional email setup</li>
+          <li contenteditable="true">First 5 blog posts + 10 service area pages</li>
+          <li contenteditable="true">Google Local Service Ads submitted</li>
+          <li contenteditable="true">Social accounts created</li>
         </ul>
       </div>
       <div class="col-card">
-        <h3>Days 31-60: Lead Generation</h3>
+        <h3 contenteditable="true">Days 31-60: Lead Generation</h3>
         <ul>
-          <li>Google Ads + LSA campaigns live</li>
-          <li>Facebook/Instagram video ads running</li>
-          <li>Fleet outreach: 20 businesses contacted</li>
-          <li>Marina partnerships started</li>
-          <li>Target: 15+ Google reviews</li>
+          <li contenteditable="true">Google Ads + LSA campaigns live</li>
+          <li contenteditable="true">Facebook/Instagram video ads running</li>
+          <li contenteditable="true">Fleet outreach: 20 businesses contacted</li>
+          <li contenteditable="true">Marina partnerships started</li>
+          <li contenteditable="true">Target: 15+ Google reviews</li>
         </ul>
       </div>
       <div class="col-card">
-        <h3>Days 61-90: Scale</h3>
+        <h3 contenteditable="true">Days 61-90: Scale</h3>
         <ul>
-          <li>Organic traffic building (200+ sessions/mo target)</li>
-          <li>30+ Google reviews</li>
-          <li>First recurring fleet contracts</li>
-          <li>Ad campaigns optimized with real data</li>
-          <li>Evaluate: second van timing</li>
+          <li contenteditable="true">Organic traffic building (200+ sessions/mo target)</li>
+          <li contenteditable="true">30+ Google reviews</li>
+          <li contenteditable="true">First recurring fleet contracts</li>
+          <li contenteditable="true">Ad campaigns optimized with real data</li>
+          <li contenteditable="true">Evaluate: second van timing</li>
         </ul>
       </div>
     </div>
   </section>
 
-  <!-- SECTION 6: GOOGLE BUSINESS PROFILE -->
+  <!-- SECTION 7: GOOGLE BUSINESS PROFILE -->
   <section id="gbp">
-    <h2>Your Google Listing Is a Lead Machine</h2>
-    <p>You already have a Google Business Profile. It's one of the most valuable free tools out there. Here's what we do with it:</p>
+    <h2 contenteditable="true">Your Google Listing Is a Lead Machine</h2>
+    <p contenteditable="true">You already have a Google Business Profile. It's one of the most valuable free tools out there. Here's what we do with it:</p>
     <ul class="checklist">
-      <li>Set up as Service Area Business (hide your address since you go to them)</li>
-      <li>Primary category: Mobile Mechanic</li>
-      <li>Secondary categories: Oil Change Service, Tire Shop, Brake Shop</li>
-      <li>Add all service areas (20+ Tampa neighborhoods)</li>
-      <li>Upload 10+ real photos (van, equipment, work in progress)</li>
-      <li>Keyword-rich business description</li>
-      <li>Weekly posts (offers, tips, completed jobs)</li>
-      <li>Enable messaging and booking links</li>
-      <li>Goal: 50+ reviews in 6 months, 100+ by year end</li>
+      <li contenteditable="true">Set up as Service Area Business (hide your address since you go to them)</li>
+      <li contenteditable="true">Primary category: Mobile Mechanic</li>
+      <li contenteditable="true">Secondary categories: Oil Change Service, Tire Shop, Brake Shop</li>
+      <li contenteditable="true">Add all service areas (20+ Tampa neighborhoods)</li>
+      <li contenteditable="true">Upload 10+ real photos (van, equipment, work in progress)</li>
+      <li contenteditable="true">Keyword-rich business description</li>
+      <li contenteditable="true">Weekly posts (offers, tips, completed jobs)</li>
+      <li contenteditable="true">Enable messaging and booking links</li>
+      <li contenteditable="true">Goal: 50+ reviews in 6 months, 100+ by year end</li>
     </ul>
-    <div class="callout">
+    <div class="callout" contenteditable="true">
       Google Business Profile is free and drives more leads than any paid channel for local service businesses. This is priority one.
     </div>
   </section>
 
-  <!-- SECTION 7: GOOGLE WORKSPACE EMAIL -->
+  <!-- SECTION 8: GOOGLE WORKSPACE EMAIL -->
   <section id="email">
-    <h2>Professional Email</h2>
-    <p>Google Workspace gives you a real business email. Here's what you get:</p>
+    <h2 contenteditable="true">Professional Email</h2>
+    <p contenteditable="true">Google Workspace gives you a real business email. Here's what you get:</p>
     <ul class="feature-list">
-      <li>jason@coastalmobilelube.com (plus any other addresses you need)</li>
-      <li>Full Gmail interface you already know</li>
-      <li>Google Calendar for scheduling (syncs with the admin dashboard)</li>
-      <li>Google Drive for documents, invoices, contracts</li>
-      <li>Professional appearance on every customer email</li>
+      <li contenteditable="true">jason@coastalmobilelube.com (plus any other addresses you need)</li>
+      <li contenteditable="true">Full Gmail interface you already know</li>
+      <li contenteditable="true">Google Calendar for scheduling (syncs with the admin dashboard)</li>
+      <li contenteditable="true">Google Drive for documents, invoices, contracts</li>
+      <li contenteditable="true">Professional appearance on every customer email</li>
     </ul>
-    <p>Cost: <span class="editable" contenteditable="true" data-price-id="workspace-cost">$7.20</span>/month per user (Business Starter plan)</p>
-    <p style="font-weight:600;">We can set this up in the first week.</p>
+    <p contenteditable="true">Cost: <span class="editable" contenteditable="true" data-price-id="workspace-cost">$7.20</span>/month per user (Business Starter plan)</p>
+    <p contenteditable="true" style="font-weight:600;">We can set this up in the first week.</p>
   </section>
 
-  <!-- SECTION 8: ADVERTISING STRATEGY -->
-  <section id="ads">
-    <h2>Getting Customers from Day One</h2>
-
-    <h3 style="color:var(--orange); margin-top:24px;">Google Local Service Ads (Highest Priority)</h3>
-    <ul class="feature-list">
-      <li>Pay per lead, not per click ($20-50 per lead)</li>
-      <li>"Google Guaranteed" badge builds instant trust</li>
-      <li>Shows at the very top of Google search results</li>
-      <li>Setup time: 3-5 business days after verification</li>
-    </ul>
-
-    <h3 style="color:var(--orange); margin-top:24px;">Google Search Ads</h3>
-    <ul class="feature-list">
-      <li>"Mobile oil change Tampa" - estimated $2.50-5.50 per click</li>
-      <li>"Mobile marine mechanic Tampa" - estimated $2.50-5.50 per click</li>
-      <li>Auto repair has the lowest cost per lead of any Google Ads category ($27.94 avg)</li>
-      <li>12.96% conversion rate - highest of all industries</li>
-    </ul>
-
-    <h3 style="color:var(--orange); margin-top:24px;">Social Media Ads</h3>
-    <ul class="feature-list">
-      <li>Facebook/Instagram: $1-3 per click (much cheaper than Google)</li>
-      <li>Video ads of service calls get the best engagement</li>
-      <li>Retargeting website visitors is the cheapest and most effective ad type</li>
-    </ul>
-
-    <h3 style="margin-top:28px;">Recommended Starting Budget</h3>
-    <div class="card-row" style="grid-template-columns: repeat(2, 1fr);">
-      <div class="card" style="text-align:center;">
-        <p style="font-size:13px; text-transform:uppercase; font-weight:700; color:var(--blue); letter-spacing:1px; margin-bottom:8px;">Low Tier</p>
-        <p style="font-size:28px; font-weight:800; color:var(--navy); margin-bottom:4px;"><span class="editable" contenteditable="true" data-price-id="ad-low">$1,500</span>/mo</p>
-        <p style="font-size:15px; color:#6b7280; margin:0;">Consistent lead flow within the first month</p>
+  <!-- SECTION 9: CONTENT AND SEO STRATEGY (NEW) -->
+  <section id="content-seo">
+    <h2 contenteditable="true">Content That Brings Customers to You</h2>
+    <div class="col-2">
+      <div class="col-card">
+        <h3 contenteditable="true">Service Area Pages</h3>
+        <p contenteditable="true" style="font-size:15px; line-height:1.7;">We will build individual pages for every neighborhood you serve. Each page targets local search terms like "mobile oil change in Brandon" or "mobile tire service Wesley Chapel." This is how you show up when people near you search Google. We start with 10 neighborhoods in month one and expand to 28+.</p>
       </div>
-      <div class="card" style="text-align:center;">
-        <p style="font-size:13px; text-transform:uppercase; font-weight:700; color:var(--blue); letter-spacing:1px; margin-bottom:8px;">Medium Tier</p>
-        <p style="font-size:28px; font-weight:800; color:var(--navy); margin-bottom:4px;"><span class="editable" contenteditable="true" data-price-id="ad-high">$3,000</span>/mo</p>
-        <p style="font-size:15px; color:#6b7280; margin:0;">Scaling volume as campaigns optimize</p>
+      <div class="col-card">
+        <h3 contenteditable="true">Blog Posts That Rank</h3>
+        <p contenteditable="true" style="font-size:15px; line-height:1.7;">We write articles that answer questions people are already Googling: "How much does a mobile oil change cost in Tampa?", "How Florida heat affects your car battery", "Mobile mechanic vs auto shop - which is better?" Each post is a doorway that brings new customers to your site. We start with 5 posts in month one.</p>
       </div>
     </div>
-    <div class="callout">
+    <p contenteditable="true">By month 6, your site should be generating 300-800 organic visits per month from people actively searching for the services you offer. By month 12, that grows to 1,000-3,000+. This is traffic you do not pay for.</p>
+  </section>
+
+  <!-- SECTION 10: ADVERTISING STRATEGY -->
+  <section id="ads">
+    <h2 contenteditable="true">Getting Customers from Day One</h2>
+
+    <h3 contenteditable="true" style="color:var(--orange); margin-top:24px;">Google Local Service Ads (Highest Priority)</h3>
+    <ul class="feature-list">
+      <li contenteditable="true">Pay per lead, not per click ($20-50 per lead)</li>
+      <li contenteditable="true">"Google Guaranteed" badge builds instant trust</li>
+      <li contenteditable="true">Shows at the very top of Google search results</li>
+      <li contenteditable="true">Setup time: 3-5 business days after verification</li>
+    </ul>
+
+    <h3 contenteditable="true" style="color:var(--orange); margin-top:24px;">Google Search Ads</h3>
+    <ul class="feature-list">
+      <li contenteditable="true">"Mobile oil change Tampa" - estimated $2.50-5.50 per click</li>
+      <li contenteditable="true">"Mobile marine mechanic Tampa" - estimated $2.50-5.50 per click</li>
+      <li contenteditable="true">Auto repair has the lowest cost per lead of any Google Ads category ($27.94 avg)</li>
+      <li contenteditable="true">12.96% conversion rate - highest of all industries</li>
+    </ul>
+
+    <h3 contenteditable="true" style="color:var(--orange); margin-top:24px;">Social Media Ads</h3>
+    <ul class="feature-list">
+      <li contenteditable="true">Facebook/Instagram: $1-3 per click (much cheaper than Google)</li>
+      <li contenteditable="true">Video ads of service calls get the best engagement</li>
+      <li contenteditable="true">Retargeting website visitors is the cheapest and most effective ad type</li>
+    </ul>
+
+    <h3 contenteditable="true" style="margin-top:28px;">Recommended Starting Budget</h3>
+    <div class="card-row" style="grid-template-columns: repeat(2, 1fr);">
+      <div class="card" style="text-align:center;">
+        <p contenteditable="true" style="font-size:13px; text-transform:uppercase; font-weight:700; color:var(--blue); letter-spacing:1px; margin-bottom:8px;">Low Tier</p>
+        <p style="font-size:28px; font-weight:800; color:var(--navy); margin-bottom:4px;"><span class="editable" contenteditable="true" data-price-id="ad-low">$1,500</span>/mo</p>
+        <p contenteditable="true" style="font-size:15px; color:#6b7280; margin:0;">Consistent lead flow within the first month</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <p contenteditable="true" style="font-size:13px; text-transform:uppercase; font-weight:700; color:var(--blue); letter-spacing:1px; margin-bottom:8px;">Medium Tier</p>
+        <p style="font-size:28px; font-weight:800; color:var(--navy); margin-bottom:4px;"><span class="editable" contenteditable="true" data-price-id="ad-high">$3,000</span>/mo</p>
+        <p contenteditable="true" style="font-size:15px; color:#6b7280; margin:0;">Scaling volume as campaigns optimize</p>
+      </div>
+    </div>
+    <div class="callout" contenteditable="true">
       At your average ticket of $100-300, even the low budget generates strong ROI. We track every dollar and optimize monthly.
     </div>
   </section>
 
-  <!-- SECTION 9: COMPETITIVE ADVANTAGE (Change 5d) -->
+  <!-- SECTION 11: COMPETITIVE ADVANTAGE -->
   <section id="advantage">
-    <h2>Why You Win</h2>
+    <h2 contenteditable="true">Why You Win</h2>
     <div style="overflow-x:auto;">
       <table class="comp-table">
         <thead>
           <tr>
-            <th>Feature</th>
-            <th>Solo Mobile Mechanics</th>
-            <th>National Platforms</th>
-            <th class="coastal-th">Coastal Mobile</th>
+            <th contenteditable="true">Feature</th>
+            <th contenteditable="true">Solo Mobile Mechanics</th>
+            <th contenteditable="true">National Platforms</th>
+            <th class="coastal-th" contenteditable="true">Coastal Mobile</th>
           </tr>
         </thead>
         <tbody>
-          <tr><td>Online booking</td><td class="partial">Rarely</td><td class="yes">&#10003;</td><td class="coastal-col yes">&#10003;</td></tr>
-          <tr><td>Transparent pricing</td><td class="partial">Rarely</td><td class="partial">Sometimes</td><td class="coastal-col yes">&#10003;</td></tr>
-          <tr><td>Automotive + Tire</td><td class="partial">Sometimes</td><td class="partial">Limited</td><td class="coastal-col yes">&#10003;</td></tr>
-          <tr><td>Marine service</td><td class="no">&#10007;</td><td class="no">&#10007;</td><td class="coastal-col yes">&#10003;</td></tr>
-          <tr><td>Fleet programs</td><td class="partial">Rarely</td><td class="no">&#10007;</td><td class="coastal-col yes">&#10003;</td></tr>
-          <tr><td>Customer portal</td><td class="no">&#10007;</td><td class="partial">Basic</td><td class="coastal-col yes">&#10003;</td></tr>
-          <tr><td>Communication logging</td><td class="no">&#10007;</td><td class="no">&#10007;</td><td class="coastal-col yes">&#10003;</td></tr>
-          <tr><td>Booking calendar</td><td class="no">&#10007;</td><td class="yes">&#10003;</td><td class="coastal-col yes">&#10003;</td></tr>
-          <tr><td>Local SEO</td><td class="no">Weak</td><td class="yes">Strong</td><td class="coastal-col partial">Building</td></tr>
-          <tr><td>Personal touch</td><td class="yes">High</td><td class="no">Low</td><td class="coastal-col yes">High</td></tr>
+          <tr><td contenteditable="true">Online booking</td><td contenteditable="true" class="partial">Rarely</td><td class="yes">&#10003;</td><td class="coastal-col yes">&#10003;</td></tr>
+          <tr><td contenteditable="true">Transparent pricing</td><td contenteditable="true" class="partial">Rarely</td><td contenteditable="true" class="partial">Sometimes</td><td class="coastal-col yes">&#10003;</td></tr>
+          <tr><td contenteditable="true">Automotive + Tire</td><td contenteditable="true" class="partial">Sometimes</td><td contenteditable="true" class="partial">Limited</td><td class="coastal-col yes">&#10003;</td></tr>
+          <tr><td contenteditable="true">Marine service</td><td class="no">&#10007;</td><td class="no">&#10007;</td><td class="coastal-col yes">&#10003;</td></tr>
+          <tr><td contenteditable="true">Fleet programs</td><td contenteditable="true" class="partial">Rarely</td><td class="no">&#10007;</td><td class="coastal-col yes">&#10003;</td></tr>
+          <tr><td contenteditable="true">Customer portal</td><td class="no">&#10007;</td><td contenteditable="true" class="partial">Basic</td><td class="coastal-col yes">&#10003;</td></tr>
+          <tr><td contenteditable="true">Communication logging</td><td class="no">&#10007;</td><td class="no">&#10007;</td><td class="coastal-col yes">&#10003;</td></tr>
+          <tr><td contenteditable="true">Booking calendar</td><td class="no">&#10007;</td><td class="yes">&#10003;</td><td class="coastal-col yes">&#10003;</td></tr>
+          <tr><td contenteditable="true">Local SEO</td><td contenteditable="true" class="no">Weak</td><td contenteditable="true" class="yes">Strong</td><td contenteditable="true" class="coastal-col partial">Building</td></tr>
+          <tr><td contenteditable="true">Personal touch</td><td contenteditable="true" class="yes">High</td><td contenteditable="true" class="no">Low</td><td contenteditable="true" class="coastal-col yes">High</td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
-  <!-- SECTION 10: FRANCHISE VISION -->
+  <!-- SECTION 12: FRANCHISE VISION -->
   <section id="vision">
-    <h2>Thinking Bigger</h2>
-    <p>This doesn't have to stay local. The systems we're building are designed to scale.</p>
+    <h2 contenteditable="true">Thinking Bigger</h2>
+    <p contenteditable="true">This doesn't have to stay local. The systems we're building are designed to scale.</p>
 
-    <h3 style="color:var(--orange); margin-top:24px;">The Owner-Operator Model</h3>
-    <p>Target audience: master techs tired of being stuck in a shop. Skilled, experienced people who want more freedom and control.</p>
-    <p>They invest to become an owner-operator under the Coastal brand. In return they get:</p>
+    <h3 contenteditable="true" style="color:var(--orange); margin-top:24px;">The Owner-Operator Model</h3>
+    <p contenteditable="true">Target audience: master techs tired of being stuck in a shop. Skilled, experienced people who want more freedom and control.</p>
+    <p contenteditable="true">They invest to become an owner-operator under the Coastal brand. In return they get:</p>
     <ul class="feature-list">
-      <li>Structured van buildout package</li>
-      <li>Technology and infrastructure (booking, routing, customer management)</li>
-      <li>Customer service handled centrally</li>
-      <li>Established brand and proven systems</li>
+      <li contenteditable="true">Structured van buildout package</li>
+      <li contenteditable="true">Technology and infrastructure (booking, routing, customer management)</li>
+      <li contenteditable="true">Customer service handled centrally</li>
+      <li contenteditable="true">Established brand and proven systems</li>
     </ul>
-    <p>They run their own operation but don't start from scratch. This scales your fleet without you funding every van.</p>
-    <div class="callout">
+    <p contenteditable="true">They run their own operation but don't start from scratch. This scales your fleet without you funding every van.</p>
+    <div class="callout" contenteditable="true">
       This is a Phase 2 conversation. But everything we build now is designed with this in mind from day one.
     </div>
   </section>
 
-  <!-- SECTION 11: INVESTMENT & PRICING -->
+  <!-- SECTION 13: INVESTMENT & PRICING -->
   <section id="pricing">
-    <h2>Partnership Investment</h2>
+    <h2 contenteditable="true">Partnership Investment</h2>
 
-    <h3 style="margin-top:24px;">Website &amp; System Build</h3>
+    <h3 contenteditable="true" style="margin-top:24px;">Website &amp; System Build</h3>
     <table class="pricing-table">
-      <tr><td>Custom website (7 pages, mobile-first)</td><td>Included</td></tr>
-      <tr><td>Online booking system with Firestore database</td><td>Included</td></tr>
-      <tr><td>Admin dashboard with calendar &amp; status workflow</td><td>Included</td></tr>
-      <tr><td>Email notifications (booking alerts + customer confirmations)</td><td>Included</td></tr>
-      <tr><td>Communication logging &amp; Google Calendar sync</td><td>Included</td></tr>
-      <tr><td>Custom domain setup (coastalmobilelube.com)</td><td>Included</td></tr>
-      <tr class="total"><td>Total Build</td><td><span class="editable" contenteditable="true" data-price-id="build-total">$2,000</span></td></tr>
+      <tr><td contenteditable="true">Custom website (7 pages, mobile-first)</td><td contenteditable="true">Included</td></tr>
+      <tr><td contenteditable="true">Online booking system with Firestore database</td><td contenteditable="true">Included</td></tr>
+      <tr><td contenteditable="true">Admin dashboard with calendar &amp; status workflow</td><td contenteditable="true">Included</td></tr>
+      <tr><td contenteditable="true">Email notifications (booking alerts + customer confirmations)</td><td contenteditable="true">Included</td></tr>
+      <tr><td contenteditable="true">Communication logging &amp; Google Calendar sync</td><td contenteditable="true">Included</td></tr>
+      <tr><td contenteditable="true">Custom domain setup (coastalmobilelube.com)</td><td contenteditable="true">Included</td></tr>
+      <tr class="total"><td contenteditable="true">Total Build</td><td><span class="editable" contenteditable="true" data-price-id="build-total">$2,000</span></td></tr>
     </table>
 
-    <h3 style="margin-top:32px;">Monthly Retainer</h3>
+    <h3 contenteditable="true" style="margin-top:32px;">Monthly Retainer</h3>
     <table class="pricing-table">
-      <tr><td>Website hosting &amp; maintenance</td><td>Included</td></tr>
-      <tr><td>SEO (service area pages, blog posts, optimization)</td><td>Included</td></tr>
-      <tr><td>Google Business Profile management</td><td>Included</td></tr>
-      <tr><td>Monthly analytics reporting</td><td>Included</td></tr>
-      <tr><td>Ad campaign management (budget separate)</td><td>Included</td></tr>
-      <tr><td>Social media strategy &amp; content calendar</td><td>Included</td></tr>
-      <tr><td>System updates &amp; new feature development</td><td>Included</td></tr>
-      <tr><td>Priority support</td><td>Included</td></tr>
-      <tr class="total"><td>Monthly Retainer</td><td><span class="editable" contenteditable="true" data-price-id="monthly-retainer">$750</span>/month</td></tr>
+      <tr><td contenteditable="true">Website hosting &amp; maintenance</td><td contenteditable="true">Included</td></tr>
+      <tr><td contenteditable="true">SEO (service area pages, blog posts, optimization)</td><td contenteditable="true">Included</td></tr>
+      <tr><td contenteditable="true">Google Business Profile management</td><td contenteditable="true">Included</td></tr>
+      <tr><td contenteditable="true">Monthly analytics reporting</td><td contenteditable="true">Included</td></tr>
+      <tr><td contenteditable="true">Ad campaign management (budget separate)</td><td contenteditable="true">Included</td></tr>
+      <tr><td contenteditable="true">Social media strategy &amp; content calendar</td><td contenteditable="true">Included</td></tr>
+      <tr><td contenteditable="true">System updates &amp; new feature development</td><td contenteditable="true">Included</td></tr>
+      <tr><td contenteditable="true">Priority support</td><td contenteditable="true">Included</td></tr>
+      <tr class="total"><td contenteditable="true">Monthly Retainer</td><td><span class="editable" contenteditable="true" data-price-id="monthly-retainer">$750</span>/month</td></tr>
     </table>
 
-    <h3 style="margin-top:32px;">Additional Costs <span style="font-weight:400; font-size:14px; color:#6b7280;">(paid directly, not to JG Systems)</span></h3>
+    <h3 contenteditable="true" style="margin-top:32px;">Additional Costs <span style="font-weight:400; font-size:14px; color:#6b7280;">(paid directly, not to JG Systems)</span></h3>
     <table>
       <thead>
-        <tr><th>Item</th><th>Cost</th></tr>
+        <tr><th contenteditable="true">Item</th><th contenteditable="true">Cost</th></tr>
       </thead>
       <tbody>
-        <tr><td>Google Workspace email</td><td>~$7/mo per user</td></tr>
-        <tr><td>Advertising budget (Google/Facebook/LSA)</td><td>$1,500-3,000/mo recommended</td></tr>
-        <tr><td>Custom domain renewal</td><td>~$12/year</td></tr>
-        <tr><td>Twilio SMS (when activated)</td><td>~$1.50/mo + $0.01/text</td></tr>
+        <tr><td contenteditable="true">Google Workspace email</td><td contenteditable="true">~$7/mo per user</td></tr>
+        <tr><td contenteditable="true">Advertising budget (Google/Facebook/LSA)</td><td contenteditable="true">$1,500-3,000/mo recommended</td></tr>
+        <tr><td contenteditable="true">Custom domain renewal</td><td contenteditable="true">~$12/year</td></tr>
+        <tr><td contenteditable="true">Twilio SMS (when activated)</td><td contenteditable="true">~$1.50/mo + $0.01/text</td></tr>
       </tbody>
     </table>
 
-    <h3 style="margin-top:32px;">What Is NOT Included <span style="font-weight:400; font-size:14px; color:#6b7280;">(and why)</span></h3>
+    <h3 contenteditable="true" style="margin-top:32px;">What Is NOT Included <span style="font-weight:400; font-size:14px; color:#6b7280;">(and why)</span></h3>
     <ul class="feature-list">
-      <li>Advertising spend (you pay Google/Facebook directly, we manage the campaigns)</li>
-      <li>Housecall Pro or other third-party SaaS tools (evaluate at 60-day mark)</li>
-      <li>Professional photography/videography (recommended at 30-day mark)</li>
-      <li>Logo redesign (optional, ~$30-50 on Fiverr for vector version)</li>
+      <li contenteditable="true">Advertising spend (you pay Google/Facebook directly, we manage the campaigns)</li>
+      <li contenteditable="true">Housecall Pro or other third-party SaaS tools (evaluate at 60-day mark)</li>
+      <li contenteditable="true">Professional photography/videography (recommended at 30-day mark)</li>
+      <li contenteditable="true">Logo redesign (optional, ~$30-50 on Fiverr for vector version)</li>
     </ul>
   </section>
 
-  <!-- SECTION 12: NEXT STEPS -->
+  <!-- SECTION 14: NEXT STEPS -->
   <section id="next">
-    <h2>Ready to Launch</h2>
-    <p>Here's what happens next:</p>
+    <h2 contenteditable="true">Ready to Launch</h2>
+    <p contenteditable="true">Here's what happens next:</p>
     <ol class="next-steps">
-      <li>Review this proposal and the live site</li>
-      <li>Finalize pricing for your service menu (we're using placeholder prices now)</li>
-      <li>Custom domain pointed to the live site (coastalmobilelube.com)</li>
-      <li>Google Workspace email set up (jason@coastalmobilelube.com)</li>
-      <li>Google Business Profile optimized</li>
-      <li>First batch of service area pages and blog posts published</li>
-      <li>Google Local Service Ads application submitted</li>
-      <li>You start taking real bookings</li>
+      <li contenteditable="true">Review this proposal and the live site</li>
+      <li contenteditable="true">Finalize pricing for your service menu (we're using placeholder prices now)</li>
+      <li contenteditable="true">Custom domain pointed to the live site (coastalmobilelube.com)</li>
+      <li contenteditable="true">Google Workspace email set up (jason@coastalmobilelube.com)</li>
+      <li contenteditable="true">Google Business Profile optimized</li>
+      <li contenteditable="true">First batch of service area pages and blog posts published</li>
+      <li contenteditable="true">Google Local Service Ads application submitted</li>
+      <li contenteditable="true">You start taking real bookings</li>
     </ol>
 
-    <div class="callout" style="font-style:normal; font-weight:600;">
+    <div class="callout" contenteditable="true" style="font-style:normal; font-weight:600;">
       The website is built and working. Everything you saw today is live. You can be taking real customers within a week.
     </div>
 
     <div class="contact">
-      <h3>Let's Build This</h3>
-      <p><strong>Jon Gold</strong></p>
-      <p>JG Systems</p>
-      <p><a href="mailto:jonrgold@gmail.com">jonrgold@gmail.com</a></p>
-      <p><a href="tel:9492926686">(949) 292-6686</a></p>
+      <h3 contenteditable="true">Let's Build This</h3>
+      <p contenteditable="true"><strong>Jon Gold</strong></p>
+      <p contenteditable="true">JG Systems</p>
+      <p contenteditable="true"><a href="mailto:jonrgold@gmail.com">jonrgold@gmail.com</a></p>
+      <p contenteditable="true"><a href="tel:9492926686">(949) 292-6686</a></p>
     </div>
   </section>
 
 </div>
 
-<!-- JAVASCRIPT: localStorage pricing (Change 6b, 6c) -->
 <script>
 (function() {
-  // 6b: Restore saved prices on load
+  // --- PRICE localStorage (restore/save) ---
   document.querySelectorAll('.editable[data-price-id]').forEach(function(el) {
     var saved = localStorage.getItem('coastal_price_' + el.dataset.priceId);
     if (saved !== null) el.textContent = saved;
   });
 
-  // 6b: Save price on blur
   document.addEventListener('focusout', function(e) {
     if (e.target.classList.contains('editable') && e.target.dataset.priceId) {
       localStorage.setItem('coastal_price_' + e.target.dataset.priceId, e.target.textContent);
     }
   });
 
-  // 6b: Reset button
   document.getElementById('resetPrices').addEventListener('click', function() {
     document.querySelectorAll('.editable[data-price-id]').forEach(function(el) {
       localStorage.removeItem('coastal_price_' + el.dataset.priceId);
@@ -937,13 +1056,82 @@
     location.reload();
   });
 
-  // 6c: Show tip banner on first visit
+  // --- TIP BANNER (first visit) ---
   if (!localStorage.getItem('coastal_tip_dismissed')) {
     document.getElementById('tipBanner').style.display = 'flex';
   }
   document.getElementById('dismissTip').addEventListener('click', function() {
     document.getElementById('tipBanner').style.display = 'none';
     localStorage.setItem('coastal_tip_dismissed', '1');
+  });
+
+  // --- SECTION HIDE/SHOW TOGGLES ---
+  var sections = document.querySelectorAll('section[id]');
+  sections.forEach(function(sec) {
+    var h2 = sec.querySelector('h2');
+    if (!h2) return;
+
+    // Make h2 position relative for absolute button
+    h2.style.position = 'relative';
+    h2.style.paddingRight = '60px';
+
+    var btn = document.createElement('button');
+    btn.className = 'section-toggle';
+    btn.type = 'button';
+
+    // Check localStorage for hidden state
+    var isHidden = localStorage.getItem('coastal_hidden_' + sec.id) === '1';
+    if (isHidden) {
+      sec.classList.add('collapsed');
+      btn.textContent = 'Show';
+    } else {
+      btn.textContent = 'Hide';
+    }
+
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var collapsed = sec.classList.toggle('collapsed');
+      btn.textContent = collapsed ? 'Show' : 'Hide';
+      localStorage.setItem('coastal_hidden_' + sec.id, collapsed ? '1' : '0');
+    });
+
+    h2.appendChild(btn);
+  });
+
+  // --- FLOATING TOOLBAR ---
+  // Show All Sections
+  document.getElementById('showAllBtn').addEventListener('click', function() {
+    document.querySelectorAll('section.collapsed').forEach(function(sec) {
+      sec.classList.remove('collapsed');
+      var btn = sec.querySelector('.section-toggle');
+      if (btn) btn.textContent = 'Hide';
+      localStorage.setItem('coastal_hidden_' + sec.id, '0');
+    });
+  });
+
+  // Print View
+  document.getElementById('printBtn').addEventListener('click', function() {
+    // Temporarily show all sections for printing
+    var hidden = [];
+    document.querySelectorAll('section.collapsed').forEach(function(sec) {
+      sec.classList.remove('collapsed');
+      hidden.push(sec);
+    });
+    // Hide toolbar elements
+    document.getElementById('floatingToolbar').style.display = 'none';
+    document.getElementById('resetPrices').style.display = 'none';
+    document.querySelectorAll('.section-toggle').forEach(function(b) { b.style.display = 'none'; });
+
+    window.print();
+
+    // Restore after print
+    setTimeout(function() {
+      document.getElementById('floatingToolbar').style.display = 'flex';
+      document.getElementById('resetPrices').style.display = 'block';
+      document.querySelectorAll('.section-toggle').forEach(function(b) { b.style.display = 'block'; });
+      hidden.forEach(function(sec) { sec.classList.add('collapsed'); });
+    }, 500);
   });
 })();
 </script>
