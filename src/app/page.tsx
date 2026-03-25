@@ -179,7 +179,7 @@ export default function Home() {
       {/* Hero */}
       <section className="bg-white">
         <div className="section-inner px-4 lg:px-6 pt-10 pb-10 md:pt-16 md:pb-12">
-          <div className="grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-10 lg:gap-12 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-[9fr_11fr] gap-10 lg:gap-12 items-start">
             {/* Left Column */}
             <div className="lg:sticky lg:top-[100px] lg:self-start">
               <h1 className="text-[34px] md:text-[50px] font-extrabold leading-[1.06] text-[#0B2040] tracking-[-1.5px] mb-5">
@@ -192,12 +192,12 @@ export default function Home() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 mb-0 sm:mb-8">
-                <Button href="/book" variant="primary" size="lg">
+                <Button href="/book" variant="primary" size="lg" className="whitespace-nowrap">
                   Book Service
                 </Button>
                 <a
                   href="tel:8137225823"
-                  className="inline-flex items-center justify-center gap-2 px-[30px] py-[14px] font-semibold text-[#0B2040] bg-white border-2 border-[#ddd] rounded-[var(--radius-button)] hover:border-[#bbb] transition-all"
+                  className="inline-flex items-center justify-center gap-2 px-[24px] py-[14px] font-semibold text-[#0B2040] bg-white border-2 border-[#ddd] rounded-[var(--radius-button)] hover:border-[#bbb] transition-all whitespace-nowrap"
                 >
                   <Phone size={16} />
                   Call 813-722-LUBE
