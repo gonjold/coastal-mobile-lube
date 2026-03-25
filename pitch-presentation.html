@@ -164,23 +164,27 @@
       border-radius: 3px;
     }
 
-    /* --- SECTION TOGGLE BUTTON --- */
-    .section-toggle {
-      position: absolute;
-      right: 0;
-      top: 4px;
-      background: none;
-      border: none;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 12px;
-      font-weight: 600;
-      color: #9ca3af;
-      cursor: pointer;
-      padding: 4px 8px;
-      border-radius: 4px;
-      transition: color 0.2s;
+    /* --- LOCKED MODE: disable all editing --- */
+    body.locked [contenteditable] {
+      cursor: default !important;
     }
-    .section-toggle:hover { color: var(--navy); }
+    body.locked [contenteditable]:focus {
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+    body.locked .editable {
+      cursor: default !important;
+    }
+    body.locked .editable:hover {
+      background: transparent !important;
+    }
+    body.locked .editable:hover::after {
+      content: "" !important;
+    }
+    body.locked .editable:focus {
+      background: transparent !important;
+      box-shadow: none !important;
+    }
 
     /* --- CARDS --- */
     .card-row {
@@ -565,18 +569,12 @@
       border-color: var(--orange);
     }
 
-    /* --- HIDDEN SECTION CONTENT --- */
-    section.collapsed > *:not(h2):not(.section-toggle) {
-      display: none !important;
-    }
-
     /* --- PRINT --- */
     @media print {
-      nav, .tip-banner, .reset-btn, .floating-toolbar, .section-toggle { display: none !important; }
+      nav, .tip-banner, .reset-btn, .floating-toolbar { display: none !important; }
       .container { padding-top: 24px; }
       .btn { border: 1px solid var(--orange); }
       section { page-break-inside: avoid; }
-      section.collapsed > * { display: block !important; }
       section:nth-of-type(even) {
         margin-left: 0;
         margin-right: 0;
@@ -639,7 +637,7 @@
 
 <!-- FLOATING TOOLBAR -->
 <div class="floating-toolbar" id="floatingToolbar">
-  <button id="showAllBtn">Show All Sections</button>
+  <button id="lockBtn">&#128274; Unlock Editing</button>
   <button id="printBtn">Print View</button>
 </div>
 
@@ -651,7 +649,7 @@
     <h1 contenteditable="true">Coastal Mobile Lube &amp; Tire</h1>
     <p class="subtitle" contenteditable="true">Digital Launch Strategy &amp; Partnership Proposal</p>
     <p class="meta" contenteditable="true">Prepared for Jason &nbsp;|&nbsp; March 2026</p>
-    <p class="byline" contenteditable="true">Presented by Jon Gold - JG Systems</p>
+    <p class="byline" contenteditable="true">Presented by Jon Gold - Gold Co LLC</p>
   </section>
 
   <!-- SECTION 2: THE OPPORTUNITY -->
@@ -982,7 +980,7 @@
       <tr class="total"><td contenteditable="true">Monthly Retainer</td><td><span class="editable" contenteditable="true" data-price-id="monthly-retainer">$750</span>/month</td></tr>
     </table>
 
-    <h3 contenteditable="true" style="margin-top:32px;">Additional Costs <span style="font-weight:400; font-size:14px; color:#6b7280;">(paid directly, not to JG Systems)</span></h3>
+    <h3 contenteditable="true" style="margin-top:32px;">Additional Costs <span style="font-weight:400; font-size:14px; color:#6b7280;">(paid directly, not to Gold Co LLC)</span></h3>
     <table>
       <thead>
         <tr><th contenteditable="true">Item</th><th contenteditable="true">Cost</th></tr>
@@ -1026,7 +1024,7 @@
     <div class="contact">
       <h3 contenteditable="true">Let's Build This</h3>
       <p contenteditable="true"><strong>Jon Gold</strong></p>
-      <p contenteditable="true">JG Systems</p>
+      <p contenteditable="true">Gold Co LLC</p>
       <p contenteditable="true"><a href="mailto:jonrgold@gmail.com">jonrgold@gmail.com</a></p>
       <p contenteditable="true"><a href="tel:9492926686">(949) 292-6686</a></p>
     </div>
@@ -1036,6 +1034,35 @@
 
 <script>
 (function() {
+  // --- LOCK/UNLOCK EDITING ---
+  var lockBtn = document.getElementById('lockBtn');
+  var isLocked = localStorage.getItem('coastal_editing_locked') !== '0'; // default: locked
+
+  function setLocked(locked) {
+    isLocked = locked;
+    localStorage.setItem('coastal_editing_locked', locked ? '1' : '0');
+    if (locked) {
+      document.body.classList.add('locked');
+      document.querySelectorAll('[contenteditable]').forEach(function(el) {
+        el.contentEditable = 'false';
+      });
+      lockBtn.innerHTML = '&#128274; Unlock Editing';
+    } else {
+      document.body.classList.remove('locked');
+      document.querySelectorAll('[contenteditable]').forEach(function(el) {
+        el.contentEditable = 'true';
+      });
+      lockBtn.innerHTML = '&#128275; Lock Editing';
+    }
+  }
+
+  // Apply initial state
+  setLocked(isLocked);
+
+  lockBtn.addEventListener('click', function() {
+    setLocked(!isLocked);
+  });
+
   // --- PRICE localStorage (restore/save) ---
   document.querySelectorAll('.editable[data-price-id]').forEach(function(el) {
     var saved = localStorage.getItem('coastal_price_' + el.dataset.priceId);
@@ -1065,72 +1092,14 @@
     localStorage.setItem('coastal_tip_dismissed', '1');
   });
 
-  // --- SECTION HIDE/SHOW TOGGLES ---
-  var sections = document.querySelectorAll('section[id]');
-  sections.forEach(function(sec) {
-    var h2 = sec.querySelector('h2');
-    if (!h2) return;
-
-    // Make h2 position relative for absolute button
-    h2.style.position = 'relative';
-    h2.style.paddingRight = '60px';
-
-    var btn = document.createElement('button');
-    btn.className = 'section-toggle';
-    btn.type = 'button';
-
-    // Check localStorage for hidden state
-    var isHidden = localStorage.getItem('coastal_hidden_' + sec.id) === '1';
-    if (isHidden) {
-      sec.classList.add('collapsed');
-      btn.textContent = 'Show';
-    } else {
-      btn.textContent = 'Hide';
-    }
-
-    btn.addEventListener('click', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      var collapsed = sec.classList.toggle('collapsed');
-      btn.textContent = collapsed ? 'Show' : 'Hide';
-      localStorage.setItem('coastal_hidden_' + sec.id, collapsed ? '1' : '0');
-    });
-
-    h2.appendChild(btn);
-  });
-
-  // --- FLOATING TOOLBAR ---
-  // Show All Sections
-  document.getElementById('showAllBtn').addEventListener('click', function() {
-    document.querySelectorAll('section.collapsed').forEach(function(sec) {
-      sec.classList.remove('collapsed');
-      var btn = sec.querySelector('.section-toggle');
-      if (btn) btn.textContent = 'Hide';
-      localStorage.setItem('coastal_hidden_' + sec.id, '0');
-    });
-  });
-
-  // Print View
+  // --- PRINT VIEW ---
   document.getElementById('printBtn').addEventListener('click', function() {
-    // Temporarily show all sections for printing
-    var hidden = [];
-    document.querySelectorAll('section.collapsed').forEach(function(sec) {
-      sec.classList.remove('collapsed');
-      hidden.push(sec);
-    });
-    // Hide toolbar elements
     document.getElementById('floatingToolbar').style.display = 'none';
     document.getElementById('resetPrices').style.display = 'none';
-    document.querySelectorAll('.section-toggle').forEach(function(b) { b.style.display = 'none'; });
-
     window.print();
-
-    // Restore after print
     setTimeout(function() {
       document.getElementById('floatingToolbar').style.display = 'flex';
       document.getElementById('resetPrices').style.display = 'block';
-      document.querySelectorAll('.section-toggle').forEach(function(b) { b.style.display = 'block'; });
-      hidden.forEach(function(sec) { sec.classList.add('collapsed'); });
     }, 500);
   });
 })();

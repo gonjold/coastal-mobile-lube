@@ -88,7 +88,7 @@ export default function Footer() {
             2026 Coastal Mobile Lube & Tire. All rights reserved.
           </p>
           <p className="text-[12px] text-white/40">
-            Website by JG Systems
+            Website by Gold Co LLC
           </p>
         </div>
       </div>
