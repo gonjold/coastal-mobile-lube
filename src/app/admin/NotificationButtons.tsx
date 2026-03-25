@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { db, app } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { doc, updateDoc, arrayUnion } from "firebase/firestore";
-import { getFunctions, httpsCallable } from "firebase/functions";
 
 function formatPhoneDisplay(phone?: string): string {
   if (!phone) return "—";
@@ -13,8 +12,7 @@ function formatPhoneDisplay(phone?: string): string {
   return phone;
 }
 
-const functions = getFunctions(app, "us-east1");
-const sendConfirmationEmailFn = httpsCallable(functions, "sendConfirmationEmail");
+const SEND_EMAIL_URL = "https://us-east1-coastal-mobile-lube.cloudfunctions.net/sendConfirmationEmail";
 
 interface BookingData {
   id: string;
@@ -69,8 +67,12 @@ export default function NotificationButtons({
   async function handleEmailConfirmation() {
     setSendingEmail(true);
     try {
-      const result = await sendConfirmationEmailFn({ booking, bookingId });
-      const data = result.data as { success: boolean; error?: string };
+      const response = await fetch(SEND_EMAIL_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ booking, bookingId }),
+      });
+      const data = (await response.json()) as { success: boolean; error?: string };
       if (data.success) {
         await logComms("email", `Confirmation email sent to ${email}`);
         onToast(`Confirmation email sent to ${email}`, "success");

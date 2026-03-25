@@ -147,17 +147,20 @@ exports.onNewBooking = onDocumentCreated(
 );
 
 // Email sent to CUSTOMER when admin confirms a booking
-exports.sendConfirmationEmail = require("firebase-functions/v2/https").onCall(
+const { onRequest } = require("firebase-functions/v2/https");
+
+exports.sendConfirmationEmail = onRequest(
   {
     region: "us-east1",
     secrets: [gmailUser, gmailAppPassword],
     cors: true,
   },
-  async (request) => {
-    const { booking, bookingId } = request.data;
+  async (req, res) => {
+    const { booking, bookingId } = req.body;
 
-    if (!booking.email) {
-      return { success: false, error: "No email address on file" };
+    if (!booking || !booking.email) {
+      res.json({ success: false, error: "No email address on file" });
+      return;
     }
 
     const transporter = nodemailer.createTransport({
@@ -237,10 +240,10 @@ exports.sendConfirmationEmail = require("firebase-functions/v2/https").onCall(
         html: customerHtml,
       });
       console.log(`Confirmation email sent to ${booking.email} for booking ${bookingId}`);
-      return { success: true };
+      res.json({ success: true });
     } catch (error) {
       console.error(`Failed to send confirmation to ${booking.email}:`, error);
-      return { success: false, error: error.message };
+      res.json({ success: false, error: error.message });
     }
   }
 );
