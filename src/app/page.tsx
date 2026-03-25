@@ -179,7 +179,7 @@ export default function Home() {
       {/* Hero */}
       <section className="bg-white">
         <div className="section-inner px-4 lg:px-6 pt-10 pb-10 md:pt-16 md:pb-12">
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-10 lg:gap-12 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-10 lg:gap-12 items-start">
             {/* Left Column */}
             <div className="lg:sticky lg:top-[100px] lg:self-start">
               <h1 className="text-[34px] md:text-[50px] font-extrabold leading-[1.06] text-[#0B2040] tracking-[-1.5px] mb-5">
