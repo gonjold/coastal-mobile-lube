@@ -123,6 +123,7 @@ export default function Home() {
   const [bookingTab, setBookingTab] = useState<TabKey>("automotive");
   const [servicesTab, setServicesTab] = useState<TabKey>("automotive");
   const [selectedService, setSelectedService] = useState("");
+  const [nameValue, setNameValue] = useState("");
   const [zipValue, setZipValue] = useState("");
   const [phoneValue, setPhoneValue] = useState("");
   const [emailValue, setEmailValue] = useState("");
@@ -150,6 +151,7 @@ export default function Home() {
     setQuoteSubmitting(true);
     try {
       await addDoc(collection(db, "bookings"), {
+        name: nameValue.trim(),
         service: selectedService,
         serviceCategory: bookingTab,
         zip: zipValue,
@@ -271,6 +273,19 @@ export default function Home() {
                           <option key={s} value={s}>{s}</option>
                         ))}
                       </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
+                        Your Name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Your name"
+                        className={inputClasses}
+                        value={nameValue}
+                        onChange={(e) => setNameValue(e.target.value)}
+                      />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">

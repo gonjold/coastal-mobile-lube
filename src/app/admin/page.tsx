@@ -615,18 +615,15 @@ export default function AdminDashboard() {
         /* ═══ LIST VIEW ═══ */
         <div className="bg-white border border-[#e8e8e8] rounded-[12px] overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left min-w-[1000px]">
+            <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-[#eee]">
                   {[
                     "Date",
                     "Customer",
                     "Phone",
-                    "Email",
                     "Service",
-                    "Preferred Date",
                     "Source",
-                    "Pref",
                     "Status",
                     "Actions",
                   ].map((h) => (
@@ -685,17 +682,8 @@ export default function AdminDashboard() {
                             "—"
                           )}
                         </td>
-                        <td className="px-4 py-3 text-[13px] text-[#444] whitespace-nowrap">
-                          {b.email || "—"}
-                        </td>
                         <td className="px-4 py-3 text-[13px] text-[#444] whitespace-nowrap max-w-[180px] truncate">
                           {b.service || "—"}
-                        </td>
-                        <td className="px-4 py-3 text-[13px] text-[#444] whitespace-nowrap">
-                          {b.preferredDate
-                            ? new Date(b.preferredDate + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })
-                            : "—"}
-                          {b.datesFlexible && <span className="text-[11px] text-[#888] ml-1">(flex)</span>}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <span
@@ -703,16 +691,6 @@ export default function AdminDashboard() {
                           >
                             {source.label}
                           </span>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          {b.contactPreference ? (
-                            <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold text-[#444] bg-[#f0f0f0]">
-                              {b.contactPreference.charAt(0).toUpperCase() +
-                                b.contactPreference.slice(1)}
-                            </span>
-                          ) : (
-                            "—"
-                          )}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <span
