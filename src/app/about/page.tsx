@@ -121,6 +121,11 @@ export default function AboutPage() {
                 The only thing that changed is the location. Instead of you
                 driving to us, we drive to you.
               </p>
+              <img
+                src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_800,q_auto:good,f_auto/v1774317068/Van_mockup_ln68oh.png"
+                alt="Coastal Mobile Lube service van"
+                className="w-full max-w-[500px] mx-auto rounded-[12px] mt-8 mb-8"
+              />
             </div>
             <div>
               <img

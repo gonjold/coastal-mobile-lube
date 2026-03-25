@@ -184,6 +184,10 @@ export default function ServicesContent() {
                 Call 813-722-LUBE
               </a>
             </div>
+            <div className="flex items-center justify-center gap-2.5 mt-6">
+              <img src="/images/ase-badge.png" alt="ASE Certified" className="w-[50px] h-auto object-contain" />
+              <span className="text-[14px] text-[#888]">ASE Certified Technicians</span>
+            </div>
           </div>
         </div>
       </section>
