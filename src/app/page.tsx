@@ -204,11 +204,6 @@ export default function Home() {
                 </a>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '24px', marginBottom: '16px' }} className="hidden md:flex">
-                <img src="/images/ase-badge.png" alt="ASE Certified" style={{ width: '70px', height: '70px', objectFit: 'contain', flexShrink: 0 }} />
-                <img src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_400,q_auto:good,f_auto/v1774317068/Van_mockup_ln68oh.png" alt="Coastal Mobile service van" style={{ width: '280px', height: 'auto', objectFit: 'contain', flexShrink: 0 }} />
-              </div>
-
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pt-4 sm:pt-7 border-t border-[#eee]">
                 {["Factory-trained techs", "Licensed & insured", "Same-day availability"].map((item) => (
                   <div key={item} className="flex items-center gap-2.5">
