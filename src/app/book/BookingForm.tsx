@@ -15,7 +15,7 @@ import {
 /* ─── Data ─────────────────────────────────────────────────────── */
 
 const mainServices = [
-  { name: "Synthetic Oil Change", price: "$89" },
+  { name: "Synthetic Oil Change", price: "$49" },
   { name: "Tire Rotation & Balance", price: "$49" },
   { name: "Tire Sales & Installation", price: "$99" },
   { name: "Brake Pads (per axle)", price: "$199" },
