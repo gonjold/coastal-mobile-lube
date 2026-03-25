@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Phone, ChevronDown, ArrowRight } from "lucide-react";
 import Button from "@/components/Button";
+import TrustBar from "@/components/TrustBar";
 import { cloudinaryUrl, images } from "@/lib/cloudinary";
 
 const serviceCards = [
@@ -159,14 +160,14 @@ export default function ServicesContent() {
       {/* Hero */}
       <section className="bg-white">
         <div className="section-inner px-4 lg:px-6 pt-10 pb-4 md:pt-14 md:pb-8">
-          <div className="max-w-[700px]">
+          <div>
             <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
               Automotive Services
             </p>
             <h1 className="text-[30px] md:text-[42px] font-extrabold leading-[1.08] text-[#0B2040] tracking-[-1px] mb-5">
               Mobile maintenance at your door
             </h1>
-            <p className="text-[16px] leading-[1.65] text-[#666] max-w-[700px] mb-8">
+            <p className="text-[16px] leading-[1.65] text-[#666] mb-8">
               From synthetic oil changes to tire sales and installation, we
               handle everything your vehicle needs without the trip to the shop.
               Factory-trained technicians, professional equipment, and
@@ -184,13 +185,11 @@ export default function ServicesContent() {
                 Call 813-722-LUBE
               </a>
             </div>
-            <div className="flex items-center justify-center gap-2.5 mt-6">
-              <img src="/images/ase-badge.png" alt="ASE Certified" className="w-[50px] h-auto object-contain" />
-              <span className="text-[14px] text-[#888]">ASE Certified Technicians</span>
-            </div>
           </div>
         </div>
       </section>
+
+      <TrustBar />
 
       {/* Service Cards */}
       <section className="bg-[#FAFBFC]">

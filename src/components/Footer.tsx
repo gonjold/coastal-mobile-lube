@@ -84,9 +84,12 @@ export default function Footer() {
       {/* Bottom bar */}
       <div className="border-t border-white/[0.1]">
         <div className="section-inner px-6 py-5 pb-24 lg:pb-5 flex flex-col md:flex-row items-center justify-between gap-3">
-          <p className="text-[12px] text-white/40">
-            2026 Coastal Mobile Lube & Tire. All rights reserved.
-          </p>
+          <div className="flex items-center gap-3">
+            <img src="/images/ase-badge.png" alt="ASE Certified" className="w-[35px] h-auto object-contain" style={{ filter: "brightness(0) invert(1)", opacity: 0.6 }} />
+            <p className="text-[12px] text-white/40">
+              2026 Coastal Mobile Lube & Tire. All rights reserved.
+            </p>
+          </div>
           <p className="text-[12px] text-white/40">
             Website by Gold Co LLC
           </p>

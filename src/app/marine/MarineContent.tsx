@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Phone } from "lucide-react";
 import Button from "@/components/Button";
 import TrustBar from "@/components/TrustBar";
-import { cloudinaryUrl, images } from "@/lib/cloudinary";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
@@ -113,7 +112,7 @@ export default function MarineContent() {
             <h1 className="text-[30px] md:text-[42px] font-[800] leading-[1.08] text-[#0B2040] tracking-[-1px] mb-5">
               Dockside service for your boat
             </h1>
-            <p className="text-[16px] leading-[1.7] text-[#444] max-w-[700px] mb-8">
+            <p className="text-[16px] leading-[1.7] text-[#444] mb-8">
               We service outboard and inboard engines right at the marina or
               boat ramp. No hauling, no waiting. Factory-grade parts, certified
               technicians, and a 12-month service warranty on every job.
@@ -131,11 +130,6 @@ export default function MarineContent() {
               </a>
             </div>
           </div>
-          <img
-            src={cloudinaryUrl(images.marinaBoatsAlt, { width: 800 })}
-            alt="Marina boats dockside service"
-            className="w-full rounded-[12px] max-h-[400px] object-cover mt-10"
-          />
         </div>
       </section>
 
