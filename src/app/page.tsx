@@ -215,21 +215,11 @@ export default function Home() {
                 ))}
               </div>
 
-              <div className="hidden md:flex items-center gap-5 mt-6">
-                <div className="flex items-center gap-3 opacity-85 shrink-0">
-                  <img
-                    src="/images/ase-badge.png"
-                    alt="ASE Certified"
-                    className="w-[80px] h-auto"
-                  />
-                  <span className="text-[12px] text-[#888] font-medium leading-tight">ASE Certified<br />Technicians</span>
-                </div>
-                <img
-                  src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_600,q_auto:good,f_auto/v1774317068/Van_mockup_transparent_bd5z75.png"
-                  alt="Coastal Mobile Lube and Tire service van"
-                  className="flex-1 max-w-[400px] rounded-[12px]"
-                />
-              </div>
+              <img
+                src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_400,q_auto:good,f_auto/v1774317068/Van_mockup_transparent_bd5z75.png"
+                alt="Coastal Mobile Lube and Tire service van"
+                className="hidden md:block max-w-[320px] rounded-[8px] mt-4"
+              />
             </div>
 
             {/* Booking Widget */}
