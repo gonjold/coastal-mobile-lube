@@ -81,9 +81,13 @@ export default function CommsLog({
   };
 
   return (
-    <div className="mt-5">
-      <h4 className="text-[18px] font-[700] text-[#0B2040] mb-3">
-        Communication Log
+    <div className="mt-6 pt-6 border-t border-[#e8e8e8]">
+      <h4 className="text-[20px] font-[700] text-[#0B2040] mb-4">
+        Communication Log{sorted.length > 0 && (
+          <span className="ml-2 inline-block px-2 py-0.5 rounded-full text-[12px] font-semibold text-white bg-[#0B2040] align-middle">
+            {sorted.length}
+          </span>
+        )}
       </h4>
 
       {/* New entry form */}
@@ -142,32 +146,42 @@ export default function CommsLog({
 
       {/* Log history */}
       {sorted.length === 0 ? (
-        <p className="text-[13px] text-[#888] italic">
-          No communication logged yet
-        </p>
+        <div className="bg-[#f8f9fa] rounded-[10px] p-4">
+          <p className="text-[13px] text-[#888] italic">
+            No communication logged yet
+          </p>
+        </div>
       ) : (
-        <div className="flex flex-col gap-1">
+        <div className="bg-[#f8f9fa] rounded-[10px] p-4 flex flex-col gap-1">
           {sorted.map((entry) => {
             const date = new Date(entry.createdAt);
+            const typeColors: Record<string, string> = {
+              call: "bg-[#1A5FAC] text-white",
+              text: "bg-[#16a34a] text-white",
+              email: "bg-[#7c3aed] text-white",
+              note: "bg-[#888] text-white",
+            };
             return (
               <div
                 key={entry.id}
-                className="flex items-center gap-3 py-2 border-b border-[#f0f0f0] last:border-0"
+                className="flex items-center gap-3 py-2.5 px-3 bg-white rounded-[8px] border border-[#eee]"
               >
-                <span className="text-[#444]">{typeIcons[entry.type]}</span>
-                <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold text-[#444] bg-[#f0f0f0]">
-                  {entry.direction.charAt(0).toUpperCase() +
-                    entry.direction.slice(1)}
+                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold shrink-0 ${typeColors[entry.type] || "bg-[#eee] text-[#444]"}`}>
+                  {typeIcons[entry.type]}
+                  {entry.type.charAt(0).toUpperCase() + entry.type.slice(1)}
                 </span>
-                <span className="text-[13px] text-[#444] flex-1">
+                <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold text-[#444] bg-[#f0f0f0] shrink-0">
+                  {entry.direction === "inbound" ? "↙ In" : "↗ Out"}
+                </span>
+                <span className="text-[13px] text-[#444] flex-1 min-w-0 truncate">
                   {entry.summary}
                 </span>
-                <span className="text-[12px] text-[#888] whitespace-nowrap">
+                <span className="text-[11px] text-[#888] whitespace-nowrap shrink-0">
                   {date.toLocaleDateString("en-US", {
                     month: "short",
                     day: "numeric",
                   })}
-                  ,{" "}
+                  {", "}
                   {date.toLocaleTimeString("en-US", {
                     hour: "numeric",
                     minute: "2-digit",

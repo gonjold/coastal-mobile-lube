@@ -174,7 +174,7 @@ export default function ServicesContent() {
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Button href="/book" variant="primary" size="lg">
-                Get a Quote
+                Book Now
               </Button>
               <a
                 href="tel:8137225823"

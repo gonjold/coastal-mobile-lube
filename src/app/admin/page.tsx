@@ -128,6 +128,20 @@ function getCalendarDays(year: number, month: number): (number | null)[] {
   return days;
 }
 
+function formatTimeWindow(tw?: string): string | undefined {
+  if (!tw) return undefined;
+  const labels: Record<string, string> = {
+    "early-morning": "Early Morning (7-9)",
+    "earlyMorning": "Early Morning (7-9)",
+    "morning": "Morning (9-11)",
+    "midday": "Midday (11-1)",
+    "afternoon": "Afternoon (1-3)",
+    "late-afternoon": "Late Afternoon (3-5)",
+    "lateAfternoon": "Late Afternoon (3-5)",
+  };
+  return labels[tw] || tw;
+}
+
 function isNewBooking(b: Booking): boolean {
   if (b.status !== "pending") return false;
   if (!b.createdAt?.toDate) return false;
@@ -1148,7 +1162,7 @@ function ExpandedDetail({
     { label: "Status", value: b.status },
     { label: "Service", value: b.service },
     { label: "Category", value: b.serviceCategory },
-    { label: "Time Window", value: b.timeWindow },
+    { label: "Time Window", value: formatTimeWindow(b.timeWindow) },
     { label: "Zip", value: b.zip },
     { label: "Fleet Size", value: b.fleetSize },
     { label: "Engine Type", value: b.engineType },
