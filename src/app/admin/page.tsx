@@ -190,7 +190,7 @@ export default function AdminDashboard() {
   const [dateTo, setDateTo] = useState(() => toISODate(new Date()));
 
   /* View */
-  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [viewMode, setViewMode] = useState<"list" | "calendar" | "customers">("list");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   /* Set Appointment */

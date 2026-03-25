@@ -205,7 +205,7 @@ export default function Home() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pt-4 sm:pt-7 border-t border-[#eee]">
-                {["Factory-trained techs", "Licensed & insured", "Same-week availability"].map((item) => (
+                {["Factory-trained techs", "Licensed & insured", "Same-day availability"].map((item) => (
                   <div key={item} className="flex items-center gap-2.5">
                     <div className="flex items-center justify-center shrink-0 w-[22px] h-[22px] rounded-[6px] bg-[#EBF4FF]">
                       <Check size={13} className="text-[#1A5FAC]" />
@@ -213,15 +213,6 @@ export default function Home() {
                     <span className="text-sm text-[#555] font-medium">{item}</span>
                   </div>
                 ))}
-              </div>
-
-              <div className="hidden md:block mt-6">
-                <img
-                  src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_600,q_auto:good,f_auto/van-interior-equipment"
-                  alt="Fully equipped mobile service unit"
-                  className="w-full rounded-[12px]"
-                />
-                <p className="text-[12px] text-[#888] mt-2">Fully equipped mobile service unit</p>
               </div>
             </div>
 
@@ -566,6 +557,56 @@ export default function Home() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Reviews */}
+      <section className="bg-[#0B2040]">
+        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
+          <div className="text-center mb-10">
+            <p className="text-[12px] uppercase font-bold text-[#E07B2D] tracking-[1.5px] mb-3">
+              Reviews
+            </p>
+            <h2 className="text-[28px] md:text-[34px] font-extrabold text-white">
+              What our customers say
+            </h2>
+          </div>
+
+          <div className="flex gap-5 overflow-x-auto pb-4 snap-x snap-mandatory md:grid md:grid-cols-3 md:overflow-visible md:pb-0">
+            {[
+              { text: "Called Monday morning, Chase was at my house by noon. Oil change done in my driveway in 25 minutes. Why would I ever go back to a shop?", name: "Mike R.", city: "Tampa" },
+              { text: "We have 14 work vans and scheduling service used to be a nightmare. Now they come to our lot every month. Game changer for our fleet.", name: "Sarah T.", city: "Brandon" },
+              { text: "Had my boat winterized right at the marina. No hauling, no waiting. Professional, fast, fair price.", name: "Dave K.", city: "Clearwater" },
+              { text: "First time trying mobile service and I\u2019m never going back to sitting in a waiting room. Booked online, tech showed up on time, done.", name: "Lisa M.", city: "Wesley Chapel" },
+              { text: "Got new tires mounted in my office parking lot during lunch. Didn\u2019t miss a minute of work.", name: "James P.", city: "Tampa" },
+              { text: "Honest pricing, no upselling. Exactly what they quoted is what I paid. Refreshing.", name: "Ana C.", city: "Riverview" },
+            ].map((review) => (
+              <div
+                key={review.name}
+                className="min-w-[280px] snap-start flex-shrink-0 md:min-w-0 bg-white border border-[#e8e8e8] rounded-[12px] p-5 flex flex-col"
+              >
+                <div className="text-[#E07B2D] text-[16px] mb-3 tracking-wide">
+                  {"★★★★★"}
+                </div>
+                <p className="text-[14px] leading-[1.7] text-[#444] flex-1 mb-4">
+                  &ldquo;{review.text}&rdquo;
+                </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-[13px] font-semibold text-[#0B2040]">
+                    {review.name} <span className="font-normal text-[#888]">&mdash; {review.city}</span>
+                  </span>
+                  <span className="text-[11px] text-[#888] font-medium">Google Review</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center mt-8">
+            <p className="text-[13px] text-white/50 mb-2">Reviews from customers across Tampa Bay</p>
+            <a href="#" className="text-[13px] font-semibold text-[#E07B2D] hover:underline">
+              Leave us a review on Google &rarr;
+            </a>
           </div>
         </div>
       </section>
