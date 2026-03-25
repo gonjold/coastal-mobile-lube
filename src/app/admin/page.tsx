@@ -39,6 +39,10 @@ interface Booking {
   engineCount?: string;
   adminNotes?: string;
   commsLog?: Array<{ id: string; type: "call" | "text" | "email" | "note"; direction: "outbound" | "inbound"; summary: string; createdAt: string; createdBy: string }>;
+  confirmedDate?: string;
+  confirmedArrivalWindow?: string;
+  estimatedDuration?: string;
+  confirmedAt?: FirestoreTimestamp;
   returningCustomer?: boolean;
   createdAt?: FirestoreTimestamp;
   updatedAt?: FirestoreTimestamp;
@@ -76,6 +80,7 @@ function toISODate(d: Date): string {
 }
 
 function getBookingCalendarDate(b: Booking): string | null {
+  if ((b.status === "confirmed" || b.status === "completed") && b.confirmedDate) return b.confirmedDate;
   if (b.preferredDate) return b.preferredDate;
   if (b.createdAt?.toDate) return toISODate(b.createdAt.toDate());
   return null;
@@ -126,16 +131,39 @@ function isNewBooking(b: Booking): boolean {
   return b.createdAt.toDate().getTime() > twoHoursAgo;
 }
 
+function parseArrivalWindowHours(window: string): { start: number; end: number } {
+  const hourMap: Record<string, { start: number; end: number }> = {
+    "7:00 - 8:00 AM": { start: 7, end: 8 },
+    "8:00 - 9:00 AM": { start: 8, end: 9 },
+    "9:00 - 10:00 AM": { start: 9, end: 10 },
+    "10:00 - 11:00 AM": { start: 10, end: 11 },
+    "11:00 AM - 12:00 PM": { start: 11, end: 12 },
+    "12:00 - 1:00 PM": { start: 12, end: 13 },
+    "1:00 - 2:00 PM": { start: 13, end: 14 },
+    "2:00 - 3:00 PM": { start: 14, end: 15 },
+    "3:00 - 4:00 PM": { start: 15, end: 16 },
+    "4:00 - 5:00 PM": { start: 16, end: 17 },
+  };
+  return hourMap[window] || { start: 9, end: 10 };
+}
+
 function generateGCalUrl(booking: Booking): string {
   const title = encodeURIComponent(`Coastal Mobile - ${booking.service || "Service"} - ${booking.name || "Customer"}`);
-  const dateStr = booking.preferredDate || new Date(Date.now() + 86400000).toISOString().split("T")[0];
-  let startHour = "09";
-  if (booking.timeWindow === "midday") startHour = "11";
-  if (booking.timeWindow === "afternoon") startHour = "14";
-  const startDate = dateStr.replace(/-/g, "") + "T" + startHour + "0000";
-  const endDate = dateStr.replace(/-/g, "") + "T" + (parseInt(startHour) + 1).toString().padStart(2, "0") + "0000";
+  const dateStr = booking.confirmedDate || booking.preferredDate || new Date(Date.now() + 86400000).toISOString().split("T")[0];
+  let startHour = 9;
+  let endHour = 10;
+  if (booking.confirmedArrivalWindow) {
+    const parsed = parseArrivalWindowHours(booking.confirmedArrivalWindow);
+    startHour = parsed.start;
+    endHour = parsed.end;
+  } else {
+    if (booking.timeWindow === "midday") { startHour = 11; endHour = 12; }
+    if (booking.timeWindow === "afternoon") { startHour = 14; endHour = 15; }
+  }
+  const startDate = dateStr.replace(/-/g, "") + "T" + String(startHour).padStart(2, "0") + "0000";
+  const endDate = dateStr.replace(/-/g, "") + "T" + String(endHour).padStart(2, "0") + "0000";
   const details = encodeURIComponent(
-    `Service: ${booking.service || "TBD"}\nCustomer: ${booking.name || "N/A"}\nPhone: ${booking.phone || "N/A"}\nEmail: ${booking.email || "N/A"}\nContact Pref: ${booking.contactPreference || "N/A"}\nSource: ${booking.source || "N/A"}\nNotes: ${booking.notes || "None"}\nAdmin: https://coastal-mobile-lube.netlify.app/admin`
+    `Service: ${booking.service || "TBD"}\nCustomer: ${booking.name || "N/A"}\nPhone: ${booking.phone || "N/A"}\nEmail: ${booking.email || "N/A"}\nContact Pref: ${booking.contactPreference || "N/A"}\nSource: ${booking.source || "N/A"}\nArrival: ${booking.confirmedArrivalWindow || "TBD"}\nNotes: ${booking.notes || "None"}\nAdmin: https://coastal-mobile-lube.netlify.app/admin`
   );
   const location = encodeURIComponent(booking.address || booking.zip || "Tampa, FL");
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDate}/${endDate}&details=${details}&location=${location}`;
@@ -160,6 +188,9 @@ export default function AdminDashboard() {
   /* View */
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  /* Set Appointment */
+  const [settingAppointmentId, setSettingAppointmentId] = useState<string | null>(null);
 
   /* Calendar */
   const [calendarDate, setCalendarDate] = useState(new Date());
@@ -274,6 +305,63 @@ export default function AdminDashboard() {
     } catch {
       /* onSnapshot will correct */
     }
+  }
+
+  /* ── Confirm appointment (Set Appointment flow) ── */
+  async function confirmAppointment(
+    id: string,
+    booking: Booking,
+    confirmedDate: string,
+    confirmedArrivalWindow: string,
+    estimatedDuration: string
+  ) {
+    const entry = {
+      id: crypto.randomUUID(),
+      type: "note" as const,
+      direction: "outbound" as const,
+      summary: `Appointment confirmed for ${confirmedDate} ${confirmedArrivalWindow}`,
+      createdAt: new Date().toISOString(),
+      createdBy: "admin",
+    };
+    setBookings((prev) =>
+      prev.map((b) =>
+        b.id === id
+          ? { ...b, status: "confirmed", confirmedDate, confirmedArrivalWindow, estimatedDuration }
+          : b
+      )
+    );
+    try {
+      await updateDoc(doc(db, "bookings", id), {
+        status: "confirmed",
+        confirmedDate,
+        confirmedArrivalWindow,
+        estimatedDuration,
+        confirmedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        commsLog: arrayUnion(entry),
+      });
+      const updatedBooking = { ...booking, confirmedDate, confirmedArrivalWindow, estimatedDuration };
+      const calUrl = generateGCalUrl(updatedBooking);
+      addToast(`Appointment set for ${confirmedDate} at ${confirmedArrivalWindow}`, "success", { label: "Add to Calendar", url: calUrl });
+      // Auto-send confirmation email (B5)
+      if (booking.email) {
+        try {
+          await fetch("https://us-east1-coastal-mobile-lube.cloudfunctions.net/sendConfirmationEmail", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ booking: updatedBooking, bookingId: id }),
+          });
+          addToast(`Confirmation email sent to ${booking.email}`, "success");
+        } catch {
+          /* email send failed silently */
+        }
+      } else {
+        addToast("Appointment confirmed. No email on file - contact customer manually.", "info");
+      }
+    } catch {
+      /* onSnapshot will correct */
+    }
+    setSettingAppointmentId(null);
   }
 
   /* ── Save admin notes ── */
@@ -587,7 +675,10 @@ export default function AdminDashboard() {
                         >
                           <StatusActions
                             status={b.status}
-                            onConfirm={() => updateStatus(b.id, "confirmed", b)}
+                            onConfirm={() => {
+                              setSettingAppointmentId(b.id);
+                              setExpandedId(b.id);
+                            }}
                             onComplete={() => updateStatus(b.id, "completed")}
                           />
                         </td>
@@ -609,6 +700,11 @@ export default function AdminDashboard() {
                               }
                               onSaveNotes={() => saveAdminNotes(b.id)}
                               onToast={addToast}
+                              showAppointmentSetter={settingAppointmentId === b.id}
+                              onConfirmAppointment={(date, window, duration) =>
+                                confirmAppointment(b.id, b, date, window, duration)
+                              }
+                              onCancelAppointmentSetter={() => setSettingAppointmentId(null)}
                             />
                           </td>
                         </tr>
@@ -847,6 +943,25 @@ function StatusActions({
   );
 }
 
+const arrivalWindows = [
+  "7:00 - 8:00 AM",
+  "8:00 - 9:00 AM",
+  "9:00 - 10:00 AM",
+  "10:00 - 11:00 AM",
+  "11:00 AM - 12:00 PM",
+  "12:00 - 1:00 PM",
+  "1:00 - 2:00 PM",
+  "2:00 - 3:00 PM",
+  "3:00 - 4:00 PM",
+  "4:00 - 5:00 PM",
+];
+
+const timeWindowToArrival: Record<string, string> = {
+  morning: "8:00 - 9:00 AM",
+  midday: "11:00 AM - 12:00 PM",
+  afternoon: "2:00 - 3:00 PM",
+};
+
 function ExpandedDetail({
   booking: b,
   editingNotes,
@@ -854,6 +969,9 @@ function ExpandedDetail({
   onNotesChange,
   onSaveNotes,
   onToast,
+  showAppointmentSetter,
+  onConfirmAppointment,
+  onCancelAppointmentSetter,
 }: {
   booking: Booking;
   editingNotes: Record<string, string>;
@@ -861,7 +979,16 @@ function ExpandedDetail({
   onNotesChange: (val: string) => void;
   onSaveNotes: () => void;
   onToast: (message: string, type?: "success" | "info") => void;
+  showAppointmentSetter: boolean;
+  onConfirmAppointment: (date: string, window: string, duration: string) => void;
+  onCancelAppointmentSetter: () => void;
 }) {
+  const [apptDate, setApptDate] = useState(b.preferredDate || toISODate(new Date()));
+  const [apptWindow, setApptWindow] = useState(
+    b.timeWindow ? (timeWindowToArrival[b.timeWindow] || "8:00 - 9:00 AM") : "8:00 - 9:00 AM"
+  );
+  const [apptDuration, setApptDuration] = useState("Under 1 hour");
+
   const fields = [
     { label: "Name", value: b.name },
     { label: "Phone", value: formatPhone(b.phone) },
@@ -887,6 +1014,107 @@ function ExpandedDetail({
 
   return (
     <div className="bg-[#FAFBFC] border-t border-[#eee] px-6 py-5">
+      {/* Confirmed appointment details (B3) */}
+      {(b.status === "confirmed" || b.status === "completed") && b.confirmedDate && (
+        <div className="mb-5 border-l-4 border-l-[#1A5FAC] bg-[#EBF4FF] rounded-r-[8px] p-4">
+          <p className="text-[11px] uppercase font-semibold text-[#1A5FAC] tracking-[0.5px] mb-2">
+            Confirmed Appointment
+          </p>
+          <div className="flex flex-wrap gap-6">
+            <div>
+              <p className="text-[12px] text-[#888]">Date</p>
+              <p className="text-[15px] font-semibold text-[#0B2040]">
+                {new Date(b.confirmedDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+              </p>
+            </div>
+            {b.confirmedArrivalWindow && (
+              <div>
+                <p className="text-[12px] text-[#888]">Arrival Window</p>
+                <p className="text-[15px] font-semibold text-[#0B2040]">{b.confirmedArrivalWindow}</p>
+              </div>
+            )}
+            {b.estimatedDuration && (
+              <div>
+                <p className="text-[12px] text-[#888]">Est. Duration</p>
+                <p className="text-[15px] font-semibold text-[#0B2040]">{b.estimatedDuration}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Appointment setter form (B1) */}
+      {showAppointmentSetter && (
+        <div className="mb-5 border border-[#E07B2D] bg-white rounded-[10px] p-5">
+          <p className="text-[14px] font-bold text-[#0B2040] mb-4">Set Appointment</p>
+
+          <div className="mb-4">
+            <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
+              Appointment Date
+            </label>
+            <input
+              type="date"
+              value={apptDate}
+              min={toISODate(new Date())}
+              onChange={(e) => setApptDate(e.target.value)}
+              className="text-[14px] rounded-lg px-3 py-2 border border-[#e8e8e8] outline-none focus:border-[#1A5FAC]"
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
+              Arrival Window
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {arrivalWindows.map((w) => (
+                <button
+                  key={w}
+                  onClick={() => setApptWindow(w)}
+                  className={`px-3 py-1.5 rounded-full text-[12px] font-semibold transition-colors ${
+                    apptWindow === w
+                      ? "bg-[#0B2040] text-white"
+                      : "bg-white text-[#444] border border-[#e8e8e8] hover:border-[#0B2040]"
+                  }`}
+                >
+                  {w}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mb-5">
+            <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
+              Estimated Duration
+            </label>
+            <select
+              value={apptDuration}
+              onChange={(e) => setApptDuration(e.target.value)}
+              className="text-[14px] rounded-lg px-3 py-2 border border-[#e8e8e8] outline-none focus:border-[#1A5FAC]"
+            >
+              <option>Under 1 hour</option>
+              <option>1-2 hours</option>
+              <option>2-3 hours</option>
+              <option>Half day</option>
+            </select>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => onConfirmAppointment(apptDate, apptWindow, apptDuration)}
+              className="px-5 py-2.5 text-[13px] font-semibold text-white bg-[#E07B2D] rounded-md hover:bg-[#cc6a1f] transition-colors"
+            >
+              Confirm Appointment
+            </button>
+            <button
+              onClick={onCancelAppointmentSetter}
+              className="px-5 py-2.5 text-[13px] font-semibold text-[#444] border border-[#ddd] rounded-md hover:bg-[#f5f5f5] transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-5">
         {fields.map((f) => (
           <div key={f.label}>

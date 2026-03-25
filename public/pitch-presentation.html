@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Coastal Mobile Lube & Tire — Digital Launch Strategy</title>
+  <title>Coastal Mobile Lube & Tire - Digital Launch Strategy</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -62,65 +62,94 @@
       padding: 80px 32px 64px;
     }
 
+    /* --- SECTIONS: alternating backgrounds + spacing --- */
     section {
-      margin-bottom: 64px;
+      margin-bottom: 0;
+      padding: 60px 0;
       page-break-inside: avoid;
+      border-bottom: 1px solid #eee;
     }
+    section:nth-of-type(even) {
+      background: var(--surface);
+      margin-left: -32px;
+      margin-right: -32px;
+      padding-left: 32px;
+      padding-right: 32px;
+    }
+    section:last-of-type { border-bottom: none; }
 
+    /* --- TYPOGRAPHY (Change 4) --- */
     h1 {
-      font-size: 42px;
+      font-size: 48px;
       font-weight: 800;
       color: var(--navy);
-      line-height: 1.15;
+      line-height: 1.1;
     }
     h2 {
-      font-size: 30px;
+      font-size: 36px;
       font-weight: 800;
       color: var(--navy);
-      margin-bottom: 8px;
+      margin-bottom: 12px;
+      margin-top: 0;
       line-height: 1.2;
     }
     h3 {
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 700;
       color: var(--navy);
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
-    p { margin-bottom: 16px; }
+    p {
+      margin-bottom: 16px;
+      font-size: 16px;
+      line-height: 1.7;
+    }
 
     .subtitle {
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 600;
       color: var(--blue);
-      margin-top: 8px;
+      margin-top: 12px;
     }
     .meta {
-      font-size: 15px;
+      font-size: 16px;
       color: #6b7280;
-      margin-top: 6px;
+      margin-top: 8px;
     }
     .byline {
-      font-size: 13px;
+      font-size: 14px;
       color: #9ca3af;
-      margin-top: 24px;
+      margin-top: 32px;
     }
     .section-sub {
-      font-size: 16px;
+      font-size: 17px;
       color: #6b7280;
       margin-bottom: 28px;
     }
 
-    /* --- EDITABLE SPANS --- */
+    /* --- EDITABLE SPANS (Change 6a) --- */
     .editable {
-      border-bottom: 2px dashed var(--orange);
-      padding-bottom: 1px;
       outline: none;
       cursor: text;
+      position: relative;
       transition: background 0.2s;
+      border-radius: 3px;
+      padding: 0 2px;
+    }
+    .editable:hover {
+      background: #FFF8F0;
+    }
+    .editable:hover::after {
+      content: " \270F";
+      font-size: 14px;
+      opacity: 0.5;
     }
     .editable:focus {
-      background: rgba(224, 123, 45, 0.1);
-      border-bottom-style: solid;
+      background: #FFF8F0;
+      box-shadow: 0 0 0 2px rgba(224, 123, 45, 0.3);
+    }
+    .editable:focus::after {
+      content: "";
     }
 
     /* --- CARDS --- */
@@ -134,10 +163,15 @@
       background: var(--surface);
       border: 1px solid #e5e7eb;
       border-radius: 12px;
-      padding: 24px;
+      padding: 28px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
-    .card h3 { font-size: 17px; margin-bottom: 8px; }
-    .card p { font-size: 14px; color: #4b5563; margin-bottom: 0; }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(11, 32, 64, 0.08);
+    }
+    .card h3 { font-size: 19px; margin-bottom: 10px; }
+    .card p { font-size: 16px; color: #4b5563; margin-bottom: 0; line-height: 1.7; }
 
     .card-grid-2 {
       display: grid;
@@ -156,24 +190,34 @@
       background: var(--surface);
       border: 1px solid #e5e7eb;
       border-radius: 12px;
-      padding: 24px;
+      padding: 28px;
       display: flex;
       flex-direction: column;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
-    .link-card h3 { font-size: 17px; margin-bottom: 6px; }
-    .link-card p { font-size: 14px; color: #4b5563; flex: 1; }
+    .link-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(11, 32, 64, 0.08);
+    }
+    .link-card h3 { font-size: 19px; margin-bottom: 8px; }
+    .link-card p { font-size: 16px; color: #4b5563; flex: 1; line-height: 1.7; }
     .link-card .btn {
-      display: inline-block;
-      margin-top: 12px;
+      display: block;
+      margin-top: 16px;
       background: var(--orange);
       color: var(--white);
       text-decoration: none;
       font-weight: 700;
-      font-size: 13px;
-      padding: 10px 18px;
+      font-size: 14px;
+      padding: 12px 18px;
       border-radius: 8px;
       text-align: center;
       transition: background 0.2s;
+      width: 100%;
+    }
+    .link-card .btn::after {
+      content: " \2192";
+      font-size: 16px;
     }
     .link-card .btn:hover { background: #c96a22; }
 
@@ -199,7 +243,8 @@
     .feature-list li {
       position: relative;
       padding: 8px 0 8px 28px;
-      font-size: 15px;
+      font-size: 16px;
+      line-height: 1.7;
     }
     .feature-list li::before {
       content: "\2713";
@@ -209,34 +254,34 @@
       font-weight: 800;
     }
 
-    /* --- FLOW DIAGRAM --- */
+    /* --- FLOW DIAGRAM (Change 5e) --- */
     .flow {
       display: flex;
       align-items: center;
       flex-wrap: wrap;
-      gap: 8px;
-      margin: 28px 0;
+      gap: 10px;
+      margin: 32px 0;
       justify-content: center;
     }
     .flow-step {
       background: var(--navy);
       color: var(--white);
-      padding: 14px 18px;
+      padding: 18px 22px;
       border-radius: 10px;
-      font-size: 13px;
+      font-size: 16px;
       font-weight: 600;
       text-align: center;
-      flex: 1 1 120px;
-      max-width: 160px;
+      flex: 1 1 130px;
+      max-width: 170px;
     }
     .flow-arrow {
       color: var(--orange);
-      font-size: 22px;
+      font-size: 24px;
       font-weight: 800;
       flex: 0 0 auto;
     }
 
-    /* --- COLUMNS --- */
+    /* --- COLUMNS (30-60-90) --- */
     .col-3 {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -247,22 +292,28 @@
       background: var(--surface);
       border: 1px solid #e5e7eb;
       border-radius: 12px;
-      padding: 24px;
+      padding: 28px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .col-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(11, 32, 64, 0.08);
     }
     .col-card h3 {
       color: var(--orange);
-      font-size: 16px;
-      margin-bottom: 12px;
+      font-size: 24px;
+      font-weight: 800;
+      margin-bottom: 16px;
     }
     .col-card ul {
       list-style: none;
       padding: 0;
     }
     .col-card li {
-      font-size: 13.5px;
-      padding: 5px 0;
+      font-size: 15px;
+      padding: 7px 0;
       border-bottom: 1px solid #e5e7eb;
-      line-height: 1.45;
+      line-height: 1.5;
     }
     .col-card li:last-child { border-bottom: none; }
 
@@ -275,13 +326,14 @@
     .checklist li {
       position: relative;
       padding: 8px 0 8px 32px;
-      font-size: 15px;
+      font-size: 16px;
+      line-height: 1.7;
     }
     .checklist li::before {
       content: "";
       position: absolute;
       left: 0;
-      top: 10px;
+      top: 12px;
       width: 18px;
       height: 18px;
       border: 2px solid var(--orange);
@@ -293,7 +345,7 @@
       width: 100%;
       border-collapse: collapse;
       margin: 20px 0;
-      font-size: 14px;
+      font-size: 15px;
     }
     thead th {
       background: var(--navy);
@@ -307,12 +359,23 @@
     tbody td {
       padding: 10px 16px;
       border-bottom: 1px solid #e5e7eb;
+      font-size: 15px;
     }
     tbody tr:nth-child(even) { background: var(--surface); }
     tbody tr:last-child td:first-child { border-radius: 0 0 0 8px; }
     tbody tr:last-child td:last-child { border-radius: 0 0 8px 0; }
 
-    .highlight-col { background: rgba(26, 95, 172, 0.06); font-weight: 600; }
+    /* --- COMPETITIVE TABLE (Change 5d) --- */
+    .comp-table .coastal-col {
+      background: #FFF8F0;
+      font-weight: 700;
+    }
+    .comp-table thead th.coastal-th {
+      background: var(--orange);
+    }
+    .comp-table .yes { color: #16a34a; font-weight: 700; }
+    .comp-table .no { color: #9ca3af; }
+    .comp-table .partial { color: #6b7280; }
 
     /* --- PRICING TABLES --- */
     .pricing-table {
@@ -328,7 +391,7 @@
     .pricing-table tr:last-child td { border-bottom: none; }
     .pricing-table .total td {
       font-weight: 800;
-      font-size: 17px;
+      font-size: 18px;
       border-top: 2px solid var(--navy);
       padding-top: 16px;
     }
@@ -344,22 +407,23 @@
     .next-steps li {
       counter-increment: steps;
       position: relative;
-      padding: 12px 0 12px 48px;
-      font-size: 15px;
+      padding: 14px 0 14px 52px;
+      font-size: 16px;
       border-bottom: 1px solid #e5e7eb;
+      line-height: 1.7;
     }
     .next-steps li:last-child { border-bottom: none; }
     .next-steps li::before {
       content: counter(steps);
       position: absolute;
       left: 0;
-      top: 10px;
-      width: 32px;
-      height: 32px;
+      top: 12px;
+      width: 34px;
+      height: 34px;
       background: var(--orange);
       color: var(--white);
       font-weight: 800;
-      font-size: 14px;
+      font-size: 15px;
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -370,28 +434,84 @@
     .contact {
       text-align: center;
       margin-top: 48px;
-      padding: 40px 24px;
+      padding: 48px 24px;
       background: var(--navy);
       border-radius: 16px;
       color: var(--white);
     }
-    .contact h3 { color: var(--white); font-size: 20px; margin-bottom: 16px; }
-    .contact p { color: rgba(255,255,255,0.8); margin-bottom: 4px; font-size: 15px; }
+    .contact h3 { color: var(--white); font-size: 22px; margin-bottom: 16px; }
+    .contact p { color: rgba(255,255,255,0.8); margin-bottom: 4px; font-size: 16px; }
     .contact a { color: var(--orange); text-decoration: none; }
 
     /* --- DIVIDER --- */
     .divider {
       border: none;
       border-top: 2px solid var(--light-gray);
-      margin: 48px 0;
+      margin: 0;
+    }
+
+    /* --- TOOLTIP BANNER (Change 6c) --- */
+    .tip-banner {
+      position: fixed;
+      top: 46px;
+      left: 0;
+      right: 0;
+      z-index: 99;
+      background: #FFF8F0;
+      border-bottom: 1px solid var(--orange);
+      padding: 10px 24px;
+      font-size: 14px;
+      color: var(--navy);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+    }
+    .tip-banner .dismiss {
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      color: #6b7280;
+      padding: 0 4px;
+    }
+    .tip-banner .dismiss:hover { color: var(--navy); }
+
+    /* --- RESET BUTTON (Change 6b) --- */
+    .reset-btn {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      z-index: 100;
+      background: var(--white);
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 600;
+      color: #6b7280;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .reset-btn:hover {
+      color: var(--orange);
+      border-color: var(--orange);
     }
 
     /* --- PRINT --- */
     @media print {
-      nav { display: none; }
+      nav, .tip-banner, .reset-btn { display: none; }
       .container { padding-top: 24px; }
       .btn { border: 1px solid var(--orange); }
       section { page-break-inside: avoid; }
+      section:nth-of-type(even) {
+        margin-left: 0;
+        margin-right: 0;
+        padding-left: 0;
+        padding-right: 0;
+      }
     }
 
     /* --- RESPONSIVE --- */
@@ -399,19 +519,31 @@
       .card-row, .card-grid-2, .card-grid-3, .col-3 {
         grid-template-columns: 1fr;
       }
-      h1 { font-size: 32px; }
-      h2 { font-size: 24px; }
+      h1 { font-size: 34px; }
+      h2 { font-size: 28px; }
       .flow { flex-direction: column; }
       .flow-step { max-width: 100%; }
       .flow-arrow { transform: rotate(90deg); }
       nav a { font-size: 12px; padding: 10px 10px; }
       .container { padding: 70px 20px 48px; }
-      table { font-size: 12px; }
+      table { font-size: 13px; }
       thead th, tbody td { padding: 8px 10px; }
+      section:nth-of-type(even) {
+        margin-left: -20px;
+        margin-right: -20px;
+        padding-left: 20px;
+        padding-right: 20px;
+      }
     }
   </style>
 </head>
 <body>
+
+<!-- TIP BANNER (Change 6c) -->
+<div class="tip-banner" id="tipBanner" style="display:none;">
+  <span>Tip: Click any highlighted price to edit it before your meeting.</span>
+  <button class="dismiss" id="dismissTip" aria-label="Dismiss">&times;</button>
+</div>
 
 <!-- NAV -->
 <nav>
@@ -429,18 +561,19 @@
   <a href="#next">Next Steps</a>
 </nav>
 
+<!-- RESET PRICES BUTTON (Change 6b) -->
+<button class="reset-btn" id="resetPrices">Reset Prices</button>
+
 <div class="container">
 
-  <!-- SECTION 1: COVER -->
-  <section id="cover" style="text-align:center; padding: 60px 0 40px;">
-    <img src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_200,q_auto:good,f_auto/v1774315498/Coastal_Lube_logo_v1_zbx9qs.png" alt="Coastal Mobile Lube & Tire" style="width:180px; margin-bottom:32px;">
+  <!-- SECTION 1: COVER (Change 5f - larger logo, more spacing, gradient) -->
+  <section id="cover" style="text-align:center; padding: 80px 0 60px; background: linear-gradient(180deg, #f8faff 0%, #ffffff 100%); margin-left:-32px; margin-right:-32px; padding-left:32px; padding-right:32px; border-bottom: 1px solid #eee;">
+    <img src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_200,q_auto:good,f_auto/v1774315498/Coastal_Lube_logo_v1_zbx9qs.png" alt="Coastal Mobile Lube & Tire" style="width:220px; margin-bottom:40px;">
     <h1>Coastal Mobile Lube &amp; Tire</h1>
     <p class="subtitle">Digital Launch Strategy &amp; Partnership Proposal</p>
     <p class="meta">Prepared for Jason &nbsp;|&nbsp; March 2026</p>
-    <p class="byline">Presented by Jon Gold &mdash; JG Systems</p>
+    <p class="byline">Presented by Jon Gold - JG Systems</p>
   </section>
-
-  <hr class="divider">
 
   <!-- SECTION 2: THE OPPORTUNITY -->
   <section id="opportunity">
@@ -448,23 +581,21 @@
     <div class="card-row">
       <div class="card">
         <h3>"Mobile Lube" is Wide Open</h3>
-        <p>Google "mobile lube Tampa." You get brick-and-mortar Mobil 1 locations, not actual mobile services. Your business name IS the keyword. That is an SEO gift.</p>
+        <p>Google "mobile lube Tampa." You get brick-and-mortar Mobil 1 locations, not actual mobile services. Your business name IS the keyword. That's an SEO gift.</p>
       </div>
       <div class="card">
         <h3>No One Combines All Three</h3>
-        <p>No competitor in Tampa bundles mobile oil changes + tire service + marine engine maintenance. You are the only one offering automotive, fleet, AND marine under one brand.</p>
+        <p>Nobody in Tampa bundles mobile oil changes, tire service, and marine engine maintenance. You're the only one covering automotive, fleet, and marine under one brand.</p>
       </div>
       <div class="card">
         <h3>Competitors Are Stuck in 2015</h3>
-        <p>Solo operators with basic websites, no online booking, hidden pricing. A professional system with real-time booking and transparent pricing immediately outclasses every local competitor.</p>
+        <p>Solo operators with basic websites. No online booking. Hidden pricing. A professional system with real-time booking and transparent pricing puts you ahead instantly.</p>
       </div>
     </div>
     <div class="callout">
-      95,000+ registered boats in Tampa Bay. A booming small-business fleet segment underserved by heavy-diesel providers. And a consumer market that is rapidly adopting mobile services. The transition window is right now.
+      95,000+ registered boats in Tampa Bay. A booming fleet segment underserved by heavy-diesel providers. A consumer market rapidly adopting mobile services. The window is right now.
     </div>
   </section>
-
-  <hr class="divider">
 
   <!-- SECTION 3: WHAT WE BUILT -->
   <section id="built">
@@ -473,32 +604,32 @@
     <div class="card-grid-3">
       <div class="link-card">
         <h3>Homepage</h3>
-        <p>The shop that comes to you. Hero with instant quote widget, tabbed service overview, trust signals, mobile-first.</p>
+        <p>The shop that comes to you. Hero section with instant quote widget, tabbed service overview, trust signals. Mobile-first.</p>
         <a href="https://coastal-mobile-lube.netlify.app" target="_blank" class="btn">View Live Page</a>
       </div>
       <div class="link-card">
         <h3>Services</h3>
-        <p>7 automotive services with transparent pricing, detailed descriptions, FAQ section.</p>
+        <p>7 automotive services with transparent pricing, detailed descriptions, and a FAQ section.</p>
         <a href="https://coastal-mobile-lube.netlify.app/services" target="_blank" class="btn">View Live Page</a>
       </div>
       <div class="link-card">
         <h3>Fleet</h3>
-        <p>Dedicated landing page for commercial clients. Inline quote form, fleet process, volume pricing.</p>
+        <p>Dedicated page for commercial clients. Inline quote form, fleet process overview, volume pricing.</p>
         <a href="https://coastal-mobile-lube.netlify.app/fleet" target="_blank" class="btn">View Live Page</a>
       </div>
       <div class="link-card">
         <h3>Marine</h3>
-        <p>Three marine packages (Dock Ready, Captain's Choice, Season Opener). Inline quote form.</p>
+        <p>Three marine packages: Dock Ready, Captain's Choice, Season Opener. Inline quote form.</p>
         <a href="https://coastal-mobile-lube.netlify.app/marine" target="_blank" class="btn">View Live Page</a>
       </div>
       <div class="link-card">
         <h3>Booking</h3>
-        <p>Full service booking with date preference, time window, contact preference, email capture.</p>
+        <p>Full booking flow with date preference, time window, contact preference, and email capture.</p>
         <a href="https://coastal-mobile-lube.netlify.app/book" target="_blank" class="btn">View Live Page</a>
       </div>
       <div class="link-card">
         <h3>Admin Dashboard</h3>
-        <p>Real-time booking management, calendar view, status workflow, communication log.</p>
+        <p>Real-time booking management. Calendar view, status workflow, communication log.</p>
         <a href="https://coastal-mobile-lube.netlify.app/admin" target="_blank" class="btn">View Live Page</a>
       </div>
     </div>
@@ -506,14 +637,12 @@
     <ul class="feature-list">
       <li>All forms write to a real database (Firebase/Firestore)</li>
       <li>Every new booking triggers an instant email alert to you</li>
-      <li>Admin dashboard with one-click confirm, Google Calendar sync, and communication logging</li>
+      <li>One-click confirm, Google Calendar sync, and communication logging</li>
       <li>Mobile-optimized with sticky call/book bar on every page</li>
-      <li>Customers choose their preferred contact method (call, text, or email)</li>
-      <li>Preferred dates feed directly into the admin calendar view</li>
+      <li>Customers pick their preferred contact method (call, text, or email)</li>
+      <li>Preferred dates feed directly into your admin calendar</li>
     </ul>
   </section>
-
-  <hr class="divider">
 
   <!-- SECTION 4: HOW BOOKINGS WORK -->
   <section id="bookings">
@@ -533,101 +662,81 @@
       <span class="flow-arrow">&rarr;</span>
       <div class="flow-step">Mark complete</div>
     </div>
-    <p style="text-align:center; color:#6b7280; font-size:15px; margin-top:12px;">Every step is tracked. Every interaction is logged. Full audit trail from first click to completed service.</p>
+    <p style="text-align:center; color:#6b7280; font-size:16px; margin-top:16px;">Every step is tracked. Every interaction is logged. Full audit trail from first click to completed service.</p>
   </section>
 
-  <hr class="divider">
-
-  <!-- SECTION 5: GROWTH ROADMAP -->
+  <!-- SECTION 5: GROWTH ROADMAP (Change 2 - trimmed) -->
   <section id="roadmap">
     <h2>30-60-90 Day Launch Plan</h2>
     <div class="col-3">
       <div class="col-card">
         <h3>Days 1-30: Foundation</h3>
         <ul>
-          <li>Website live on coastalmobilelube.com (custom domain)</li>
-          <li>Google Business Profile optimized (you already have a listing)</li>
-          <li>Google Workspace email setup (jason@coastalmobilelube.com)</li>
-          <li>Admin dashboard training</li>
-          <li>Service area pages for 10+ Tampa neighborhoods</li>
-          <li>First 5 blog posts published for SEO</li>
-          <li>Citation building: 15+ business directories</li>
-          <li>Social media accounts created (Instagram, Facebook, TikTok)</li>
-          <li>Review generation system set up (automated post-service requests)</li>
-          <li>Google Local Service Ads application submitted</li>
+          <li>Website live on custom domain</li>
+          <li>Google Business Profile optimized</li>
+          <li>Professional email setup</li>
+          <li>First 5 blog posts + 10 service area pages</li>
+          <li>Google Local Service Ads submitted</li>
+          <li>Social accounts created</li>
         </ul>
       </div>
       <div class="col-card">
         <h3>Days 31-60: Lead Generation</h3>
         <ul>
-          <li>Google Ads campaign launched ($500-1,000/mo starting budget)</li>
-          <li>Google Local Service Ads live (Google Guaranteed badge)</li>
-          <li>Facebook/Instagram ads with service videos</li>
-          <li>10 more service area pages published</li>
-          <li>5 more blog posts</li>
-          <li>First customer reviews flowing in (target: 15+ by day 60)</li>
-          <li>Fleet outreach: 20 local businesses contacted</li>
-          <li>Marina partnerships: 3-5 marina introductions</li>
-          <li>Nextdoor business presence established</li>
-          <li>First monthly performance report</li>
+          <li>Google Ads + LSA campaigns live</li>
+          <li>Facebook/Instagram video ads running</li>
+          <li>Fleet outreach: 20 businesses contacted</li>
+          <li>Marina partnerships started</li>
+          <li>Target: 15+ Google reviews</li>
         </ul>
       </div>
       <div class="col-card">
         <h3>Days 61-90: Scale</h3>
         <ul>
-          <li>SEO generating organic traffic (target: 200+ sessions/month)</li>
-          <li>30+ Google reviews (target: 4.7+ stars)</li>
-          <li>Ad campaigns optimized based on 60 days of data</li>
-          <li>Customer database growing, repeat bookings increasing</li>
-          <li>Fleet contracts: first 2-3 recurring clients</li>
-          <li>Marine seasonal push (spring/summer prep)</li>
-          <li>Evaluate: second van timing, hiring, territory expansion</li>
-          <li>Full analytics dashboard with ROI tracking</li>
+          <li>Organic traffic building (200+ sessions/mo target)</li>
+          <li>30+ Google reviews</li>
+          <li>First recurring fleet contracts</li>
+          <li>Ad campaigns optimized with real data</li>
+          <li>Evaluate: second van timing</li>
         </ul>
       </div>
     </div>
   </section>
 
-  <hr class="divider">
-
   <!-- SECTION 6: GOOGLE BUSINESS PROFILE -->
   <section id="gbp">
     <h2>Your Google Listing Is a Lead Machine</h2>
-    <p>You already have a Google Business Profile for Coastal Mobile Lube &amp; Tire. This is one of the most valuable free tools available. Here is what we need to do with it:</p>
+    <p>You already have a Google Business Profile. It's one of the most valuable free tools out there. Here's what we do with it:</p>
     <ul class="checklist">
-      <li>Set up as Service Area Business (hide street address since you go to them)</li>
+      <li>Set up as Service Area Business (hide your address since you go to them)</li>
       <li>Primary category: Mobile Mechanic</li>
       <li>Secondary categories: Oil Change Service, Tire Shop, Brake Shop</li>
       <li>Add all service areas (20+ Tampa neighborhoods)</li>
       <li>Upload 10+ real photos (van, equipment, work in progress)</li>
-      <li>Write keyword-rich business description</li>
-      <li>Post updates weekly (offers, tips, completed jobs)</li>
+      <li>Keyword-rich business description</li>
+      <li>Weekly posts (offers, tips, completed jobs)</li>
       <li>Enable messaging and booking links</li>
       <li>Goal: 50+ reviews in 6 months, 100+ by year end</li>
     </ul>
     <div class="callout">
-      Google Business Profile is free and generates more leads than any paid channel for local service businesses. This is priority one.
+      Google Business Profile is free and drives more leads than any paid channel for local service businesses. This is priority one.
     </div>
   </section>
-
-  <hr class="divider">
 
   <!-- SECTION 7: GOOGLE WORKSPACE EMAIL -->
   <section id="email">
     <h2>Professional Email</h2>
-    <p>We recommend setting up Google Workspace for your business email. This gives you:</p>
+    <p>Google Workspace gives you a real business email. Here's what you get:</p>
     <ul class="feature-list">
-      <li>jason@coastalmobilelube.com (and any other addresses you need)</li>
+      <li>jason@coastalmobilelube.com (plus any other addresses you need)</li>
       <li>Full Gmail interface you already know</li>
       <li>Google Calendar for scheduling (syncs with the admin dashboard)</li>
       <li>Google Drive for documents, invoices, contracts</li>
       <li>Professional appearance on every customer email</li>
     </ul>
-    <p>Cost: <span class="editable" contenteditable="true">$7.20</span>/month per user (Business Starter plan)</p>
+    <p>Cost: <span class="editable" contenteditable="true" data-price-id="workspace-cost">$7.20</span>/month per user (Business Starter plan)</p>
     <p style="font-weight:600;">We can set this up in the first week.</p>
   </section>
-
-  <hr class="divider">
 
   <!-- SECTION 8: ADVERTISING STRATEGY -->
   <section id="ads">
@@ -637,22 +746,22 @@
     <ul class="feature-list">
       <li>Pay per lead, not per click ($20-50 per lead)</li>
       <li>"Google Guaranteed" badge builds instant trust</li>
-      <li>Appears at the very top of Google search results</li>
-      <li>Estimated setup time: 3-5 business days after verification</li>
+      <li>Shows at the very top of Google search results</li>
+      <li>Setup time: 3-5 business days after verification</li>
     </ul>
 
     <h3 style="color:var(--orange); margin-top:24px;">Google Search Ads</h3>
     <ul class="feature-list">
-      <li>"Mobile oil change Tampa" — estimated $2.50-5.50 per click</li>
-      <li>"Mobile marine mechanic Tampa" — estimated $2.50-5.50 per click</li>
-      <li>Auto repair has the lowest cost per lead of any Google Ads category ($27.94 average)</li>
-      <li>Conversion rate: 12.96% (highest of all industries)</li>
+      <li>"Mobile oil change Tampa" - estimated $2.50-5.50 per click</li>
+      <li>"Mobile marine mechanic Tampa" - estimated $2.50-5.50 per click</li>
+      <li>Auto repair has the lowest cost per lead of any Google Ads category ($27.94 avg)</li>
+      <li>12.96% conversion rate - highest of all industries</li>
     </ul>
 
     <h3 style="color:var(--orange); margin-top:24px;">Social Media Ads</h3>
     <ul class="feature-list">
       <li>Facebook/Instagram: $1-3 per click (much cheaper than Google)</li>
-      <li>Video ads of service calls get the highest engagement</li>
+      <li>Video ads of service calls get the best engagement</li>
       <li>Retargeting website visitors is the cheapest and most effective ad type</li>
     </ul>
 
@@ -660,13 +769,13 @@
     <div class="card-row" style="grid-template-columns: repeat(2, 1fr);">
       <div class="card" style="text-align:center;">
         <p style="font-size:13px; text-transform:uppercase; font-weight:700; color:var(--blue); letter-spacing:1px; margin-bottom:8px;">Low Tier</p>
-        <p style="font-size:28px; font-weight:800; color:var(--navy); margin-bottom:4px;"><span class="editable" contenteditable="true">$1,500</span>/mo</p>
-        <p style="font-size:14px; color:#6b7280; margin:0;">~25-50 leads/month</p>
+        <p style="font-size:28px; font-weight:800; color:var(--navy); margin-bottom:4px;"><span class="editable" contenteditable="true" data-price-id="ad-low">$1,500</span>/mo</p>
+        <p style="font-size:15px; color:#6b7280; margin:0;">Consistent lead flow within the first month</p>
       </div>
       <div class="card" style="text-align:center;">
         <p style="font-size:13px; text-transform:uppercase; font-weight:700; color:var(--blue); letter-spacing:1px; margin-bottom:8px;">Medium Tier</p>
-        <p style="font-size:28px; font-weight:800; color:var(--navy); margin-bottom:4px;"><span class="editable" contenteditable="true">$3,000</span>/mo</p>
-        <p style="font-size:14px; color:#6b7280; margin:0;">~50-120 leads/month</p>
+        <p style="font-size:28px; font-weight:800; color:var(--navy); margin-bottom:4px;"><span class="editable" contenteditable="true" data-price-id="ad-high">$3,000</span>/mo</p>
+        <p style="font-size:15px; color:#6b7280; margin:0;">Scaling volume as campaigns optimize</p>
       </div>
     </div>
     <div class="callout">
@@ -674,46 +783,42 @@
     </div>
   </section>
 
-  <hr class="divider">
-
-  <!-- SECTION 9: COMPETITIVE ADVANTAGE -->
+  <!-- SECTION 9: COMPETITIVE ADVANTAGE (Change 5d) -->
   <section id="advantage">
     <h2>Why You Win</h2>
     <div style="overflow-x:auto;">
-      <table>
+      <table class="comp-table">
         <thead>
           <tr>
             <th>Feature</th>
             <th>Solo Mobile Mechanics</th>
             <th>National Platforms</th>
-            <th style="background:var(--orange);">Coastal Mobile</th>
+            <th class="coastal-th">Coastal Mobile</th>
           </tr>
         </thead>
         <tbody>
-          <tr><td>Online booking</td><td>Rarely</td><td>Yes</td><td class="highlight-col">Yes</td></tr>
-          <tr><td>Transparent pricing</td><td>Rarely</td><td>Sometimes</td><td class="highlight-col">Yes</td></tr>
-          <tr><td>Automotive + Tire</td><td>Sometimes</td><td>Limited</td><td class="highlight-col">Yes</td></tr>
-          <tr><td>Marine service</td><td>No</td><td>No</td><td class="highlight-col">Yes</td></tr>
-          <tr><td>Fleet programs</td><td>Rarely</td><td>No</td><td class="highlight-col">Yes</td></tr>
-          <tr><td>Customer portal</td><td>No</td><td>Basic</td><td class="highlight-col">Yes</td></tr>
-          <tr><td>Communication logging</td><td>No</td><td>No</td><td class="highlight-col">Yes</td></tr>
-          <tr><td>Booking calendar</td><td>No</td><td>Yes</td><td class="highlight-col">Yes</td></tr>
-          <tr><td>Local SEO</td><td>Weak</td><td>Strong</td><td class="highlight-col">Building</td></tr>
-          <tr><td>Personal touch</td><td>High</td><td>Low</td><td class="highlight-col">High</td></tr>
+          <tr><td>Online booking</td><td class="partial">Rarely</td><td class="yes">&#10003;</td><td class="coastal-col yes">&#10003;</td></tr>
+          <tr><td>Transparent pricing</td><td class="partial">Rarely</td><td class="partial">Sometimes</td><td class="coastal-col yes">&#10003;</td></tr>
+          <tr><td>Automotive + Tire</td><td class="partial">Sometimes</td><td class="partial">Limited</td><td class="coastal-col yes">&#10003;</td></tr>
+          <tr><td>Marine service</td><td class="no">&#10007;</td><td class="no">&#10007;</td><td class="coastal-col yes">&#10003;</td></tr>
+          <tr><td>Fleet programs</td><td class="partial">Rarely</td><td class="no">&#10007;</td><td class="coastal-col yes">&#10003;</td></tr>
+          <tr><td>Customer portal</td><td class="no">&#10007;</td><td class="partial">Basic</td><td class="coastal-col yes">&#10003;</td></tr>
+          <tr><td>Communication logging</td><td class="no">&#10007;</td><td class="no">&#10007;</td><td class="coastal-col yes">&#10003;</td></tr>
+          <tr><td>Booking calendar</td><td class="no">&#10007;</td><td class="yes">&#10003;</td><td class="coastal-col yes">&#10003;</td></tr>
+          <tr><td>Local SEO</td><td class="no">Weak</td><td class="yes">Strong</td><td class="coastal-col partial">Building</td></tr>
+          <tr><td>Personal touch</td><td class="yes">High</td><td class="no">Low</td><td class="coastal-col yes">High</td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
-  <hr class="divider">
-
   <!-- SECTION 10: FRANCHISE VISION -->
   <section id="vision">
     <h2>Thinking Bigger</h2>
-    <p>This does not have to stay local. The systems we are building are designed to scale.</p>
+    <p>This doesn't have to stay local. The systems we're building are designed to scale.</p>
 
     <h3 style="color:var(--orange); margin-top:24px;">The Owner-Operator Model</h3>
-    <p>Target audience: master techs who are tired of being stuck in a shop. Skilled, experienced, entrepreneurial-minded people who want more freedom and control.</p>
+    <p>Target audience: master techs tired of being stuck in a shop. Skilled, experienced people who want more freedom and control.</p>
     <p>They invest to become an owner-operator under the Coastal brand. In return they get:</p>
     <ul class="feature-list">
       <li>Structured van buildout package</li>
@@ -721,13 +826,11 @@
       <li>Customer service handled centrally</li>
       <li>Established brand and proven systems</li>
     </ul>
-    <p>They run their own operation but are not starting from scratch alone. This scales the number of vans in the field without you funding every single one.</p>
+    <p>They run their own operation but don't start from scratch. This scales your fleet without you funding every van.</p>
     <div class="callout">
-      This is a Phase 2 conversation. But the systems, the brand, and the technology we build now are designed with this in mind from day one.
+      This is a Phase 2 conversation. But everything we build now is designed with this in mind from day one.
     </div>
   </section>
-
-  <hr class="divider">
 
   <!-- SECTION 11: INVESTMENT & PRICING -->
   <section id="pricing">
@@ -738,10 +841,10 @@
       <tr><td>Custom website (7 pages, mobile-first)</td><td>Included</td></tr>
       <tr><td>Online booking system with Firestore database</td><td>Included</td></tr>
       <tr><td>Admin dashboard with calendar &amp; status workflow</td><td>Included</td></tr>
-      <tr><td>Email notification system (new booking alerts + customer confirmations)</td><td>Included</td></tr>
+      <tr><td>Email notifications (booking alerts + customer confirmations)</td><td>Included</td></tr>
       <tr><td>Communication logging &amp; Google Calendar sync</td><td>Included</td></tr>
       <tr><td>Custom domain setup (coastalmobilelube.com)</td><td>Included</td></tr>
-      <tr class="total"><td>Total Build</td><td><span class="editable" contenteditable="true">$2,000</span></td></tr>
+      <tr class="total"><td>Total Build</td><td><span class="editable" contenteditable="true" data-price-id="build-total">$2,000</span></td></tr>
     </table>
 
     <h3 style="margin-top:32px;">Monthly Retainer</h3>
@@ -754,7 +857,7 @@
       <tr><td>Social media strategy &amp; content calendar</td><td>Included</td></tr>
       <tr><td>System updates &amp; new feature development</td><td>Included</td></tr>
       <tr><td>Priority support</td><td>Included</td></tr>
-      <tr class="total"><td>Monthly Retainer</td><td><span class="editable" contenteditable="true">$750</span>/month</td></tr>
+      <tr class="total"><td>Monthly Retainer</td><td><span class="editable" contenteditable="true" data-price-id="monthly-retainer">$750</span>/month</td></tr>
     </table>
 
     <h3 style="margin-top:32px;">Additional Costs <span style="font-weight:400; font-size:14px; color:#6b7280;">(paid directly, not to JG Systems)</span></h3>
@@ -779,15 +882,13 @@
     </ul>
   </section>
 
-  <hr class="divider">
-
   <!-- SECTION 12: NEXT STEPS -->
   <section id="next">
     <h2>Ready to Launch</h2>
-    <p>Here is what happens next:</p>
+    <p>Here's what happens next:</p>
     <ol class="next-steps">
-      <li>You review this proposal and the live site</li>
-      <li>We finalize pricing for your service menu (we are using placeholder prices)</li>
+      <li>Review this proposal and the live site</li>
+      <li>Finalize pricing for your service menu (we're using placeholder prices now)</li>
       <li>Custom domain pointed to the live site (coastalmobilelube.com)</li>
       <li>Google Workspace email set up (jason@coastalmobilelube.com)</li>
       <li>Google Business Profile optimized</li>
@@ -797,7 +898,7 @@
     </ol>
 
     <div class="callout" style="font-style:normal; font-weight:600;">
-      The website is already built and working. Everything you saw today is live. We can have you taking real customers within a week.
+      The website is built and working. Everything you saw today is live. You can be taking real customers within a week.
     </div>
 
     <div class="contact">
@@ -810,6 +911,42 @@
   </section>
 
 </div>
+
+<!-- JAVASCRIPT: localStorage pricing (Change 6b, 6c) -->
+<script>
+(function() {
+  // 6b: Restore saved prices on load
+  document.querySelectorAll('.editable[data-price-id]').forEach(function(el) {
+    var saved = localStorage.getItem('coastal_price_' + el.dataset.priceId);
+    if (saved !== null) el.textContent = saved;
+  });
+
+  // 6b: Save price on blur
+  document.addEventListener('focusout', function(e) {
+    if (e.target.classList.contains('editable') && e.target.dataset.priceId) {
+      localStorage.setItem('coastal_price_' + e.target.dataset.priceId, e.target.textContent);
+    }
+  });
+
+  // 6b: Reset button
+  document.getElementById('resetPrices').addEventListener('click', function() {
+    document.querySelectorAll('.editable[data-price-id]').forEach(function(el) {
+      localStorage.removeItem('coastal_price_' + el.dataset.priceId);
+    });
+    localStorage.removeItem('coastal_tip_dismissed');
+    location.reload();
+  });
+
+  // 6c: Show tip banner on first visit
+  if (!localStorage.getItem('coastal_tip_dismissed')) {
+    document.getElementById('tipBanner').style.display = 'flex';
+  }
+  document.getElementById('dismissTip').addEventListener('click', function() {
+    document.getElementById('tipBanner').style.display = 'none';
+    localStorage.setItem('coastal_tip_dismissed', '1');
+  });
+})();
+</script>
 
 </body>
 </html>

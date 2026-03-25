@@ -15,12 +15,22 @@ import {
 /* ─── Data ─────────────────────────────────────────────────────── */
 
 const services = [
-  { name: "Oil Change", price: "$49" },
-  { name: "Tire Service", price: "$75" },
-  { name: "Brake Service", price: "$199" },
-  { name: "A/C Service", price: "$149" },
+  { name: "Synthetic Oil Change", price: "$49" },
+  { name: "Conventional Oil Change", price: "$39" },
+  { name: "Tire Rotation & Balance", price: "$29" },
+  { name: "Tire Sales & Installation", price: "$75" },
+  { name: "Brake Pads (per axle)", price: "$199" },
+  { name: "Brake Pads & Rotors", price: "$349" },
   { name: "Battery Replacement", price: "$149" },
-  { name: "Full Maintenance", price: "$179" },
+  { name: "A/C Recharge", price: "$149" },
+  { name: "Spark Plugs", price: "$89" },
+  { name: "Suspension/Struts (per strut)", price: "$149" },
+  { name: "Full Maintenance Package", price: "$179" },
+  { name: "Coolant Flush", price: "$99" },
+  { name: "Transmission Fluid Change", price: "$129" },
+  { name: "Power Steering Flush", price: "$89" },
+  { name: "Diagnostic Visit", price: "$49" },
+  { name: "Other (describe below)", price: "Quote" },
 ] as const;
 
 const timeWindows = [
@@ -393,7 +403,7 @@ export default function BookingForm() {
                         {errors.service}
                       </p>
                     )}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                       {services.map((s) => (
                         <button
                           key={s.name}
@@ -414,7 +424,7 @@ export default function BookingForm() {
                             {s.name}
                           </span>
                           <span className="block text-[13px] font-semibold text-[#E07B2D]">
-                            starting at {s.price}
+                            {s.price === "Quote" ? "Get a quote" : `starting at ${s.price}`}
                           </span>
                         </button>
                       ))}
