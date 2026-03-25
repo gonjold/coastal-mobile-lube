@@ -21,7 +21,7 @@ const serviceCards = [
       "Used oil recycled responsibly",
     ],
     priceLabel: "Starting at",
-    price: "$49",
+    price: "$89",
   },
   {
     name: "Tire Sales, Installation & Rotation",
@@ -147,7 +147,7 @@ const faqItems = [
   },
   {
     q: "How much does a mobile oil change cost?",
-    a: "Synthetic oil changes start at $49, which includes the oil, filter, and multi-point fluid check. Pricing may vary based on your vehicle's oil capacity and filter requirements. We always confirm the price before we start.",
+    a: "Synthetic oil changes start at $89, which includes the oil, filter, and multi-point fluid check. Pricing may vary based on your vehicle's oil capacity and filter requirements. We always confirm the price before we start.",
   },
 ];
 

@@ -50,7 +50,7 @@ const servicesData = {
     title: "Automotive Services",
     description:
       "Factory-grade oil changes, tire rotations, brake checks, and preventive maintenance - all performed at your home or office.",
-    pricing: "$49",
+    pricing: "$89",
     pricingLabel: "Starting at",
     items: [
       "Synthetic Oil Change",
