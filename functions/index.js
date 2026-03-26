@@ -135,7 +135,7 @@ exports.onNewBooking = onDocumentCreated(
     try {
       await transporter.sendMail({
         from: `"Coastal Mobile Lube" <${gmailUser.value()}>`,
-        to: "jonrgold@gmail.com",
+        to: "jon@jgoldco.com",
         subject: `New ${categoryLabel} Booking — ${booking.name || formattedPhone}`,
         html: adminHtml,
       });
