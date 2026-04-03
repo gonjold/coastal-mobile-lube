@@ -65,6 +65,12 @@ export default function AboutPage() {
         <div className="max-w-[1100px] mx-auto px-4 lg:px-6 pt-10 pb-4 md:pt-14 md:pb-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-12 items-center">
             <div>
+              <img
+                src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_200,q_auto:good,f_auto/v1774315498/Coastal_Lube_logo_v1_zbx9qs.png"
+                alt="Coastal Mobile Lube & Tire"
+                className="max-w-[140px] h-auto object-contain mb-6"
+                style={{ filter: "drop-shadow(0 0 12px rgba(255,255,255,0.15))" }}
+              />
               <p className="text-[13px] uppercase font-bold text-[#6BA3E0] tracking-[1.5px] mb-3">
                 OUR STORY
               </p>
@@ -122,8 +128,8 @@ export default function AboutPage() {
                 driving to us, we drive to you.
               </p>
               <img
-                src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_800,q_auto:good,f_auto/v1774317068/Van_mockup_ln68oh.png"
-                alt="Coastal Mobile Lube service van"
+                src={cloudinaryUrl(images.vanWrapSide, { width: 800 })}
+                alt="Coastal Mobile Lube & Tire wrapped service van"
                 className="w-full max-w-[500px] mx-auto rounded-[12px] mt-8 mb-8"
               />
             </div>

@@ -50,4 +50,6 @@ export const images = {
   drivewayServiceAlt: "v1774318456/driveway-service-alt_uqmkou.jpg",
   commercialService: "v1774318456/commercial-service_wbgfog.jpg",
   commercialServiceAlt: "v1774318456/commercial-service-alt_xpwvoi.jpg",
+  vanWrapSide: "coastal-van-wrap-side.png",
+  vanWrapRear: "coastal-van-wrap-rear.png",
 } as const;

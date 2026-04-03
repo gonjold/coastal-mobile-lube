@@ -182,6 +182,12 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-[11fr_9fr] gap-10 lg:gap-12 items-start">
             {/* Left Column */}
             <div className="lg:sticky lg:top-[100px] lg:self-start">
+              <img
+                src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_200,q_auto:good,f_auto/v1774315498/Coastal_Lube_logo_v1_zbx9qs.png"
+                alt="Coastal Mobile Lube & Tire"
+                className="max-w-[120px] h-auto object-contain mb-6"
+                style={{ filter: "drop-shadow(0 0 12px rgba(255,255,255,0.15))" }}
+              />
               <h1 className="text-[34px] md:text-[50px] font-extrabold leading-[1.06] text-white tracking-[-1.5px] mb-5">
                 The shop that comes to <span className="text-[#E07B2D]">you.</span>
               </h1>
