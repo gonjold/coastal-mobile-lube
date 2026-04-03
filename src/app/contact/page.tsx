@@ -40,16 +40,16 @@ export default function ContactPage() {
   return (
     <>
       {/* Page Hero */}
-      <section className="bg-white">
+      <section className="bg-[#0B2040]">
         <div className="section-inner px-4 lg:px-6 pt-10 pb-4 md:pt-14 md:pb-6">
           <div className="max-w-[700px]">
-            <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
+            <p className="text-[13px] uppercase font-bold text-[#6BA3E0] tracking-[1.5px] mb-3">
               Contact
             </p>
-            <h1 className="text-[30px] md:text-[42px] font-extrabold leading-[1.1] text-[#0B2040] tracking-[-1px] mb-4">
+            <h1 className="text-[30px] md:text-[42px] font-extrabold leading-[1.1] text-white tracking-[-1px] mb-4">
               Get in touch
             </h1>
-            <p className="text-[16px] leading-[1.7] text-[#444] max-w-[700px]">
+            <p className="text-[16px] leading-[1.7] text-white/70 max-w-[700px]">
               Have a question or want to learn more about our services? We respond within one business day. For service bookings, use our{" "}
               <Link href="/book" className="text-[#E07B2D] font-semibold hover:underline">Book Service</Link> page. For fleet or marine quotes, visit{" "}
               <Link href="/fleet" className="text-[#E07B2D] font-semibold hover:underline">Fleet</Link> or{" "}

@@ -149,16 +149,16 @@ export default function FleetContent() {
   return (
     <>
       {/* Section 1: Hero */}
-      <section className="bg-white">
+      <section className="bg-[#0B2040]">
         <div className="max-w-[1100px] mx-auto px-4 lg:px-6 pt-10 pb-4 md:pt-14 md:pb-8">
           <div>
-            <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
+            <p className="text-[13px] uppercase font-bold text-[#6BA3E0] tracking-[1.5px] mb-3">
               Fleet & Commercial
             </p>
-            <h1 className="text-[30px] md:text-[42px] font-[800] leading-[1.08] text-[#0B2040] tracking-[-1px] mb-5">
+            <h1 className="text-[30px] md:text-[42px] font-[800] leading-[1.08] text-white tracking-[-1px] mb-5">
               Keep your fleet on the road
             </h1>
-            <p className="text-[16px] leading-[1.7] text-[#444] mb-8">
+            <p className="text-[16px] leading-[1.7] text-white/70 mb-8">
               Scheduled mobile maintenance for company vehicles, box trucks,
               vans, and commercial fleets. We come to your yard, your lot, or
               your job site. No vehicle downtime, no shop visits.
@@ -169,7 +169,7 @@ export default function FleetContent() {
               </Button>
               <a
                 href="tel:8137225823"
-                className="inline-flex items-center justify-center gap-2 px-[30px] py-[14px] font-semibold text-[#0B2040] bg-white border-2 border-[#ddd] rounded-[var(--radius-button)] hover:border-[#bbb] transition-all"
+                className="inline-flex items-center justify-center gap-2 px-[30px] py-[14px] font-semibold text-white bg-transparent border border-white/30 rounded-[var(--radius-button)] hover:border-white/50 transition-all"
               >
                 <Phone size={16} />
                 Call 813-722-LUBE

@@ -61,17 +61,17 @@ export default function AboutPage() {
   return (
     <>
       {/* Section 1 — Hero */}
-      <section className="bg-white">
+      <section className="bg-[#0B2040]">
         <div className="max-w-[1100px] mx-auto px-4 lg:px-6 pt-10 pb-4 md:pt-14 md:pb-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-12 items-center">
             <div>
-              <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
+              <p className="text-[13px] uppercase font-bold text-[#6BA3E0] tracking-[1.5px] mb-3">
                 OUR STORY
               </p>
-              <h1 className="text-[30px] md:text-[42px] font-extrabold leading-[1.08] text-[#0B2040] tracking-[-1px] mb-5">
+              <h1 className="text-[30px] md:text-[42px] font-extrabold leading-[1.08] text-white tracking-[-1px] mb-5">
                 30 years of dealership expertise, on wheels
               </h1>
-              <p className="text-[16px] leading-[1.65] text-[#444] max-w-[700px]">
+              <p className="text-[16px] leading-[1.65] text-white/70 max-w-[700px]">
                 Coastal Mobile Lube and Tire was built on a simple idea:
                 dealership-quality maintenance should not require a dealership
                 visit. Our team brings three decades of franchise fixed

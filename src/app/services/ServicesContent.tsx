@@ -158,16 +158,16 @@ export default function ServicesContent() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-white">
+      <section className="bg-[#0B2040]">
         <div className="section-inner px-4 lg:px-6 pt-10 pb-4 md:pt-14 md:pb-8">
           <div>
-            <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
+            <p className="text-[13px] uppercase font-bold text-[#6BA3E0] tracking-[1.5px] mb-3">
               Automotive Services
             </p>
-            <h1 className="text-[30px] md:text-[42px] font-extrabold leading-[1.08] text-[#0B2040] tracking-[-1px] mb-5">
+            <h1 className="text-[30px] md:text-[42px] font-extrabold leading-[1.08] text-white tracking-[-1px] mb-5">
               Mobile maintenance at your door
             </h1>
-            <p className="text-[16px] leading-[1.65] text-[#666] mb-8">
+            <p className="text-[16px] leading-[1.65] text-white/70 mb-8">
               From synthetic oil changes to tire sales and installation, we
               handle everything your vehicle needs without the trip to the shop.
               Factory-trained technicians, professional equipment, and
@@ -179,7 +179,7 @@ export default function ServicesContent() {
               </Button>
               <a
                 href="tel:8137225823"
-                className="inline-flex items-center justify-center gap-2 px-[30px] py-[14px] font-semibold text-[#0B2040] bg-white border-2 border-[#ddd] rounded-[var(--radius-button)] hover:border-[#bbb] transition-all"
+                className="inline-flex items-center justify-center gap-2 px-[30px] py-[14px] font-semibold text-white bg-transparent border border-white/30 rounded-[var(--radius-button)] hover:border-white/50 transition-all"
               >
                 <Phone size={16} />
                 Call 813-722-LUBE

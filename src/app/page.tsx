@@ -177,15 +177,15 @@ export default function Home() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-white">
+      <section className="bg-[#0B2040]">
         <div className="section-inner px-4 lg:px-6 pt-10 pb-10 md:pt-16 md:pb-12">
           <div className="grid grid-cols-1 lg:grid-cols-[11fr_9fr] gap-10 lg:gap-12 items-start">
             {/* Left Column */}
             <div className="lg:sticky lg:top-[100px] lg:self-start">
-              <h1 className="text-[34px] md:text-[50px] font-extrabold leading-[1.06] text-[#0B2040] tracking-[-1.5px] mb-5">
+              <h1 className="text-[34px] md:text-[50px] font-extrabold leading-[1.06] text-white tracking-[-1.5px] mb-5">
                 The shop that comes to <span className="text-[#E07B2D]">you.</span>
               </h1>
-              <p className="text-[17px] leading-[1.7] text-[#444] max-w-[460px] mb-8">
+              <p className="text-[17px] leading-[1.7] text-white/70 max-w-[460px] mb-8">
                 Mobile oil changes, tire service, fleet maintenance, and marine engine
                 care. We come to your driveway, your parking lot, or your dock.
                 No shop visit needed.
@@ -197,20 +197,20 @@ export default function Home() {
                 </Button>
                 <a
                   href="tel:8137225823"
-                  className="inline-flex items-center justify-center gap-2 px-[24px] py-[14px] font-semibold text-[#0B2040] bg-white border-2 border-[#ddd] rounded-[var(--radius-button)] hover:border-[#bbb] transition-all whitespace-nowrap"
+                  className="inline-flex items-center justify-center gap-2 px-[24px] py-[14px] font-semibold text-white bg-transparent border border-white/30 rounded-[var(--radius-button)] hover:border-white/50 transition-all whitespace-nowrap"
                 >
                   <Phone size={16} />
                   Call 813-722-LUBE
                 </a>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pt-4 sm:pt-7 border-t border-[#eee]">
+              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pt-4 sm:pt-7 border-t border-white/10">
                 {["Factory-trained techs", "Licensed & insured", "Same-day availability"].map((item) => (
                   <div key={item} className="flex items-center gap-2.5">
-                    <div className="flex items-center justify-center shrink-0 w-[22px] h-[22px] rounded-[6px] bg-[#EBF4FF]">
-                      <Check size={13} className="text-[#1A5FAC]" />
+                    <div className="flex items-center justify-center shrink-0 w-[22px] h-[22px] rounded-[6px] bg-white/10">
+                      <Check size={13} className="text-[#6BA3E0]" />
                     </div>
-                    <span className="text-sm text-[#555] font-medium">{item}</span>
+                    <span className="text-sm text-white/60 font-medium">{item}</span>
                   </div>
                 ))}
               </div>
