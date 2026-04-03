@@ -1,4 +1,5 @@
 import Link from "next/link";
+import AdminSignOutButton from "./AdminSignOutButton";
 
 export default function AdminLayout({
   children,
@@ -20,12 +21,15 @@ export default function AdminLayout({
         <span className="text-[16px] font-bold text-[#0B2040]">
           Coastal Mobile Admin
         </span>
-        <Link
-          href="/"
-          className="text-[14px] font-semibold text-[#1A5FAC] hover:underline"
-        >
-          Back to site &rarr;
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/"
+            className="text-[14px] font-semibold text-[#1A5FAC] hover:underline"
+          >
+            Back to site &rarr;
+          </Link>
+          <AdminSignOutButton />
+        </div>
       </div>
 
       {children}

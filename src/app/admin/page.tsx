@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Fragment } from "react";
 import { db } from "@/lib/firebase";
+import AdminAuthGuard from "@/components/AdminAuthGuard";
 import {
   collection,
   onSnapshot,
@@ -476,6 +477,7 @@ export default function AdminDashboard() {
 
   /* ── Render ── */
   return (
+    <AdminAuthGuard>
     <div className="px-4 lg:px-8 py-6 max-w-[1400px] mx-auto">
       {/* ═══ Stats ═══ */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
@@ -1001,6 +1003,7 @@ export default function AdminDashboard() {
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
+    </AdminAuthGuard>
   );
 }
 
