@@ -123,32 +123,176 @@ function formatCurrency(n: number): string {
 
 /* ─── Print HTML ──────────────────────────────────────────── */
 
+const LOGO_URL = "https://res.cloudinary.com/dgcdcqjrz/image/upload/w_200,q_auto:good,f_png/v1774315498/Coastal_Lube_logo_v1_zbx9qs.png";
+
 function generatePrintHtml(inv: Invoice): string {
   const rows = inv.lineItems
     .map(
       (li) =>
-        `<tr><td style="padding:8px 12px;border-bottom:1px solid #eee">${li.serviceName}</td><td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:center">${li.quantity}</td><td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right">$${li.unitPrice.toFixed(2)}</td><td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right">$${li.lineTotal.toFixed(2)}</td></tr>`
+        `<tr>
+          <td style="padding:10px 14px;border-bottom:1px solid #e0e0e0">${li.serviceName}</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #e0e0e0;text-align:center">${li.quantity}</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #e0e0e0;text-align:right">$${li.unitPrice.toFixed(2)}</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #e0e0e0;text-align:right">$${li.lineTotal.toFixed(2)}</td>
+        </tr>`
     )
     .join("");
 
-  return `<!DOCTYPE html><html><head><title>Invoice ${inv.invoiceNumber}</title><style>body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:800px;margin:0 auto;padding:40px;color:#0B2040}@media print{body{padding:20px}}</style></head><body>
-<div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:32px">
-<div><h1 style="margin:0;font-size:24px;color:#0B2040">Coastal Mobile Lube</h1><p style="margin:4px 0 0;color:#888;font-size:13px">Mobile Auto & Marine Services</p></div>
-<div style="text-align:right"><h2 style="margin:0;font-size:28px;color:#1A5FAC">INVOICE</h2><p style="margin:4px 0 0;font-size:14px;color:#555">${inv.invoiceNumber}</p></div>
+  return `<!DOCTYPE html>
+<html>
+<head>
+<title>Invoice ${inv.invoiceNumber}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px;
+    color: #0B2040;
+    background: #fff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .no-print { display: block; }
+  @media print {
+    body { padding: 20px; }
+    .no-print { display: none !important; }
+    nav, aside, header, footer,
+    button, [role="navigation"],
+    .sidebar, .admin-sidebar { display: none !important; }
+    a { text-decoration: none; color: inherit; }
+  }
+  @media screen {
+    .no-print {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 100;
+      display: flex;
+      gap: 8px;
+    }
+    .no-print button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-print {
+      background: #1A5FAC;
+      color: #fff;
+    }
+    .btn-print:hover { background: #174f94; }
+    .btn-pdf {
+      background: #E07B2D;
+      color: #fff;
+    }
+    .btn-pdf:hover { background: #c96a24; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Action buttons (hidden when printing) -->
+<div class="no-print">
+  <button class="btn-print" onclick="window.print()">Print Invoice</button>
+  <button class="btn-pdf" onclick="window.print()">Download PDF</button>
 </div>
-<div style="display:flex;justify-content:space-between;margin-bottom:32px;font-size:14px">
-<div><strong>Bill To:</strong><br/>${inv.customerName}${inv.customerPhone ? "<br/>" + inv.customerPhone : ""}${inv.customerEmail ? "<br/>" + inv.customerEmail : ""}</div>
-<div style="text-align:right"><strong>Invoice Date:</strong> ${inv.invoiceDate}<br/><strong>Due Date:</strong> ${inv.dueDate}<br/><strong>Status:</strong> ${inv.status.charAt(0).toUpperCase() + inv.status.slice(1)}</div>
+
+<!-- Header with logo and INVOICE title -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;padding-bottom:20px;border-bottom:3px solid #0B2040">
+  <div style="display:flex;align-items:center;gap:16px">
+    <img src="${LOGO_URL}" alt="Coastal Mobile Lube &amp; Tire" style="width:72px;height:72px;border-radius:50%;object-fit:cover" />
+    <div>
+      <h1 style="font-size:22px;font-weight:800;color:#0B2040;line-height:1.2">Coastal Mobile Lube &amp; Tire</h1>
+      <p style="font-size:12px;color:#888;margin-top:2px">Mobile Auto &amp; Marine Services</p>
+    </div>
+  </div>
+  <div style="text-align:right">
+    <h2 style="font-size:32px;font-weight:800;color:#1A5FAC;letter-spacing:2px">INVOICE</h2>
+  </div>
 </div>
-<table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr style="background:#f5f5f5"><th style="padding:10px 12px;text-align:left;border-bottom:2px solid #ddd">Service</th><th style="padding:10px 12px;text-align:center;border-bottom:2px solid #ddd">Qty</th><th style="padding:10px 12px;text-align:right;border-bottom:2px solid #ddd">Price</th><th style="padding:10px 12px;text-align:right;border-bottom:2px solid #ddd">Total</th></tr></thead><tbody>${rows}</tbody></table>
-<div style="display:flex;justify-content:flex-end;margin-top:16px"><div style="width:240px;font-size:14px">
-<div style="display:flex;justify-content:space-between;padding:6px 0"><span>Subtotal</span><span>$${inv.subtotal.toFixed(2)}</span></div>
-<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #ddd"><span>Tax (${inv.taxRate}%)</span><span>$${inv.taxAmount.toFixed(2)}</span></div>
-<div style="display:flex;justify-content:space-between;padding:8px 0;font-weight:bold;font-size:16px"><span>Total</span><span>$${inv.total.toFixed(2)}</span></div>
-</div></div>
-${inv.notes ? `<div style="margin-top:32px;padding:16px;background:#f9f9f9;border-radius:8px;font-size:13px"><strong>Notes:</strong><br/>${inv.notes.replace(/\n/g, "<br/>")}</div>` : ""}
-<div style="margin-top:48px;text-align:center;font-size:12px;color:#aaa">Thank you for choosing Coastal Mobile Lube!</div>
-<script>window.print()</script></body></html>`;
+
+<!-- Invoice details and Bill To -->
+<div style="display:flex;justify-content:space-between;margin-bottom:28px;font-size:14px">
+  <div>
+    <p style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:600;margin-bottom:6px">Bill To</p>
+    <p style="font-size:16px;font-weight:700;color:#0B2040;margin-bottom:4px">${inv.customerName}</p>
+    ${inv.customerPhone ? `<p style="color:#555;margin-bottom:2px">${inv.customerPhone}</p>` : ""}
+    ${inv.customerEmail ? `<p style="color:#555">${inv.customerEmail}</p>` : ""}
+  </div>
+  <div style="text-align:right">
+    <div style="margin-bottom:8px">
+      <span style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:600">Invoice #</span><br/>
+      <span style="font-size:15px;font-weight:700;color:#0B2040">${inv.invoiceNumber}</span>
+    </div>
+    <div style="margin-bottom:4px">
+      <span style="color:#888;font-size:13px">Date:</span>
+      <span style="color:#0B2040;font-weight:500;font-size:13px;margin-left:4px">${inv.invoiceDate}</span>
+    </div>
+    <div>
+      <span style="color:#888;font-size:13px">Due:</span>
+      <span style="color:#0B2040;font-weight:500;font-size:13px;margin-left:4px">${inv.dueDate}</span>
+    </div>
+  </div>
+</div>
+
+<!-- Line items table -->
+<table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:24px">
+  <thead>
+    <tr style="background:#0B2040">
+      <th style="padding:10px 14px;text-align:left;color:#fff;font-size:12px;text-transform:uppercase;letter-spacing:0.5px">Service</th>
+      <th style="padding:10px 14px;text-align:center;color:#fff;font-size:12px;text-transform:uppercase;letter-spacing:0.5px">Qty</th>
+      <th style="padding:10px 14px;text-align:right;color:#fff;font-size:12px;text-transform:uppercase;letter-spacing:0.5px">Price</th>
+      <th style="padding:10px 14px;text-align:right;color:#fff;font-size:12px;text-transform:uppercase;letter-spacing:0.5px">Total</th>
+    </tr>
+  </thead>
+  <tbody>${rows}</tbody>
+</table>
+
+<!-- Totals -->
+<div style="display:flex;justify-content:flex-end;margin-bottom:32px">
+  <div style="width:260px;font-size:14px">
+    <div style="display:flex;justify-content:space-between;padding:8px 0;color:#555">
+      <span>Subtotal</span>
+      <span style="font-weight:500">$${inv.subtotal.toFixed(2)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:8px 0;color:#555;border-bottom:1px solid #ddd">
+      <span>Tax (${inv.taxRate}%)</span>
+      <span style="font-weight:500">$${inv.taxAmount.toFixed(2)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:10px 0;font-weight:800;font-size:18px;color:#0B2040">
+      <span>Total</span>
+      <span>$${inv.total.toFixed(2)}</span>
+    </div>
+  </div>
+</div>
+
+${inv.notes ? `<!-- Notes -->
+<div style="margin-bottom:28px;padding:14px 16px;background:#f7f8fa;border-left:4px solid #1A5FAC;border-radius:4px;font-size:13px;color:#333">
+  <strong style="color:#0B2040">Notes:</strong><br/>
+  <span style="color:#555">${inv.notes.replace(/\n/g, "<br/>")}</span>
+</div>` : ""}
+
+<!-- Payment methods -->
+<div style="margin-bottom:28px;padding:16px 20px;border:1px solid #e0e0e0;border-radius:8px;font-size:13px">
+  <p style="font-weight:700;color:#0B2040;margin-bottom:8px;font-size:14px">Payment Methods</p>
+  <p style="color:#555;line-height:1.7">
+    Zelle &nbsp;|&nbsp; Venmo &nbsp;|&nbsp; Cash &nbsp;|&nbsp; Check
+  </p>
+</div>
+
+<!-- Footer -->
+<div style="text-align:center;padding-top:20px;border-top:1px solid #e0e0e0">
+  <p style="font-size:14px;font-weight:600;color:#0B2040;margin-bottom:4px">Thank you for choosing Coastal Mobile Lube and Tire</p>
+  <p style="font-size:13px;color:#888">813-722-LUBE &nbsp;|&nbsp; coastalmobilelube.com</p>
+</div>
+
+</body>
+</html>`;
 }
 
 /* ─── Component ───────────────────────────────────────────── */

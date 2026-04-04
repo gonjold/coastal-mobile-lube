@@ -23,3 +23,9 @@ Finished: Sat Apr  4 15:42:45 EDT 2026
 
 ## Task A4: Invoice Modal Polish
 Started: Sat Apr  4 15:42:48 EDT 2026
+Status: COMPLETED
+Finished: Sat Apr  4 15:46:08 EDT 2026
+---
+
+## Task A5: Invoice Print View
+Started: Sat Apr  4 15:46:11 EDT 2026
