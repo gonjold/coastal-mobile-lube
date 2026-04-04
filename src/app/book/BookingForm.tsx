@@ -15,34 +15,30 @@ import {
 /* ─── Data ─────────────────────────────────────────────────────── */
 
 const mainServices = [
-  { name: "Synthetic Oil Change", price: "$89" },
-  { name: "Tire Rotation & Balance", price: "$49" },
-  { name: "Tire Sales & Installation", price: "$99" },
-  { name: "Brake Pads (per axle)", price: "$199" },
-  { name: "Battery Replacement", price: "$225" },
-  { name: "Full Service Package", price: "$189" },
+  { name: "Syn Blend Oil Change", price: "$89.95" },
+  { name: "Full Synthetic Oil Change", price: "$119.95" },
+  { name: "Diesel Oil Change", price: "$219.95" },
+  { name: "Tire Rotation", price: "$39.95" },
+  { name: "Mount & Balance (4 Tires)", price: "$159.95" },
+  { name: "Front + Rear Brakes", price: "$320" },
 ];
 
 const moreServices = [
-  { name: "Conventional Oil Change", price: "$69" },
-  { name: "Brake Pads & Rotors", price: "$399" },
-  { name: "A/C Recharge", price: "$149" },
-  { name: "Spark Plugs & Coils", price: "$149" },
-  { name: "Suspension/Struts", price: "$199" },
-  { name: "Coolant Flush", price: "$99" },
-  { name: "Transmission Fluid Change", price: "$149" },
-  { name: "Power Steering Flush", price: "$89" },
-  { name: "Diagnostic Visit", price: "$75" },
-  { name: "Wiper Blades", price: "$29" },
-  { name: "Air Filter", price: "$29" },
+  { name: "Cabin Air Filter", price: "$99.95" },
+  { name: "Battery Replacement", price: "$50" },
+  { name: "HVAC Recharge", price: "$299.99" },
+  { name: "Brake Flush", price: "$239.95" },
+  { name: "Coolant Flush", price: "$269.95" },
+  { name: "Transmission Flush", price: "$419.95" },
+  { name: "Wiper Blades", price: "$19" },
   { name: "Other (describe below)", price: "Quote" },
 ];
 
 const timeWindows = [
-  { value: "early-morning", label: "Early Morning (7-9)" },
-  { value: "morning", label: "Morning (9-11)" },
-  { value: "midday", label: "Midday (11-1)" },
-  { value: "afternoon", label: "Afternoon (1-3)" },
+  { value: "early-morning", label: "Early Morning (8-10)" },
+  { value: "morning", label: "Morning (10-12)" },
+  { value: "midday", label: "Midday (12-2)" },
+  { value: "afternoon", label: "Afternoon (2-4)" },
   { value: "late-afternoon", label: "Late Afternoon (3-5)" },
 ] as const;
 
