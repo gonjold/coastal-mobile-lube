@@ -5,55 +5,61 @@ import Button from "@/components/Button";
 import { cloudinaryUrl, images } from "@/lib/cloudinary";
 
 export const metadata: Metadata = {
-  title: "About Us | Coastal Mobile Lube & Tire | Tampa",
+  title: "About Us | Coastal Mobile Lube & Tire | Apollo Beach, FL",
   description:
-    "Three decades of franchise dealership fixed operations experience, now mobile. Learn how Coastal Mobile Lube and Tire brings dealership-quality service to your driveway, parking lot, or marina.",
+    "30 years of dealership fixed ops experience, now mobile in Apollo Beach and the South Shore. Meet the team behind Coastal Mobile Lube and Tire.",
 };
 
 const valueProps = [
   {
     number: "01",
-    title: "Dealership Standards, Mobile Convenience",
+    title: "White-Glove Service",
     description:
-      "Every service follows factory maintenance protocols. Same parts, same procedures, same quality. Performed at your location instead of ours.",
+      "Every customer gets the same luxury experience you would expect at a top dealership. We show up on time, treat your property with respect, and leave the work area cleaner than we found it.",
   },
   {
     number: "02",
-    title: "Certified Technicians Only",
+    title: "Integrity First",
     description:
-      "Our team holds ASE certifications and factory training credentials. No apprentices, no shortcuts.",
+      "We quote honestly, work transparently, and never upsell services you do not need. If it is not broken, we will tell you.",
   },
   {
     number: "03",
-    title: "Transparent, Flat-Rate Pricing",
+    title: "30 Years of Know-How",
     description:
-      "You see the price before we start. No diagnostic fees, no surprise charges, no upselling.",
+      "Three decades managing dealership service departments means we have seen it all. That experience shows up in every oil change, every tire rotation, every marine service call.",
   },
   {
     number: "04",
-    title: "12-Month Service Warranty",
+    title: "Faith-Driven Values",
     description:
-      "Every job is backed by a full 12-month warranty on parts and labor. If something is not right, we make it right.",
+      "Honesty, hard work, kindness, and service to others. Those are not just words on a wall. They guide every decision we make and every customer interaction we have.",
   },
 ];
 
 const verticals = [
   {
     title: "Automotive",
-    description: "Cars, trucks, and SUVs serviced at your home or office",
+    description: "Cars, trucks, and SUVs serviced at your home or office.",
     href: "/services",
   },
   {
     title: "Fleet",
     description:
-      "5 vehicles or 500. Scheduled programs built for your operation.",
+      "Scheduled maintenance programs for businesses with 5 vehicles or 500.",
     href: "/fleet",
   },
   {
     title: "Marine",
     description:
-      "Dockside and boat ramp service for outboard and inboard engines",
+      "Dockside service for outboard, inboard, and diesel marine engines.",
     href: "/marine",
+  },
+  {
+    title: "RV and Trailers",
+    description:
+      "Oil changes, tire service, and maintenance at your RV park or storage lot.",
+    href: "/services",
   },
 ];
 
@@ -75,13 +81,14 @@ export default function AboutPage() {
                 OUR STORY
               </p>
               <h1 className="text-[30px] md:text-[42px] font-extrabold leading-[1.08] text-white tracking-[-1px] mb-5">
-                30 years of dealership expertise, on wheels
+                Dealership expertise, delivered to your door
               </h1>
               <p className="text-[16px] leading-[1.65] text-white/70 max-w-[700px]">
-                Coastal Mobile Lube and Tire was built on a simple idea:
-                dealership-quality maintenance should not require a dealership
-                visit. Our team brings three decades of franchise fixed
-                operations leadership to your driveway, parking lot, or marina.
+                Based in Apollo Beach, Florida, Coastal Mobile Lube and Tire
+                brings 30 years of automotive dealership experience directly to
+                your driveway, your dock, or your parking lot. Personal
+                vehicles, boats, work trucks, RVs, trailers, fleet vehicles. If
+                it has an engine, we take care of it.
               </p>
             </div>
             <div>
