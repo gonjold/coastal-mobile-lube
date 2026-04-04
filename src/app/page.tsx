@@ -117,7 +117,7 @@ const serviceTabs: { key: TabKey; label: string }[] = [
 ];
 
 const inputClasses =
-  "w-full text-sm rounded-[10px] px-3 py-2.5 outline-none border-2 border-[#eee] bg-[#fafafa] focus:border-[#1A5FAC] transition-colors";
+  "w-full text-sm rounded-[10px] px-3 py-2.5 outline-none border border-white/10 bg-white/[0.08] text-white placeholder:text-white/40 focus:border-white/25 transition-colors";
 
 export default function Home() {
   const [bookingTab, setBookingTab] = useState<TabKey>("automotive");
@@ -177,21 +177,26 @@ export default function Home() {
   return (
     <>
       {/* Hero */}
-      <section style={{ background: "linear-gradient(135deg, #0F2847 0%, #132E54 100%)" }}>
-        <div className="section-inner px-4 lg:px-6 pt-10 pb-10 md:pt-16 md:pb-12">
+      <section className="relative overflow-hidden" style={{ background: "radial-gradient(ellipse at 30% 40%, #162F52 0%, #0B2040 60%, #071829 100%)" }}>
+        {/* Oval badge watermark */}
+        <img
+          src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_400,q_auto,f_auto/v1774315498/Coastal_Lube_logo_v1_zbx9qs.png"
+          alt=""
+          aria-hidden="true"
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-auto pointer-events-none"
+          style={{ opacity: 0.06 }}
+        />
+        <div className="section-inner px-4 lg:px-6 pt-10 pb-10 md:pt-16 md:pb-12 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-[11fr_9fr] gap-10 lg:gap-12 items-start">
             {/* Left Column */}
             <div className="lg:sticky lg:top-[100px] lg:self-start">
-              <img
-                src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_200,q_auto:good,f_auto/v1774315498/Coastal_Lube_logo_v1_zbx9qs.png"
-                alt="Coastal Mobile Lube & Tire"
-                className="max-w-[120px] h-auto object-contain mb-6"
-                style={{ filter: "drop-shadow(0 0 12px rgba(255,255,255,0.15))" }}
-              />
+              <p className="text-[12px] uppercase font-bold text-[#D9A441] tracking-[2.5px] mb-4">
+                Mobile automotive. Fleet. Marine.
+              </p>
               <h1 className="text-[34px] md:text-[50px] font-extrabold leading-[1.06] text-white tracking-[-1.5px] mb-5">
                 The shop that comes to <span className="text-[#E07B2D]">you.</span>
               </h1>
-              <p className="text-[17px] leading-[1.7] text-white/70 max-w-[460px] mb-8">
+              <p className="text-[17px] leading-[1.7] text-white/65 max-w-[420px] mb-8">
                 Mobile oil changes, tire service, fleet maintenance, and marine engine
                 care. We come to your driveway, your parking lot, or your dock.
                 No shop visit needed.
@@ -203,7 +208,7 @@ export default function Home() {
                 </Button>
                 <a
                   href="tel:8137225823"
-                  className="inline-flex items-center justify-center gap-2 px-[24px] py-[14px] font-semibold text-white bg-transparent border border-white/30 rounded-[var(--radius-button)] hover:border-white/50 transition-all whitespace-nowrap"
+                  className="inline-flex items-center justify-center gap-2 px-[24px] py-[14px] font-semibold text-white bg-transparent border border-white/25 rounded-[var(--radius-button)] hover:border-white/50 transition-all whitespace-nowrap"
                 >
                   <Phone size={16} />
                   Call 813-722-LUBE
@@ -214,22 +219,22 @@ export default function Home() {
                 {["Factory-trained techs", "Licensed & insured", "Same-day availability"].map((item) => (
                   <div key={item} className="flex items-center gap-2.5">
                     <div className="flex items-center justify-center shrink-0 w-[22px] h-[22px] rounded-[6px] bg-white/10">
-                      <Check size={13} className="text-[#6BA3E0]" />
+                      <Check size={13} className="text-[#0D8A8F]" />
                     </div>
-                    <span className="text-sm text-white/60 font-medium">{item}</span>
+                    <span className="text-sm text-white/50 font-medium">{item}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Booking Widget */}
-            <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-7 shadow-[0_8px_40px_rgba(0,0,0,0.06)]">
+            <div className="rounded-[14px] p-7" style={{ background: "rgba(255,255,255,0.06)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.1)" }}>
               {quoteSubmitted ? (
                 <div className="flex flex-col items-center text-center py-6">
                   <div className="w-12 h-12 rounded-full bg-[#22c55e] flex items-center justify-center mb-4">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                   </div>
-                  <h2 className="text-[19px] font-bold text-[#0B2040] mb-2">
+                  <h2 className="text-[19px] font-bold text-white mb-2">
                     We&apos;ll call you back within 2 hours
                   </h2>
                   <a
@@ -241,22 +246,22 @@ export default function Home() {
                 </div>
               ) : (
                 <>
-                  <h2 className="text-[19px] font-bold text-[#0B2040] mb-1">
+                  <h2 className="text-[19px] font-bold text-white mb-1">
                     Get a quick quote
                   </h2>
-                  <p className="text-[13px] text-[#888] mb-5">
+                  <p className="text-[13px] text-white/50 mb-5">
                     Tell us what you need. We will get back to you fast.
                   </p>
 
-                  <div className="flex rounded-lg p-1 bg-[#f5f5f5] mb-5">
+                  <div className="flex rounded-lg p-1 bg-white/[0.08] mb-5">
                     {bookingTabs.map((tab) => (
                       <button
                         key={tab.key}
                         onClick={() => { setBookingTab(tab.key); setSelectedService(""); }}
                         className={`flex-1 text-[13px] font-semibold py-2 rounded-md transition-all ${
                           bookingTab === tab.key
-                            ? "bg-white text-[#0B2040] shadow-sm"
-                            : "text-[#888]"
+                            ? "bg-white/[0.12] text-white shadow-sm"
+                            : "text-white/50"
                         }`}
                       >
                         {tab.label}
@@ -266,7 +271,7 @@ export default function Home() {
 
                   <div className="flex flex-col gap-4">
                     <div>
-                      <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
+                      <label className="block text-[11px] uppercase font-semibold text-white/50 tracking-[0.5px] mb-1.5">
                         Service Needed
                       </label>
                       <select
@@ -282,7 +287,7 @@ export default function Home() {
                     </div>
 
                     <div>
-                      <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
+                      <label className="block text-[11px] uppercase font-semibold text-white/50 tracking-[0.5px] mb-1.5">
                         Your Name
                       </label>
                       <input
@@ -296,7 +301,7 @@ export default function Home() {
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
+                        <label className="block text-[11px] uppercase font-semibold text-white/50 tracking-[0.5px] mb-1.5">
                           Zip Code
                         </label>
                         <input
@@ -308,7 +313,7 @@ export default function Home() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
+                        <label className="block text-[11px] uppercase font-semibold text-white/50 tracking-[0.5px] mb-1.5">
                           Phone
                         </label>
                         <input
@@ -322,7 +327,7 @@ export default function Home() {
                     </div>
 
                     <div>
-                      <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
+                      <label className="block text-[11px] uppercase font-semibold text-white/50 tracking-[0.5px] mb-1.5">
                         Email
                       </label>
                       <input
@@ -335,10 +340,10 @@ export default function Home() {
                     </div>
 
                     <div>
-                      <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
+                      <label className="block text-[11px] uppercase font-semibold text-white/50 tracking-[0.5px] mb-1.5">
                         Best Way to Reach You
                       </label>
-                      <div className="flex rounded-lg p-1 bg-[#f5f5f5]">
+                      <div className="flex rounded-lg p-1 bg-white/[0.08]">
                         {(["call", "text", "email"] as const).map((method) => (
                           <button
                             key={method}
@@ -346,8 +351,8 @@ export default function Home() {
                             onClick={() => setContactPreference(method)}
                             className={`flex-1 text-[13px] font-semibold py-2 rounded-md transition-all ${
                               contactPreference === method
-                                ? "bg-[#0B2040] text-white shadow-sm"
-                                : "text-[#888]"
+                                ? "bg-white/[0.12] text-white shadow-sm"
+                                : "text-white/50"
                             }`}
                           >
                             {method.charAt(0).toUpperCase() + method.slice(1)}
@@ -357,7 +362,7 @@ export default function Home() {
                     </div>
 
                     <div>
-                      <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
+                      <label className="block text-[11px] uppercase font-semibold text-white/50 tracking-[0.5px] mb-1.5">
                         Preferred Date
                       </label>
                       <input
@@ -375,7 +380,7 @@ export default function Home() {
                           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                         )}
                       </span>
-                      <span className="text-[14px] text-[#888]">My dates are flexible</span>
+                      <span className="text-[14px] text-white/50">My dates are flexible</span>
                       <input
                         type="checkbox"
                         checked={datesFlexible}
@@ -385,7 +390,7 @@ export default function Home() {
                     </label>
 
                     <div>
-                      <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
+                      <label className="block text-[11px] uppercase font-semibold text-white/50 tracking-[0.5px] mb-1.5">
                         Notes (optional)
                       </label>
                       <textarea
@@ -411,9 +416,9 @@ export default function Home() {
                       </p>
                     )}
 
-                    <p className="text-center text-[12px] text-[#888]">
+                    <p className="text-center text-[12px] text-white/50">
                       or call{" "}
-                      <a href="tel:8137225823" className="font-medium text-[#1A5FAC]">
+                      <a href="tel:8137225823" className="font-medium text-[#E07B2D]">
                         813-722-LUBE
                       </a>{" "}
                       for immediate help
@@ -426,9 +431,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Hero-to-content transition */}
-      <div style={{ background: "linear-gradient(to bottom, #132E54, #FAFBFC)", height: "80px" }} />
-      <div style={{ background: "#D9A441", height: "3px", width: "100%" }} />
+      {/* Hero-to-content gradient fade */}
+      <div style={{ background: "linear-gradient(to bottom, #0B2040, transparent), #FFFFFF", height: "50px" }} />
 
       {/* Services */}
       <section className="bg-[#FAFBFC]">

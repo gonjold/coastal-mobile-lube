@@ -40,13 +40,14 @@ export default function Header() {
 
   return (
     <header
-      className="sticky top-0 z-50 bg-[#0F2847]"
+      className="sticky top-0 z-50"
+      style={{ background: "linear-gradient(135deg, #0F2847 0%, #0B2040 100%)" }}
     >
       <div className="section-inner flex items-center justify-between px-4 py-3 lg:px-6">
         {/* Logo */}
         <Link href="/" className="shrink-0 flex flex-col">
           <span className="text-white font-[800] text-[18px] leading-tight">Coastal Mobile</span>
-          <span className="text-white/50 font-normal text-[12px] uppercase tracking-[1px]">Lube &amp; Tire</span>
+          <span className="text-white/45 font-semibold text-[12px] uppercase tracking-[2px]">Lube &amp; Tire</span>
         </Link>
 
         {/* Desktop Nav */}
