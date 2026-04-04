@@ -67,7 +67,7 @@ export default function AboutPage() {
   return (
     <>
       {/* Section 1 — Hero */}
-      <section className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #0A1C38 0%, #0B2040 40%, #0F2847 70%, #132E54 100%)" }}>
+      <section className="relative overflow-hidden bg-[#0B2040]">
         {/* Oval badge watermark */}
         <img
           src={cloudinaryUrl(images.logo, { width: 500, quality: "auto" })}
@@ -90,12 +90,7 @@ export default function AboutPage() {
                 </span>
               </h1>
               <p className="text-[16px] leading-[1.7] text-white/60 max-w-[440px] mb-6">
-                My name is Jason, and I have spent 30 years in automotive
-                dealership fixed operations. I built my career leading service
-                departments and fixed ops teams inside franchise dealerships.
-                When I decided to step away from that world, the goal was
-                simple: bring factory-level care directly to the people of
-                Apollo Beach and the South Shore.
+                30 years of fixed operations experience. Now mobile in Apollo Beach and the South Shore.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pt-4 border-t border-white/[0.08]">
                 {["30 years experience", "Apollo Beach based", "Licensed & insured"].map((item) => (
@@ -145,7 +140,7 @@ export default function AboutPage() {
       </section>
 
       {/* Section 3 — The Story */}
-      <section className="relative bg-[#FAFBFC]">
+      <section className="relative bg-white">
         <div className="max-w-[1100px] mx-auto px-4 lg:px-6 py-10 md:py-14">
           <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
             Our Story
@@ -156,31 +151,45 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
             <div className="space-y-5">
               <p className="text-[15px] leading-[1.7] text-[#444]">
-                For three decades, I managed service departments and fixed ops
-                teams inside franchise dealerships. I loved the work, the
-                precision, the problem-solving. But I kept coming back to the
-                same thought: customers deserve this level of care without
-                rearranging their whole day to get it. So I left the dealership
-                world and built Coastal Mobile to bring the shop to your
-                driveway, your dock, or your parking lot.
+                At Coastal Mobile Lube and Tire, we built this business to serve
+                our local community with honesty, convenience, and dependable
+                service. Living in Apollo Beach and working in Tampa, we
+                recognized the need for a better way to help customers maintain
+                their vehicles and equipment without sitting in traffic or
+                waiting at a repair shop. Life is busy, and people deserve
+                service that is professional, reliable, and built around their
+                schedule. That is why Coastal Mobile Lube and Tire was created.
               </p>
               <p className="text-[15px] leading-[1.7] text-[#444]">
-                We handle personal vehicles, boats, work trucks, RVs, trailers,
-                fleet vehicles, and recreational equipment. If it has an engine
-                and needs service, we are there. Our vacuum oil extraction
-                system means no drain plug removal, no mess, and a faster job.
-                It is the same technology used in high-end dealerships, and it
-                is one of the things our customers notice right away.
+                With a background in automotive dealerships and fixed operations,
+                our company is built on 30 years of experience in luxury
+                customer service, operational excellence, and white-glove care.
+                That experience shaped our commitment to doing things the right
+                way, communicating clearly, and delivering service our customers
+                can trust. We use a vacuum oil extraction system that pulls the
+                oil out through the dipstick tube instead of removing the drain
+                plug and crawling under the vehicle. It is cleaner, faster, and
+                leaves no mess on your driveway. No drips, no spills.
               </p>
               <p className="text-[15px] leading-[1.7] text-[#444]">
-                My faith guides everything about how I run this business.
-                Integrity, honesty, hard work, kindness, and service to others.
-                Those are not slogans on a website. They are how I was raised,
-                and they are the standard every customer gets. Whether it is a
-                quick oil change or a full fleet maintenance program, you will
-                always get white-glove service and a straight answer. That is
-                the Coastal Mobile promise, and I stand behind it.
+                Coastal Mobile Lube and Tire is built on faith-based values that
+                matter: integrity, honesty, hard work, kindness, and service to
+                others. These principles are at the heart of how we operate, how
+                we treat our customers, and how we serve our community. We are
+                proud to serve the people who live, work, and enjoy life
+                throughout the Apollo Beach and South Shore area. Whether it is
+                your personal vehicle, boat, work truck, RV, trailer, fleet
+                vehicle, or recreational equipment, our goal is to bring
+                high-quality mobile lube, tire, and maintenance services directly
+                to you with professionalism and a personal touch.
               </p>
+              <blockquote className="border-l-4 border-[#E07B2D] pl-5 py-2 mt-4">
+                <p className="text-[16px] leading-[1.7] text-[#0B2040] font-semibold italic">
+                  We are more than a mobile service company. We are a local
+                  business built on experience, strong values, and a commitment
+                  to serving our community the right way.
+                </p>
+              </blockquote>
             </div>
             <div className="relative rounded-[14px] overflow-hidden shadow-[0_8px_36px_rgba(11,32,64,0.12),0_2px_8px_rgba(11,32,64,0.06)]">
               <img
@@ -190,14 +199,7 @@ export default function AboutPage() {
                 alt="Interior of the Coastal Mobile service van with professional equipment"
                 className="w-full h-auto"
               />
-              <div
-                className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-5 py-4"
-                style={{
-                  background: "linear-gradient(to right, rgba(255,255,255,0.92), rgba(255,255,255,0.88))",
-                  backdropFilter: "blur(12px)",
-                  WebkitBackdropFilter: "blur(12px)",
-                }}
-              >
+              <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-5 py-4 bg-white/90 backdrop-blur-sm">
                 <span className="text-[14px] font-semibold text-[#0B2040]">
                   Fully equipped mobile shop
                 </span>
@@ -209,7 +211,7 @@ export default function AboutPage() {
 
 
       {/* Section 4 — Value Props */}
-      <section className="relative bg-white">
+      <section className="relative bg-[#F7F8FA]">
         <div className="max-w-[1100px] mx-auto px-4 lg:px-6 py-10 md:py-14">
           <div className="text-center mb-10">
             <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
