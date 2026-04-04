@@ -36,18 +36,11 @@ export default function SchedulePage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
-  /* Filters */
-  const [sourceFilter, setSourceFilter] = useState("all");
+  /* Quick time filter */
+  const [timeFilter, setTimeFilter] = useState<"today" | "week" | "month" | "all">("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [dateFrom, setDateFrom] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 30);
-    return toISODate(d);
-  });
-  const [dateTo, setDateTo] = useState(() => toISODate(new Date()));
 
-  /* View */
-  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  /* List */
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   /* Set Appointment */
@@ -95,24 +88,48 @@ export default function SchedulePage() {
     return () => unsub();
   }, []);
 
+  /* ── Time filter boundaries ── */
+  const now = new Date();
+  const todayISO = toISODate(now);
+
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay());
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  startOfMonth.setHours(0, 0, 0, 0);
+
   /* ── Client-side filtering ── */
   const filtered = bookings.filter((b) => {
-    if (sourceFilter !== "all") {
-      if (sourceFilter === "automotive") {
-        if (b.serviceCategory !== "automotive" && b.source !== "website")
-          return false;
-      } else if (sourceFilter === "fleet") {
-        if (b.serviceCategory !== "fleet") return false;
-      } else if (sourceFilter === "marine") {
-        if (b.serviceCategory !== "marine") return false;
+    if (statusFilter !== "all" && b.status !== statusFilter) return false;
+
+    // Time filter
+    if (timeFilter !== "all") {
+      const bookingDate = getBookingCalendarDate(b);
+      if (timeFilter === "today") {
+        if (bookingDate !== todayISO) return false;
+      } else if (timeFilter === "week") {
+        if (!bookingDate) return false;
+        const bd = new Date(bookingDate + "T12:00:00");
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
+        if (bd < startOfWeek || bd > endOfWeek) return false;
+      } else if (timeFilter === "month") {
+        if (!bookingDate) return false;
+        const bd = new Date(bookingDate + "T12:00:00");
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        endOfMonth.setHours(23, 59, 59, 999);
+        if (bd < startOfMonth || bd > endOfMonth) return false;
       }
     }
-    if (statusFilter !== "all" && b.status !== statusFilter) return false;
-    if (b.createdAt?.toDate) {
-      const created = b.createdAt.toDate();
-      if (created < new Date(dateFrom + "T00:00:00")) return false;
-      if (created > new Date(dateTo + "T23:59:59")) return false;
+
+    // If a calendar day is selected, further filter to that day
+    if (selectedDay) {
+      const bookingDate = getBookingCalendarDate(b);
+      if (bookingDate !== selectedDay) return false;
     }
+
     return true;
   });
 
@@ -131,6 +148,12 @@ export default function SchedulePage() {
     const bTime = b.createdAt?.toDate?.()?.getTime() ?? 0;
     return bTime - aTime;
   });
+
+  /* ── Today count (for badge) ── */
+  const todayCount = bookings.filter((b) => {
+    if (b.status === "cancelled") return false;
+    return getBookingCalendarDate(b) === todayISO;
+  }).length;
 
   /* ── Stats (unfiltered) ── */
   const cancelled = bookings.filter((b) => b.status === "cancelled").length;
@@ -296,16 +319,15 @@ export default function SchedulePage() {
     year: "numeric",
   });
 
+  // Build calendar dots from all bookings (not filtered by time/status)
   const bookingsByDate: Record<string, Booking[]> = {};
-  filtered.forEach((b) => {
+  bookings.forEach((b) => {
     const d = getBookingCalendarDate(b);
     if (d) {
       if (!bookingsByDate[d]) bookingsByDate[d] = [];
       bookingsByDate[d].push(b);
     }
   });
-
-  const todayISO = toISODate(new Date());
 
   /* ── Loading state ── */
   if (loading) {
@@ -320,112 +342,31 @@ export default function SchedulePage() {
   return (
     <div className="px-4 lg:px-8 py-6 max-w-[1400px] mx-auto">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-[13px] text-[#888] mb-6">
+      <div className="flex items-center gap-2 text-[13px] text-[#888] mb-4">
         <Link href="/admin" className="hover:text-[#1A5FAC] transition-colors">Dashboard</Link>
         <span>/</span>
         <span className="text-[#0B2040] font-semibold">Schedule</span>
       </div>
 
-      {/* ═══ Stats ═══ */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-        {(
-          [
-            { label: "Active Bookings", value: stats.total, color: "text-[#0B2040]" },
-            { label: "Pending", value: stats.pending, color: "text-[#E07B2D]" },
-            { label: "Confirmed", value: stats.confirmed, color: "text-[#1A5FAC]" },
-            { label: "Completed", value: stats.completed, color: "text-[#16a34a]" },
-            { label: "Cancelled", value: stats.cancelled, color: "text-[#999]" },
-          ] as const
-        ).map((s) => (
-          <div
-            key={s.label}
-            className="bg-white border border-[#e8e8e8] rounded-[12px] p-5"
-          >
-            <p className={`text-[32px] font-[800] ${s.color}`}>{s.value}</p>
-            <p className="text-[13px] text-[#888] font-medium">{s.label}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* ═══ Filters ═══ */}
-      <div className="flex flex-wrap items-end gap-4 mb-6">
-        {/* Source */}
+      {/* ═══ Header with today highlight ═══ */}
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
-            Source
-          </label>
-          <div className="flex rounded-lg overflow-hidden border border-[#e8e8e8]">
-            {["all", "automotive", "fleet", "marine"].map((v) => (
-              <button
-                key={v}
-                onClick={() => setSourceFilter(v)}
-                className={`px-3 py-2 text-[13px] font-semibold transition-colors ${
-                  sourceFilter === v
-                    ? "bg-[#0B2040] text-white"
-                    : "bg-white text-[#444] hover:bg-[#f5f5f5]"
-                }`}
-              >
-                {v.charAt(0).toUpperCase() + v.slice(1)}
-              </button>
-            ))}
-          </div>
+          <h1 className="text-[26px] font-[800] text-[#0B2040] mb-1">Schedule</h1>
+          <p className="text-[14px] text-[#888]">
+            {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+          </p>
         </div>
-        {/* Status */}
-        <div>
-          <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
-            Status
-          </label>
-          <div className="flex rounded-lg overflow-hidden border border-[#e8e8e8]">
-            {["all", "pending", "confirmed", "completed", "cancelled"].map((v) => (
-              <button
-                key={v}
-                onClick={() => setStatusFilter(v)}
-                className={`px-3 py-2 text-[13px] font-semibold transition-colors ${
-                  statusFilter === v
-                    ? "bg-[#0B2040] text-white"
-                    : "bg-white text-[#444] hover:bg-[#f5f5f5]"
-                }`}
-              >
-                {v.charAt(0).toUpperCase() + v.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
-        {/* Date range */}
-        <div>
-          <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
-            From
-          </label>
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className="text-[13px] rounded-lg px-3 py-2 border border-[#e8e8e8] outline-none focus:border-[#1A5FAC]"
-          />
-        </div>
-        <div>
-          <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
-            To
-          </label>
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="text-[13px] rounded-lg px-3 py-2 border border-[#e8e8e8] outline-none focus:border-[#1A5FAC]"
-          />
-        </div>
-      </div>
-
-      {/* ═══ View toggle + count ═══ */}
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-[14px] text-[#888]">
-          Showing{" "}
-          <span className="font-semibold text-[#0B2040]">
-            {filtered.length}
-          </span>{" "}
-          booking{filtered.length !== 1 ? "s" : ""}
-        </p>
         <div className="flex items-center gap-3">
+          {/* Today badge */}
+          <div className="flex items-center gap-2 bg-white border-2 border-[#E07B2D]/30 rounded-[12px] px-4 py-3">
+            <div className="w-8 h-8 rounded-full bg-[#E07B2D] flex items-center justify-center">
+              <span className="text-[16px] font-[800] text-white leading-none">{todayCount}</span>
+            </div>
+            <div>
+              <p className="text-[14px] font-bold text-[#0B2040] leading-tight">Today</p>
+              <p className="text-[11px] text-[#888]">booking{todayCount !== 1 ? "s" : ""} scheduled</p>
+            </div>
+          </div>
           <button
             onClick={() => exportBookingsCsv(filtered)}
             className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-semibold border border-[#e8e8e8] rounded-lg text-[#444] bg-white hover:bg-[#f5f5f5] transition-colors"
@@ -437,361 +378,340 @@ export default function SchedulePage() {
             </svg>
             Export CSV
           </button>
-          <div className="flex rounded-lg overflow-hidden border border-[#e8e8e8]">
-            {(
-              [
-                { key: "list", label: "List View" },
-                { key: "calendar", label: "Calendar View" },
-              ] as const
-            ).map((v) => (
-              <button
-                key={v.key}
-                onClick={() => setViewMode(v.key)}
-                className={`px-4 py-2 text-[13px] font-semibold transition-colors ${
-                  viewMode === v.key
-                    ? "bg-[#0B2040] text-white"
-                    : "bg-white text-[#444] hover:bg-[#f5f5f5]"
-                }`}
-              >
-                {v.label}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
-      {/* ═══ Empty state ═══ */}
-      {filtered.length === 0 ? (
-        <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-16 text-center">
-          <div className="w-16 h-16 rounded-full bg-[#f5f5f5] flex items-center justify-center mx-auto mb-4">
-            <svg
-              width="28"
-              height="28"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#888"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+      {/* ═══ Quick Filter Bar ═══ */}
+      <div className="flex flex-wrap items-center gap-4 mb-6">
+        {/* Time filter pills */}
+        <div className="flex rounded-lg overflow-hidden border border-[#e8e8e8]">
+          {([
+            { key: "today", label: "Today" },
+            { key: "week", label: "This Week" },
+            { key: "month", label: "This Month" },
+            { key: "all", label: "All" },
+          ] as const).map((v) => (
+            <button
+              key={v.key}
+              onClick={() => { setTimeFilter(v.key); setSelectedDay(null); }}
+              className={`px-4 py-2 text-[13px] font-semibold transition-colors ${
+                timeFilter === v.key
+                  ? "bg-[#0B2040] text-white"
+                  : "bg-white text-[#444] hover:bg-[#f5f5f5]"
+              }`}
             >
+              {v.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Status filter pills */}
+        <div className="flex rounded-lg overflow-hidden border border-[#e8e8e8]">
+          {["all", "pending", "confirmed", "completed", "cancelled"].map((v) => (
+            <button
+              key={v}
+              onClick={() => setStatusFilter(v)}
+              className={`px-3 py-2 text-[13px] font-semibold transition-colors ${
+                statusFilter === v
+                  ? "bg-[#0B2040] text-white"
+                  : "bg-white text-[#444] hover:bg-[#f5f5f5]"
+              }`}
+            >
+              {v.charAt(0).toUpperCase() + v.slice(1)}
+              {v === "pending" && stats.pending > 0 && (
+                <span className="ml-1.5 inline-block px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#E07B2D] text-white leading-none">
+                  {stats.pending}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Selected day indicator */}
+        {selectedDay && (
+          <button
+            onClick={() => setSelectedDay(null)}
+            className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-semibold text-[#1A5FAC] bg-[#EBF4FF] border border-[#1A5FAC]/20 rounded-lg hover:bg-[#dbeafe] transition-colors"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
               <line x1="16" y1="2" x2="16" y2="6" />
               <line x1="8" y1="2" x2="8" y2="6" />
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
-          </div>
-          <h3 className="text-[18px] font-bold text-[#0B2040] mb-2">
-            No bookings yet
-          </h3>
-          <p className="text-[14px] text-[#888]">
-            Bookings from the website will appear here automatically.
-          </p>
-        </div>
-      ) : viewMode === "list" ? (
-        /* ═══ LIST VIEW ═══ */
-        <div className="bg-white border border-[#e8e8e8] rounded-[12px] overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-[#eee]">
-                  {[
-                    "Date",
-                    "Customer",
-                    "Phone",
-                    "Service",
-                    "Source",
-                    "Status",
-                    "Actions",
-                  ].map((h) => (
-                    <th
-                      key={h}
-                      className="px-4 py-3 text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] whitespace-nowrap"
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((b) => {
-                  const source = getSourceLabel(b.source);
-                  const status = getStatusStyle(b.status);
-                  const isExpanded = expandedId === b.id;
-                  const bIsNew = isNewBooking(b);
-                  return (
-                    <Fragment key={b.id}>
-                      <tr
-                        onClick={() => {
-                          setExpandedId(isExpanded ? null : b.id);
-                          if (!isExpanded) {
-                            updateDoc(doc(db, "bookings", b.id), { lastViewedAt: serverTimestamp() }).catch(() => {});
-                          }
-                        }}
-                        className={`border-b border-[#f0f0f0] cursor-pointer transition-colors ${
-                          bIsNew
-                            ? "bg-[#FFF8F0] border-l-4 border-l-[#E07B2D]"
-                            : isExpanded ? "bg-[#FAFBFC]" : "hover:bg-[#FAFBFC]"
-                        }`}
-                      >
-                        <td className="px-4 py-3 text-[13px] text-[#444] whitespace-nowrap">
-                          {formatTimestamp(b.createdAt)}
-                        </td>
-                        <td className="px-4 py-3 text-[14px] font-semibold text-[#0B2040] whitespace-nowrap">
-                          {b.name || "—"}
-                          {bIsNew && (
-                            <span className="ml-2 inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold text-white bg-[#E07B2D]">NEW</span>
-                          )}
-                          {b.datesFlexible && (
-                            <span className="ml-2 inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold text-[#888] bg-[#f0f0f0]">Flexible</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-[13px] whitespace-nowrap">
-                          {b.phone ? (
-                            <a
-                              href={`tel:${b.phone}`}
-                              className="text-[#1A5FAC] hover:underline"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {formatPhone(b.phone)}
-                            </a>
-                          ) : (
-                            "—"
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-[13px] text-[#444] whitespace-nowrap max-w-[180px] truncate">
-                          {b.service || "—"}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span
-                            className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold text-white ${source.color}`}
-                          >
-                            {source.label}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span
-                            className={`inline-block px-3 py-1 rounded-full text-[11px] font-semibold ${status.cls}`}
-                          >
-                            {status.label}
-                          </span>
-                        </td>
-                        <td
-                          className="px-4 py-3 whitespace-nowrap"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <StatusActions
-                            status={b.status}
-                            onConfirm={() => {
-                              setSettingAppointmentId(b.id);
-                              setExpandedId(b.id);
-                            }}
-                            onComplete={() => updateStatus(b.id, "completed")}
-                            onCancel={() => setCancelConfirmId(b.id)}
-                            onDelete={() => setDeleteConfirmId(b.id)}
-                          />
-                        </td>
-                      </tr>
+            {new Date(selectedDay + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+            <span className="text-[#888]">&times;</span>
+          </button>
+        )}
 
-                      {/* ── Expanded detail ── */}
-                      {isExpanded && (
-                        <tr>
-                          <td colSpan={10} className="p-0">
-                            <ExpandedDetail
-                              booking={b}
-                              editingNotes={editingNotes}
-                              savingNotes={savingNotes}
-                              onNotesChange={(val) =>
-                                setEditingNotes((p) => ({
-                                  ...p,
-                                  [b.id]: val,
-                                }))
-                              }
-                              onSaveNotes={() => saveAdminNotes(b.id)}
-                              onToast={addToast}
-                              showAppointmentSetter={settingAppointmentId === b.id}
-                              onConfirmAppointment={(date, window, duration) =>
-                                confirmAppointment(b.id, b, date, window, duration)
-                              }
-                              onCancelAppointmentSetter={() => setSettingAppointmentId(null)}
-                            />
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ) : (
-        /* ═══ CALENDAR VIEW ═══ */
-        <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-6">
-          {/* Month navigation */}
-          <div className="flex items-center justify-between mb-6">
-            <button
-              onClick={() => {
-                setCalendarDate(new Date(calYear, calMonth - 1, 1));
-                setSelectedDay(null);
-              }}
-              className="px-3 py-2 text-[14px] font-semibold text-[#444] hover:text-[#0B2040] transition-colors"
-            >
-              &larr; Previous
-            </button>
-            <h3 className="text-[18px] font-bold text-[#0B2040]">
-              {monthLabel}
-            </h3>
-            <button
-              onClick={() => {
-                setCalendarDate(new Date(calYear, calMonth + 1, 1));
-                setSelectedDay(null);
-              }}
-              className="px-3 py-2 text-[14px] font-semibold text-[#444] hover:text-[#0B2040] transition-colors"
-            >
-              Next &rarr;
-            </button>
-          </div>
+        {/* Count */}
+        <p className="text-[14px] text-[#888] ml-auto">
+          Showing{" "}
+          <span className="font-semibold text-[#0B2040]">{filtered.length}</span>{" "}
+          booking{filtered.length !== 1 ? "s" : ""}
+        </p>
+      </div>
 
-          {/* Day headers */}
-          <div className="grid grid-cols-7 gap-px mb-1">
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-              <div
-                key={d}
-                className="text-center text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] py-2"
-              >
-                {d}
+      {/* ═══ TWO-COLUMN LAYOUT ═══ */}
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* LEFT: Bookings List (60%) */}
+        <div className="w-full lg:w-[60%]">
+          {filtered.length === 0 ? (
+            <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-12 text-center">
+              <div className="w-16 h-16 rounded-full bg-[#f5f5f5] flex items-center justify-center mx-auto mb-4">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
               </div>
-            ))}
-          </div>
-
-          {/* Calendar grid */}
-          <div className="grid grid-cols-7 gap-px">
-            {calDays.map((day, i) => {
-              if (day === null) {
-                return (
-                  <div
-                    key={`empty-${i}`}
-                    className="min-h-[80px] bg-[#fafafa] rounded"
-                  />
-                );
-              }
-              const dateKey = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-              const dayBookings = bookingsByDate[dateKey] || [];
-              const isSelected = selectedDay === dateKey;
-              const isToday = dateKey === todayISO;
-              return (
-                <div
-                  key={dateKey}
-                  onClick={() =>
-                    setSelectedDay(isSelected ? null : dateKey)
-                  }
-                  className={`min-h-[80px] p-2 rounded cursor-pointer transition-colors border ${
-                    isSelected
-                      ? "border-[#0B2040] bg-[#EBF4FF]"
-                      : isToday
-                        ? "border-[#E07B2D] bg-white"
-                        : "border-transparent bg-white hover:bg-[#FAFBFC]"
-                  }`}
-                >
-                  <p
-                    className={`text-[13px] font-semibold mb-1 ${isToday ? "text-[#E07B2D]" : "text-[#0B2040]"}`}
-                  >
-                    {day}
-                  </p>
-                  {dayBookings.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {dayBookings.slice(0, 5).map((b) => (
-                        <span
-                          key={b.id}
-                          className={`w-2 h-2 rounded-full ${
-                            b.status === "pending"
-                              ? "bg-[#E07B2D]"
-                              : b.status === "confirmed"
-                                ? "bg-[#1A5FAC]"
-                                : b.status === "cancelled"
-                                  ? "bg-[#999]"
-                                  : "bg-[#16a34a]"
-                          }`}
-                        />
+              <h3 className="text-[18px] font-bold text-[#0B2040] mb-2">
+                No bookings found
+              </h3>
+              <p className="text-[14px] text-[#888]">
+                {selectedDay ? "No bookings for this day. Click a different date or clear the filter." : "Try changing your filters or check back later."}
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white border border-[#e8e8e8] rounded-[12px] overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-[#eee]">
+                      {["Date", "Customer", "Phone", "Service", "Source", "Status", "Actions"].map((h) => (
+                        <th
+                          key={h}
+                          className="px-4 py-3 text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] whitespace-nowrap"
+                        >
+                          {h}
+                        </th>
                       ))}
-                      {dayBookings.length > 5 && (
-                        <span className="text-[10px] text-[#888]">
-                          +{dayBookings.length - 5}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((b) => {
+                      const source = getSourceLabel(b.source);
+                      const status = getStatusStyle(b.status);
+                      const isExpanded = expandedId === b.id;
+                      const bIsNew = isNewBooking(b);
+                      return (
+                        <Fragment key={b.id}>
+                          <tr
+                            onClick={() => {
+                              setExpandedId(isExpanded ? null : b.id);
+                              if (!isExpanded) {
+                                updateDoc(doc(db, "bookings", b.id), { lastViewedAt: serverTimestamp() }).catch(() => {});
+                              }
+                            }}
+                            className={`border-b border-[#f0f0f0] cursor-pointer transition-colors ${
+                              bIsNew
+                                ? "bg-[#FFF8F0] border-l-4 border-l-[#E07B2D]"
+                                : isExpanded ? "bg-[#FAFBFC]" : "hover:bg-[#FAFBFC]"
+                            }`}
+                          >
+                            <td className="px-4 py-3 text-[13px] text-[#444] whitespace-nowrap">
+                              {formatTimestamp(b.createdAt)}
+                            </td>
+                            <td className="px-4 py-3 text-[14px] font-semibold text-[#0B2040] whitespace-nowrap">
+                              {b.name || "\u2014"}
+                              {bIsNew && (
+                                <span className="ml-2 inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold text-white bg-[#E07B2D]">NEW</span>
+                              )}
+                              {b.datesFlexible && (
+                                <span className="ml-2 inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold text-[#888] bg-[#f0f0f0]">Flexible</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-[13px] whitespace-nowrap">
+                              {b.phone ? (
+                                <a
+                                  href={`tel:${b.phone}`}
+                                  className="text-[#1A5FAC] hover:underline"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {formatPhone(b.phone)}
+                                </a>
+                              ) : (
+                                "\u2014"
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-[13px] text-[#444] whitespace-nowrap max-w-[180px] truncate">
+                              {b.service || "\u2014"}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold text-white ${source.color}`}>
+                                {source.label}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <span className={`inline-block px-3 py-1 rounded-full text-[11px] font-semibold ${status.cls}`}>
+                                {status.label}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                              <StatusActions
+                                status={b.status}
+                                onConfirm={() => {
+                                  setSettingAppointmentId(b.id);
+                                  setExpandedId(b.id);
+                                }}
+                                onComplete={() => updateStatus(b.id, "completed")}
+                                onCancel={() => setCancelConfirmId(b.id)}
+                                onDelete={() => setDeleteConfirmId(b.id)}
+                              />
+                            </td>
+                          </tr>
 
-          {/* Selected day panel */}
-          {selectedDay && bookingsByDate[selectedDay] && (
-            <div className="mt-6 border-t border-[#eee] pt-6">
-              <h4 className="text-[16px] font-bold text-[#0B2040] mb-4">
-                {new Date(selectedDay + "T12:00:00").toLocaleDateString(
-                  "en-US",
-                  { weekday: "short", month: "short", day: "numeric" }
-                )}
-                <span className="ml-2 text-[14px] font-normal text-[#888]">
-                  ({bookingsByDate[selectedDay].length} booking
-                  {bookingsByDate[selectedDay].length !== 1 ? "s" : ""})
-                </span>
-              </h4>
-              <div className="flex flex-col gap-3">
-                {bookingsByDate[selectedDay].map((b) => {
-                  const status = getStatusStyle(b.status);
-                  const source = getSourceLabel(b.source);
-                  const calIsNew = isNewBooking(b);
-                  return (
-                    <div
-                      key={b.id}
-                      className={`flex items-center justify-between bg-[#FAFBFC] border border-[#e8e8e8] rounded-[10px] p-4 ${
-                        calIsNew ? "border-l-4 border-l-[#E07B2D] bg-[#FFF8F0]" : ""
-                      }`}
-                    >
-                      <div>
-                        <p className="text-[15px] font-semibold text-[#0B2040]">
-                          {b.name || "—"}
-                          {calIsNew && (
-                            <span className="ml-2 inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold text-white bg-[#E07B2D]">NEW</span>
+                          {/* ── Expanded detail ── */}
+                          {isExpanded && (
+                            <tr>
+                              <td colSpan={10} className="p-0">
+                                <ExpandedDetail
+                                  booking={b}
+                                  editingNotes={editingNotes}
+                                  savingNotes={savingNotes}
+                                  onNotesChange={(val) =>
+                                    setEditingNotes((p) => ({
+                                      ...p,
+                                      [b.id]: val,
+                                    }))
+                                  }
+                                  onSaveNotes={() => saveAdminNotes(b.id)}
+                                  onToast={addToast}
+                                  showAppointmentSetter={settingAppointmentId === b.id}
+                                  onConfirmAppointment={(date, window, duration) =>
+                                    confirmAppointment(b.id, b, date, window, duration)
+                                  }
+                                  onCancelAppointmentSetter={() => setSettingAppointmentId(null)}
+                                />
+                              </td>
+                            </tr>
                           )}
-                          {b.datesFlexible && (
-                            <span className="ml-2 inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold text-[#888] bg-[#f0f0f0]">Flexible</span>
-                          )}
-                        </p>
-                        <p className="text-[13px] text-[#444]">
-                          {b.service || "—"}
-                          {calIsNew && (
-                            <span className="ml-2 inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold text-white bg-[#E07B2D]">NEW</span>
-                          )}
-                        </p>
-                        <p className="text-[12px] text-[#888]">
-                          {formatPhone(b.phone)}
-                          {b.email ? ` · ${b.email}` : ""}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0 ml-4">
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-[11px] font-semibold text-white ${source.color}`}
-                        >
-                          {source.label}
-                        </span>
-                        <span
-                          className={`px-3 py-1 rounded-full text-[11px] font-semibold ${status.cls}`}
-                        >
-                          {status.label}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+                        </Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
         </div>
-      )}
+
+        {/* RIGHT: Mini Calendar (40%) */}
+        <div className="w-full lg:w-[40%]">
+          <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-5 lg:sticky lg:top-6">
+            {/* Month navigation */}
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={() => {
+                  setCalendarDate(new Date(calYear, calMonth - 1, 1));
+                }}
+                className="p-1.5 text-[#444] hover:text-[#0B2040] transition-colors rounded hover:bg-[#f5f5f5]"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+              </button>
+              <h3 className="text-[15px] font-bold text-[#0B2040]">{monthLabel}</h3>
+              <button
+                onClick={() => {
+                  setCalendarDate(new Date(calYear, calMonth + 1, 1));
+                }}
+                className="p-1.5 text-[#444] hover:text-[#0B2040] transition-colors rounded hover:bg-[#f5f5f5]"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Day headers */}
+            <div className="grid grid-cols-7 gap-px mb-1">
+              {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+                <div
+                  key={`${d}-${i}`}
+                  className="text-center text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] py-1"
+                >
+                  {d}
+                </div>
+              ))}
+            </div>
+
+            {/* Calendar grid (compact) */}
+            <div className="grid grid-cols-7 gap-px">
+              {calDays.map((day, i) => {
+                if (day === null) {
+                  return <div key={`empty-${i}`} className="h-[52px] bg-[#fafafa] rounded" />;
+                }
+                const dateKey = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                const dayBookings = bookingsByDate[dateKey] || [];
+                const isSelected = selectedDay === dateKey;
+                const isToday = dateKey === todayISO;
+                return (
+                  <div
+                    key={dateKey}
+                    onClick={() => setSelectedDay(isSelected ? null : dateKey)}
+                    className={`h-[52px] p-1.5 rounded cursor-pointer transition-colors border flex flex-col items-center ${
+                      isSelected
+                        ? "border-[#0B2040] bg-[#EBF4FF]"
+                        : isToday
+                          ? "border-[#E07B2D] bg-[#FFF8F0]"
+                          : "border-transparent bg-white hover:bg-[#FAFBFC]"
+                    }`}
+                  >
+                    <p className={`text-[12px] font-semibold leading-none ${
+                      isToday ? "text-[#E07B2D]" : isSelected ? "text-[#0B2040]" : "text-[#444]"
+                    }`}>
+                      {day}
+                    </p>
+                    {dayBookings.length > 0 && (
+                      <div className="flex flex-wrap justify-center gap-0.5 mt-1">
+                        {dayBookings.slice(0, 4).map((b) => (
+                          <span
+                            key={b.id}
+                            className={`w-[5px] h-[5px] rounded-full ${
+                              b.status === "pending"
+                                ? "bg-[#E07B2D]"
+                                : b.status === "confirmed"
+                                  ? "bg-[#1A5FAC]"
+                                  : b.status === "cancelled"
+                                    ? "bg-[#999]"
+                                    : "bg-[#16a34a]"
+                            }`}
+                          />
+                        ))}
+                        {dayBookings.length > 4 && (
+                          <span className="text-[8px] text-[#888] leading-none">+{dayBookings.length - 4}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Mini stats under calendar */}
+            <div className="mt-4 pt-4 border-t border-[#eee] grid grid-cols-2 gap-3">
+              <div className="bg-[#FFF8F0] rounded-[8px] p-3 text-center">
+                <p className="text-[20px] font-[800] text-[#E07B2D] leading-none mb-0.5">{stats.pending}</p>
+                <p className="text-[11px] text-[#888] font-medium">Pending</p>
+              </div>
+              <div className="bg-[#EBF4FF] rounded-[8px] p-3 text-center">
+                <p className="text-[20px] font-[800] text-[#1A5FAC] leading-none mb-0.5">{stats.confirmed}</p>
+                <p className="text-[11px] text-[#888] font-medium">Confirmed</p>
+              </div>
+              <div className="bg-[#F0FAF0] rounded-[8px] p-3 text-center">
+                <p className="text-[20px] font-[800] text-[#16a34a] leading-none mb-0.5">{stats.completed}</p>
+                <p className="text-[11px] text-[#888] font-medium">Completed</p>
+              </div>
+              <div className="bg-[#f5f5f5] rounded-[8px] p-3 text-center">
+                <p className="text-[20px] font-[800] text-[#999] leading-none mb-0.5">{stats.cancelled}</p>
+                <p className="text-[11px] text-[#888] font-medium">Cancelled</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* ═══ Cancel Confirmation Dialog ═══ */}
       {cancelConfirmId && (
