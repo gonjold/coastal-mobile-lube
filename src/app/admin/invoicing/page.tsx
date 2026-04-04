@@ -428,7 +428,7 @@ function InvoicingPageInner() {
   }
 
   /* ── Save ── */
-  async function handleSave() {
+  async function handleSave(statusOverride?: "draft" | "sent") {
     if (!form.customerName.trim()) return;
     if (form.lineItems.every((li) => !li.serviceName.trim())) return;
 
@@ -436,6 +436,7 @@ function InvoicingPageInner() {
     try {
       const data = {
         ...form,
+        status: statusOverride || form.status,
         lineItems: form.lineItems.filter((li) => li.serviceName.trim()),
         updatedAt: serverTimestamp(),
       };
@@ -448,7 +449,7 @@ function InvoicingPageInner() {
           ...data,
           createdAt: serverTimestamp(),
         });
-        addToast("Invoice created");
+        addToast(statusOverride === "sent" ? "Invoice created and marked as sent" : "Invoice saved as draft");
       }
       setShowForm(false);
     } catch {
@@ -681,9 +682,9 @@ function InvoicingPageInner() {
       {/* ── Create / Edit invoice modal ── */}
       {showForm && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-[12px] w-full max-w-[720px] shadow-xl my-8">
+          <div className="bg-white rounded-[12px] w-full max-w-[720px] shadow-xl my-4 flex flex-col" style={{ maxHeight: "90vh" }}>
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e8e8e8]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e8e8e8] shrink-0">
               <h2 className="text-[18px] font-bold text-[#0B2040]">
                 {editingId ? "Edit Invoice" : "New Invoice"}
               </h2>
@@ -695,7 +696,7 @@ function InvoicingPageInner() {
               </button>
             </div>
 
-            <div className="px-6 py-5 space-y-5 max-h-[calc(100vh-160px)] overflow-y-auto">
+            <div className="px-6 py-5 space-y-5 flex-1 overflow-y-auto">
               {/* Pre-fill note */}
               {prefillNote && (
                 <div className="flex items-start gap-2 px-4 py-3 bg-[#EBF4FF] border border-[#1A5FAC]/20 rounded-[8px] text-[13px] text-[#0B2040]">
@@ -810,6 +811,14 @@ function InvoicingPageInner() {
                 <label className="block text-[12px] font-semibold text-[#888] uppercase mb-2">
                   Line Items
                 </label>
+                {/* Column headers */}
+                <div className="flex items-center gap-2 mb-1 text-[11px] font-semibold text-[#aaa] uppercase tracking-wide">
+                  <div className="flex-1 min-w-0">Service</div>
+                  <div className="w-[60px] text-center">Qty</div>
+                  <div className="w-[90px] text-right">Price</div>
+                  <div className="w-[80px] text-right">Total</div>
+                  <div className="w-[28px]" />
+                </div>
                 <div className="space-y-2">
                   {form.lineItems.map((li, idx) => (
                     <LineItemRow
@@ -825,13 +834,13 @@ function InvoicingPageInner() {
                 </div>
                 <button
                   onClick={addLineItem}
-                  className="mt-2 flex items-center gap-1 text-[13px] text-[#1A5FAC] font-semibold hover:underline"
+                  className="mt-3 flex items-center justify-center gap-1.5 w-full px-4 py-2 text-[13px] text-[#1A5FAC] font-semibold border-2 border-dashed border-[#1A5FAC]/30 rounded-[8px] hover:bg-[#f0f4fa] hover:border-[#1A5FAC]/50 transition-colors"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="12" y1="5" x2="12" y2="19" />
                     <line x1="5" y1="12" x2="19" y2="12" />
                   </svg>
-                  Add line item
+                  Add Line Item
                 </button>
               </div>
 
@@ -858,9 +867,9 @@ function InvoicingPageInner() {
                       <span className="ml-2 font-medium">{formatCurrency(form.taxAmount)}</span>
                     </div>
                   </div>
-                  <div className="flex justify-between pt-2 border-t border-[#e8e8e8]">
-                    <span className="font-bold text-[#0B2040]">Total</span>
-                    <span className="font-bold text-[18px] text-[#0B2040]">{formatCurrency(form.total)}</span>
+                  <div className="flex justify-between items-center pt-3 border-t-2 border-[#0B2040]">
+                    <span className="font-bold text-[16px] text-[#0B2040]">Total</span>
+                    <span className="font-bold text-[24px] text-[#0B2040]">{formatCurrency(form.total)}</span>
                   </div>
                 </div>
               </div>
@@ -881,20 +890,39 @@ function InvoicingPageInner() {
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#e8e8e8]">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#e8e8e8] shrink-0">
               <button
                 onClick={() => setShowForm(false)}
                 className="px-5 py-2.5 text-[13px] font-medium text-[#555] bg-[#f5f5f5] rounded-[8px] hover:bg-[#eee] transition-colors"
               >
                 Cancel
               </button>
-              <button
-                onClick={handleSave}
-                disabled={saving || !form.customerName.trim()}
-                className="px-5 py-2.5 text-[13px] font-semibold text-white bg-[#1A5FAC] rounded-[8px] hover:bg-[#174f94] transition-colors disabled:opacity-50"
-              >
-                {saving ? "Saving..." : editingId ? "Update Invoice" : "Create Invoice"}
-              </button>
+              {editingId ? (
+                <button
+                  onClick={() => handleSave()}
+                  disabled={saving || !form.customerName.trim()}
+                  className="px-5 py-2.5 text-[13px] font-semibold text-white bg-[#1A5FAC] rounded-[8px] hover:bg-[#174f94] transition-colors disabled:opacity-50"
+                >
+                  {saving ? "Saving..." : "Update Invoice"}
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => handleSave("draft")}
+                    disabled={saving || !form.customerName.trim()}
+                    className="px-5 py-2.5 text-[13px] font-semibold text-[#1A5FAC] border border-[#1A5FAC] rounded-[8px] hover:bg-[#f0f4fa] transition-colors disabled:opacity-50"
+                  >
+                    {saving ? "Saving..." : "Save as Draft"}
+                  </button>
+                  <button
+                    onClick={() => handleSave("sent")}
+                    disabled={saving || !form.customerName.trim()}
+                    className="px-5 py-2.5 text-[13px] font-semibold text-white bg-[#E07B2D] rounded-[8px] hover:bg-[#c96a24] transition-colors disabled:opacity-50"
+                  >
+                    {saving ? "Saving..." : "Create & Send"}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -1011,7 +1039,8 @@ function LineItemRow({
       <button
         onClick={onRemove}
         disabled={!canRemove}
-        className="py-2 px-1 text-[16px] text-[#ccc] hover:text-[#dc2626] transition-colors disabled:opacity-30 disabled:hover:text-[#ccc]"
+        className="py-2 px-1.5 text-[14px] text-[#999] hover:text-white hover:bg-[#dc2626] rounded-[6px] transition-colors disabled:opacity-30 disabled:hover:text-[#999] disabled:hover:bg-transparent"
+        title="Remove line item"
       >
         &times;
       </button>
