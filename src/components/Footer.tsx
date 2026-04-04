@@ -5,6 +5,7 @@ const serviceLinks = [
   { label: "Automotive", href: "/services" },
   { label: "Fleet & Commercial", href: "/fleet" },
   { label: "Marine", href: "/marine" },
+  { label: "RV Service", href: "/rv" },
   { label: "Book Service", href: "/book" },
 ];
 
