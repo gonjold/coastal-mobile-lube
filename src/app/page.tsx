@@ -182,12 +182,13 @@ export default function Home() {
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 60% at 80% 30%, rgba(224,123,45,0.07) 0%, transparent 60%)" }} />
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 50% 80% at 50% 100%, rgba(11,32,64,0.8) 0%, transparent 60%)" }} />
 
-        {/* Oval badge watermark */}
+        {/* Oval badge watermark — massive brand stamp */}
         <img
-          src={cloudinaryUrl(images.logo, { width: 500, quality: "auto" })}
+          src={cloudinaryUrl(images.logo, { width: 900, quality: "auto" })}
           alt=""
           aria-hidden="true"
-          className="absolute left-[15%] top-1/2 -translate-y-1/2 w-[420px] h-auto pointer-events-none select-none opacity-[0.04]"
+          className="absolute left-1/2 -translate-x-1/2 -top-[60px] w-[550px] md:w-[700px] h-auto pointer-events-none select-none opacity-[0.10] blur-[0.5px]"
+          style={{ zIndex: 1 }}
         />
 
         {/* Subtle grid texture */}
