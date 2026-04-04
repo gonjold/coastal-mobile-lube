@@ -40,7 +40,7 @@ export default function Header() {
 
   return (
     <header
-      className="sticky top-0 z-50 bg-[#0B2040]"
+      className="sticky top-0 z-50 bg-[#0F2847]"
     >
       <div className="section-inner flex items-center justify-between px-4 py-3 lg:px-6">
         {/* Logo */}
@@ -106,7 +106,7 @@ export default function Header() {
             className="absolute inset-0 bg-black/40"
             onClick={() => setDrawerOpen(false)}
           />
-          <div className="absolute top-0 right-0 w-72 h-full bg-[#0B2040] shadow-xl flex flex-col">
+          <div className="absolute top-0 right-0 w-72 h-full bg-[#0F2847] shadow-xl flex flex-col">
             <div className="flex items-center justify-end p-4">
               <button
                 onClick={() => setDrawerOpen(false)}

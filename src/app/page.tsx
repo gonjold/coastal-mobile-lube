@@ -177,7 +177,7 @@ export default function Home() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-[#0B2040]">
+      <section style={{ background: "linear-gradient(135deg, #0F2847 0%, #132E54 100%)" }}>
         <div className="section-inner px-4 lg:px-6 pt-10 pb-10 md:pt-16 md:pb-12">
           <div className="grid grid-cols-1 lg:grid-cols-[11fr_9fr] gap-10 lg:gap-12 items-start">
             {/* Left Column */}
@@ -426,6 +426,10 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Hero-to-content transition */}
+      <div style={{ background: "linear-gradient(to bottom, #132E54, #FAFBFC)", height: "80px" }} />
+      <div style={{ background: "#D9A441", height: "3px", width: "100%" }} />
+
       {/* Services */}
       <section className="bg-[#FAFBFC]">
         <div className="section-inner px-4 lg:px-6 pt-10 pb-14 md:pt-14">
@@ -568,13 +572,13 @@ export default function Home() {
       </section>
 
       {/* Reviews */}
-      <section className="bg-[#0B2040] overflow-hidden">
+      <section className="bg-[#FBF5EB] overflow-hidden">
         <div className="section-inner px-4 lg:px-6 pt-10 md:pt-14 pb-4">
           <div className="text-center mb-10">
-            <p className="text-[12px] uppercase font-bold text-[#E07B2D] tracking-[1.5px] mb-3">
+            <p className="text-[12px] uppercase font-bold text-[#D9A441] tracking-[1.5px] mb-3">
               Reviews
             </p>
-            <h2 className="text-[28px] md:text-[34px] font-extrabold text-white">
+            <h2 className="text-[28px] md:text-[34px] font-extrabold text-[#0F2847]">
               What our customers say
             </h2>
           </div>
@@ -605,16 +609,16 @@ export default function Home() {
               ].map((review) => (
                 <div
                   key={`${setIdx}-${review.name}`}
-                  className="w-[350px] flex-shrink-0 bg-white border border-[#e8e8e8] rounded-[12px] p-5 flex flex-col"
+                  className="w-[350px] flex-shrink-0 bg-white border border-[#E8E0D0] rounded-[12px] p-5 flex flex-col"
                 >
-                  <div className="text-[#E07B2D] text-[16px] mb-3 tracking-wide">
+                  <div className="text-[#D9A441] text-[16px] mb-3 tracking-wide">
                     {"★★★★★"}
                   </div>
-                  <p className="text-[14px] leading-[1.7] text-[#444] flex-1 mb-4">
+                  <p className="text-[14px] leading-[1.7] text-[#2C2C2C] flex-1 mb-4">
                     &ldquo;{review.text}&rdquo;
                   </p>
                   <div className="flex items-center justify-between">
-                    <span className="text-[13px] font-semibold text-[#0B2040]">
+                    <span className="text-[13px] font-bold text-[#0F2847]">
                       {review.name} <span className="font-normal text-[#888]">&mdash; {review.city}</span>
                     </span>
                     <span className="text-[11px] text-[#888] font-medium">Google Review</span>
@@ -627,7 +631,7 @@ export default function Home() {
 
         <div className="section-inner px-4 lg:px-6 pb-10 md:pb-14">
           <div className="text-center mt-8">
-            <p className="text-[13px] text-white/50 mb-2">Reviews from customers across Tampa Bay</p>
+            <p className="text-[13px] text-[#8B7355] mb-2">Reviews from customers across Tampa Bay</p>
             <a href="#" className="text-[13px] font-semibold text-[#E07B2D] hover:underline">
               Leave us a review on Google &rarr;
             </a>
@@ -636,7 +640,7 @@ export default function Home() {
       </section>
 
       {/* Stats Bar */}
-      <section className="bg-[#0B2040] py-10 px-6">
+      <section className="bg-[#0F2847] py-10 px-6">
         <div className="section-inner">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
@@ -660,15 +664,16 @@ export default function Home() {
       <TrustBar />
 
       {/* CTA */}
-      <section className="bg-[#FAFBFC]">
+      <section className="relative" style={{ background: "linear-gradient(135deg, #0F2847 0%, #132E54 100%)" }}>
+        <div style={{ background: "#D9A441", height: "3px", width: "100%", position: "absolute", top: 0, left: 0 }} />
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14 text-center">
-          <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
+          <p className="text-[13px] uppercase font-bold text-[#D9A441] tracking-[1.5px] mb-3">
             Ready?
           </p>
-          <h2 className="text-[28px] md:text-[34px] font-extrabold text-[#0B2040] mb-3">
+          <h2 className="text-[28px] md:text-[34px] font-extrabold text-white mb-3">
             Skip the shop.
           </h2>
-          <p className="text-[15px] text-[#888] mb-8 mx-auto max-w-[460px]">
+          <p className="text-[15px] text-white/80 mb-8 mx-auto max-w-[460px]">
             Book your mobile service today. Most appointments available within
             the week.
           </p>
@@ -678,7 +683,7 @@ export default function Home() {
             </Button>
             <a
               href="tel:8137225823"
-              className="inline-flex items-center justify-center gap-2 px-[30px] py-[14px] font-semibold text-[#0B2040] bg-white border-2 border-[#ddd] rounded-[var(--radius-button)] hover:border-[#bbb] transition-all"
+              className="inline-flex items-center justify-center gap-2 px-[30px] py-[14px] font-semibold text-white bg-transparent border-2 border-white/30 rounded-[var(--radius-button)] hover:border-white/50 transition-all"
             >
               <Phone size={16} />
               Call 813-722-LUBE
