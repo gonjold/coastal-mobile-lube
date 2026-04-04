@@ -1,52 +1,73 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Phone } from "lucide-react";
 import Button from "@/components/Button";
 import TrustBar from "@/components/TrustBar";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
-const rvServices = [
-  {
-    name: "Synthetic Blend Oil Change",
-    price: "$89.95",
-    description: "Oil and filter change with multi-point inspection",
-  },
-  {
-    name: "Full Synthetic Oil Change",
-    price: "$119.95",
-    description: "Premium full synthetic oil and filter change",
-  },
-  {
-    name: "Diesel Oil Change",
-    price: "$219.95",
-    description: "Diesel-rated oil and filter for Class A and diesel pushers",
-  },
-  {
-    name: "Tire Rotation",
-    price: "$39.95",
-    description: "Rotate all accessible tires for even wear",
-  },
-  {
-    name: "Mount and Balance (4 Tires)",
-    price: "$159.95",
-    description: "Full tire mount and balance service",
-  },
-  {
-    name: "Front and Rear Brakes",
-    price: "$320",
-    description: "Complete brake pad replacement, front and rear",
-  },
+/* ─── Category definitions ─── */
+const categories = [
+  { id: "oil-service", label: "Oil Service", startingAt: "$89.95" },
+  { id: "fluid-services", label: "Fluid Services", startingAt: "$129.95" },
+  { id: "diesel", label: "Diesel", startingAt: "$49.95" },
+  { id: "tire-wheel", label: "Tire & Wheel", startingAt: "$39.95" },
+  { id: "hvac-electrical", label: "HVAC & Electrical", startingAt: "$50" },
+  { id: "brakes", label: "Brakes", startingAt: "$320" },
 ];
 
-const additionalServices = [
+/* ─── RV oil service tier cards ─── */
+const oilTiers = [
+  { name: "Synthetic Blend", price: "$89.95", note: "Up to 5 qts", tag: null },
+  { name: "Full Synthetic", price: "$119.95", note: "Up to 5 qts", tag: "Most common" as const },
+  { name: "Diesel Oil Change", price: "$219.95", note: "Class A and diesel pushers", tag: null },
+];
+
+const oilAddOns = [
+  { name: "Semi Syn per qt over 5", price: "$7.00" },
+  { name: "Full Syn per qt over 5", price: "$12.00" },
+];
+
+/* ─── Fluid services ─── */
+const fluidServices = [
+  { name: "Throttle Body Service", price: "$129.95" },
+  { name: "Power Steering Flush", price: "$219.95" },
   { name: "Brake Flush", price: "$239.95" },
+  { name: "Fuel Induction Service", price: "$239.95" },
+  { name: "Transfer Case Flush", price: "$249.95" },
   { name: "Coolant Flush", price: "$269.95" },
   { name: "Transmission Flush", price: "$419.95" },
-  { name: "HVAC Recharge", price: "$299.99" },
+];
+
+/* ─── Diesel services ─── */
+const dieselServices = [
+  { name: "Diesel MOA", price: "$49.95" },
+  { name: "Diesel Air Filter", price: "$119.95" },
+  { name: "Diesel Fuel Filters", price: "$399.95" },
+  { name: "Diesel Injection Service", price: "$439.95" },
+  { name: "Dual Coolant Flush (Diesel)", price: "$499.95" },
+];
+
+/* ─── Tire & wheel services ─── */
+const tireWheelServices = [
+  { name: "Tire Rotation", price: "$39.95" },
+  { name: "Tire Rotation Oversized", price: "$59.95" },
+  { name: "Tire Patch", price: "$69.95" },
+  { name: "Mount and Balance (4 Tires)", price: "$159.95" },
+  { name: "Aftermarket/Oversized M&B", price: "+$50/tire" },
+];
+
+/* ─── HVAC & electrical ─── */
+const hvacElectricalServices = [
+  { name: "Battery Replacement", price: "from $50" },
   { name: "Cabin Air Filter", price: "$99.95" },
-  { name: "Battery Service", price: "$50-$100 labor" },
+  { name: "HVAC Recharge", price: "$299.99" },
+];
+
+/* ─── Brake services ─── */
+const brakeServices = [
+  { name: "Front and Rear Brakes", price: "$320" },
 ];
 
 const valueProps = [
@@ -91,18 +112,99 @@ const locations = [
   "Fish Hawk",
 ];
 
+/* ─── Reusable: 2-col service grid ─── */
+function ServiceGrid({ items }: { items: { name: string; price: string }[] }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {items.map((item) => (
+        <div
+          key={item.name}
+          className="flex items-center justify-between bg-white border border-[#f0ede6] rounded-[10px] px-5 py-4 shadow-[0_1px_6px_rgba(11,32,64,0.04)]"
+        >
+          <span className="text-[15px] font-medium text-[#0B2040]">{item.name}</span>
+          <span className="text-[15px] font-bold text-[#E07B2D] whitespace-nowrap ml-4">{item.price}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ─── Category section wrapper ─── */
+function CategorySection({
+  id,
+  title,
+  startingAt,
+  description,
+  children,
+  even,
+}: {
+  id: string;
+  title: string;
+  startingAt: string;
+  description: string;
+  children: React.ReactNode;
+  even: boolean;
+}) {
+  return (
+    <section
+      id={id}
+      className="scroll-mt-[120px]"
+      style={{ background: even ? "#FFFFFF" : "#FAFBFC" }}
+    >
+      <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
+        <div className="flex flex-col sm:flex-row sm:items-baseline gap-2 mb-2">
+          <h2 className="text-[26px] font-extrabold text-[#0B2040]">{title}</h2>
+          <span className="text-[14px] font-semibold text-[#E07B2D]">starting at {startingAt}</span>
+        </div>
+        <p className="text-[15px] text-[#555] leading-[1.65] mb-8 max-w-[600px]">{description}</p>
+        {children}
+      </div>
+    </section>
+  );
+}
+
+/* ================================================================
+   Main component
+   ================================================================ */
 export default function RVContent() {
+  const [activeCategory, setActiveCategory] = useState(categories[0].id);
+  const pillBarRef = useRef<HTMLDivElement>(null);
+
+  /* Track active section on scroll */
+  useEffect(() => {
+    const ids = categories.map((c) => c.id);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveCategory(entry.target.id);
+          }
+        }
+      },
+      { rootMargin: "-30% 0px -60% 0px" }
+    );
+    for (const id of ids) {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    }
+    return () => observer.disconnect();
+  }, []);
+
+  function scrollTo(id: string) {
+    setActiveCategory(id);
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth" });
+  }
+
   return (
     <>
-      {/* Section 1: Hero */}
+      {/* ─── Hero ─── */}
       <section className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #0A1C38 0%, #0B2040 40%, #0F2847 70%, #132E54 100%)" }}>
-        {/* Atmospheric glow layers */}
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 80% 50% at 20% 50%, rgba(26,95,172,0.12) 0%, transparent 70%)" }} />
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 60% at 80% 30%, rgba(224,123,45,0.06) 0%, transparent 60%)" }} />
-        {/* Subtle grid texture */}
         <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
 
-        <div className="max-w-[1100px] mx-auto px-4 lg:px-6 pt-10 pb-6 md:pt-14 md:pb-10 relative z-10">
+        <div className="section-inner px-4 lg:px-6 pt-10 pb-6 md:pt-14 md:pb-10 relative z-10">
           <div>
             <p className="text-[12px] uppercase font-bold text-[#D9A441] tracking-[2.5px] mb-4">
               RV Services
@@ -130,7 +232,6 @@ export default function RVContent() {
           </div>
         </div>
 
-        {/* Bottom gradient fade */}
         <div className="absolute bottom-0 left-0 right-0 h-[60px] pointer-events-none" style={{ background: "linear-gradient(to bottom, transparent, #0F2847)" }} />
       </section>
 
@@ -139,77 +240,156 @@ export default function RVContent() {
       {/* Navy-to-light transition */}
       <div style={{ background: "linear-gradient(to bottom, #0F2847 0%, #1a3a5e 30%, #3a6a8e 60%, #FAFBFC 100%)", height: "60px" }} />
 
-      {/* Section 2: RV Services with Pricing */}
-      <section className="relative" style={{ background: "linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 50%, #FAFBFC 100%)" }}>
-        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
-          <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
-            RV Maintenance
-          </p>
-          <h2 className="text-[28px] font-extrabold text-[#0B2040] mb-8">
-            Services and pricing
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {rvServices.map((svc, i) => (
-              <div
-                key={svc.name}
-                className={`bg-white border border-[#f0ede6] rounded-[14px] p-7 shadow-[0_2px_20px_rgba(11,32,64,0.06)] hover:shadow-[0_4px_28px_rgba(11,32,64,0.1)] hover:translate-y-[-2px] transition-all duration-300 ${
-                  i === 2 ? "border-t-[3px] border-t-[#E07B2D]" : ""
+      {/* ─── Sticky Category Pill Navigation ─── */}
+      <div
+        ref={pillBarRef}
+        className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#e8e4dc]/60 shadow-[0_2px_12px_rgba(11,32,64,0.06)]"
+      >
+        <div className="section-inner px-4 lg:px-6">
+          <div className="flex gap-2 py-3 overflow-x-auto no-scrollbar">
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => scrollTo(cat.id)}
+                className={`whitespace-nowrap px-5 py-2 rounded-full text-[13px] font-semibold transition-all ${
+                  activeCategory === cat.id
+                    ? "bg-[#0B2040] text-white shadow-[0_2px_8px_rgba(11,32,64,0.2)]"
+                    : "bg-[#FAFBFC] text-[#666] hover:bg-[#f0ede6] hover:text-[#0B2040]"
                 }`}
               >
-                <h3 className="text-[18px] font-bold text-[#0B2040] mb-1">
-                  {svc.name}
-                </h3>
-                <p className="text-[16px] font-semibold text-[#E07B2D] mb-2">
-                  {svc.price}
-                </p>
-                <p className="text-[14px] text-[#444] leading-[1.7]">
-                  {svc.description}
-                </p>
-              </div>
+                {cat.label}
+              </button>
             ))}
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Light transition */}
-      <div style={{ background: "linear-gradient(to bottom, #FAFBFC, #FFFFFF)", height: "40px" }} />
-
-      {/* Section 3: Additional Services */}
-      <section className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #FFFFFF 0%, #F8F6F1 100%)" }}>
-        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
-          <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
-            Also Available
-          </p>
-          <h2 className="text-[28px] font-extrabold text-[#0B2040] mb-8">
-            Additional RV services
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {additionalServices.map((service) => (
-              <div
-                key={service.name}
-                className="flex items-start gap-2.5 bg-white border border-[#f0ede6] rounded-[10px] px-[14px] py-[14px] shadow-[0_1px_8px_rgba(11,32,64,0.04)] hover:border-[#E07B2D]/30 hover:bg-[#FFF9F4] transition-colors"
-              >
-                <span className="inline-block shrink-0 w-1.5 h-1.5 rounded-full bg-[#E07B2D] mt-[7px]" />
-                <div>
-                  <span className="text-[15px] font-semibold text-[#0B2040]">
-                    {service.name}
-                  </span>
-                  <span className="text-[14px] font-semibold text-[#E07B2D] ml-2">
-                    {service.price}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* ================================================================
+         RV OIL SERVICE
+         ================================================================ */}
+      <CategorySection
+        id="oil-service"
+        title="RV Oil Service"
+        startingAt="$89.95"
+        description="Full oil and filter change with multi-point inspection. Gas and diesel engines, all RV classes. Larger engines that take more than 5 quarts are no problem."
+        even={false}
+      >
+        {/* Tier cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          {oilTiers.map((tier) => (
+            <div
+              key={tier.name}
+              className={`relative bg-white rounded-[12px] p-6 shadow-[0_2px_12px_rgba(11,32,64,0.06)] ${
+                tier.tag
+                  ? "border-2 border-[#E07B2D]"
+                  : "border border-[#f0ede6]"
+              }`}
+            >
+              {tier.tag && (
+                <span className="absolute -top-3 left-5 bg-[#E07B2D] text-white text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+                  {tier.tag}
+                </span>
+              )}
+              <h3 className="text-[18px] font-bold text-[#0B2040] mb-1">
+                {tier.name}
+              </h3>
+              {tier.note && (
+                <p className="text-[13px] text-[#888] mb-3">{tier.note}</p>
+              )}
+              {!tier.note && <div className="mb-3" />}
+              <p className="text-[28px] font-extrabold text-[#E07B2D]">
+                {tier.price}
+              </p>
+            </div>
+          ))}
         </div>
-      </section>
 
-      {/* Warm-to-dark transition */}
-      <div style={{ background: "linear-gradient(to bottom, #F8F6F1 0%, #0F2847 100%)", height: "80px" }} />
+        {/* Notes */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-8">
+          <span className="inline-flex items-center gap-2 text-[14px] text-[#444] font-medium bg-[#FFF9F4] border border-[#E07B2D]/20 rounded-[8px] px-4 py-2.5">
+            <span className="w-2 h-2 rounded-full bg-[#E07B2D] shrink-0" />
+            Generator oil service also available
+          </span>
+          <span className="inline-flex items-center gap-2 text-[14px] text-[#444] font-medium bg-[#FFF9F4] border border-[#E07B2D]/20 rounded-[8px] px-4 py-2.5">
+            <span className="w-2 h-2 rounded-full bg-[#E07B2D] shrink-0" />
+            Extra quart charges for larger engines
+          </span>
+        </div>
 
-      {/* Section 4: Why RV Owners Choose Us */}
+        {/* Add-on services */}
+        <ServiceGrid items={oilAddOns} />
+      </CategorySection>
+
+      {/* ================================================================
+         FLUID SERVICES
+         ================================================================ */}
+      <CategorySection
+        id="fluid-services"
+        title="RV Fluid Services"
+        startingAt="$129.95"
+        description="Professional fluid exchange and treatment services for all RV systems. Transmission, coolant, brake, power steering, and fuel system maintenance."
+        even={true}
+      >
+        <ServiceGrid items={fluidServices} />
+      </CategorySection>
+
+      {/* ================================================================
+         DIESEL SERVICES
+         ================================================================ */}
+      <CategorySection
+        id="diesel"
+        title="RV Diesel Services"
+        startingAt="$49.95"
+        description="Specialized diesel maintenance for Class A motorhomes, diesel pushers, and diesel-powered RVs. Injection service, fuel filters, and cooling system maintenance."
+        even={false}
+      >
+        <ServiceGrid items={dieselServices} />
+      </CategorySection>
+
+      {/* ================================================================
+         TIRE & WHEEL
+         ================================================================ */}
+      <CategorySection
+        id="tire-wheel"
+        title="RV Tire & Wheel"
+        startingAt="$39.95"
+        description="Tire rotation, mount and balance, and tire repair for all RV classes. Oversized and aftermarket tire service available."
+        even={true}
+      >
+        <ServiceGrid items={tireWheelServices} />
+      </CategorySection>
+
+      {/* ================================================================
+         HVAC & ELECTRICAL
+         ================================================================ */}
+      <CategorySection
+        id="hvac-electrical"
+        title="HVAC & Electrical"
+        startingAt="from $50"
+        description="Air conditioning recharge, battery replacement, and cabin air filter service. Keep your RV comfortable on the road and in camp."
+        even={false}
+      >
+        <ServiceGrid items={hvacElectricalServices} />
+      </CategorySection>
+
+      {/* ================================================================
+         BRAKES
+         ================================================================ */}
+      <CategorySection
+        id="brakes"
+        title="RV Brakes"
+        startingAt="$320"
+        description="Complete brake pad replacement with rotor resurfacing. Front and rear service for motorhomes and tow vehicles."
+        even={true}
+      >
+        <ServiceGrid items={brakeServices} />
+      </CategorySection>
+
+      {/* ─── Transition to Why section ─── */}
+      <div style={{ background: "linear-gradient(to bottom, #FFFFFF 0%, #3a6a8e 50%, #0F2847 100%)", height: "80px" }} />
+
+      {/* ─── Why RV Owners Choose Us ─── */}
       <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0B2040 0%, #0F2847 50%, #132E54 100%)" }}>
-        {/* Subtle glow */}
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 50% 100% at 50% 50%, rgba(224,123,45,0.05) 0%, transparent 70%)" }} />
 
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14 relative z-10">
@@ -234,10 +414,10 @@ export default function RVContent() {
         </div>
       </section>
 
-      {/* Dark-to-light transition */}
+      {/* ─── Dark-to-light transition ─── */}
       <div style={{ background: "linear-gradient(to bottom, #132E54 0%, #1a3a5e 30%, #3a6a8e 60%, #FAFBFC 100%)", height: "60px" }} />
 
-      {/* Section 5: Service Area */}
+      {/* ─── Service Area ─── */}
       <section className="relative" style={{ background: "linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 50%, #FAFBFC 100%)" }}>
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14 text-center">
           <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
@@ -263,16 +443,16 @@ export default function RVContent() {
         </div>
       </section>
 
-      {/* Light-to-dark transition */}
+      {/* ─── Light-to-dark transition ─── */}
       <div style={{ background: "linear-gradient(to bottom, #FAFBFC 0%, #3a6a8e 50%, #0F2847 100%)", height: "80px" }} />
 
-      {/* Section 6: RV Quote Form */}
+      {/* ─── RV Quote Form ─── */}
       <RVQuoteForm />
     </>
   );
 }
 
-/* --- RV Quote Form Component ----------------------------------------- */
+/* ─── RV Quote Form Component ────────────────────────────── */
 
 const rvInputBase =
   "w-full text-[15px] rounded-[10px] px-3.5 py-3 outline-none border border-white/[0.15] bg-white/[0.07] text-white placeholder:text-white/40 focus:border-[#E07B2D]/70 focus:bg-white/[0.10] transition-colors";
@@ -331,7 +511,6 @@ function RVQuoteForm() {
 
   return (
     <section id="rv-quote" className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0B2040 0%, #0F2847 50%, #132E54 100%)" }}>
-      {/* Subtle glow */}
       <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 80% at 50% 50%, rgba(26,95,172,0.08) 0%, transparent 70%)" }} />
 
       <div className="section-inner px-4 lg:px-6 py-10 md:py-14 relative z-10">
@@ -354,7 +533,6 @@ function RVQuoteForm() {
             boxShadow: "0 8px 40px rgba(0,0,0,0.35), 0 2px 12px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)",
           }}
         >
-          {/* Top edge highlight */}
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
           {submitted ? (
             <div className="flex flex-col items-center text-center py-6">
