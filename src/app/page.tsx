@@ -50,7 +50,7 @@ const servicesData = {
     title: "Automotive Services",
     description:
       "Factory-grade oil changes, tire rotations, brake checks, and preventive maintenance - all performed at your home or office.",
-    pricing: "$89",
+    pricing: "$89.95",
     pricingLabel: "Starting at",
     items: [
       "Synthetic Oil Change",
@@ -86,7 +86,7 @@ const servicesData = {
     title: "Marine Services",
     description:
       "Dockside and boat ramp service for outboard and inboard engines. Seasonal maintenance and winterization across Tampa.",
-    pricing: "$89",
+    pricing: "$129.95",
     pricingLabel: "Starting at",
     items: [
       "Outboard Oil Change",

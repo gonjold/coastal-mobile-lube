@@ -22,7 +22,7 @@ const serviceCards = [
       "Used oil recycled responsibly",
     ],
     priceLabel: "Starting at",
-    price: "$89",
+    price: "$89.95",
   },
   {
     name: "Tire Sales, Installation & Rotation",
@@ -37,7 +37,7 @@ const serviceCards = [
       "Pressure check and adjustment",
       "Seasonal tire swap available",
     ],
-    priceLabel: 'Starting at $75 / Rotation from $29',
+    priceLabel: 'Rotation from $39.95 / Mount & balance from $159.95',
     price: null,
   },
   {
@@ -53,7 +53,7 @@ const serviceCards = [
       "Mobile brake pad replacement available",
       "Written report on brake condition",
     ],
-    priceLabel: "Inspection included with any service / Brake pads from $199",
+    priceLabel: "Inspection included with any service / Brakes starting at $320",
     price: null,
   },
   {
@@ -69,7 +69,7 @@ const serviceCards = [
       "Old battery recycled",
       "Same-visit replacement when possible",
     ],
-    priceLabel: "Testing free with any service / Replacement from $149",
+    priceLabel: "Testing free with any service / Installation from $50",
     price: null,
   },
   {
@@ -101,8 +101,8 @@ const serviceCards = [
       "Improved fuel efficiency",
       "Cleaner cabin air quality",
     ],
-    priceLabel: "From",
-    price: "$29 per filter",
+    priceLabel: "Starting at",
+    price: "$99.95",
   },
   {
     name: "Wiper Blade Replacement",
@@ -148,7 +148,7 @@ const faqItems = [
   },
   {
     q: "How much does a mobile oil change cost?",
-    a: "Synthetic oil changes start at $89, which includes the oil, filter, and multi-point fluid check. Pricing may vary based on your vehicle's oil capacity and filter requirements. We always confirm the price before we start.",
+    a: "Synthetic oil changes start at $89.95, which includes the oil, filter, and multi-point fluid check. Pricing may vary based on your vehicle's oil capacity and filter requirements. We always confirm the price before we start.",
   },
 ];
 
