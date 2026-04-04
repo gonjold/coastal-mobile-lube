@@ -455,14 +455,14 @@ export default function Home() {
         </div>
 
         {/* Bottom gradient fade into services */}
-        <div className="absolute bottom-0 left-0 right-0 h-[120px] pointer-events-none" style={{ background: "linear-gradient(to bottom, transparent, #122a4a)" }} />
+        <div className="absolute bottom-0 left-0 right-0 h-[120px] pointer-events-none" style={{ background: "linear-gradient(to bottom, transparent, #0f2847)" }} />
       </section>
 
       {/* ── Navy-to-light transition ── */}
-      <div style={{ background: "linear-gradient(to bottom, #122a4a 0%, #1a3a5e 30%, #3a6a8e 60%, #FAFBFC 100%)", height: "80px" }} />
+      <div style={{ background: "linear-gradient(to bottom, #0f2847, #F0EDE6)", height: "80px" }} />
 
       {/* ── Services ── */}
-      <section className="relative" style={{ background: "linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 50%, #FAFBFC 100%)" }}>
+      <section className="relative" style={{ background: "linear-gradient(180deg, #F0EDE6 0%, #F4EEE3 50%, #F0EDE6 100%)" }}>
         <div className="section-inner px-4 lg:px-6 pt-10 pb-14 md:pt-14">
           <div className="text-center mb-10">
             <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
@@ -551,8 +551,11 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── Hull stripe separator ── */}
+      <div className="h-[3px]" style={{ background: "linear-gradient(to right, #1A5FAC, #E07B2D, #D9A441, #1A5FAC)" }} />
+
       {/* ── Services-to-HowItWorks transition ── */}
-      <div style={{ background: "linear-gradient(to bottom, #FAFBFC, #FFFFFF)", height: "40px" }} />
+      <div style={{ background: "linear-gradient(to bottom, #F0EDE6, #FFFFFF)", height: "48px" }} />
 
       {/* ── How It Works ── */}
       <section className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #FFFFFF 0%, #F8F6F1 100%)" }}>
@@ -618,10 +621,14 @@ export default function Home() {
       </section>
 
       {/* ── HowItWorks-to-Stats transition ── */}
-      <div style={{ background: "linear-gradient(to bottom, #F8F6F1 0%, #0F2847 100%)", height: "80px" }} />
+      <div style={{ background: "linear-gradient(to bottom, #F8F6F1, #0F2847)", height: "60px" }} />
 
       {/* ── Stats Bar ── */}
       <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0B2040 0%, #0F2847 50%, #132E54 100%)" }}>
+        {/* Top edge accent */}
+        <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(to right, transparent, rgba(217,164,65,0.3), transparent)" }} />
+        {/* Bottom edge accent */}
+        <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: "linear-gradient(to right, transparent, rgba(217,164,65,0.3), transparent)" }} />
         {/* Subtle glow */}
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 50% 100% at 50% 50%, rgba(224,123,45,0.06) 0%, transparent 70%)" }} />
 
@@ -645,7 +652,7 @@ export default function Home() {
       </section>
 
       {/* ── Stats-to-Reviews transition ── */}
-      <div style={{ background: "linear-gradient(to bottom, #132E54 0%, #2a4a6a 25%, #8a7a60 60%, #F4EEE3 100%)", height: "80px" }} />
+      <div style={{ background: "linear-gradient(to bottom, #132E54, #F4EEE3)", height: "60px" }} />
 
       {/* ── Reviews ── */}
       <section className="overflow-hidden" style={{ background: "linear-gradient(180deg, #F4EEE3 0%, #FBF5EB 40%, #F4EEE3 100%)" }}>
@@ -715,11 +722,14 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── Hull stripe separator ── */}
+      <div className="h-[3px]" style={{ background: "linear-gradient(to right, #1A5FAC, #E07B2D, #D9A441, #1A5FAC)" }} />
+
       {/* ── Reviews-to-Trust transition ── */}
-      <div style={{ background: "linear-gradient(to bottom, #F4EEE3, #FFFFFF)", height: "40px" }} />
+      <div style={{ background: "linear-gradient(to bottom, #F4EEE3, #F8F6F1)", height: "40px" }} />
 
       {/* ── Trust Bar (inline) ── */}
-      <section className="relative" style={{ background: "linear-gradient(180deg, #FFFFFF 0%, #FAFBFC 100%)" }}>
+      <section className="relative" style={{ background: "linear-gradient(180deg, #F8F6F1 0%, #FFFFFF 50%, #F8F6F1 100%)" }}>
         <div className="section-inner px-4 lg:px-6 py-12">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-0">
             {[
@@ -750,12 +760,12 @@ export default function Home() {
       </section>
 
       {/* ── Trust-to-CTA transition ── */}
-      <div style={{ background: "linear-gradient(to bottom, #FAFBFC 0%, #1a3a5e 50%, #0F2847 100%)", height: "80px" }} />
+      <div style={{ background: "linear-gradient(to bottom, #F8F6F1, #0F2847)", height: "60px" }} />
 
       {/* ── CTA ── */}
       <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0A1C38 0%, #0F2847 40%, #132E54 100%)" }}>
         {/* Atmospheric glow */}
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 80% at 50% 50%, rgba(224,123,45,0.08) 0%, transparent 60%)" }} />
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 80% at 50% 50%, rgba(224,123,45,0.10) 0%, transparent 60%)" }} />
 
         {/* Badge watermark echo */}
         <img
@@ -768,14 +778,14 @@ export default function Home() {
         {/* Gold accent line */}
         <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: "linear-gradient(to right, transparent, #D9A441, transparent)" }} />
 
-        <div className="section-inner px-4 lg:px-6 py-12 md:py-16 text-center relative z-10">
+        <div className="section-inner px-4 lg:px-6 py-14 md:py-20 text-center relative z-10">
           <p className="text-[13px] uppercase font-bold text-[#D9A441] tracking-[1.5px] mb-3">
             Ready?
           </p>
-          <h2 className="text-[30px] md:text-[38px] font-extrabold text-white mb-3">
+          <h2 className="text-[32px] md:text-[42px] font-extrabold text-white mb-4" style={{ textShadow: "0 2px 20px rgba(0,0,0,0.3)" }}>
             Skip the shop.
           </h2>
-          <p className="text-[15px] text-white/65 mb-8 mx-auto max-w-[460px]">
+          <p className="text-[16px] text-white/65 mb-10 mx-auto max-w-[460px]">
             Book your mobile service today. Most appointments available within
             the week.
           </p>
