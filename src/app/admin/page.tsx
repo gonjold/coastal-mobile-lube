@@ -186,7 +186,7 @@ function generateGCalUrl(booking: Booking): string {
   const details = encodeURIComponent(
     `Service: ${booking.service || "TBD"}\nCustomer: ${booking.name || "N/A"}\nPhone: ${booking.phone || "N/A"}\nEmail: ${booking.email || "N/A"}\nContact Pref: ${booking.contactPreference || "N/A"}\nSource: ${booking.source || "N/A"}\nArrival: ${booking.confirmedArrivalWindow || "TBD"}\nNotes: ${booking.notes || "None"}\nAdmin: https://coastal-mobile-lube.netlify.app/admin`
   );
-  const location = encodeURIComponent(booking.address || booking.zip || "Tampa, FL");
+  const location = encodeURIComponent(booking.address || booking.zip || "Apollo Beach, FL");
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDate}/${endDate}&details=${details}&location=${location}`;
 }
 

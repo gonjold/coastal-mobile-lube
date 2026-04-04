@@ -32,7 +32,7 @@ const serviceAreas = [
   {
     name: "Sun City",
     description:
-      "Nestled between Ruskin and Wimauma, Sun City homeowners count on us for hassle-free vehicle maintenance. No appointment drop-offs, no waiting rooms. Just quality service in your driveway.",
+      "Nestled between Ruskin and Wimauma, Sun City homeowners count on us for convenient vehicle maintenance. No appointment drop-offs, no waiting rooms. Just quality service in your driveway.",
   },
   {
     name: "Fish Hawk",

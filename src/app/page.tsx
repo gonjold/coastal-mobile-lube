@@ -330,7 +330,7 @@ export default function Home() {
                         </label>
                         <input
                           type="text"
-                          placeholder="e.g. 33601"
+                          placeholder="e.g. 33572"
                           className={inputClasses}
                           value={zipValue}
                           onChange={(e) => setZipValue(e.target.value)}

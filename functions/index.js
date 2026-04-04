@@ -176,7 +176,7 @@ function buildGoogleCalendarUrl(booking) {
   const date = booking.confirmedDate || booking.preferredDate;
   if (!date) return null;
   const title = `Coastal Mobile - ${booking.service || "Service Appointment"}`;
-  const location = booking.address || (booking.zip ? `${booking.zip}, Tampa, FL` : "Tampa, FL");
+  const location = booking.address || (booking.zip ? `${booking.zip}, Apollo Beach, FL` : "Apollo Beach, FL");
   const description = `Service: ${booking.service || "TBD"}\n\nNeed to reschedule? Call 813-722-LUBE`;
   const parsed = parseArrivalWindow(booking.confirmedArrivalWindow);
   const dateClean = date.replace(/-/g, "");
@@ -236,7 +236,7 @@ exports.sendConfirmationEmail = onRequest(
     const displayTime = booking.confirmedArrivalWindow || booking.timeWindow || null;
     const displayDuration = booking.estimatedDuration || null;
     const calendarUrl = buildGoogleCalendarUrl(booking);
-    const locationDisplay = booking.address || (booking.zip ? `${booking.zip}, Tampa, FL` : null);
+    const locationDisplay = booking.address || (booking.zip ? `${booking.zip}, Apollo Beach, FL` : null);
 
     const customerHtml = `
       <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
