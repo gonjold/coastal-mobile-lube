@@ -1,302 +1,29 @@
 "use client";
 
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import { db } from "@/lib/firebase";
-import AdminAuthGuard from "@/components/AdminAuthGuard";
+import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import {
-  collection,
-  onSnapshot,
-  orderBy,
-  query,
-  doc,
-  updateDoc,
-  deleteDoc,
-  addDoc,
-  serverTimestamp,
-  arrayUnion,
-} from "firebase/firestore";
-import ToastContainer, { type ToastItem } from "./Toast";
-import CommsLog from "./CommsLog";
-import NotificationButtons from "./NotificationButtons";
+  type Booking,
+  formatPhone,
+  formatTimestamp,
+  getStatusStyle,
+  getSourceLabel,
+  buildCustomerList,
+  toISODate,
+} from "./shared";
 
-/* ─── Types ──────────────────────────────────────────────── */
-
-interface Booking {
-  id: string;
-  name?: string;
-  phone?: string;
-  email?: string;
-  contactPreference?: string;
-  service?: string;
-  serviceCategory?: string;
-  source?: string;
-  status?: string;
-  address?: string;
-  preferredDate?: string;
-  datesFlexible?: boolean;
-  timeWindow?: string;
-  zip?: string;
-  notes?: string;
-  fleetSize?: string;
-  engineType?: string;
-  engineCount?: string;
-  adminNotes?: string;
-  commsLog?: Array<{ id: string; type: "call" | "text" | "email" | "note"; direction: "outbound" | "inbound"; summary: string; createdAt: string; createdBy: string }>;
-  confirmedDate?: string;
-  confirmedArrivalWindow?: string;
-  estimatedDuration?: string;
-  confirmedAt?: FirestoreTimestamp;
-  cancelledAt?: FirestoreTimestamp;
-  returningCustomer?: boolean;
-  createdAt?: FirestoreTimestamp;
-  updatedAt?: FirestoreTimestamp;
-  lastViewedAt?: FirestoreTimestamp;
-}
-
-interface FirestoreTimestamp {
-  toDate: () => Date;
-}
-
-/* ─── Helpers ────────────────────────────────────────────── */
-
-function formatPhone(phone?: string): string {
-  if (!phone) return "—";
-  const d = phone.replace(/\D/g, "");
-  if (d.length === 10)
-    return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
-  return phone;
-}
-
-function formatTimestamp(ts?: FirestoreTimestamp): string {
-  if (!ts) return "—";
-  const d = ts.toDate ? ts.toDate() : new Date(ts as unknown as string);
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
-function toISODate(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function getBookingCalendarDate(b: Booking): string | null {
-  if ((b.status === "confirmed" || b.status === "completed") && b.confirmedDate) return b.confirmedDate;
-  if (b.preferredDate) return b.preferredDate;
-  if (b.createdAt?.toDate) return toISODate(b.createdAt.toDate());
-  return null;
-}
-
-function getSourceLabel(source?: string): { label: string; color: string } {
-  switch (source) {
-    case "homepage-widget":
-      return { label: "Homepage", color: "bg-[#1A5FAC]" };
-    case "website":
-      return { label: "Book Page", color: "bg-[#1A5FAC]" };
-    case "fleet-page":
-      return { label: "Fleet", color: "bg-[#16a34a]" };
-    case "marine-page":
-      return { label: "Marine", color: "bg-[#7c3aed]" };
-    case "admin-manual":
-      return { label: "Manual", color: "bg-[#0D8A8F]" };
-    default:
-      return { label: source || "—", color: "bg-[#888]" };
-  }
-}
-
-function getStatusStyle(status?: string) {
-  switch (status) {
-    case "pending":
-      return { label: "Pending", cls: "bg-[#E07B2D] text-white" };
-    case "confirmed":
-      return { label: "Confirmed", cls: "bg-[#1A5FAC] text-white" };
-    case "completed":
-      return { label: "Completed", cls: "bg-[#16a34a] text-white" };
-    case "cancelled":
-      return { label: "Cancelled", cls: "bg-[#999] text-white" };
-    default:
-      return { label: status || "—", cls: "bg-[#eee] text-[#444]" };
-  }
-}
-
-function getCalendarDays(year: number, month: number): (number | null)[] {
-  const startDow = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const days: (number | null)[] = [];
-  for (let i = 0; i < startDow; i++) days.push(null);
-  for (let d = 1; d <= daysInMonth; d++) days.push(d);
-  while (days.length % 7 !== 0) days.push(null);
-  return days;
-}
-
-function formatTimeWindow(tw?: string): string | undefined {
-  if (!tw) return undefined;
-  const labels: Record<string, string> = {
-    "early-morning": "Early Morning (7-9)",
-    "earlyMorning": "Early Morning (7-9)",
-    "morning": "Morning (9-11)",
-    "midday": "Midday (11-1)",
-    "afternoon": "Afternoon (1-3)",
-    "late-afternoon": "Late Afternoon (3-5)",
-    "lateAfternoon": "Late Afternoon (3-5)",
-  };
-  return labels[tw] || tw;
-}
-
-function isNewBooking(b: Booking): boolean {
-  if (b.status !== "pending") return false;
-  if (!b.createdAt?.toDate) return false;
-  const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
-  return b.createdAt.toDate().getTime() > twoHoursAgo;
-}
-
-function parseArrivalWindowHours(window: string): { start: number; end: number } {
-  const hourMap: Record<string, { start: number; end: number }> = {
-    "8:00 - 9:00 AM": { start: 8, end: 9 },
-    "9:00 - 10:00 AM": { start: 9, end: 10 },
-    "10:00 - 11:00 AM": { start: 10, end: 11 },
-    "11:00 AM - 12:00 PM": { start: 11, end: 12 },
-    "12:00 - 1:00 PM": { start: 12, end: 13 },
-    "1:00 - 2:00 PM": { start: 13, end: 14 },
-    "2:00 - 3:00 PM": { start: 14, end: 15 },
-    "3:00 - 4:00 PM": { start: 15, end: 16 },
-    "4:00 - 5:00 PM": { start: 16, end: 17 },
-  };
-  return hourMap[window] || { start: 9, end: 10 };
-}
-
-function generateGCalUrl(booking: Booking): string {
-  const title = encodeURIComponent(`Coastal Mobile - ${booking.service || "Service"} - ${booking.name || "Customer"}`);
-  const dateStr = booking.confirmedDate || booking.preferredDate || new Date(Date.now() + 86400000).toISOString().split("T")[0];
-  let startHour = 9;
-  let endHour = 10;
-  if (booking.confirmedArrivalWindow) {
-    const parsed = parseArrivalWindowHours(booking.confirmedArrivalWindow);
-    startHour = parsed.start;
-    endHour = parsed.end;
-  } else {
-    if (booking.timeWindow === "midday") { startHour = 11; endHour = 12; }
-    if (booking.timeWindow === "afternoon") { startHour = 14; endHour = 15; }
-  }
-  const startDate = dateStr.replace(/-/g, "") + "T" + String(startHour).padStart(2, "0") + "0000";
-  const endDate = dateStr.replace(/-/g, "") + "T" + String(endHour).padStart(2, "0") + "0000";
-  const details = encodeURIComponent(
-    `Service: ${booking.service || "TBD"}\nCustomer: ${booking.name || "N/A"}\nPhone: ${booking.phone || "N/A"}\nEmail: ${booking.email || "N/A"}\nContact Pref: ${booking.contactPreference || "N/A"}\nSource: ${booking.source || "N/A"}\nArrival: ${booking.confirmedArrivalWindow || "TBD"}\nNotes: ${booking.notes || "None"}\nAdmin: https://coastal-mobile-lube.netlify.app/admin`
-  );
-  const location = encodeURIComponent(booking.address || booking.zip || "Apollo Beach, FL");
-  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDate}/${endDate}&details=${details}&location=${location}`;
-}
-
-/* ─── CSV Export ─────────────────────────────────────────── */
-
-function escapeCsvField(value: string): string {
-  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
-}
-
-function downloadCsv(filename: string, rows: string[][]) {
-  const csv = rows.map((r) => r.map(escapeCsvField).join(",")).join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function exportBookingsCsv(bookings: Booking[]) {
-  const header = ["Date", "Customer", "Phone", "Email", "Service", "Source", "Status", "Notes", "Created"];
-  const rows = bookings.map((b) => [
-    b.preferredDate || b.confirmedDate || "—",
-    b.name || "—",
-    b.phone || "—",
-    b.email || "—",
-    b.service || "—",
-    b.source || "—",
-    b.status || "—",
-    b.notes || "",
-    b.createdAt?.toDate ? b.createdAt.toDate().toISOString() : "—",
-  ]);
-  downloadCsv(`bookings-${toISODate(new Date())}.csv`, [header, ...rows]);
-}
-
-function exportCustomersCsv(bookings: Booking[]) {
-  const customers = buildCustomerList(bookings);
-  const header = ["Name", "Phone", "Email", "Total Bookings", "Last Booking"];
-  const rows = customers.map((c) => [
-    c.name,
-    c.phone || "—",
-    c.email || "—",
-    String(c.totalBookings),
-    c.lastBookingDate,
-  ]);
-  downloadCsv(`customers-${toISODate(new Date())}.csv`, [header, ...rows]);
-}
-
-/* ─── Component ──────────────────────────────────────────── */
-
-export default function AdminDashboard() {
+export default function AdminHome() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
-  /* Filters */
-  const [sourceFilter, setSourceFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [dateFrom, setDateFrom] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 30);
-    return toISODate(d);
-  });
-  const [dateTo, setDateTo] = useState(() => toISODate(new Date()));
-
-  /* View */
-  const [viewMode, setViewMode] = useState<"list" | "calendar" | "customers">("list");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-
-  /* Set Appointment */
-  const [settingAppointmentId, setSettingAppointmentId] = useState<string | null>(null);
-
-  /* Calendar */
-  const [calendarDate, setCalendarDate] = useState(new Date());
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
-
-  /* Cancel / Delete confirmation */
-  const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-
-  /* Admin notes */
-  const [editingNotes, setEditingNotes] = useState<Record<string, string>>({});
-  const [savingNotes, setSavingNotes] = useState<Record<string, boolean>>({});
-
-  /* Toasts */
-  const [toasts, setToasts] = useState<ToastItem[]>([]);
-  function addToast(message: string, type: "success" | "info" = "success", action?: { label: string; url: string }) {
-    const id = crypto.randomUUID();
-    setToasts((prev) => [...prev, { id, message, type, action }]);
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3000);
-  }
-  function removeToast(id: string) {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }
-
-  /* ── Firestore real-time listener ── */
   useEffect(() => {
-    const q = query(
-      collection(db, "bookings"),
-      orderBy("createdAt", "desc")
-    );
+    const q = query(collection(db, "bookings"), orderBy("createdAt", "desc"));
     const unsub = onSnapshot(
       q,
       (snap) => {
-        setBookings(
-          snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Booking)
-        );
+        setBookings(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Booking));
         setLoading(false);
       },
       () => setLoading(false)
@@ -304,220 +31,28 @@ export default function AdminDashboard() {
     return () => unsub();
   }, []);
 
-  /* ── Client-side filtering ── */
-  const filtered = bookings.filter((b) => {
-    if (sourceFilter !== "all") {
-      if (sourceFilter === "automotive") {
-        if (b.serviceCategory !== "automotive" && b.source !== "website")
-          return false;
-      } else if (sourceFilter === "fleet") {
-        if (b.serviceCategory !== "fleet") return false;
-      } else if (sourceFilter === "marine") {
-        if (b.serviceCategory !== "marine") return false;
-      }
-    }
-    if (statusFilter !== "all" && b.status !== statusFilter) return false;
-    if (b.createdAt?.toDate) {
-      const created = b.createdAt.toDate();
-      if (created < new Date(dateFrom + "T00:00:00")) return false;
-      if (created > new Date(dateTo + "T23:59:59")) return false;
-    }
-    return true;
-  });
+  /* ── Computed stats ── */
+  const totalBookings = bookings.length;
+  const pendingCount = bookings.filter((b) => b.status === "pending").length;
+  const customers = buildCustomerList(bookings);
+  const totalCustomers = customers.length;
 
-  /* ── Sort: NEW pending → pending → confirmed → completed → cancelled ── */
-  filtered.sort((a, b) => {
-    const priority = (bk: Booking) => {
-      if (isNewBooking(bk)) return 0;
-      if (bk.status === "pending") return 1;
-      if (bk.status === "confirmed") return 2;
-      if (bk.status === "cancelled") return 4;
-      return 3;
-    };
-    const diff = priority(a) - priority(b);
-    if (diff !== 0) return diff;
-    const aTime = a.createdAt?.toDate?.()?.getTime() ?? 0;
-    const bTime = b.createdAt?.toDate?.()?.getTime() ?? 0;
-    return bTime - aTime;
-  });
+  // This week
+  const now = new Date();
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay());
+  startOfWeek.setHours(0, 0, 0, 0);
+  const weeklyBookings = bookings.filter((b) => {
+    if (!b.createdAt?.toDate) return false;
+    return b.createdAt.toDate() >= startOfWeek;
+  }).length;
 
-  /* ── Stats (unfiltered) ── */
-  const cancelled = bookings.filter((b) => b.status === "cancelled").length;
-  const stats = {
-    total: bookings.length - cancelled,
-    pending: bookings.filter((b) => b.status === "pending").length,
-    confirmed: bookings.filter((b) => b.status === "confirmed").length,
-    completed: bookings.filter((b) => b.status === "completed").length,
-    cancelled,
-  };
+  // Recent 5 bookings
+  const recent = bookings.slice(0, 5);
 
-  /* ── Status update (optimistic) ── */
-  async function updateStatus(id: string, newStatus: string, booking?: Booking) {
-    setBookings((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, status: newStatus } : b))
-    );
-    try {
-      if (newStatus === "confirmed" && booking) {
-        const entry = {
-          id: crypto.randomUUID(),
-          type: "note" as const,
-          direction: "outbound" as const,
-          summary: "Booking confirmed",
-          createdAt: new Date().toISOString(),
-          createdBy: "admin",
-        };
-        await updateDoc(doc(db, "bookings", id), {
-          status: newStatus,
-          commsLog: arrayUnion(entry),
-          updatedAt: serverTimestamp(),
-        });
-        const calUrl = generateGCalUrl(booking);
-        addToast("Booking confirmed!", "success", { label: "Add to Calendar", url: calUrl });
-      } else {
-        await updateDoc(doc(db, "bookings", id), {
-          status: newStatus,
-          updatedAt: serverTimestamp(),
-        });
-      }
-    } catch {
-      /* onSnapshot will correct */
-    }
-  }
+  // Activity detail expansion
+  const [expandedActivity, setExpandedActivity] = useState<string | null>(null);
 
-  /* ── Confirm appointment (Set Appointment flow) ── */
-  async function confirmAppointment(
-    id: string,
-    booking: Booking,
-    confirmedDate: string,
-    confirmedArrivalWindow: string,
-    estimatedDuration: string
-  ) {
-    const entry = {
-      id: crypto.randomUUID(),
-      type: "note" as const,
-      direction: "outbound" as const,
-      summary: `Appointment confirmed for ${confirmedDate} ${confirmedArrivalWindow}`,
-      createdAt: new Date().toISOString(),
-      createdBy: "admin",
-    };
-    setBookings((prev) =>
-      prev.map((b) =>
-        b.id === id
-          ? { ...b, status: "confirmed", confirmedDate, confirmedArrivalWindow, estimatedDuration }
-          : b
-      )
-    );
-    try {
-      await updateDoc(doc(db, "bookings", id), {
-        status: "confirmed",
-        confirmedDate,
-        confirmedArrivalWindow,
-        estimatedDuration,
-        confirmedAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        commsLog: arrayUnion(entry),
-      });
-      const updatedBooking = { ...booking, confirmedDate, confirmedArrivalWindow, estimatedDuration };
-      const calUrl = generateGCalUrl(updatedBooking);
-      addToast(`Appointment set for ${confirmedDate} at ${confirmedArrivalWindow}`, "success", { label: "Add to Calendar", url: calUrl });
-      // Auto-send confirmation email (B5)
-      if (booking.email) {
-        try {
-          await fetch("https://us-east1-coastal-mobile-lube.cloudfunctions.net/sendConfirmationEmail", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ booking: updatedBooking, bookingId: id }),
-          });
-          addToast(`Confirmation email sent to ${booking.email}`, "success");
-        } catch {
-          /* email send failed silently */
-        }
-      } else {
-        addToast("Appointment confirmed. No email on file - contact customer manually.", "info");
-      }
-    } catch {
-      /* onSnapshot will correct */
-    }
-    setSettingAppointmentId(null);
-  }
-
-  /* ── Save admin notes ── */
-  async function saveAdminNotes(id: string) {
-    setSavingNotes((p) => ({ ...p, [id]: true }));
-    try {
-      await updateDoc(doc(db, "bookings", id), {
-        adminNotes: editingNotes[id] ?? "",
-        updatedAt: serverTimestamp(),
-      });
-      addToast("Notes saved");
-    } catch {
-      /* silent */
-    } finally {
-      setSavingNotes((p) => ({ ...p, [id]: false }));
-    }
-  }
-
-  /* ── Cancel booking ── */
-  async function cancelBooking(id: string) {
-    setCancelConfirmId(null);
-    setBookings((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, status: "cancelled" } : b))
-    );
-    try {
-      const entry = {
-        id: crypto.randomUUID(),
-        type: "note" as const,
-        direction: "outbound" as const,
-        summary: "Booking cancelled",
-        createdAt: new Date().toISOString(),
-        createdBy: "admin",
-      };
-      await updateDoc(doc(db, "bookings", id), {
-        status: "cancelled",
-        cancelledAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        commsLog: arrayUnion(entry),
-      });
-      addToast("Booking cancelled");
-    } catch {
-      /* onSnapshot will correct */
-    }
-  }
-
-  /* ── Delete booking ── */
-  async function deleteBooking(id: string) {
-    setDeleteConfirmId(null);
-    setBookings((prev) => prev.filter((b) => b.id !== id));
-    if (expandedId === id) setExpandedId(null);
-    try {
-      await deleteDoc(doc(db, "bookings", id));
-      addToast("Booking deleted");
-    } catch {
-      /* onSnapshot will correct */
-    }
-  }
-
-  /* ── Calendar data ── */
-  const calYear = calendarDate.getFullYear();
-  const calMonth = calendarDate.getMonth();
-  const calDays = getCalendarDays(calYear, calMonth);
-  const monthLabel = calendarDate.toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
-  });
-
-  const bookingsByDate: Record<string, Booking[]> = {};
-  filtered.forEach((b) => {
-    const d = getBookingCalendarDate(b);
-    if (d) {
-      if (!bookingsByDate[d]) bookingsByDate[d] = [];
-      bookingsByDate[d].push(b);
-    }
-  });
-
-  const todayISO = toISODate(new Date());
-
-  /* ── Loading state ── */
   if (loading) {
     return (
       <div className="flex items-center justify-center py-32">
@@ -526,1320 +61,266 @@ export default function AdminDashboard() {
     );
   }
 
-  /* ── Render ── */
   return (
-    <AdminAuthGuard>
-    <div className="px-4 lg:px-8 py-6 max-w-[1400px] mx-auto">
-      {/* ═══ Stats ═══ */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-        {(
-          [
-            { label: "Active Bookings", value: stats.total, color: "text-[#0B2040]" },
-            { label: "Pending", value: stats.pending, color: "text-[#E07B2D]" },
-            { label: "Confirmed", value: stats.confirmed, color: "text-[#1A5FAC]" },
-            { label: "Completed", value: stats.completed, color: "text-[#16a34a]" },
-            { label: "Cancelled", value: stats.cancelled, color: "text-[#999]" },
-          ] as const
-        ).map((s) => (
-          <div
-            key={s.label}
-            className="bg-white border border-[#e8e8e8] rounded-[12px] p-5"
-          >
-            <p className={`text-[32px] font-[800] ${s.color}`}>{s.value}</p>
-            <p className="text-[13px] text-[#888] font-medium">{s.label}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* ═══ Filters ═══ */}
-      <div className="flex flex-wrap items-end gap-4 mb-6">
-        {/* Source */}
-        <div>
-          <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
-            Source
-          </label>
-          <div className="flex rounded-lg overflow-hidden border border-[#e8e8e8]">
-            {["all", "automotive", "fleet", "marine"].map((v) => (
-              <button
-                key={v}
-                onClick={() => setSourceFilter(v)}
-                className={`px-3 py-2 text-[13px] font-semibold transition-colors ${
-                  sourceFilter === v
-                    ? "bg-[#0B2040] text-white"
-                    : "bg-white text-[#444] hover:bg-[#f5f5f5]"
-                }`}
-              >
-                {v.charAt(0).toUpperCase() + v.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
-        {/* Status */}
-        <div>
-          <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
-            Status
-          </label>
-          <div className="flex rounded-lg overflow-hidden border border-[#e8e8e8]">
-            {["all", "pending", "confirmed", "completed", "cancelled"].map((v) => (
-              <button
-                key={v}
-                onClick={() => setStatusFilter(v)}
-                className={`px-3 py-2 text-[13px] font-semibold transition-colors ${
-                  statusFilter === v
-                    ? "bg-[#0B2040] text-white"
-                    : "bg-white text-[#444] hover:bg-[#f5f5f5]"
-                }`}
-              >
-                {v.charAt(0).toUpperCase() + v.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
-        {/* Date range */}
-        <div>
-          <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
-            From
-          </label>
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className="text-[13px] rounded-lg px-3 py-2 border border-[#e8e8e8] outline-none focus:border-[#1A5FAC]"
-          />
-        </div>
-        <div>
-          <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
-            To
-          </label>
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="text-[13px] rounded-lg px-3 py-2 border border-[#e8e8e8] outline-none focus:border-[#1A5FAC]"
-          />
-        </div>
-      </div>
-
-      {/* ═══ View toggle + count ═══ */}
-      <div className="flex items-center justify-between mb-4">
+    <div className="px-4 lg:px-8 py-6 max-w-[1200px] mx-auto">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-[26px] font-[800] text-[#0B2040] mb-1">Dashboard</h1>
         <p className="text-[14px] text-[#888]">
-          Showing{" "}
-          <span className="font-semibold text-[#0B2040]">
-            {filtered.length}
-          </span>{" "}
-          booking{filtered.length !== 1 ? "s" : ""}
+          {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
         </p>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() =>
-              viewMode === "customers"
-                ? exportCustomersCsv(bookings)
-                : exportBookingsCsv(filtered)
-            }
-            className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-semibold border border-[#e8e8e8] rounded-lg text-[#444] bg-white hover:bg-[#f5f5f5] transition-colors"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            Export CSV
-          </button>
-          <div className="flex rounded-lg overflow-hidden border border-[#e8e8e8]">
-            {(
-              [
-                { key: "list", label: "List View" },
-                { key: "calendar", label: "Calendar View" },
-                { key: "customers", label: "Customers" },
-              ] as const
-            ).map((v) => (
-              <button
-                key={v.key}
-                onClick={() => setViewMode(v.key)}
-                className={`px-4 py-2 text-[13px] font-semibold transition-colors ${
-                  viewMode === v.key
-                    ? "bg-[#0B2040] text-white"
-                    : "bg-white text-[#444] hover:bg-[#f5f5f5]"
-                }`}
-              >
-                {v.label}
-              </button>
-            ))}
+      </div>
+
+      {/* ═══ TOP ROW - Quick Stats ═══ */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* Total Bookings */}
+        <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-[10px] bg-[#EBF4FF] flex items-center justify-center">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1A5FAC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+            </div>
           </div>
+          <p className="text-[32px] font-[800] text-[#0B2040] leading-none mb-1">{totalBookings}</p>
+          <p className="text-[13px] text-[#888] font-medium">Total Bookings</p>
+        </div>
+
+        {/* This Week */}
+        <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-[10px] bg-[#F0FAF0] flex items-center justify-center">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                <polyline points="17 6 23 6 23 12" />
+              </svg>
+            </div>
+          </div>
+          <p className="text-[32px] font-[800] text-[#16a34a] leading-none mb-1">{weeklyBookings}</p>
+          <p className="text-[13px] text-[#888] font-medium">This Week</p>
+        </div>
+
+        {/* Pending */}
+        <div className="bg-white border-2 border-[#E07B2D]/30 rounded-[12px] p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-[10px] bg-[#FFF8F0] flex items-center justify-center">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E07B2D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            </div>
+          </div>
+          <p className="text-[32px] font-[800] text-[#E07B2D] leading-none mb-1">{pendingCount}</p>
+          <p className="text-[13px] text-[#E07B2D] font-semibold">Pending</p>
+        </div>
+
+        {/* Total Customers */}
+        <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-[10px] bg-[#F5F0FF] flex items-center justify-center">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            </div>
+          </div>
+          <p className="text-[32px] font-[800] text-[#7c3aed] leading-none mb-1">{totalCustomers}</p>
+          <p className="text-[13px] text-[#888] font-medium">Total Customers</p>
         </div>
       </div>
 
-      {/* ═══ Empty state ═══ */}
-      {filtered.length === 0 ? (
-        <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-16 text-center">
-          <div className="w-16 h-16 rounded-full bg-[#f5f5f5] flex items-center justify-center mx-auto mb-4">
-            <svg
-              width="28"
-              height="28"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#888"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+      {/* ═══ NAVIGATION CARDS ═══ */}
+      <h2 className="text-[16px] font-bold text-[#0B2040] mb-4">Manage</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+        {/* Schedule */}
+        <Link
+          href="/admin/schedule"
+          className="group bg-white border border-[#e8e8e8] rounded-[12px] p-5 hover:border-[#1A5FAC] hover:shadow-md transition-all"
+        >
+          <div className="w-11 h-11 rounded-[10px] bg-[#EBF4FF] flex items-center justify-center mb-4 group-hover:bg-[#1A5FAC] transition-colors">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1A5FAC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:stroke-white transition-colors">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
               <line x1="16" y1="2" x2="16" y2="6" />
               <line x1="8" y1="2" x2="8" y2="6" />
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
           </div>
-          <h3 className="text-[18px] font-bold text-[#0B2040] mb-2">
-            No bookings yet
-          </h3>
-          <p className="text-[14px] text-[#888]">
-            Bookings from the website will appear here automatically.
-          </p>
-        </div>
-      ) : viewMode === "list" ? (
-        /* ═══ LIST VIEW ═══ */
-        <div className="bg-white border border-[#e8e8e8] rounded-[12px] overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-[#eee]">
-                  {[
-                    "Date",
-                    "Customer",
-                    "Phone",
-                    "Service",
-                    "Source",
-                    "Status",
-                    "Actions",
-                  ].map((h) => (
-                    <th
-                      key={h}
-                      className="px-4 py-3 text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] whitespace-nowrap"
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((b) => {
-                  const source = getSourceLabel(b.source);
-                  const status = getStatusStyle(b.status);
-                  const isExpanded = expandedId === b.id;
-                  const bIsNew = isNewBooking(b);
-                  return (
-                    <Fragment key={b.id}>
-                      <tr
-                        onClick={() => {
-                          setExpandedId(isExpanded ? null : b.id);
-                          if (!isExpanded) {
-                            updateDoc(doc(db, "bookings", b.id), { lastViewedAt: serverTimestamp() }).catch(() => {});
-                          }
-                        }}
-                        className={`border-b border-[#f0f0f0] cursor-pointer transition-colors ${
-                          bIsNew
-                            ? "bg-[#FFF8F0] border-l-4 border-l-[#E07B2D]"
-                            : isExpanded ? "bg-[#FAFBFC]" : "hover:bg-[#FAFBFC]"
-                        }`}
-                      >
-                        <td className="px-4 py-3 text-[13px] text-[#444] whitespace-nowrap">
-                          {formatTimestamp(b.createdAt)}
-                        </td>
-                        <td className="px-4 py-3 text-[14px] font-semibold text-[#0B2040] whitespace-nowrap">
-                          {b.name || "—"}
-                          {bIsNew && (
-                            <span className="ml-2 inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold text-white bg-[#E07B2D]">NEW</span>
-                          )}
-                          {b.datesFlexible && (
-                            <span className="ml-2 inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold text-[#888] bg-[#f0f0f0]">Flexible</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-[13px] whitespace-nowrap">
-                          {b.phone ? (
-                            <a
-                              href={`tel:${b.phone}`}
-                              className="text-[#1A5FAC] hover:underline"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {formatPhone(b.phone)}
-                            </a>
-                          ) : (
-                            "—"
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-[13px] text-[#444] whitespace-nowrap max-w-[180px] truncate">
-                          {b.service || "—"}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span
-                            className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold text-white ${source.color}`}
-                          >
-                            {source.label}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span
-                            className={`inline-block px-3 py-1 rounded-full text-[11px] font-semibold ${status.cls}`}
-                          >
-                            {status.label}
-                          </span>
-                        </td>
-                        <td
-                          className="px-4 py-3 whitespace-nowrap"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <StatusActions
-                            status={b.status}
-                            onConfirm={() => {
-                              setSettingAppointmentId(b.id);
-                              setExpandedId(b.id);
-                            }}
-                            onComplete={() => updateStatus(b.id, "completed")}
-                            onCancel={() => setCancelConfirmId(b.id)}
-                            onDelete={() => setDeleteConfirmId(b.id)}
-                          />
-                        </td>
-                      </tr>
+          <h3 className="text-[15px] font-bold text-[#0B2040] mb-1">Schedule</h3>
+          <p className="text-[13px] text-[#888] leading-snug">View calendar, incoming bookings, and appointments</p>
+        </Link>
 
-                      {/* ── Expanded detail ── */}
-                      {isExpanded && (
-                        <tr>
-                          <td colSpan={10} className="p-0">
-                            <ExpandedDetail
-                              booking={b}
-                              editingNotes={editingNotes}
-                              savingNotes={savingNotes}
-                              onNotesChange={(val) =>
-                                setEditingNotes((p) => ({
-                                  ...p,
-                                  [b.id]: val,
-                                }))
-                              }
-                              onSaveNotes={() => saveAdminNotes(b.id)}
-                              onToast={addToast}
-                              showAppointmentSetter={settingAppointmentId === b.id}
-                              onConfirmAppointment={(date, window, duration) =>
-                                confirmAppointment(b.id, b, date, window, duration)
-                              }
-                              onCancelAppointmentSetter={() => setSettingAppointmentId(null)}
-                            />
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
+        {/* Customers */}
+        <Link
+          href="/admin/customers"
+          className="group bg-white border border-[#e8e8e8] rounded-[12px] p-5 hover:border-[#7c3aed] hover:shadow-md transition-all"
+        >
+          <div className="w-11 h-11 rounded-[10px] bg-[#F5F0FF] flex items-center justify-center mb-4 group-hover:bg-[#7c3aed] transition-colors">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:stroke-white transition-colors">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
           </div>
-        </div>
-      ) : viewMode === "calendar" ? (
-        /* ═══ CALENDAR VIEW ═══ */
-        <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-6">
-          {/* Month navigation */}
-          <div className="flex items-center justify-between mb-6">
-            <button
-              onClick={() => {
-                setCalendarDate(new Date(calYear, calMonth - 1, 1));
-                setSelectedDay(null);
-              }}
-              className="px-3 py-2 text-[14px] font-semibold text-[#444] hover:text-[#0B2040] transition-colors"
-            >
-              &larr; Previous
-            </button>
-            <h3 className="text-[18px] font-bold text-[#0B2040]">
-              {monthLabel}
-            </h3>
-            <button
-              onClick={() => {
-                setCalendarDate(new Date(calYear, calMonth + 1, 1));
-                setSelectedDay(null);
-              }}
-              className="px-3 py-2 text-[14px] font-semibold text-[#444] hover:text-[#0B2040] transition-colors"
-            >
-              Next &rarr;
-            </button>
-          </div>
+          <h3 className="text-[15px] font-bold text-[#0B2040] mb-1">Customers</h3>
+          <p className="text-[13px] text-[#888] leading-snug">Customer database, history, and notes</p>
+        </Link>
 
-          {/* Day headers */}
-          <div className="grid grid-cols-7 gap-px mb-1">
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-              <div
-                key={d}
-                className="text-center text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] py-2"
-              >
-                {d}
-              </div>
-            ))}
+        {/* Invoicing */}
+        <Link
+          href="/admin/invoicing"
+          className="group bg-white border border-[#e8e8e8] rounded-[12px] p-5 hover:border-[#E07B2D] hover:shadow-md transition-all"
+        >
+          <div className="w-11 h-11 rounded-[10px] bg-[#FFF8F0] flex items-center justify-center mb-4 group-hover:bg-[#E07B2D] transition-colors">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E07B2D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:stroke-white transition-colors">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+              <polyline points="10 9 9 9 8 9" />
+            </svg>
           </div>
+          <h3 className="text-[15px] font-bold text-[#0B2040] mb-1">Invoicing</h3>
+          <p className="text-[13px] text-[#888] leading-snug">Create and send invoices</p>
+        </Link>
 
-          {/* Calendar grid */}
-          <div className="grid grid-cols-7 gap-px">
-            {calDays.map((day, i) => {
-              if (day === null) {
-                return (
-                  <div
-                    key={`empty-${i}`}
-                    className="min-h-[80px] bg-[#fafafa] rounded"
-                  />
-                );
-              }
-              const dateKey = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-              const dayBookings = bookingsByDate[dateKey] || [];
-              const isSelected = selectedDay === dateKey;
-              const isToday = dateKey === todayISO;
-              return (
-                <div
-                  key={dateKey}
-                  onClick={() =>
-                    setSelectedDay(isSelected ? null : dateKey)
-                  }
-                  className={`min-h-[80px] p-2 rounded cursor-pointer transition-colors border ${
-                    isSelected
-                      ? "border-[#0B2040] bg-[#EBF4FF]"
-                      : isToday
-                        ? "border-[#E07B2D] bg-white"
-                        : "border-transparent bg-white hover:bg-[#FAFBFC]"
-                  }`}
-                >
-                  <p
-                    className={`text-[13px] font-semibold mb-1 ${isToday ? "text-[#E07B2D]" : "text-[#0B2040]"}`}
-                  >
-                    {day}
-                  </p>
-                  {dayBookings.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {dayBookings.slice(0, 5).map((b) => (
-                        <span
-                          key={b.id}
-                          className={`w-2 h-2 rounded-full ${
-                            b.status === "pending"
-                              ? "bg-[#E07B2D]"
-                              : b.status === "confirmed"
-                                ? "bg-[#1A5FAC]"
-                                : b.status === "cancelled"
-                                  ? "bg-[#999]"
-                                  : "bg-[#16a34a]"
-                          }`}
-                        />
-                      ))}
-                      {dayBookings.length > 5 && (
-                        <span className="text-[10px] text-[#888]">
-                          +{dayBookings.length - 5}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+        {/* Pricing & Services */}
+        <Link
+          href="/admin/pricing"
+          className="group bg-white border border-[#e8e8e8] rounded-[12px] p-5 hover:border-[#0D8A8F] hover:shadow-md transition-all"
+        >
+          <div className="w-11 h-11 rounded-[10px] bg-[#ECFBFB] flex items-center justify-center mb-4 group-hover:bg-[#0D8A8F] transition-colors">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0D8A8F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:stroke-white transition-colors">
+              <line x1="16.5" y1="9.4" x2="7.5" y2="4.21" />
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+              <line x1="12" y1="22.08" x2="12" y2="12" />
+            </svg>
           </div>
+          <h3 className="text-[15px] font-bold text-[#0B2040] mb-1">Pricing & Services</h3>
+          <p className="text-[13px] text-[#888] leading-snug">Manage service pricing and availability</p>
+        </Link>
+      </div>
 
-          {/* Selected day panel */}
-          {selectedDay && bookingsByDate[selectedDay] && (
-            <div className="mt-6 border-t border-[#eee] pt-6">
-              <h4 className="text-[16px] font-bold text-[#0B2040] mb-4">
-                {new Date(selectedDay + "T12:00:00").toLocaleDateString(
-                  "en-US",
-                  { weekday: "short", month: "short", day: "numeric" }
-                )}
-                <span className="ml-2 text-[14px] font-normal text-[#888]">
-                  ({bookingsByDate[selectedDay].length} booking
-                  {bookingsByDate[selectedDay].length !== 1 ? "s" : ""})
-                </span>
-              </h4>
-              <div className="flex flex-col gap-3">
-                {bookingsByDate[selectedDay].map((b) => {
-                  const status = getStatusStyle(b.status);
-                  const source = getSourceLabel(b.source);
-                  const calIsNew = isNewBooking(b);
-                  return (
-                    <div
-                      key={b.id}
-                      className={`flex items-center justify-between bg-[#FAFBFC] border border-[#e8e8e8] rounded-[10px] p-4 ${
-                        calIsNew ? "border-l-4 border-l-[#E07B2D] bg-[#FFF8F0]" : ""
-                      }`}
-                    >
-                      <div>
-                        <p className="text-[15px] font-semibold text-[#0B2040]">
-                          {b.name || "—"}
-                          {calIsNew && (
-                            <span className="ml-2 inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold text-white bg-[#E07B2D]">NEW</span>
-                          )}
-                          {b.datesFlexible && (
-                            <span className="ml-2 inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold text-[#888] bg-[#f0f0f0]">Flexible</span>
-                          )}
-                        </p>
-                        <p className="text-[13px] text-[#444]">
-                          {b.service || "—"}
-                          {calIsNew && (
-                            <span className="ml-2 inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold text-white bg-[#E07B2D]">NEW</span>
-                          )}
-                        </p>
-                        <p className="text-[12px] text-[#888]">
-                          {formatPhone(b.phone)}
-                          {b.email ? ` · ${b.email}` : ""}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0 ml-4">
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-[11px] font-semibold text-white ${source.color}`}
-                        >
-                          {source.label}
-                        </span>
-                        <span
-                          className={`px-3 py-1 rounded-full text-[11px] font-semibold ${status.cls}`}
-                        >
-                          {status.label}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+      {/* ═══ RECENT ACTIVITY ═══ */}
+      <h2 className="text-[16px] font-bold text-[#0B2040] mb-4">Recent Activity</h2>
+      {recent.length === 0 ? (
+        <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-12 text-center">
+          <p className="text-[14px] text-[#888]">No bookings yet. They&apos;ll appear here when customers book.</p>
         </div>
       ) : (
-        /* ═══ CUSTOMERS VIEW ═══ */
-        <CustomersView bookings={bookings} addToast={addToast} />
-      )}
-
-      {/* ═══ Cancel Confirmation Dialog ═══ */}
-      {cancelConfirmId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-[14px] shadow-xl max-w-[400px] w-full mx-4 p-6">
-            <h3 className="text-[18px] font-bold text-[#0B2040] mb-2">Cancel this booking?</h3>
-            <p className="text-[14px] text-[#666] mb-6">
-              The customer will not be notified automatically.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setCancelConfirmId(null)}
-                className="px-4 py-2.5 text-[13px] font-semibold text-[#444] border border-[#ddd] rounded-md hover:bg-[#f5f5f5] transition-colors"
-              >
-                Never mind
-              </button>
-              <button
-                onClick={() => cancelBooking(cancelConfirmId)}
-                className="px-4 py-2.5 text-[13px] font-semibold text-white bg-[#dc2626] rounded-md hover:bg-[#b91c1c] transition-colors"
-              >
-                Cancel Booking
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ═══ Delete Confirmation Dialog ═══ */}
-      {deleteConfirmId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-[14px] shadow-xl max-w-[440px] w-full mx-4 p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-[#fef2f2] flex items-center justify-center shrink-0">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                  <line x1="12" y1="9" x2="12" y2="13" />
-                  <line x1="12" y1="17" x2="12.01" y2="17" />
-                </svg>
-              </div>
-              <h3 className="text-[18px] font-bold text-[#0B2040]">Permanently delete this booking?</h3>
-            </div>
-            <p className="text-[14px] text-[#dc2626] font-medium mb-1">
-              This cannot be undone.
-            </p>
-            <p className="text-[14px] text-[#666] mb-6">
-              All data and communication logs will be lost.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setDeleteConfirmId(null)}
-                className="px-4 py-2.5 text-[13px] font-semibold text-[#444] border border-[#ddd] rounded-md hover:bg-[#f5f5f5] transition-colors"
-              >
-                Keep It
-              </button>
-              <button
-                onClick={() => deleteBooking(deleteConfirmId)}
-                className="px-4 py-2.5 text-[13px] font-semibold text-white bg-[#dc2626] rounded-md hover:bg-[#b91c1c] transition-colors"
-              >
-                Delete Forever
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
-    </div>
-    </AdminAuthGuard>
-  );
-}
-
-/* ─── Sub-components ─────────────────────────────────────── */
-
-function StatusActions({
-  status,
-  onConfirm,
-  onComplete,
-  onCancel,
-  onDelete,
-}: {
-  status?: string;
-  onConfirm: () => void;
-  onComplete: () => void;
-  onCancel: () => void;
-  onDelete: () => void;
-}) {
-  const trashBtn = (
-    <button
-      onClick={onDelete}
-      className="ml-2 p-1.5 text-[#aaa] hover:text-[#dc2626] transition-colors rounded"
-      title="Delete booking"
-    >
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="3 6 5 6 21 6" />
-        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-      </svg>
-    </button>
-  );
-
-  if (status === "pending") {
-    return (
-      <div className="flex items-center gap-2">
-        <button
-          onClick={onConfirm}
-          className="px-3 py-1.5 text-[12px] font-semibold text-white bg-[#1A5FAC] rounded-md hover:bg-[#164d8a] transition-colors"
-        >
-          Confirm
-        </button>
-        <button
-          onClick={onComplete}
-          className="px-3 py-1.5 text-[12px] font-semibold text-[#16a34a] border border-[#16a34a] rounded-md hover:bg-[#16a34a] hover:text-white transition-colors"
-        >
-          Complete
-        </button>
-        <button
-          onClick={onCancel}
-          className="px-3 py-1.5 text-[12px] font-semibold text-[#dc2626] hover:bg-[#fef2f2] rounded-md transition-colors"
-        >
-          Cancel
-        </button>
-        {trashBtn}
-      </div>
-    );
-  }
-  if (status === "confirmed") {
-    return (
-      <div className="flex items-center gap-2">
-        <button
-          onClick={onComplete}
-          className="px-3 py-1.5 text-[12px] font-semibold text-white bg-[#16a34a] rounded-md hover:bg-[#15803d] transition-colors"
-        >
-          Complete
-        </button>
-        <button
-          onClick={onCancel}
-          className="px-3 py-1.5 text-[12px] font-semibold text-[#dc2626] hover:bg-[#fef2f2] rounded-md transition-colors"
-        >
-          Cancel
-        </button>
-        {trashBtn}
-      </div>
-    );
-  }
-  if (status === "cancelled") {
-    return (
-      <div className="flex items-center gap-2">
-        <span className="text-[12px] text-[#999]">Cancelled</span>
-        {trashBtn}
-      </div>
-    );
-  }
-  return (
-    <div className="flex items-center gap-2">
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="#16a34a"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <polyline points="20 6 9 17 4 12" />
-      </svg>
-      {trashBtn}
-    </div>
-  );
-}
-
-const arrivalWindows = [
-  "8:00 - 9:00 AM",
-  "9:00 - 10:00 AM",
-  "10:00 - 11:00 AM",
-  "11:00 AM - 12:00 PM",
-  "12:00 - 1:00 PM",
-  "1:00 - 2:00 PM",
-  "2:00 - 3:00 PM",
-  "3:00 - 4:00 PM",
-  "4:00 - 5:00 PM",
-];
-
-const timeWindowToArrival: Record<string, string> = {
-  morning: "8:00 - 9:00 AM",
-  midday: "11:00 AM - 12:00 PM",
-  afternoon: "2:00 - 3:00 PM",
-};
-
-function ExpandedDetail({
-  booking: b,
-  editingNotes,
-  savingNotes,
-  onNotesChange,
-  onSaveNotes,
-  onToast,
-  showAppointmentSetter,
-  onConfirmAppointment,
-  onCancelAppointmentSetter,
-}: {
-  booking: Booking;
-  editingNotes: Record<string, string>;
-  savingNotes: Record<string, boolean>;
-  onNotesChange: (val: string) => void;
-  onSaveNotes: () => void;
-  onToast: (message: string, type?: "success" | "info") => void;
-  showAppointmentSetter: boolean;
-  onConfirmAppointment: (date: string, window: string, duration: string) => void;
-  onCancelAppointmentSetter: () => void;
-}) {
-  const [apptDate, setApptDate] = useState(b.preferredDate || toISODate(new Date()));
-  const [apptWindow, setApptWindow] = useState(
-    b.timeWindow ? (timeWindowToArrival[b.timeWindow] || "8:00 - 9:00 AM") : "8:00 - 9:00 AM"
-  );
-  const [apptDuration, setApptDuration] = useState("Under 1 hour");
-
-  const customerRows: { label: string; value?: string; href?: string }[] = [
-    { label: "Name", value: b.name },
-    { label: "Phone", value: formatPhone(b.phone), href: b.phone ? `tel:${b.phone}` : undefined },
-    { label: "Email", value: b.email, href: b.email ? `mailto:${b.email}` : undefined },
-    { label: "Address", value: b.address },
-    { label: "Contact Pref", value: b.contactPreference },
-    { label: "Source", value: b.source },
-    { label: "Preferred Date", value: b.preferredDate },
-    { label: "Dates Flexible", value: b.datesFlexible ? "Yes" : undefined },
-    { label: "Notes", value: b.notes },
-    { label: "Status", value: b.status },
-    { label: "Service", value: b.service },
-    { label: "Category", value: b.serviceCategory },
-    { label: "Time Window", value: formatTimeWindow(b.timeWindow) },
-    { label: "Zip", value: b.zip },
-    { label: "Fleet Size", value: b.fleetSize },
-    { label: "Engine Type", value: b.engineType },
-    { label: "Engine Count", value: b.engineCount },
-    { label: "Returning", value: b.returningCustomer ? "Yes" : undefined },
-    { label: "Created", value: formatTimestamp(b.createdAt) },
-    { label: "Updated", value: formatTimestamp(b.updatedAt) },
-  ].filter((f) => f.value);
-
-  return (
-    <div className="bg-[#FAFBFC] border-t border-[#eee] px-6 py-5">
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* LEFT COLUMN - Customer Info */}
-        <div className="w-full md:w-1/3 shrink-0">
-          <div className="bg-white border border-[#e8e8e8] rounded-[10px] p-4">
-            <h4 className="text-[14px] font-bold text-[#0B2040] mb-3 pb-2 border-b border-[#eee]">Customer Info</h4>
-            {customerRows.map((r) => (
-              <div key={r.label} className="flex justify-between items-start py-1.5 border-b border-[#f5f5f5] last:border-0">
-                <span className="text-[12px] text-[#888] font-medium shrink-0">{r.label}</span>
-                {r.href ? (
-                  <a href={r.href} className="text-[13px] text-[#1A5FAC] font-medium hover:underline text-right" onClick={(e) => e.stopPropagation()}>{r.value}</a>
-                ) : (
-                  <span className="text-[13px] text-[#0B2040] font-medium text-right max-w-[60%] break-words">{r.value}</span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* RIGHT COLUMN - Actions & Communications */}
-        <div className="w-full md:w-2/3">
-      {/* Notification buttons */}
-      <NotificationButtons
-        bookingId={b.id}
-        booking={b}
-        phone={b.phone}
-        email={b.email}
-        onToast={onToast}
-      />
-
-      {/* Confirmed appointment details */}
-      {(b.status === "confirmed" || b.status === "completed") && b.confirmedDate && (
-        <div className="mb-5 border-l-4 border-l-[#1A5FAC] bg-[#EBF4FF] rounded-r-[8px] p-4">
-          <p className="text-[11px] uppercase font-semibold text-[#1A5FAC] tracking-[0.5px] mb-2">
-            Confirmed Appointment
-          </p>
-          <div className="flex flex-wrap gap-6">
-            <div>
-              <p className="text-[12px] text-[#888]">Date</p>
-              <p className="text-[15px] font-semibold text-[#0B2040]">
-                {new Date(b.confirmedDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
-              </p>
-            </div>
-            {b.confirmedArrivalWindow && (
-              <div>
-                <p className="text-[12px] text-[#888]">Arrival Window</p>
-                <p className="text-[15px] font-semibold text-[#0B2040]">{b.confirmedArrivalWindow}</p>
-              </div>
-            )}
-            {b.estimatedDuration && (
-              <div>
-                <p className="text-[12px] text-[#888]">Est. Duration</p>
-                <p className="text-[15px] font-semibold text-[#0B2040]">{b.estimatedDuration}</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Appointment setter form (B1) */}
-      {showAppointmentSetter && (
-        <div className="mb-5 border border-[#E07B2D] bg-white rounded-[10px] p-5">
-          <p className="text-[14px] font-bold text-[#0B2040] mb-4">Set Appointment</p>
-
-          <div className="mb-4">
-            <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
-              Appointment Date
-            </label>
-            <input
-              type="date"
-              value={apptDate}
-              min={toISODate(new Date())}
-              onChange={(e) => setApptDate(e.target.value)}
-              className="text-[14px] rounded-lg px-3 py-2 border border-[#e8e8e8] outline-none focus:border-[#1A5FAC]"
-            />
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
-              Arrival Window
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {arrivalWindows.map((w) => (
-                <button
-                  key={w}
-                  onClick={() => setApptWindow(w)}
-                  className={`px-3 py-1.5 rounded-full text-[12px] font-semibold transition-colors ${
-                    apptWindow === w
-                      ? "bg-[#0B2040] text-white"
-                      : "bg-white text-[#444] border border-[#e8e8e8] hover:border-[#0B2040]"
+        <div className="bg-white border border-[#e8e8e8] rounded-[12px] overflow-hidden">
+          {recent.map((b, i) => {
+            const status = getStatusStyle(b.status);
+            const source = getSourceLabel(b.source);
+            const isExpanded = expandedActivity === b.id;
+            return (
+              <div key={b.id}>
+                <div
+                  onClick={() => setExpandedActivity(isExpanded ? null : b.id)}
+                  className={`flex items-center gap-4 px-5 py-4 cursor-pointer transition-colors hover:bg-[#FAFBFC] ${
+                    i < recent.length - 1 && !isExpanded ? "border-b border-[#f0f0f0]" : ""
                   }`}
                 >
-                  {w}
-                </button>
-              ))}
-            </div>
-          </div>
+                  {/* Status dot */}
+                  <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                    b.status === "pending" ? "bg-[#E07B2D]"
+                    : b.status === "confirmed" ? "bg-[#1A5FAC]"
+                    : b.status === "completed" ? "bg-[#16a34a]"
+                    : "bg-[#999]"
+                  }`} />
 
-          <div className="mb-5">
-            <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
-              Estimated Duration
-            </label>
-            <select
-              value={apptDuration}
-              onChange={(e) => setApptDuration(e.target.value)}
-              className="text-[14px] rounded-lg px-3 py-2 border border-[#e8e8e8] outline-none focus:border-[#1A5FAC]"
-            >
-              <option>Under 1 hour</option>
-              <option>1-2 hours</option>
-              <option>2-3 hours</option>
-              <option>Half day</option>
-            </select>
-          </div>
-
-          <div className="flex gap-3">
-            <button
-              onClick={() => onConfirmAppointment(apptDate, apptWindow, apptDuration)}
-              className="px-5 py-2.5 text-[13px] font-semibold text-white bg-[#E07B2D] rounded-md hover:bg-[#cc6a1f] transition-colors"
-            >
-              Confirm Appointment
-            </button>
-            <button
-              onClick={onCancelAppointmentSetter}
-              className="px-5 py-2.5 text-[13px] font-semibold text-[#444] border border-[#ddd] rounded-md hover:bg-[#f5f5f5] transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Google Calendar button */}
-      {(b.status === "confirmed" || b.status === "completed") && (
-        <div className="mb-5">
-          <button
-            onClick={() => window.open(generateGCalUrl(b), "_blank")}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-[8px] text-[13px] font-semibold text-[#0B2040] bg-white border-2 border-[#0B2040] hover:bg-[#0B2040] hover:text-white transition-colors"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            Add to Google Calendar
-          </button>
-        </div>
-      )}
-
-      {/* Admin notes */}
-      <div>
-        <p className="text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
-          Admin Notes
-        </p>
-        <textarea
-          rows={3}
-          value={editingNotes[b.id] ?? b.adminNotes ?? ""}
-          onChange={(e) => onNotesChange(e.target.value)}
-          placeholder="Internal notes about this booking..."
-          className="w-full text-[14px] rounded-[8px] px-3 py-2 border border-[#ddd] outline-none focus:border-[#1A5FAC] transition-colors resize-y"
-        />
-        <button
-          onClick={onSaveNotes}
-          disabled={savingNotes[b.id]}
-          className="mt-2 px-4 py-2 text-[13px] font-semibold text-white bg-[#0B2040] rounded-md hover:bg-[#132E54] transition-colors disabled:opacity-50"
-        >
-          {savingNotes[b.id] ? "Saving..." : "Save Notes"}
-        </button>
-      </div>
-
-      {/* Communication Log */}
-      <CommsLog
-        bookingId={b.id}
-        commsLog={b.commsLog || []}
-        onToast={onToast}
-      />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Customers View ─────────────────────────────────────── */
-
-interface Customer {
-  key: string;
-  name: string;
-  phone?: string;
-  email?: string;
-  address?: string;
-  totalBookings: number;
-  lastBookingDate: string;
-  lastBookingStatus?: string;
-  bookings: Booking[];
-}
-
-function buildCustomerList(bookings: Booking[]): Customer[] {
-  const map = new Map<string, Booking[]>();
-  bookings.forEach((b) => {
-    const key = b.phone?.replace(/\D/g, "") || b.email?.toLowerCase() || b.id;
-    if (!map.has(key)) map.set(key, []);
-    map.get(key)!.push(b);
-  });
-
-  const customers: Customer[] = [];
-  map.forEach((bks, key) => {
-    const sorted = [...bks].sort((a, b) => {
-      const aTime = a.createdAt?.toDate?.()?.getTime() ?? 0;
-      const bTime = b.createdAt?.toDate?.()?.getTime() ?? 0;
-      return bTime - aTime;
-    });
-    const latest = sorted[0];
-    customers.push({
-      key,
-      name: latest.name || "—",
-      phone: latest.phone,
-      email: latest.email,
-      address: latest.address,
-      totalBookings: sorted.length,
-      lastBookingDate: formatTimestamp(latest.createdAt),
-      lastBookingStatus: latest.status,
-      bookings: sorted,
-    });
-  });
-
-  customers.sort((a, b) => {
-    const aTime = a.bookings[0]?.createdAt?.toDate?.()?.getTime() ?? 0;
-    const bTime = b.bookings[0]?.createdAt?.toDate?.()?.getTime() ?? 0;
-    return bTime - aTime;
-  });
-
-  return customers;
-}
-
-function CustomersView({
-  bookings,
-  addToast,
-}: {
-  bookings: Booking[];
-  addToast: (message: string, type?: "success" | "info") => void;
-}) {
-  const [search, setSearch] = useState("");
-  const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
-  const [editingCustomer, setEditingCustomer] = useState<Record<string, { name: string; phone: string; email: string; address: string }>>({});
-  const [savingCustomer, setSavingCustomer] = useState<string | null>(null);
-
-  /* New Customer modal */
-  const [showNewCustomer, setShowNewCustomer] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({ name: "", phone: "", email: "", notes: "" });
-  const [savingNewCustomer, setSavingNewCustomer] = useState(false);
-
-  async function handleAddCustomer() {
-    if (!newCustomer.name.trim()) return;
-    setSavingNewCustomer(true);
-    try {
-      await addDoc(collection(db, "bookings"), {
-        name: newCustomer.name.trim(),
-        phone: newCustomer.phone.replace(/\D/g, "") || null,
-        email: newCustomer.email.trim().toLowerCase() || null,
-        notes: newCustomer.notes.trim() || null,
-        source: "admin-manual",
-        status: "pending",
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-      addToast(`Customer "${newCustomer.name.trim()}" added`);
-      setNewCustomer({ name: "", phone: "", email: "", notes: "" });
-      setShowNewCustomer(false);
-    } catch {
-      addToast("Failed to add customer", "info");
-    } finally {
-      setSavingNewCustomer(false);
-    }
-  }
-
-  const customers = buildCustomerList(bookings);
-
-  const filtered = search.trim()
-    ? customers.filter((c) => {
-        const q = search.toLowerCase();
-        return (
-          c.name.toLowerCase().includes(q) ||
-          (c.phone && formatPhone(c.phone).includes(q)) ||
-          (c.phone && c.phone.includes(q)) ||
-          (c.email && c.email.toLowerCase().includes(q))
-        );
-      })
-    : customers;
-
-  async function handleSaveCustomer(customer: Customer) {
-    const edit = editingCustomer[customer.key];
-    if (!edit) return;
-    setSavingCustomer(customer.key);
-    try {
-      await Promise.all(
-        customer.bookings.map((b) =>
-          updateDoc(doc(db, "bookings", b.id), {
-            name: edit.name.trim() || undefined,
-            phone: edit.phone.replace(/\D/g, "") || undefined,
-            email: edit.email.trim().toLowerCase() || undefined,
-            address: edit.address.trim() || undefined,
-            updatedAt: serverTimestamp(),
-          })
-        )
-      );
-      addToast(`Updated ${customer.bookings.length} booking(s) for ${edit.name || customer.name}`);
-    } catch {
-      addToast("Failed to update customer info", "info");
-    } finally {
-      setSavingCustomer(null);
-    }
-  }
-
-  function getCombinedCommsLog(customer: Customer) {
-    const all: Array<{ id: string; type: string; direction: string; summary: string; createdAt: string; createdBy: string; bookingService?: string }> = [];
-    customer.bookings.forEach((b) => {
-      (b.commsLog || []).forEach((entry) => {
-        all.push({ ...entry, bookingService: b.service || b.name || b.id });
-      });
-    });
-    return all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }
-
-  return (
-    <>
-    <div className="bg-white border border-[#e8e8e8] rounded-[12px] overflow-hidden">
-      {/* Search + New Customer */}
-      <div className="p-4 border-b border-[#eee] flex items-center gap-3">
-        <input
-          type="text"
-          placeholder="Search by name, phone, or email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 text-[14px] rounded-[8px] px-4 py-2.5 border border-[#ddd] outline-none focus:border-[#1A5FAC] transition-colors"
-        />
-        <button
-          onClick={() => setShowNewCustomer(true)}
-          className="flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-semibold text-white bg-[#E07B2D] rounded-lg hover:bg-[#CC6A1F] transition-colors whitespace-nowrap"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          New Customer
-        </button>
-      </div>
-
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="border-b border-[#eee]">
-              {["Name", "Phone", "Email", "Bookings", "Last Booking", "Status"].map((h) => (
-                <th key={h} className="px-4 py-3 text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] whitespace-nowrap">
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-[14px] text-[#888]">
-                  {search ? "No customers match your search" : "No customers yet"}
-                </td>
-              </tr>
-            ) : (
-              filtered.map((c) => {
-                const isExpanded = expandedCustomer === c.key;
-                const status = getStatusStyle(c.lastBookingStatus);
-                return (
-                  <Fragment key={c.key}>
-                    <tr
-                      onClick={() => setExpandedCustomer(isExpanded ? null : c.key)}
-                      className={`border-b border-[#f0f0f0] cursor-pointer transition-colors ${isExpanded ? "bg-[#FAFBFC]" : "hover:bg-[#FAFBFC]"}`}
-                    >
-                      <td className="px-4 py-3 text-[14px] font-semibold text-[#0B2040] whitespace-nowrap">{c.name}</td>
-                      <td className="px-4 py-3 text-[13px] whitespace-nowrap">
-                        {c.phone ? (
-                          <a href={`tel:${c.phone}`} className="text-[#1A5FAC] hover:underline" onClick={(e) => e.stopPropagation()}>
-                            {formatPhone(c.phone)}
-                          </a>
-                        ) : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-[13px] text-[#444] whitespace-nowrap">{c.email || "—"}</td>
-                      <td className="px-4 py-3 text-[14px] font-semibold text-[#0B2040]">{c.totalBookings}</td>
-                      <td className="px-4 py-3 text-[13px] text-[#444] whitespace-nowrap">{c.lastBookingDate}</td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className={`inline-block px-3 py-1 rounded-full text-[11px] font-semibold ${status.cls}`}>{status.label}</span>
-                      </td>
-                    </tr>
-
-                    {isExpanded && (
-                      <tr>
-                        <td colSpan={6} className="p-0">
-                          <CustomerExpanded
-                            customer={c}
-                            editingCustomer={editingCustomer}
-                            savingCustomer={savingCustomer}
-                            onEditChange={(val) => setEditingCustomer((p) => ({ ...p, [c.key]: val }))}
-                            onSave={() => handleSaveCustomer(c)}
-                            commsLog={getCombinedCommsLog(c)}
-                          />
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    {/* ═══ New Customer Modal ═══ */}
-    {showNewCustomer && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-        <div className="bg-white rounded-[14px] shadow-xl max-w-[440px] w-full mx-4 p-6">
-          <h3 className="text-[18px] font-bold text-[#0B2040] mb-4">New Customer</h3>
-          <div className="flex flex-col gap-3">
-            <div>
-              <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1">
-                Name <span className="text-[#dc2626]">*</span>
-              </label>
-              <input
-                type="text"
-                value={newCustomer.name}
-                onChange={(e) => setNewCustomer((p) => ({ ...p, name: e.target.value }))}
-                placeholder="Full name"
-                className="w-full text-[14px] rounded-[8px] px-3 py-2.5 border border-[#ddd] outline-none focus:border-[#1A5FAC] transition-colors"
-                autoFocus
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1">
-                Phone
-              </label>
-              <input
-                type="tel"
-                value={newCustomer.phone}
-                onChange={(e) => setNewCustomer((p) => ({ ...p, phone: e.target.value }))}
-                placeholder="(813) 555-1234"
-                className="w-full text-[14px] rounded-[8px] px-3 py-2.5 border border-[#ddd] outline-none focus:border-[#1A5FAC] transition-colors"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1">
-                Email
-              </label>
-              <input
-                type="email"
-                value={newCustomer.email}
-                onChange={(e) => setNewCustomer((p) => ({ ...p, email: e.target.value }))}
-                placeholder="customer@email.com"
-                className="w-full text-[14px] rounded-[8px] px-3 py-2.5 border border-[#ddd] outline-none focus:border-[#1A5FAC] transition-colors"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1">
-                Notes
-              </label>
-              <textarea
-                value={newCustomer.notes}
-                onChange={(e) => setNewCustomer((p) => ({ ...p, notes: e.target.value }))}
-                placeholder="Vehicle info, preferences, etc."
-                rows={3}
-                className="w-full text-[14px] rounded-[8px] px-3 py-2.5 border border-[#ddd] outline-none focus:border-[#1A5FAC] transition-colors resize-none"
-              />
-            </div>
-          </div>
-          <div className="flex gap-3 justify-end mt-5">
-            <button
-              onClick={() => {
-                setShowNewCustomer(false);
-                setNewCustomer({ name: "", phone: "", email: "", notes: "" });
-              }}
-              className="px-4 py-2.5 text-[13px] font-semibold text-[#444] border border-[#ddd] rounded-md hover:bg-[#f5f5f5] transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleAddCustomer}
-              disabled={!newCustomer.name.trim() || savingNewCustomer}
-              className="px-4 py-2.5 text-[13px] font-semibold text-white bg-[#E07B2D] rounded-md hover:bg-[#CC6A1F] transition-colors disabled:opacity-50"
-            >
-              {savingNewCustomer ? "Adding..." : "Add Customer"}
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
-    </>
-  );
-}
-
-function CustomerExpanded({
-  customer,
-  editingCustomer,
-  savingCustomer,
-  onEditChange,
-  onSave,
-  commsLog,
-}: {
-  customer: Customer;
-  editingCustomer: Record<string, { name: string; phone: string; email: string; address: string }>;
-  savingCustomer: string | null;
-  onEditChange: (val: { name: string; phone: string; email: string; address: string }) => void;
-  onSave: () => void;
-  commsLog: Array<{ id: string; type: string; direction: string; summary: string; createdAt: string; bookingService?: string }>;
-}) {
-  const edit = editingCustomer[customer.key] || {
-    name: customer.name === "—" ? "" : customer.name,
-    phone: customer.phone ? formatPhone(customer.phone) : "",
-    email: customer.email || "",
-    address: customer.address || "",
-  };
-
-  const typeLabels: Record<string, string> = { call: "Call", text: "Text", email: "Email", note: "Note" };
-  const typeColors: Record<string, string> = { call: "bg-[#E07B2D]", text: "bg-[#16a34a]", email: "bg-[#1A5FAC]", note: "bg-[#888]" };
-
-  return (
-    <div className="bg-[#FAFBFC] border-t border-[#eee] px-6 py-5">
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* Editable Customer Info */}
-        <div className="w-full md:w-1/3 shrink-0">
-          <div className="bg-white border border-[#e8e8e8] rounded-[10px] p-4">
-            <h4 className="text-[14px] font-bold text-[#0B2040] mb-3 pb-2 border-b border-[#eee]">Edit Customer</h4>
-            {(["name", "phone", "email", "address"] as const).map((field) => (
-              <div key={field} className="mb-3">
-                <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1">
-                  {field}
-                </label>
-                <input
-                  type={field === "email" ? "email" : field === "phone" ? "tel" : "text"}
-                  value={edit[field]}
-                  onChange={(e) => onEditChange({ ...edit, [field]: e.target.value })}
-                  className="w-full text-[13px] rounded-[6px] px-3 py-1.5 border border-[#ddd] outline-none focus:border-[#1A5FAC] transition-colors"
-                />
-              </div>
-            ))}
-            <button
-              onClick={onSave}
-              disabled={savingCustomer === customer.key}
-              className="w-full mt-1 px-4 py-2 text-[13px] font-semibold text-white bg-[#0B2040] rounded-md hover:bg-[#132E54] transition-colors disabled:opacity-50"
-            >
-              {savingCustomer === customer.key ? "Saving..." : `Save (updates ${customer.totalBookings} booking${customer.totalBookings !== 1 ? "s" : ""})`}
-            </button>
-          </div>
-        </div>
-
-        {/* Bookings + Comms Log */}
-        <div className="w-full md:w-2/3">
-          {/* All Bookings */}
-          <h4 className="text-[14px] font-bold text-[#0B2040] mb-3">All Bookings</h4>
-          <div className="flex flex-col gap-2 mb-6">
-            {customer.bookings.map((b) => {
-              const st = getStatusStyle(b.status);
-              const src = getSourceLabel(b.source);
-              return (
-                <div key={b.id} className="flex items-center justify-between bg-white border border-[#e8e8e8] rounded-[8px] px-4 py-3">
-                  <div>
-                    <p className="text-[13px] font-semibold text-[#0B2040]">{b.service || "—"}</p>
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] font-semibold text-[#0B2040] truncate">
+                      {b.name || "—"}
+                      <span className="ml-2 text-[13px] font-normal text-[#888]">{b.service || ""}</span>
+                    </p>
                     <p className="text-[12px] text-[#888]">{formatTimestamp(b.createdAt)}</p>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0 ml-4">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold text-white ${src.color}`}>{src.label}</span>
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${st.cls}`}>{st.label}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
 
-          {/* Combined Communication Log */}
-          <h4 className="text-[14px] font-bold text-[#0B2040] mb-3">Communication History</h4>
-          {commsLog.length === 0 ? (
-            <p className="text-[13px] text-[#888] italic">No communication logged</p>
-          ) : (
-            <div className="flex flex-col gap-1">
-              {commsLog.map((entry, i) => {
-                const date = new Date(entry.createdAt);
-                return (
-                  <div key={`${entry.id}-${i}`} className="flex items-center gap-3 py-2 border-b border-[#f0f0f0] last:border-0">
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold text-white ${typeColors[entry.type] || "bg-[#888]"}`}>
-                      {typeLabels[entry.type] || entry.type}
+                  {/* Badges */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold text-white ${source.color}`}>
+                      {source.label}
                     </span>
-                    <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold text-[#444] bg-[#f0f0f0]">
-                      {entry.direction.charAt(0).toUpperCase() + entry.direction.slice(1)}
-                    </span>
-                    <span className="text-[13px] text-[#444] flex-1">{entry.summary}</span>
-                    <span className="text-[12px] text-[#888] whitespace-nowrap">
-                      {date.toLocaleDateString("en-US", { month: "short", day: "numeric" })},{" "}
-                      {date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${status.cls}`}>
+                      {status.label}
                     </span>
                   </div>
-                );
-              })}
-            </div>
-          )}
+
+                  {/* Chevron */}
+                  <svg
+                    width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                    className={`shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
+
+                {/* Expanded detail */}
+                {isExpanded && (
+                  <div className="px-5 pb-5 border-b border-[#f0f0f0]">
+                    <div className="bg-[#FAFBFC] rounded-[10px] p-4 grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3">
+                      <Detail label="Phone" value={formatPhone(b.phone)} href={b.phone ? `tel:${b.phone}` : undefined} />
+                      <Detail label="Email" value={b.email || "—"} href={b.email ? `mailto:${b.email}` : undefined} />
+                      <Detail label="Address" value={b.address || "—"} />
+                      <Detail label="Preferred Date" value={b.preferredDate || "—"} />
+                      <Detail label="Time Window" value={b.timeWindow || "—"} />
+                      <Detail label="Contact Pref" value={b.contactPreference || "—"} />
+                      {b.confirmedDate && <Detail label="Confirmed Date" value={b.confirmedDate} />}
+                      {b.confirmedArrivalWindow && <Detail label="Arrival Window" value={b.confirmedArrivalWindow} />}
+                      {b.notes && <div className="col-span-2 md:col-span-3"><Detail label="Notes" value={b.notes} /></div>}
+                    </div>
+                    <div className="mt-3 flex justify-end">
+                      <Link
+                        href="/admin/schedule"
+                        className="text-[13px] font-semibold text-[#1A5FAC] hover:underline"
+                      >
+                        View in Schedule &rarr;
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
-      </div>
+      )}
+
+      {/* Quick link to see all */}
+      {bookings.length > 5 && (
+        <div className="mt-4 text-center">
+          <Link
+            href="/admin/schedule"
+            className="inline-flex items-center gap-2 px-5 py-2.5 text-[13px] font-semibold text-white bg-[#E07B2D] rounded-lg hover:bg-[#CC6A1F] transition-colors"
+          >
+            View All Bookings
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <polyline points="12 5 19 12 12 19" />
+            </svg>
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Detail({ label, value, href }: { label: string; value: string; href?: string }) {
+  return (
+    <div>
+      <p className="text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-0.5">{label}</p>
+      {href ? (
+        <a href={href} className="text-[13px] text-[#1A5FAC] font-medium hover:underline" onClick={(e) => e.stopPropagation()}>{value}</a>
+      ) : (
+        <p className="text-[13px] text-[#0B2040] font-medium">{value}</p>
+      )}
     </div>
   );
 }
