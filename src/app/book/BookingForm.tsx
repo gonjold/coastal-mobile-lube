@@ -14,24 +14,59 @@ import {
 
 /* ─── Data ─────────────────────────────────────────────────────── */
 
-const mainServices = [
-  { name: "Syn Blend Oil Change", price: "$89.95" },
-  { name: "Full Synthetic Oil Change", price: "$119.95" },
-  { name: "Diesel Oil Change", price: "$219.95" },
-  { name: "Tire Rotation", price: "$39.95" },
-  { name: "Mount & Balance (4 Tires)", price: "$159.95" },
-  { name: "Front + Rear Brakes", price: "$320" },
-];
-
-const moreServices = [
-  { name: "Cabin Air Filter", price: "$99.95" },
-  { name: "Battery Replacement", price: "From $50" },
-  { name: "HVAC Recharge", price: "$299.99" },
-  { name: "Brake Flush", price: "$239.95" },
-  { name: "Coolant Flush", price: "$269.95" },
-  { name: "Transmission Flush", price: "$419.95" },
-  { name: "Wiper Blades", price: "$19" },
-  { name: "Other (describe below)", price: "Quote" },
+const serviceCategories = [
+  {
+    label: "OIL CHANGES",
+    services: [
+      { name: "Syn Blend Oil Change", price: "$89.95" },
+      { name: "Full Synthetic Oil Change", price: "$119.95" },
+      { name: "Diesel Oil Change", price: "$219.95" },
+    ],
+  },
+  {
+    label: "BUNDLES",
+    services: [
+      { name: "Basic Bundle", price: "$119.95" },
+      { name: "Better Bundle", price: "$209.95" },
+      { name: "Best Bundle", price: "$309.95" },
+    ],
+  },
+  {
+    label: "TIRES",
+    services: [
+      { name: "Tire Rotation", price: "$39.95" },
+      { name: "Mount & Balance (4 Tires)", price: "$159.95" },
+    ],
+  },
+  {
+    label: "BRAKES",
+    services: [
+      { name: "Front + Rear Brakes", price: "$320" },
+    ],
+  },
+  {
+    label: "MAINTENANCE",
+    services: [
+      { name: "Cabin Air Filter", price: "$99.95" },
+      { name: "Battery Replacement", price: "From $50" },
+      { name: "HVAC Recharge", price: "$299.99" },
+    ],
+  },
+  {
+    label: "FLUIDS",
+    services: [
+      { name: "Brake Flush", price: "$239.95" },
+      { name: "Coolant Flush", price: "$269.95" },
+      { name: "Transmission Flush", price: "$419.95" },
+    ],
+  },
+  {
+    label: "OTHER",
+    services: [
+      { name: "Wiper Blades", price: "$19" },
+      { name: "Other (describe below)", price: "Quote" },
+    ],
+  },
 ];
 
 const timeWindows = [
@@ -85,7 +120,6 @@ type Errors = Partial<Record<keyof FormData, string>>;
 /* ─── Component ────────────────────────────────────────────────── */
 
 export default function BookingForm() {
-  const [showMoreServices, setShowMoreServices] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     services: [],
     preferredDate: "",
@@ -245,7 +279,7 @@ export default function BookingForm() {
 
   /* ─── Input style (matches contact page) ─── */
   const inputBase =
-    "w-full text-[15px] rounded-[10px] px-3.5 py-3 outline-none border-2 border-[#eee] bg-white focus:border-[#E07B2D] transition-colors";
+    "w-full text-[15px] rounded-[10px] px-3.5 py-3 outline-none border border-[#0B2040]/10 bg-white/60 backdrop-blur-sm focus:border-[#E07B2D] focus:bg-white/80 transition-all placeholder:text-[#888]/60";
 
   const labelClass =
     "block text-[12px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5";
@@ -255,8 +289,10 @@ export default function BookingForm() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-[#0B2040]">
-        <div className="section-inner px-4 lg:px-6 pt-10 pb-4 md:pt-14 md:pb-6">
+      <section className="relative bg-gradient-to-b from-[#07192F] via-[#0B2040] to-[#0F2A52] overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_50%,rgba(107,163,224,0.08),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_20%,rgba(224,123,45,0.05),transparent_50%)]" />
+        <div className="relative section-inner px-4 lg:px-6 pt-12 pb-6 md:pt-16 md:pb-8">
           <div className="max-w-[700px]">
             <p className="text-[13px] uppercase font-bold text-[#6BA3E0] tracking-[1.5px] mb-3">
               Automotive Service
@@ -264,7 +300,7 @@ export default function BookingForm() {
             <h1 className="text-[28px] md:text-[34px] font-[800] leading-[1.1] text-white tracking-[-1px] mb-4">
               Book your service
             </h1>
-            <p className="text-[16px] leading-[1.7] text-white/70 max-w-[700px]">
+            <p className="text-[16px] leading-[1.7] text-white/60 max-w-[700px]">
               Pick a service, choose a date, and we will confirm your
               appointment within 2 hours. Or call{" "}
               <a href="tel:8137225823" className="text-[#E07B2D] font-semibold hover:underline">813-722-LUBE</a>.
@@ -274,14 +310,14 @@ export default function BookingForm() {
       </section>
 
       {/* Form */}
-      <section className="bg-[#FAFBFC]">
+      <section className="bg-gradient-to-b from-[#0F2A52] via-[#F0F2F5] to-[#F5F7FA]">
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
-          <p className="text-center text-[13px] text-[#888] mb-6">
+          <p className="text-center text-[13px] text-white/50 mb-6">
             Looking for <Link href="/fleet" className="text-[#E07B2D] font-semibold hover:underline">fleet</Link> or{" "}
             <Link href="/marine" className="text-[#E07B2D] font-semibold hover:underline">marine</Link> service? Get a custom quote on those pages.
           </p>
           <div className="max-w-[700px] mx-auto">
-            <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-6 md:p-8 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+            <div className="bg-white/80 backdrop-blur-xl border border-white/40 rounded-[16px] p-6 md:p-8 shadow-[0_8px_32px_rgba(11,32,64,0.10)]">
               {submitted ? (
                 /* ── Confirmation ── */
                 <div className="flex flex-col items-center text-center py-8">
@@ -360,7 +396,7 @@ export default function BookingForm() {
                         </button>
                       </p>
                     ) : (
-                      <div className="bg-[#FAFBFC] border border-[#e8e8e8] rounded-[10px] p-4">
+                      <div className="bg-white/40 backdrop-blur-sm border border-[#0B2040]/8 rounded-[10px] p-4">
                         <div className="flex items-center justify-between mb-3">
                           <span className="text-[13px] font-semibold text-[#444]">
                             Find your info
@@ -411,7 +447,7 @@ export default function BookingForm() {
                     )}
                   </div>
 
-                  {/* Field 1: Service Type (multi-select) */}
+                  {/* Field 1: Service Type (multi-select, grouped) */}
                   <div>
                     <label className={labelClass}>What do you need?</label>
                     {errors.services && (
@@ -419,58 +455,44 @@ export default function BookingForm() {
                         {errors.services}
                       </p>
                     )}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {mainServices.map((s) => (
-                        <button
-                          key={s.name}
-                          type="button"
-                          onClick={() => toggleService(s.name)}
-                          className={`relative text-left rounded-[10px] p-3.5 border-2 transition-all duration-150 cursor-pointer ${
-                            formData.services.includes(s.name)
-                              ? "border-[#E07B2D] bg-[rgba(224,123,45,0.02)] border-l-[3px] border-l-[#E07B2D]"
-                              : "border-[#eee] hover:border-[#E07B2D] hover:bg-[rgba(224,123,45,0.02)] hover:-translate-y-[1px]"
-                          }`}
-                        >
-                          {formData.services.includes(s.name) && (
-                            <span className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[#E07B2D] flex items-center justify-center">
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                            </span>
-                          )}
-                          <span className="block text-[15px] font-semibold text-[#0B2040]">
-                            {s.name}
-                          </span>
-                          <span className="block text-[13px] font-semibold text-[#E07B2D]">
-                            starting at {s.price}
-                          </span>
-                        </button>
+                    <div className="flex flex-col gap-5">
+                      {serviceCategories.map((cat) => (
+                        <div key={cat.label}>
+                          <p className="text-[11px] uppercase font-bold text-[#0B2040]/40 tracking-[1.5px] mb-2">
+                            {cat.label}
+                          </p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                            {cat.services.map((s) => {
+                              const selected = formData.services.includes(s.name);
+                              return (
+                                <button
+                                  key={s.name}
+                                  type="button"
+                                  onClick={() => toggleService(s.name)}
+                                  className={`relative text-left rounded-[10px] p-3 border-2 transition-all duration-150 cursor-pointer ${
+                                    selected
+                                      ? "border-[#E07B2D] bg-[#E07B2D]/5 shadow-[0_0_0_1px_rgba(224,123,45,0.2)]"
+                                      : "border-[#0B2040]/8 bg-white/50 hover:border-[#E07B2D]/40 hover:bg-white/70 hover:-translate-y-[1px]"
+                                  }`}
+                                >
+                                  {selected && (
+                                    <span className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[#E07B2D] flex items-center justify-center">
+                                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                    </span>
+                                  )}
+                                  <span className="block text-[14px] font-semibold text-[#0B2040]">
+                                    {s.name}
+                                  </span>
+                                  <span className="block text-[13px] font-semibold text-[#E07B2D]">
+                                    {s.price === "Quote" ? "Get a quote" : s.price}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
                       ))}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowMoreServices(!showMoreServices)}
-                      className="mt-3 text-[14px] font-semibold text-[#1A5FAC] hover:text-[#0B2040] transition-colors"
-                    >
-                      {showMoreServices ? "Show less \u2212" : "More Services +"}
-                    </button>
-                    {showMoreServices && (
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {moreServices.map((s) => (
-                          <button
-                            key={s.name}
-                            type="button"
-                            onClick={() => toggleService(s.name)}
-                            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] font-medium border transition-all cursor-pointer ${
-                              formData.services.includes(s.name)
-                                ? "border-[#E07B2D] bg-[#E07B2D] text-white"
-                                : "border-[#e8e8e8] text-[#444] hover:border-[#E07B2D]"
-                            }`}
-                          >
-                            {s.name}
-                            <span className="text-[12px] opacity-70">{s.price === "Quote" ? "Quote" : s.price}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
                   </div>
 
                   {/* Field 2: Preferred Date */}
@@ -521,10 +543,10 @@ export default function BookingForm() {
                           key={tw.value}
                           type="button"
                           onClick={() => updateField("timeWindow", tw.value)}
-                          className={`px-4 py-3 rounded-[10px] text-[13px] font-semibold border-2 transition-all cursor-pointer whitespace-nowrap ${
+                          className={`px-4 py-3 rounded-[10px] text-[13px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
                             formData.timeWindow === tw.value
-                              ? "bg-[#E07B2D] text-white border-[#E07B2D]"
-                              : "border-[#eee] text-[#444] hover:border-[#ddd]"
+                              ? "bg-[#E07B2D] text-white border-[#E07B2D] shadow-[0_2px_8px_rgba(224,123,45,0.3)]"
+                              : "border-[#0B2040]/10 bg-white/50 text-[#444] hover:border-[#E07B2D]/40"
                           }`}
                         >
                           {tw.label}
@@ -597,10 +619,10 @@ export default function BookingForm() {
                           key={method}
                           type="button"
                           onClick={() => updateField("contactPreference", method)}
-                          className={`flex-1 py-3 rounded-[10px] text-[14px] font-semibold border-2 transition-all cursor-pointer ${
+                          className={`flex-1 py-3 rounded-[10px] text-[14px] font-semibold border transition-all cursor-pointer ${
                             formData.contactPreference === method
-                              ? "bg-[#E07B2D] text-white border-[#E07B2D]"
-                              : "border-[#eee] text-[#444] hover:border-[#ddd]"
+                              ? "bg-[#E07B2D] text-white border-[#E07B2D] shadow-[0_2px_8px_rgba(224,123,45,0.3)]"
+                              : "border-[#0B2040]/10 bg-white/50 text-[#444] hover:border-[#E07B2D]/40"
                           }`}
                         >
                           {method.charAt(0).toUpperCase() + method.slice(1)}
@@ -684,8 +706,8 @@ export default function BookingForm() {
       </section>
 
       {/* How it works + What's included */}
-      <section className="bg-[#FAFBFC]">
-        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
+      <section className="bg-gradient-to-b from-[#F5F7FA] to-[#0B2040]">
+        <div className="section-inner px-4 lg:px-6 py-12 md:py-16">
           <div className="max-w-[700px] mx-auto">
             <h3 className="text-[20px] font-bold text-[#0B2040] mb-6 text-center">
               How it works
@@ -697,7 +719,7 @@ export default function BookingForm() {
                 { num: "3", title: "We show up", desc: "Fully equipped service van at your door" },
               ].map((step) => (
                 <div key={step.num} className="flex flex-col items-center text-center">
-                  <div className="w-10 h-10 rounded-full bg-[#0B2040] flex items-center justify-center mb-3">
+                  <div className="w-10 h-10 rounded-full bg-[#0B2040] flex items-center justify-center mb-3 shadow-[0_2px_8px_rgba(11,32,64,0.2)]">
                     <span className="text-[14px] font-bold text-white">{step.num}</span>
                   </div>
                   <p className="text-[15px] font-semibold text-[#0B2040] mb-1">{step.title}</p>
@@ -706,7 +728,7 @@ export default function BookingForm() {
               ))}
             </div>
 
-            <h3 className="text-[20px] font-bold text-[#0B2040] mb-5 text-center">
+            <h3 className="text-[20px] font-bold text-white mb-5 text-center">
               What&apos;s included
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -717,10 +739,10 @@ export default function BookingForm() {
                 "No hidden fees, ever",
               ].map((item) => (
                 <div key={item} className="flex items-center gap-2">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E07B2D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
-                  <span className="text-[14px] text-[#444]">{item}</span>
+                  <span className="text-[14px] text-white/70">{item}</span>
                 </div>
               ))}
             </div>
