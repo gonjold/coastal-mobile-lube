@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
+import { Calendar, Users, Receipt, Tag, Plus, FileDown, UserPlus } from "lucide-react";
 import {
   type Booking,
   formatPhone,
@@ -11,7 +12,7 @@ import {
   getStatusStyle,
   getSourceLabel,
   buildCustomerList,
-  toISODate,
+  exportBookingsCsv,
 } from "./shared";
 
 export default function AdminHome() {
@@ -63,9 +64,13 @@ export default function AdminHome() {
 
   return (
     <div className="px-4 lg:px-8 py-6 max-w-[1200px] mx-auto">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 text-[13px] text-[#888] mb-6">
+        <span className="text-[#0B2040] font-semibold">Dashboard</span>
+      </div>
+
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-[26px] font-[800] text-[#0B2040] mb-1">Dashboard</h1>
         <p className="text-[14px] text-[#888]">
           {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
         </p>
@@ -77,12 +82,7 @@ export default function AdminHome() {
         <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-5">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-[10px] bg-[#EBF4FF] flex items-center justify-center">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1A5FAC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
+              <Calendar className="w-5 h-5 text-[#1A5FAC]" />
             </div>
           </div>
           <p className="text-[32px] font-[800] text-[#0B2040] leading-none mb-1">{totalBookings}</p>
@@ -103,35 +103,65 @@ export default function AdminHome() {
           <p className="text-[13px] text-[#888] font-medium">This Week</p>
         </div>
 
-        {/* Pending */}
-        <div className="bg-white border-2 border-[#E07B2D]/30 rounded-[12px] p-5">
+        {/* Pending - orange highlight only when > 0 */}
+        <div className={`bg-white rounded-[12px] p-5 ${
+          pendingCount > 0
+            ? "border-2 border-[#E07B2D]/30"
+            : "border border-[#e8e8e8]"
+        }`}>
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-[10px] bg-[#FFF8F0] flex items-center justify-center">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E07B2D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <div className={`w-10 h-10 rounded-[10px] flex items-center justify-center ${
+              pendingCount > 0 ? "bg-[#FFF8F0]" : "bg-[#f5f5f5]"
+            }`}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={pendingCount > 0 ? "#E07B2D" : "#888"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10" />
                 <polyline points="12 6 12 12 16 14" />
               </svg>
             </div>
           </div>
-          <p className="text-[32px] font-[800] text-[#E07B2D] leading-none mb-1">{pendingCount}</p>
-          <p className="text-[13px] text-[#E07B2D] font-semibold">Pending</p>
+          <p className={`text-[32px] font-[800] leading-none mb-1 ${
+            pendingCount > 0 ? "text-[#E07B2D]" : "text-[#0B2040]"
+          }`}>{pendingCount}</p>
+          <p className={`text-[13px] font-semibold ${
+            pendingCount > 0 ? "text-[#E07B2D]" : "text-[#888]"
+          }`}>Pending</p>
         </div>
 
         {/* Total Customers */}
         <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-5">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-[10px] bg-[#F5F0FF] flex items-center justify-center">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
+              <Users className="w-5 h-5 text-[#7c3aed]" />
             </div>
           </div>
           <p className="text-[32px] font-[800] text-[#7c3aed] leading-none mb-1">{totalCustomers}</p>
           <p className="text-[13px] text-[#888] font-medium">Total Customers</p>
         </div>
+      </div>
+
+      {/* ═══ QUICK ACTIONS ═══ */}
+      <div className="flex flex-wrap gap-3 mb-10">
+        <Link
+          href="/admin/invoicing"
+          className="inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold text-white bg-[#E07B2D] rounded-lg hover:bg-[#CC6A1F] transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Create Invoice
+        </Link>
+        <Link
+          href="/admin/customers?new=1"
+          className="inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold text-white bg-[#7c3aed] rounded-lg hover:bg-[#6d28d9] transition-colors"
+        >
+          <UserPlus className="w-4 h-4" />
+          Add Customer
+        </Link>
+        <button
+          onClick={() => exportBookingsCsv(bookings)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold text-[#0B2040] bg-white border border-[#e8e8e8] rounded-lg hover:bg-[#f5f5f5] transition-colors"
+        >
+          <FileDown className="w-4 h-4" />
+          Export All Data
+        </button>
       </div>
 
       {/* ═══ NAVIGATION CARDS ═══ */}
@@ -140,15 +170,10 @@ export default function AdminHome() {
         {/* Schedule */}
         <Link
           href="/admin/schedule"
-          className="group bg-white border border-[#e8e8e8] rounded-[12px] p-5 hover:border-[#1A5FAC] hover:shadow-md transition-all"
+          className="group bg-white border border-[#e8e8e8] rounded-[12px] p-5 hover:border-[#1A5FAC] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-all"
         >
           <div className="w-11 h-11 rounded-[10px] bg-[#EBF4FF] flex items-center justify-center mb-4 group-hover:bg-[#1A5FAC] transition-colors">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1A5FAC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:stroke-white transition-colors">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
+            <Calendar className="w-[22px] h-[22px] text-[#1A5FAC] group-hover:text-white transition-colors" />
           </div>
           <h3 className="text-[15px] font-bold text-[#0B2040] mb-1">Schedule</h3>
           <p className="text-[13px] text-[#888] leading-snug">View calendar, incoming bookings, and appointments</p>
@@ -157,15 +182,10 @@ export default function AdminHome() {
         {/* Customers */}
         <Link
           href="/admin/customers"
-          className="group bg-white border border-[#e8e8e8] rounded-[12px] p-5 hover:border-[#7c3aed] hover:shadow-md transition-all"
+          className="group bg-white border border-[#e8e8e8] rounded-[12px] p-5 hover:border-[#7c3aed] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-all"
         >
           <div className="w-11 h-11 rounded-[10px] bg-[#F5F0FF] flex items-center justify-center mb-4 group-hover:bg-[#7c3aed] transition-colors">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:stroke-white transition-colors">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
+            <Users className="w-[22px] h-[22px] text-[#7c3aed] group-hover:text-white transition-colors" />
           </div>
           <h3 className="text-[15px] font-bold text-[#0B2040] mb-1">Customers</h3>
           <p className="text-[13px] text-[#888] leading-snug">Customer database, history, and notes</p>
@@ -174,16 +194,10 @@ export default function AdminHome() {
         {/* Invoicing */}
         <Link
           href="/admin/invoicing"
-          className="group bg-white border border-[#e8e8e8] rounded-[12px] p-5 hover:border-[#E07B2D] hover:shadow-md transition-all"
+          className="group bg-white border border-[#e8e8e8] rounded-[12px] p-5 hover:border-[#E07B2D] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-all"
         >
           <div className="w-11 h-11 rounded-[10px] bg-[#FFF8F0] flex items-center justify-center mb-4 group-hover:bg-[#E07B2D] transition-colors">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E07B2D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:stroke-white transition-colors">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-              <line x1="16" y1="13" x2="8" y2="13" />
-              <line x1="16" y1="17" x2="8" y2="17" />
-              <polyline points="10 9 9 9 8 9" />
-            </svg>
+            <Receipt className="w-[22px] h-[22px] text-[#E07B2D] group-hover:text-white transition-colors" />
           </div>
           <h3 className="text-[15px] font-bold text-[#0B2040] mb-1">Invoicing</h3>
           <p className="text-[13px] text-[#888] leading-snug">Create and send invoices</p>
@@ -192,15 +206,10 @@ export default function AdminHome() {
         {/* Pricing & Services */}
         <Link
           href="/admin/pricing"
-          className="group bg-white border border-[#e8e8e8] rounded-[12px] p-5 hover:border-[#0D8A8F] hover:shadow-md transition-all"
+          className="group bg-white border border-[#e8e8e8] rounded-[12px] p-5 hover:border-[#0D8A8F] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-all"
         >
           <div className="w-11 h-11 rounded-[10px] bg-[#ECFBFB] flex items-center justify-center mb-4 group-hover:bg-[#0D8A8F] transition-colors">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0D8A8F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:stroke-white transition-colors">
-              <line x1="16.5" y1="9.4" x2="7.5" y2="4.21" />
-              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-              <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-              <line x1="12" y1="22.08" x2="12" y2="12" />
-            </svg>
+            <Tag className="w-[22px] h-[22px] text-[#0D8A8F] group-hover:text-white transition-colors" />
           </div>
           <h3 className="text-[15px] font-bold text-[#0B2040] mb-1">Pricing & Services</h3>
           <p className="text-[13px] text-[#888] leading-snug">Manage service pricing and availability</p>
@@ -238,7 +247,7 @@ export default function AdminHome() {
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <p className="text-[14px] font-semibold text-[#0B2040] truncate">
-                      {b.name || "—"}
+                      {b.name || "\u2014"}
                       <span className="ml-2 text-[13px] font-normal text-[#888]">{b.service || ""}</span>
                     </p>
                     <p className="text-[12px] text-[#888]">{formatTimestamp(b.createdAt)}</p>
@@ -268,11 +277,11 @@ export default function AdminHome() {
                   <div className="px-5 pb-5 border-b border-[#f0f0f0]">
                     <div className="bg-[#FAFBFC] rounded-[10px] p-4 grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3">
                       <Detail label="Phone" value={formatPhone(b.phone)} href={b.phone ? `tel:${b.phone}` : undefined} />
-                      <Detail label="Email" value={b.email || "—"} href={b.email ? `mailto:${b.email}` : undefined} />
-                      <Detail label="Address" value={b.address || "—"} />
-                      <Detail label="Preferred Date" value={b.preferredDate || "—"} />
-                      <Detail label="Time Window" value={b.timeWindow || "—"} />
-                      <Detail label="Contact Pref" value={b.contactPreference || "—"} />
+                      <Detail label="Email" value={b.email || "\u2014"} href={b.email ? `mailto:${b.email}` : undefined} />
+                      <Detail label="Address" value={b.address || "\u2014"} />
+                      <Detail label="Preferred Date" value={b.preferredDate || "\u2014"} />
+                      <Detail label="Time Window" value={b.timeWindow || "\u2014"} />
+                      <Detail label="Contact Pref" value={b.contactPreference || "\u2014"} />
                       {b.confirmedDate && <Detail label="Confirmed Date" value={b.confirmedDate} />}
                       {b.confirmedArrivalWindow && <Detail label="Arrival Window" value={b.confirmedArrivalWindow} />}
                       {b.notes && <div className="col-span-2 md:col-span-3"><Detail label="Notes" value={b.notes} /></div>}

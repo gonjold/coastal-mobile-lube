@@ -29,3 +29,9 @@ Finished: Sat Apr  4 15:46:08 EDT 2026
 
 ## Task A5: Invoice Print View
 Started: Sat Apr  4 15:46:11 EDT 2026
+Status: COMPLETED
+Finished: Sat Apr  4 15:49:04 EDT 2026
+---
+
+## Task A6: Admin Dashboard Home Polish
+Started: Sat Apr  4 15:49:07 EDT 2026
