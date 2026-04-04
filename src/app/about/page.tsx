@@ -68,11 +68,6 @@ export default function AboutPage() {
     <>
       {/* Section 1 — Hero */}
       <section className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #0A1C38 0%, #0B2040 40%, #0F2847 70%, #132E54 100%)" }}>
-        {/* Atmospheric glow layers */}
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 80% 50% at 20% 50%, rgba(26,95,172,0.12) 0%, transparent 70%)" }} />
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 60% at 80% 30%, rgba(224,123,45,0.06) 0%, transparent 60%)" }} />
-        {/* Subtle grid texture */}
-        <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
         {/* Oval badge watermark */}
         <img
           src={cloudinaryUrl(images.logo, { width: 500, quality: "auto" })}
@@ -126,12 +121,7 @@ export default function AboutPage() {
           </div>
         </div>
 
-        {/* Bottom gradient fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-[80px] pointer-events-none" style={{ background: "linear-gradient(to bottom, transparent, #132E54)" }} />
       </section>
-
-      {/* Navy-to-light transition */}
-      <div style={{ background: "linear-gradient(to bottom, #132E54 0%, #1a3a5e 30%, #3a6a8e 60%, #FAFBFC 100%)", height: "60px" }} />
 
       {/* Section 2 — Van Wrap Showcase */}
       <section className="relative" style={{ background: "linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 50%, #FAFBFC 100%)" }}>
@@ -217,8 +207,6 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Story-to-ValueProps transition */}
-      <div style={{ background: "linear-gradient(to bottom, #F8F6F1, #FFFFFF)", height: "40px" }} />
 
       {/* Section 4 — Value Props */}
       <section className="relative" style={{ background: "linear-gradient(180deg, #FFFFFF 0%, #FAFBFC 100%)" }}>
@@ -254,14 +242,9 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ValueProps-to-Verticals transition */}
-      <div style={{ background: "linear-gradient(to bottom, #FAFBFC 0%, #0F2847 100%)", height: "80px" }} />
 
       {/* Section 5 — Three Verticals */}
       <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0B2040 0%, #0F2847 50%, #132E54 100%)" }}>
-        {/* Subtle glow */}
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 50% 100% at 50% 50%, rgba(224,123,45,0.06) 0%, transparent 70%)" }} />
-
         <div className="max-w-[1100px] mx-auto px-4 lg:px-6 py-12 md:py-16 text-center relative z-10">
           <p className="text-[12px] uppercase font-bold text-[#D9A441] tracking-[2.5px] mb-4">
             Full Service
@@ -303,8 +286,6 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Verticals-to-CTA transition */}
-      <div style={{ background: "linear-gradient(to bottom, #132E54 0%, #1a3a5e 30%, #3a6a8e 60%, #FAFBFC 100%)", height: "60px" }} />
 
       {/* Section 6 — CTA */}
       <section className="relative" style={{ background: "linear-gradient(180deg, #FAFBFC 0%, #F8F6F1 100%)" }}>

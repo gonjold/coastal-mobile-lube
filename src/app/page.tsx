@@ -177,10 +177,6 @@ export default function Home() {
     <>
       {/* ── Hero ── */}
       <section className="relative overflow-hidden min-h-[600px]" style={{ background: "linear-gradient(135deg, #0a1628 0%, #0f2847 40%, #162d50 70%, #1a3a5f 100%)" }}>
-        {/* Atmospheric glow layers */}
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 80% 50% at 20% 50%, rgba(26,95,172,0.12) 0%, transparent 70%)" }} />
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 70% 50% at 60% 5%, rgba(224,123,45,0.05) 0%, transparent 55%)" }} />
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 50% 80% at 50% 100%, rgba(10,22,40,0.7) 0%, transparent 60%)" }} />
 
         {/* Oval badge watermark — massive brand stamp */}
         <img
@@ -191,8 +187,6 @@ export default function Home() {
           style={{ zIndex: 1 }}
         />
 
-        {/* Subtle noise grain texture */}
-        <div className="absolute inset-0 pointer-events-none opacity-[0.035]" style={{ backgroundImage: "repeating-radial-gradient(circle at 17% 32%, rgba(255,255,255,0.12) 0px, transparent 1px), repeating-radial-gradient(circle at 62% 68%, rgba(255,255,255,0.1) 0px, transparent 1px), repeating-radial-gradient(circle at 84% 15%, rgba(255,255,255,0.08) 0px, transparent 1px)", backgroundSize: "3px 3px, 4px 4px, 5px 5px" }} />
 
         <div className="section-inner px-4 lg:px-6 pt-12 pb-12 md:pt-20 md:pb-16 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-[11fr_9fr] gap-10 lg:gap-14 items-start">
@@ -454,12 +448,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Bottom gradient fade into services */}
-        <div className="absolute bottom-0 left-0 right-0 h-[120px] pointer-events-none" style={{ background: "linear-gradient(to bottom, transparent, #0f2847)" }} />
       </section>
-
-      {/* ── Navy-to-light transition ── */}
-      <div style={{ background: "linear-gradient(to bottom, #0f2847, #F0EDE6)", height: "80px" }} />
 
       {/* ── Services ── */}
       <section className="relative" style={{ background: "linear-gradient(180deg, #F0EDE6 0%, #F4EEE3 50%, #F0EDE6 100%)" }}>
@@ -554,8 +543,6 @@ export default function Home() {
       {/* ── Hull stripe separator ── */}
       <div className="h-[3px]" style={{ background: "linear-gradient(to right, #1A5FAC, #E07B2D, #D9A441, #1A5FAC)" }} />
 
-      {/* ── Services-to-HowItWorks transition ── */}
-      <div style={{ background: "linear-gradient(to bottom, #F0EDE6, #FFFFFF)", height: "48px" }} />
 
       {/* ── How It Works ── */}
       <section className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #FFFFFF 0%, #F8F6F1 100%)" }}>
@@ -620,8 +607,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── HowItWorks-to-Stats transition ── */}
-      <div style={{ background: "linear-gradient(to bottom, #F8F6F1, #0F2847)", height: "60px" }} />
 
       {/* ── Stats Bar ── */}
       <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0B2040 0%, #0F2847 50%, #132E54 100%)" }}>
@@ -629,8 +614,6 @@ export default function Home() {
         <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(to right, transparent, rgba(217,164,65,0.3), transparent)" }} />
         {/* Bottom edge accent */}
         <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: "linear-gradient(to right, transparent, rgba(217,164,65,0.3), transparent)" }} />
-        {/* Subtle glow */}
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 50% 100% at 50% 50%, rgba(224,123,45,0.06) 0%, transparent 70%)" }} />
 
         <div className="section-inner px-6 py-12 md:py-14 relative z-10">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
@@ -651,8 +634,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Stats-to-Reviews transition ── */}
-      <div style={{ background: "linear-gradient(to bottom, #132E54, #F4EEE3)", height: "60px" }} />
 
       {/* ── Reviews ── */}
       <section className="overflow-hidden" style={{ background: "linear-gradient(180deg, #F4EEE3 0%, #FBF5EB 40%, #F4EEE3 100%)" }}>
@@ -725,8 +706,6 @@ export default function Home() {
       {/* ── Hull stripe separator ── */}
       <div className="h-[3px]" style={{ background: "linear-gradient(to right, #1A5FAC, #E07B2D, #D9A441, #1A5FAC)" }} />
 
-      {/* ── Reviews-to-Trust transition ── */}
-      <div style={{ background: "linear-gradient(to bottom, #F4EEE3, #F8F6F1)", height: "40px" }} />
 
       {/* ── Trust Bar (inline) ── */}
       <section className="relative" style={{ background: "linear-gradient(180deg, #F8F6F1 0%, #FFFFFF 50%, #F8F6F1 100%)" }}>
@@ -759,13 +738,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Trust-to-CTA transition ── */}
-      <div style={{ background: "linear-gradient(to bottom, #F8F6F1, #0F2847)", height: "60px" }} />
 
       {/* ── CTA ── */}
       <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0A1C38 0%, #0F2847 40%, #132E54 100%)" }}>
-        {/* Atmospheric glow */}
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 80% at 50% 50%, rgba(224,123,45,0.10) 0%, transparent 60%)" }} />
 
         {/* Badge watermark echo */}
         <img

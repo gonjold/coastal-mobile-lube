@@ -197,28 +197,6 @@ export default function ServicesContent() {
             "linear-gradient(180deg, #0A1C38 0%, #0B2040 40%, #0F2847 70%, #132E54 100%)",
         }}
       >
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(ellipse 80% 50% at 20% 50%, rgba(26,95,172,0.12) 0%, transparent 70%)",
-          }}
-        />
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(ellipse 60% 60% at 80% 30%, rgba(224,123,45,0.06) 0%, transparent 60%)",
-          }}
-        />
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.03]"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)",
-            backgroundSize: "60px 60px",
-          }}
-        />
 
         <div className="section-inner px-4 lg:px-6 pt-10 pb-6 md:pt-14 md:pb-10 relative z-10">
           <p className="text-[12px] uppercase font-bold text-[#D9A441] tracking-[2.5px] mb-4">
@@ -250,22 +228,7 @@ export default function ServicesContent() {
           </div>
         </div>
 
-        <div
-          className="absolute bottom-0 left-0 right-0 h-[60px] pointer-events-none"
-          style={{
-            background: "linear-gradient(to bottom, transparent, #0F2847)",
-          }}
-        />
       </section>
-
-      {/* ─── Navy-to-light transition ─── */}
-      <div
-        style={{
-          background:
-            "linear-gradient(to bottom, #0F2847 0%, #1a3a5e 30%, #3a6a8e 60%, #FAFBFC 100%)",
-          height: "60px",
-        }}
-      />
 
       {/* ─── Sticky Category Pill Navigation ─── */}
       <div
@@ -487,14 +450,6 @@ export default function ServicesContent() {
         <ServiceGrid items={maintenanceServices} />
       </CategorySection>
 
-      {/* ─── Transition to bottom CTA ─── */}
-      <div
-        style={{
-          background:
-            "linear-gradient(to bottom, #FFFFFF 0%, #3a6a8e 50%, #0F2847 100%)",
-          height: "80px",
-        }}
-      />
 
       {/* ─── Bottom CTA ─── */}
       <section
@@ -504,13 +459,6 @@ export default function ServicesContent() {
             "linear-gradient(135deg, #0B2040 0%, #0F2847 50%, #132E54 100%)",
         }}
       >
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              "radial-gradient(ellipse 50% 100% at 50% 50%, rgba(224,123,45,0.05) 0%, transparent 70%)",
-          }}
-        />
         <div className="section-inner px-4 lg:px-6 py-12 md:py-16 text-center relative z-10">
           <h2 className="text-[28px] md:text-[34px] font-extrabold text-white mb-4">
             Ready to book?

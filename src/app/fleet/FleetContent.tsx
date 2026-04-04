@@ -150,11 +150,6 @@ export default function FleetContent() {
     <>
       {/* Section 1: Hero */}
       <section className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #0A1C38 0%, #0B2040 40%, #0F2847 70%, #132E54 100%)" }}>
-        {/* Atmospheric glow layers */}
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 80% 50% at 20% 50%, rgba(26,95,172,0.12) 0%, transparent 70%)" }} />
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 60% at 80% 30%, rgba(224,123,45,0.06) 0%, transparent 60%)" }} />
-        {/* Subtle grid texture */}
-        <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
 
         <div className="section-inner px-4 lg:px-6 pt-10 pb-6 md:pt-14 md:pb-10 relative z-10">
           <div>
@@ -184,14 +179,9 @@ export default function FleetContent() {
           </div>
         </div>
 
-        {/* Bottom gradient fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-[60px] pointer-events-none" style={{ background: "linear-gradient(to bottom, transparent, #0F2847)" }} />
       </section>
 
       <TrustBar />
-
-      {/* Navy-to-light transition */}
-      <div style={{ background: "linear-gradient(to bottom, #0F2847 0%, #1a3a5e 30%, #3a6a8e 60%, #FAFBFC 100%)", height: "60px" }} />
 
       {/* Section 2: What We Cover */}
       <section className="relative" style={{ background: "linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 50%, #FAFBFC 100%)" }}>
@@ -220,8 +210,6 @@ export default function FleetContent() {
         </div>
       </section>
 
-      {/* Light-to-warm transition */}
-      <div style={{ background: "linear-gradient(to bottom, #FAFBFC, #FFFFFF)", height: "40px" }} />
 
       {/* Section 3: How Fleet Service Works */}
       <section className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #FFFFFF 0%, #F8F6F1 100%)" }}>
@@ -271,14 +259,9 @@ export default function FleetContent() {
         </div>
       </section>
 
-      {/* Warm-to-dark transition */}
-      <div style={{ background: "linear-gradient(to bottom, #F8F6F1 0%, #0F2847 100%)", height: "80px" }} />
 
       {/* Section 4: Why Fleets Choose Us */}
       <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0B2040 0%, #0F2847 50%, #132E54 100%)" }}>
-        {/* Subtle glow */}
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 50% 100% at 50% 50%, rgba(224,123,45,0.05) 0%, transparent 70%)" }} />
-
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14 relative z-10">
           <h2 className="text-[28px] font-extrabold text-white mb-8">
             Why fleet managers choose Coastal Mobile
@@ -301,8 +284,6 @@ export default function FleetContent() {
         </div>
       </section>
 
-      {/* Dark-to-light transition */}
-      <div style={{ background: "linear-gradient(to bottom, #132E54 0%, #1a3a5e 30%, #3a6a8e 60%, #FAFBFC 100%)", height: "60px" }} />
 
       {/* Section 5: Fleet Services List */}
       <section className="relative" style={{ background: "linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 50%, #FAFBFC 100%)" }}>
@@ -335,14 +316,10 @@ export default function FleetContent() {
         </div>
       </section>
 
-      {/* Light-to-dark transition */}
-      <div style={{ background: "linear-gradient(to bottom, #FAFBFC 0%, #3a6a8e 50%, #0F2847 100%)", height: "80px" }} />
 
       {/* Section 6: Fleet Quote Form */}
       <FleetQuoteForm />
 
-      {/* Dark-to-light transition */}
-      <div style={{ background: "linear-gradient(to bottom, #132E54 0%, #1a3a5e 30%, #3a6a8e 60%, #FAFBFC 100%)", height: "60px" }} />
 
       {/* Section 7: Fleet FAQs */}
       <section className="relative" style={{ background: "linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 50%, #FAFBFC 100%)" }}>
@@ -446,9 +423,6 @@ function FleetQuoteForm() {
 
   return (
     <section id="fleet-quote" className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0B2040 0%, #0F2847 50%, #132E54 100%)" }}>
-      {/* Subtle glow */}
-      <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 80% at 50% 50%, rgba(26,95,172,0.08) 0%, transparent 70%)" }} />
-
       <div className="section-inner px-4 lg:px-6 py-10 md:py-14 relative z-10">
         <div className="text-center mb-8">
           <h2 className="text-[28px] font-[800] text-white mb-3">
