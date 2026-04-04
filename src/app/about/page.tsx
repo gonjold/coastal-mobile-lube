@@ -95,11 +95,12 @@ export default function AboutPage() {
                 </span>
               </h1>
               <p className="text-[16px] leading-[1.7] text-white/60 max-w-[440px] mb-6">
-                Based in Apollo Beach, Florida, Coastal Mobile Lube and Tire
-                brings 30 years of automotive dealership experience directly to
-                your driveway, your dock, or your parking lot. Personal
-                vehicles, boats, work trucks, RVs, trailers, fleet vehicles. If
-                it has an engine, we take care of it.
+                My name is Jason, and I have spent 30 years in automotive
+                dealership fixed operations. I built my career leading service
+                departments and fixed ops teams inside franchise dealerships.
+                When I decided to step away from that world, the goal was
+                simple: bring factory-level care directly to the people of
+                Apollo Beach and the South Shore.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pt-4 border-t border-white/[0.08]">
                 {["30 years experience", "Apollo Beach based", "Licensed & insured"].map((item) => (
@@ -165,33 +166,30 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
             <div className="space-y-5">
               <p className="text-[15px] leading-[1.7] text-[#444]">
-                I spent 30 years in automotive dealership fixed operations.
-                Running service departments, managing teams, and making sure
-                every vehicle that left the bay met a factory standard. It was a
-                good career, and I am proud of the work we did. But over time, I
-                kept coming back to the same thought. People deserve better than
-                sitting in a waiting room all afternoon. They deserve to have
-                someone they trust show up and take care of things right where
-                they are. That is why I left the dealership world and started
-                Coastal Mobile Lube and Tire.
+                For three decades, I managed service departments and fixed ops
+                teams inside franchise dealerships. I loved the work, the
+                precision, the problem-solving. But I kept coming back to the
+                same thought: customers deserve this level of care without
+                rearranging their whole day to get it. So I left the dealership
+                world and built Coastal Mobile to bring the shop to your
+                driveway, your dock, or your parking lot.
               </p>
               <p className="text-[15px] leading-[1.7] text-[#444]">
-                We bring factory-level service directly to you in Apollo Beach
-                and across the South Shore. Cars, trucks, boats, RVs, trailers,
-                fleet vehicles. If it has an engine, we take care of it. One
-                thing that sets us apart is vacuum oil extraction. We pull the
-                oil through the dipstick tube instead of removing the drain
-                plug, which means no mess under your vehicle and no risk of a
-                stripped or cross-threaded plug. It is the same technology
-                high-end dealerships use, and now you can get it in your own
-                driveway.
+                We handle personal vehicles, boats, work trucks, RVs, trailers,
+                fleet vehicles, and recreational equipment. If it has an engine
+                and needs service, we are there. Our vacuum oil extraction
+                system means no drain plug removal, no mess, and a faster job.
+                It is the same technology used in high-end dealerships, and it
+                is one of the things our customers notice right away.
               </p>
               <p className="text-[15px] leading-[1.7] text-[#444]">
-                Everything we do is built on faith-based values. Integrity,
-                honesty, hard work, kindness, and service to others. Those are
-                not just words on our van. They guide how we treat every
-                customer and every job, big or small. When you call Coastal, you
-                get white-glove care and a handshake you can count on.
+                My faith guides everything about how I run this business.
+                Integrity, honesty, hard work, kindness, and service to others.
+                Those are not slogans on a website. They are how I was raised,
+                and they are the standard every customer gets. Whether it is a
+                quick oil change or a full fleet maintenance program, you will
+                always get white-glove service and a straight answer. That is
+                the Coastal Mobile promise, and I stand behind it.
               </p>
             </div>
             <div className="relative rounded-[14px] overflow-hidden shadow-[0_8px_36px_rgba(11,32,64,0.12),0_2px_8px_rgba(11,32,64,0.06)]">

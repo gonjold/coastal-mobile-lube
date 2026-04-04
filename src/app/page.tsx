@@ -67,8 +67,8 @@ const servicesData = {
     title: "Fleet & Commercial",
     description:
       "Scheduled maintenance programs for company vehicles, box trucks, and commercial fleets. Volume pricing and custom plans available.",
-    pricing: "Custom",
-    pricingLabel: "Fleet pricing",
+    pricing: "Custom quotes",
+    pricingLabel: "",
     items: [
       "Scheduled Fleet Maintenance",
       "Company Vehicle Programs",
@@ -85,7 +85,7 @@ const servicesData = {
     title: "Marine Services",
     description:
       "Dockside and boat ramp service for outboard and inboard engines. Seasonal maintenance and winterization across the South Shore.",
-    pricing: "$129.95",
+    pricing: "$149.95",
     pricingLabel: "Starting at",
     items: [
       "Outboard Oil Change",
@@ -330,7 +330,7 @@ export default function Home() {
                         </label>
                         <input
                           type="text"
-                          placeholder="e.g. 33572"
+                          placeholder="e.g. 33601"
                           className={inputClasses}
                           value={zipValue}
                           onChange={(e) => setZipValue(e.target.value)}
@@ -702,7 +702,7 @@ export default function Home() {
                   </p>
                   <div className="flex items-center justify-between pt-3 border-t border-[#F0EDE6]">
                     <span className="text-[13px] font-bold text-[#0F2847]">
-                      {review.name} <span className="font-normal text-[#999]">{review.city}</span>
+                      {review.name} <span className="font-normal text-[#999]">- {review.city}</span>
                     </span>
                     <span className="text-[11px] text-[#aaa] font-medium">Google Review</span>
                   </div>
