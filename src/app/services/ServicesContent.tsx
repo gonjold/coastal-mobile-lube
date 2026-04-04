@@ -241,12 +241,12 @@ export default function ServicesContent() {
                             <span className="text-[12px] text-[#888]">
                               {card.priceLabel}
                             </span>
-                            <span className="text-[28px] font-extrabold text-[#0B2040] ml-2">
+                            <span className="text-[28px] font-extrabold text-[#E07B2D] ml-2">
                               {card.price}
                             </span>
                           </>
                         ) : (
-                          <span className="text-[14px] font-semibold text-[#555]">
+                          <span className="text-[14px] font-semibold text-[#E07B2D]">
                             {card.priceLabel}
                           </span>
                         )}
