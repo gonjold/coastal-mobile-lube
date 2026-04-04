@@ -176,11 +176,11 @@ export default function Home() {
   return (
     <>
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden min-h-[600px]" style={{ background: "linear-gradient(180deg, #0A1C38 0%, #0B2040 40%, #0F2847 70%, #132E54 100%)" }}>
+      <section className="relative overflow-hidden min-h-[600px]" style={{ background: "linear-gradient(135deg, #0a1628 0%, #0f2847 40%, #162d50 70%, #1a3a5f 100%)" }}>
         {/* Atmospheric glow layers */}
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 80% 50% at 20% 50%, rgba(26,95,172,0.15) 0%, transparent 70%)" }} />
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 60% at 80% 30%, rgba(224,123,45,0.07) 0%, transparent 60%)" }} />
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 50% 80% at 50% 100%, rgba(11,32,64,0.8) 0%, transparent 60%)" }} />
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 80% 50% at 20% 50%, rgba(26,95,172,0.12) 0%, transparent 70%)" }} />
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 70% 50% at 60% 5%, rgba(224,123,45,0.05) 0%, transparent 55%)" }} />
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 50% 80% at 50% 100%, rgba(10,22,40,0.7) 0%, transparent 60%)" }} />
 
         {/* Oval badge watermark — massive brand stamp */}
         <img
@@ -191,8 +191,8 @@ export default function Home() {
           style={{ zIndex: 1 }}
         />
 
-        {/* Subtle grid texture */}
-        <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
+        {/* Subtle noise grain texture */}
+        <div className="absolute inset-0 pointer-events-none opacity-[0.035]" style={{ backgroundImage: "repeating-radial-gradient(circle at 17% 32%, rgba(255,255,255,0.12) 0px, transparent 1px), repeating-radial-gradient(circle at 62% 68%, rgba(255,255,255,0.1) 0px, transparent 1px), repeating-radial-gradient(circle at 84% 15%, rgba(255,255,255,0.08) 0px, transparent 1px)", backgroundSize: "3px 3px, 4px 4px, 5px 5px" }} />
 
         <div className="section-inner px-4 lg:px-6 pt-12 pb-12 md:pt-20 md:pb-16 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-[11fr_9fr] gap-10 lg:gap-14 items-start">
@@ -201,7 +201,7 @@ export default function Home() {
               <p className="text-[12px] uppercase font-bold text-[#D9A441] tracking-[2.5px] mb-4">
                 Mobile automotive. Fleet. Marine.
               </p>
-              <h1 className="text-[36px] md:text-[52px] font-extrabold leading-[1.06] text-white tracking-[-1.5px] mb-5">
+              <h1 className="text-[36px] md:text-[52px] font-extrabold leading-[1.06] text-white tracking-[-1.5px] mb-5" style={{ textShadow: "0 2px 20px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2)" }}>
                 The shop that comes to{" "}
                 <span className="relative">
                   <span className="text-[#E07B2D]">you.</span>
@@ -230,10 +230,10 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pt-4 sm:pt-7 border-t border-white/[0.08]">
                 {["Factory-trained techs", "Licensed & insured", "Same-day availability"].map((item) => (
                   <div key={item} className="flex items-center gap-2.5">
-                    <div className="flex items-center justify-center shrink-0 w-[22px] h-[22px] rounded-full bg-[#0D8A8F]/20">
-                      <Check size={12} className="text-[#0D8A8F]" />
+                    <div className="flex items-center justify-center shrink-0 w-[22px] h-[22px] rounded-full bg-[#0D8A8F]/15 shadow-[0_0_8px_rgba(13,138,143,0.15)]" style={{ border: "1px solid rgba(13,138,143,0.2)" }}>
+                      <Check size={12} className="text-[#0D8A8F] drop-shadow-[0_0_2px_rgba(13,138,143,0.4)]" />
                     </div>
-                    <span className="text-sm text-white/45 font-medium">{item}</span>
+                    <span className="text-sm text-white/50 font-medium">{item}</span>
                   </div>
                 ))}
               </div>
@@ -243,15 +243,15 @@ export default function Home() {
             <div
               className="rounded-[16px] p-7 relative overflow-hidden"
               style={{
-                background: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.04) 100%)",
-                backdropFilter: "blur(20px)",
-                WebkitBackdropFilter: "blur(20px)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                boxShadow: "0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08)",
+                background: "linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%)",
+                backdropFilter: "blur(24px) saturate(1.2)",
+                WebkitBackdropFilter: "blur(24px) saturate(1.2)",
+                border: "1px solid rgba(255,255,255,0.10)",
+                boxShadow: "0 8px 40px rgba(0,0,0,0.35), 0 2px 12px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)",
               }}
             >
-              {/* Subtle inner glow */}
-              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+              {/* Subtle top edge highlight */}
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
 
               {quoteSubmitted ? (
                 <div className="flex flex-col items-center text-center py-6 relative z-10">
@@ -455,11 +455,11 @@ export default function Home() {
         </div>
 
         {/* Bottom gradient fade into services */}
-        <div className="absolute bottom-0 left-0 right-0 h-[120px] pointer-events-none" style={{ background: "linear-gradient(to bottom, transparent, #0F2847)" }} />
+        <div className="absolute bottom-0 left-0 right-0 h-[120px] pointer-events-none" style={{ background: "linear-gradient(to bottom, transparent, #122a4a)" }} />
       </section>
 
       {/* ── Navy-to-light transition ── */}
-      <div style={{ background: "linear-gradient(to bottom, #0F2847 0%, #1a3a5e 30%, #3a6a8e 60%, #FAFBFC 100%)", height: "80px" }} />
+      <div style={{ background: "linear-gradient(to bottom, #122a4a 0%, #1a3a5e 30%, #3a6a8e 60%, #FAFBFC 100%)", height: "80px" }} />
 
       {/* ── Services ── */}
       <section className="relative" style={{ background: "linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 50%, #FAFBFC 100%)" }}>
