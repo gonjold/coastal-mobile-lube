@@ -152,7 +152,6 @@ function isNewBooking(b: Booking): boolean {
 
 function parseArrivalWindowHours(window: string): { start: number; end: number } {
   const hourMap: Record<string, { start: number; end: number }> = {
-    "7:00 - 8:00 AM": { start: 7, end: 8 },
     "8:00 - 9:00 AM": { start: 8, end: 9 },
     "9:00 - 10:00 AM": { start: 9, end: 10 },
     "10:00 - 11:00 AM": { start: 10, end: 11 },
@@ -1107,7 +1106,6 @@ function StatusActions({
 }
 
 const arrivalWindows = [
-  "7:00 - 8:00 AM",
   "8:00 - 9:00 AM",
   "9:00 - 10:00 AM",
   "10:00 - 11:00 AM",
