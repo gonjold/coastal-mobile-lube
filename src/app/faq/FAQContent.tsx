@@ -113,13 +113,7 @@ export default function FAQContent() {
       </section>
 
       {/* FAQ Group 1 — Light section */}
-      <section
-        className="relative"
-        style={{
-          background:
-            "linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 50%, #FAFBFC 100%)",
-        }}
-      >
+      <section className="relative bg-[#FAFBFC]">
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
           <div className="max-w-[740px] mx-auto flex flex-col gap-3">
             {firstHalf.map((faq, i) => (
@@ -160,13 +154,7 @@ export default function FAQContent() {
 
 
       {/* FAQ Group 2 — Warm sand section */}
-      <section
-        className="relative"
-        style={{
-          background:
-            "linear-gradient(180deg, #F8F6F1 0%, #F4EEE3 50%, #F8F6F1 100%)",
-        }}
-      >
+      <section className="relative bg-[#F8F6F1]">
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
           <div className="max-w-[740px] mx-auto flex flex-col gap-3">
             {secondHalf.map((faq, i) => {

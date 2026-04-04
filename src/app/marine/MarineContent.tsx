@@ -376,21 +376,21 @@ export default function MarineContent() {
 
 
       {/* ─── Where We Service ─── */}
-      <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0B2040 0%, #0F2847 50%, #132E54 100%)" }}>
+      <section className="relative overflow-hidden bg-[#F7F8FA]">
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14 text-center relative z-10">
-          <h2 className="text-[28px] font-[800] text-white mb-3">
+          <h2 className="text-[28px] font-[800] text-[#0B2040] mb-3">
             Where we service boats
           </h2>
-          <p className="text-[15px] text-white/60 mb-8 mx-auto max-w-[560px]">
+          <p className="text-[15px] text-[#666] mb-8 mx-auto max-w-[560px]">
             We come to you at marinas, boat ramps, dry storage, and private
             docks across Apollo Beach and the South Shore.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
             {locations.map((loc, i) => (
-              <span key={loc} className="text-[15px] text-white/90 font-medium">
+              <span key={loc} className="text-[15px] text-[#0B2040] font-medium">
                 {loc}
                 {i < locations.length - 1 && (
-                  <span className="ml-2 text-white/40">&bull;</span>
+                  <span className="ml-2 text-[#ccc]">&bull;</span>
                 )}
               </span>
             ))}

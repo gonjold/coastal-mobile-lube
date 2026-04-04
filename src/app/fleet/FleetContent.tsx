@@ -184,7 +184,7 @@ export default function FleetContent() {
       <TrustBar />
 
       {/* Section 2: What We Cover */}
-      <section className="relative" style={{ background: "linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 50%, #FAFBFC 100%)" }}>
+      <section className="relative bg-[#FAFBFC]">
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
           <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
             Vehicle Types
@@ -212,7 +212,7 @@ export default function FleetContent() {
 
 
       {/* Section 3: How Fleet Service Works */}
-      <section className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #FFFFFF 0%, #F8F6F1 100%)" }}>
+      <section className="relative overflow-hidden bg-white">
         <div className="section-inner px-4 lg:px-6 py-12 md:py-16">
           <div className="text-center mb-12">
             <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
@@ -261,9 +261,9 @@ export default function FleetContent() {
 
 
       {/* Section 4: Why Fleets Choose Us */}
-      <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0B2040 0%, #0F2847 50%, #132E54 100%)" }}>
+      <section className="relative overflow-hidden bg-[#F7F8FA]">
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14 relative z-10">
-          <h2 className="text-[28px] font-extrabold text-white mb-8">
+          <h2 className="text-[28px] font-extrabold text-[#0B2040] mb-8">
             Why fleet managers choose Coastal Mobile
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -272,10 +272,10 @@ export default function FleetContent() {
                 key={prop.title}
                 className="border-l-[3px] border-l-[#E07B2D] pl-4"
               >
-                <h3 className="text-[16px] font-bold text-white mb-1">
+                <h3 className="text-[16px] font-bold text-[#0B2040] mb-1">
                   {prop.title}
                 </h3>
-                <p className="text-[14px] text-white/60 leading-[1.7]">
+                <p className="text-[14px] text-[#666] leading-[1.7]">
                   {prop.desc}
                 </p>
               </div>
@@ -286,7 +286,7 @@ export default function FleetContent() {
 
 
       {/* Section 5: Fleet Services List */}
-      <section className="relative" style={{ background: "linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 50%, #FAFBFC 100%)" }}>
+      <section className="relative bg-[#FAFBFC]">
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
           <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
             Services
@@ -322,7 +322,7 @@ export default function FleetContent() {
 
 
       {/* Section 7: Fleet FAQs */}
-      <section className="relative" style={{ background: "linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 50%, #FAFBFC 100%)" }}>
+      <section className="relative bg-[#FAFBFC]">
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
           <div className="max-w-[700px] mx-auto">
             <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">

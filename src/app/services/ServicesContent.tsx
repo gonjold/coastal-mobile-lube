@@ -488,57 +488,35 @@ export default function ServicesContent() {
       </section>
 
       {/* ─── Other Services Teaser ─── */}
-      <section
-        className="relative overflow-hidden"
-        style={{
-          background:
-            "linear-gradient(135deg, #132E54 0%, #0F2847 50%, #0B2040 100%)",
-        }}
-      >
+      <section className="relative overflow-hidden bg-[#F7F8FA]">
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div
-              className="rounded-[14px] p-7 hover:translate-y-[-2px] transition-all duration-300"
-              style={{
-                background:
-                  "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
-              }}
-            >
-              <h3 className="text-[20px] font-bold text-white mb-2">
+            <div className="rounded-[14px] p-7 hover:translate-y-[-2px] transition-all duration-300 bg-white border border-[#f0ede6] shadow-[0_2px_20px_rgba(11,32,64,0.06)]">
+              <h3 className="text-[20px] font-bold text-[#0B2040] mb-2">
                 Fleet & Commercial
               </h3>
-              <p className="text-[14px] text-white/60 leading-[1.7] mb-4">
+              <p className="text-[14px] text-[#666] leading-[1.7] mb-4">
                 From company cars to box trucks. Scheduled maintenance programs
                 built around your fleet.
               </p>
               <Link
                 href="/fleet"
-                className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#E07B2D] hover:text-[#f09450] transition-colors"
+                className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#E07B2D] hover:text-[#CC6A1F] transition-colors"
               >
                 Learn about fleet services
                 <ArrowRight size={15} />
               </Link>
             </div>
-            <div
-              className="rounded-[14px] p-7 hover:translate-y-[-2px] transition-all duration-300"
-              style={{
-                background:
-                  "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
-              }}
-            >
-              <h3 className="text-[20px] font-bold text-white mb-2">
+            <div className="rounded-[14px] p-7 hover:translate-y-[-2px] transition-all duration-300 bg-white border border-[#f0ede6] shadow-[0_2px_20px_rgba(11,32,64,0.06)]">
+              <h3 className="text-[20px] font-bold text-[#0B2040] mb-2">
                 Marine
               </h3>
-              <p className="text-[14px] text-white/60 leading-[1.7] mb-4">
+              <p className="text-[14px] text-[#666] leading-[1.7] mb-4">
                 Outboard and inboard engine service at the marina or boat ramp.
               </p>
               <Link
                 href="/marine"
-                className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#E07B2D] hover:text-[#f09450] transition-colors"
+                className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#E07B2D] hover:text-[#CC6A1F] transition-colors"
               >
                 Learn about marine services
                 <ArrowRight size={15} />

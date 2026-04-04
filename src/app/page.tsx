@@ -451,7 +451,7 @@ export default function Home() {
       </section>
 
       {/* ── Services ── */}
-      <section className="relative" style={{ background: "linear-gradient(180deg, #F0EDE6 0%, #F4EEE3 50%, #F0EDE6 100%)" }}>
+      <section className="relative bg-[#F0EDE6]">
         <div className="section-inner px-4 lg:px-6 pt-10 pb-14 md:pt-14">
           <div className="text-center mb-10">
             <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
@@ -545,7 +545,7 @@ export default function Home() {
 
 
       {/* ── How It Works ── */}
-      <section className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #FFFFFF 0%, #F8F6F1 100%)" }}>
+      <section className="relative overflow-hidden bg-white">
         <div className="section-inner px-4 lg:px-6 py-12 md:py-16">
           <div className="text-center mb-12">
             <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
@@ -636,7 +636,7 @@ export default function Home() {
 
 
       {/* ── Reviews ── */}
-      <section className="overflow-hidden" style={{ background: "linear-gradient(180deg, #F4EEE3 0%, #FBF5EB 40%, #F4EEE3 100%)" }}>
+      <section className="overflow-hidden bg-[#F4EEE3]">
         <div className="section-inner px-4 lg:px-6 pt-10 md:pt-14 pb-4">
           <div className="text-center mb-10">
             <p className="text-[12px] uppercase font-bold text-[#D9A441] tracking-[1.5px] mb-3">
@@ -708,7 +708,7 @@ export default function Home() {
 
 
       {/* ── Trust Bar (inline) ── */}
-      <section className="relative" style={{ background: "linear-gradient(180deg, #F8F6F1 0%, #FFFFFF 50%, #F8F6F1 100%)" }}>
+      <section className="relative bg-[#F8F6F1]">
         <div className="section-inner px-4 lg:px-6 py-12">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-0">
             {[

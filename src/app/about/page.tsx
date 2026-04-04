@@ -124,7 +124,7 @@ export default function AboutPage() {
       </section>
 
       {/* Section 2 — Van Wrap Showcase */}
-      <section className="relative" style={{ background: "linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 50%, #FAFBFC 100%)" }}>
+      <section className="relative bg-[#FAFBFC]">
         <div className="max-w-[1100px] mx-auto px-4 lg:px-6 pt-10 pb-4 md:pt-14 md:pb-6">
           <div className="text-center mb-8">
             <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
@@ -145,7 +145,7 @@ export default function AboutPage() {
       </section>
 
       {/* Section 3 — The Story */}
-      <section className="relative" style={{ background: "linear-gradient(180deg, #FAFBFC 0%, #F8F6F1 100%)" }}>
+      <section className="relative bg-[#FAFBFC]">
         <div className="max-w-[1100px] mx-auto px-4 lg:px-6 py-10 md:py-14">
           <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
             Our Story
@@ -209,7 +209,7 @@ export default function AboutPage() {
 
 
       {/* Section 4 — Value Props */}
-      <section className="relative" style={{ background: "linear-gradient(180deg, #FFFFFF 0%, #FAFBFC 100%)" }}>
+      <section className="relative bg-white">
         <div className="max-w-[1100px] mx-auto px-4 lg:px-6 py-10 md:py-14">
           <div className="text-center mb-10">
             <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
@@ -244,15 +244,15 @@ export default function AboutPage() {
 
 
       {/* Section 5 — Three Verticals */}
-      <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0B2040 0%, #0F2847 50%, #132E54 100%)" }}>
+      <section className="relative overflow-hidden bg-[#F7F8FA]">
         <div className="max-w-[1100px] mx-auto px-4 lg:px-6 py-12 md:py-16 text-center relative z-10">
-          <p className="text-[12px] uppercase font-bold text-[#D9A441] tracking-[2.5px] mb-4">
+          <p className="text-[12px] uppercase font-bold text-[#1A5FAC] tracking-[2.5px] mb-4">
             Full Service
           </p>
-          <h2 className="text-[28px] md:text-[34px] font-extrabold text-white mb-3">
+          <h2 className="text-[28px] md:text-[34px] font-extrabold text-[#0B2040] mb-3">
             One team for everything you own
           </h2>
-          <p className="text-[16px] leading-[1.65] text-white/50 max-w-[520px] mx-auto mb-10">
+          <p className="text-[16px] leading-[1.65] text-[#666] max-w-[520px] mx-auto mb-10">
             Personal vehicles, boats, work trucks, RVs, trailers, fleet
             vehicles. If it has an engine, we service it.
           </p>
@@ -260,17 +260,12 @@ export default function AboutPage() {
             {verticals.map((vertical) => (
               <div
                 key={vertical.title}
-                className="rounded-[14px] p-6 text-left hover:-translate-y-0.5 transition-all duration-200"
-                style={{
-                  background: "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
-                }}
+                className="rounded-[14px] p-6 text-left hover:-translate-y-0.5 transition-all duration-200 bg-white border border-[#f0ede6] shadow-[0_2px_20px_rgba(11,32,64,0.06)]"
               >
-                <h3 className="text-[18px] font-bold text-white mb-2">
+                <h3 className="text-[18px] font-bold text-[#0B2040] mb-2">
                   {vertical.title}
                 </h3>
-                <p className="text-[14px] leading-[1.65] text-white/50 mb-4">
+                <p className="text-[14px] leading-[1.65] text-[#666] mb-4">
                   {vertical.description}
                 </p>
                 <Link
@@ -288,7 +283,7 @@ export default function AboutPage() {
 
 
       {/* Section 6 — CTA */}
-      <section className="relative" style={{ background: "linear-gradient(180deg, #FAFBFC 0%, #F8F6F1 100%)" }}>
+      <section className="relative bg-[#FAFBFC]">
         <div className="max-w-[1100px] mx-auto px-4 lg:px-6 py-14 md:py-16 text-center">
           <h2 className="text-[28px] md:text-[36px] font-extrabold leading-[1.1] text-[#0B2040] tracking-[-0.5px] mb-4">
             Ready to skip the shop?

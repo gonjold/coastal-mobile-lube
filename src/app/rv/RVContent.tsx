@@ -380,9 +380,9 @@ export default function RVContent() {
 
 
       {/* ─── Why RV Owners Choose Us ─── */}
-      <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0B2040 0%, #0F2847 50%, #132E54 100%)" }}>
+      <section className="relative overflow-hidden bg-[#F7F8FA]">
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14 relative z-10">
-          <h2 className="text-[28px] font-extrabold text-white mb-8">
+          <h2 className="text-[28px] font-extrabold text-[#0B2040] mb-8">
             Why RV owners choose Coastal Mobile
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -391,10 +391,10 @@ export default function RVContent() {
                 key={prop.title}
                 className="border-l-[3px] border-l-[#E07B2D] pl-4"
               >
-                <h3 className="text-[16px] font-bold text-white mb-1">
+                <h3 className="text-[16px] font-bold text-[#0B2040] mb-1">
                   {prop.title}
                 </h3>
-                <p className="text-[14px] text-white/60 leading-[1.7]">
+                <p className="text-[14px] text-[#666] leading-[1.7]">
                   {prop.desc}
                 </p>
               </div>
@@ -405,7 +405,7 @@ export default function RVContent() {
 
 
       {/* ─── Service Area ─── */}
-      <section className="relative" style={{ background: "linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 50%, #FAFBFC 100%)" }}>
+      <section className="relative bg-[#FAFBFC]">
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14 text-center">
           <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
             Service Area

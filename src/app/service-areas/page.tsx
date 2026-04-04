@@ -103,13 +103,7 @@ export default function ServiceAreasPage() {
       </section>
 
       {/* Service Area Cards - Group 1 */}
-      <section
-        className="relative"
-        style={{
-          background:
-            "linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 50%, #FAFBFC 100%)",
-        }}
-      >
+      <section className="relative bg-[#FAFBFC]">
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
           <div className="max-w-[1100px] mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -123,13 +117,7 @@ export default function ServiceAreasPage() {
 
 
       {/* Service Area Cards - Group 2 */}
-      <section
-        className="relative"
-        style={{
-          background:
-            "linear-gradient(180deg, #F8F6F1 0%, #F4EEE3 50%, #F8F6F1 100%)",
-        }}
-      >
+      <section className="relative bg-[#F8F6F1]">
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
           <div className="max-w-[1100px] mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
