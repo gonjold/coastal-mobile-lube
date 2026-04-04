@@ -270,7 +270,7 @@ export default function BookingForm() {
     } catch {
       setLookupMsg({
         type: "info",
-        text: "Couldn't look up your info right now. Please fill out the form below.",
+        text: "Could not look up your info right now. Please fill out the form below.",
       });
     } finally {
       setLookupLoading(false);

@@ -247,7 +247,7 @@ export default function Home() {
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                   </div>
                   <h2 className="text-[19px] font-bold text-[#0B2040] mb-2">
-                    We&apos;ll call you back within 2 hours
+                    We will call you back within 2 hours
                   </h2>
                   <a
                     href="tel:8137225823"
