@@ -108,31 +108,35 @@ export default function AboutPage() {
       <section className="bg-[#FAFBFC]">
         <div className="max-w-[1100px] mx-auto px-4 lg:px-6 py-10 md:py-14">
           <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
-            THE DIFFERENCE
+            OUR STORY
           </p>
           <h2 className="text-[28px] md:text-[34px] font-extrabold leading-[1.1] text-[#0B2040] tracking-[-0.5px] mb-8">
-            Built by someone who ran the shop
+            Built on 30 years and a handshake
           </h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-12 items-center">
             <div className="space-y-5">
               <p className="text-[15px] leading-[1.7] text-[#444]">
-                Most mobile mechanics are solo operators learning as they go.
-                Coastal Mobile is different. Our founder spent 30 years inside
-                franchise dealership service departments, managing teams of 20 or
-                more technicians, overseeing thousands of vehicles a month, and
-                building the kind of quality control systems that manufacturers
-                require.
+                I spent three decades in automotive dealership fixed operations.
+                Managing service departments, leading teams of technicians,
+                making sure every vehicle that rolled out met the standard. It
+                was good work, and I learned something important along the way:
+                people do not love taking their car to the shop. They do it
+                because they have to.
               </p>
               <p className="text-[15px] leading-[1.7] text-[#444]">
-                That experience does not disappear when you leave the building.
-                It goes with you. Every oil change, every tire installation,
-                every marine service call follows the same standards, the same
-                checklists, and the same accountability that a factory-certified
-                service department demands.
+                Coastal Mobile Lube and Tire started with a simple question.
+                What if we brought the shop to you? Same quality, same
+                professional service, same attention to detail. Just without the
+                waiting room, the shuttle ride, and the lost afternoon.
               </p>
               <p className="text-[15px] leading-[1.7] text-[#444]">
-                The only thing that changed is the location. Instead of you
-                driving to us, we drive to you.
+                We are based right here in Apollo Beach, serving the South Shore
+                communities where we live and work. Our business runs on
+                integrity, honesty, hard work, and kindness. Those values come
+                from our faith, and they show up in every interaction. Whether
+                we are changing your oil in the driveway, servicing your boat at
+                the dock, or maintaining a fleet of work trucks, you get the
+                same white-glove care every single time.
               </p>
               <img
                 src={cloudinaryUrl(images.vanWrapSide, { width: 800 })}
@@ -187,13 +191,13 @@ export default function AboutPage() {
       <section className="bg-[#0B2040]">
         <div className="max-w-[1100px] mx-auto px-4 lg:px-6 py-10 md:py-14 text-center">
           <h2 className="text-[28px] font-extrabold text-white mb-3">
-            Three verticals, one team
+            One team for everything you own
           </h2>
           <p className="text-[16px] leading-[1.65] text-white/70 max-w-[520px] mx-auto mb-10">
-            Automotive, fleet, and marine. One provider for everything that
-            rolls or floats.
+            Personal vehicles, boats, work trucks, RVs, trailers, fleet
+            vehicles. If it has an engine, we service it.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
             {verticals.map((vertical) => (
               <div
                 key={vertical.title}
