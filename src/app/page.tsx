@@ -235,7 +235,7 @@ export default function Home() {
 
             {/* Booking Widget — clean white */}
             <div
-              className="rounded-[16px] p-7 relative overflow-hidden bg-white/95"
+              className="rounded-[16px] p-7 relative overflow-hidden bg-white"
               style={{
                 boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
               }}

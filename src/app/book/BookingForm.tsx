@@ -394,7 +394,7 @@ export default function BookingForm() {
           </div>
         </section>
 
-        <section className="bg-gradient-to-b from-[#0F2A52] to-[#F5F7FA]">
+        <section className="bg-[#F5F7FA]">
           <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
             <div className="max-w-[600px] mx-auto">
               <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 md:p-8 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
@@ -519,10 +519,10 @@ export default function BookingForm() {
       </section>
 
       {/* ═══ Content ═══ */}
-      <section className="bg-gradient-to-b from-[#0F2A52] via-[#F0F2F5] to-[#F5F7FA]">
+      <section className="bg-[#F5F7FA]">
         <div className="section-inner px-4 lg:px-6 py-8 md:py-12">
           {/* 8. Fleet / Marine redirect */}
-          <p className="text-center text-[13px] text-white/50 mb-8">
+          <p className="text-center text-[13px] text-[#999] mb-8">
             Looking for{" "}
             <Link
               href="/fleet"

@@ -75,9 +75,6 @@ export default function FAQContent() {
     })),
   };
 
-  const firstHalf = faqItems.slice(0, 7);
-  const secondHalf = faqItems.slice(7);
-
   return (
     <>
       <script
@@ -112,14 +109,14 @@ export default function FAQContent() {
 
       </section>
 
-      {/* FAQ Group 1 — Light section */}
+      {/* All FAQ Items — single continuous list */}
       <section className="relative bg-[#FAFBFC]">
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
           <div className="max-w-[740px] mx-auto flex flex-col gap-3">
-            {firstHalf.map((faq, i) => (
+            {faqItems.map((faq, i) => (
               <div
                 key={i}
-                className="bg-white border border-[#f0ede6] rounded-[14px] shadow-[0_2px_20px_rgba(11,32,64,0.06)] hover:shadow-[0_4px_28px_rgba(11,32,64,0.1)] transition-all duration-300 overflow-hidden"
+                className="bg-white border border-[#E8E8E8] rounded-[14px] shadow-[0_2px_20px_rgba(11,32,64,0.06)] hover:shadow-[0_4px_28px_rgba(11,32,64,0.1)] transition-all duration-300 overflow-hidden"
               >
                 <button
                   onClick={() => setOpenIndex(openIndex === i ? null : i)}
@@ -139,7 +136,7 @@ export default function FAQContent() {
                 </button>
                 {openIndex === i && (
                   <div className="px-6 pb-5">
-                    <div className="border-t border-[#f0ede6] pt-4">
+                    <div className="border-t border-[#E8E8E8] pt-4">
                       <p className="text-[15px] text-[#444] leading-[1.7] pr-8">
                         {faq.a}
                       </p>
@@ -148,52 +145,6 @@ export default function FAQContent() {
                 )}
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-
-      {/* FAQ Group 2 — Warm sand section */}
-      <section className="relative bg-[#F8F6F1]">
-        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
-          <div className="max-w-[740px] mx-auto flex flex-col gap-3">
-            {secondHalf.map((faq, i) => {
-              const realIndex = i + firstHalf.length;
-              return (
-                <div
-                  key={realIndex}
-                  className="bg-white border border-[#ebe5d8] rounded-[14px] shadow-[0_2px_20px_rgba(11,32,64,0.06)] hover:shadow-[0_4px_28px_rgba(11,32,64,0.1)] transition-all duration-300 overflow-hidden"
-                >
-                  <button
-                    onClick={() =>
-                      setOpenIndex(openIndex === realIndex ? null : realIndex)
-                    }
-                    className="w-full flex items-center justify-between gap-4 px-6 py-5 text-left cursor-pointer"
-                  >
-                    <span className="text-[16px] font-bold text-[#0B2040]">
-                      {faq.q}
-                    </span>
-                    <ChevronDown
-                      size={20}
-                      className={`shrink-0 transition-transform duration-200 ${
-                        openIndex === realIndex
-                          ? "rotate-180 text-[#E07B2D]"
-                          : "text-[#E07B2D]/60"
-                      }`}
-                    />
-                  </button>
-                  {openIndex === realIndex && (
-                    <div className="px-6 pb-5">
-                      <div className="border-t border-[#ebe5d8] pt-4">
-                        <p className="text-[15px] text-[#444] leading-[1.7] pr-8">
-                          {faq.a}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
           </div>
         </div>
       </section>
