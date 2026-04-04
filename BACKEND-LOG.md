@@ -17,3 +17,9 @@ Finished: Sat Apr  4 14:38:37 EDT 2026
 
 ## Task B3: Admin Pricing Management
 Started: Sat Apr  4 14:38:40 EDT 2026
+Status: COMPLETED
+Finished: Sat Apr  4 14:42:22 EDT 2026
+---
+
+## Task B4: Admin Schedule View
+Started: Sat Apr  4 14:42:25 EDT 2026
