@@ -11,6 +11,7 @@ import {
   doc,
   updateDoc,
   deleteDoc,
+  addDoc,
   serverTimestamp,
   arrayUnion,
 } from "firebase/firestore";
@@ -99,6 +100,8 @@ function getSourceLabel(source?: string): { label: string; color: string } {
       return { label: "Fleet", color: "bg-[#16a34a]" };
     case "marine-page":
       return { label: "Marine", color: "bg-[#7c3aed]" };
+    case "admin-manual":
+      return { label: "Manual", color: "bg-[#0D8A8F]" };
     default:
       return { label: source || "—", color: "bg-[#888]" };
   }
@@ -1481,6 +1484,35 @@ function CustomersView({
   const [editingCustomer, setEditingCustomer] = useState<Record<string, { name: string; phone: string; email: string; address: string }>>({});
   const [savingCustomer, setSavingCustomer] = useState<string | null>(null);
 
+  /* New Customer modal */
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({ name: "", phone: "", email: "", notes: "" });
+  const [savingNewCustomer, setSavingNewCustomer] = useState(false);
+
+  async function handleAddCustomer() {
+    if (!newCustomer.name.trim()) return;
+    setSavingNewCustomer(true);
+    try {
+      await addDoc(collection(db, "bookings"), {
+        name: newCustomer.name.trim(),
+        phone: newCustomer.phone.replace(/\D/g, "") || null,
+        email: newCustomer.email.trim().toLowerCase() || null,
+        notes: newCustomer.notes.trim() || null,
+        source: "admin-manual",
+        status: "pending",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+      addToast(`Customer "${newCustomer.name.trim()}" added`);
+      setNewCustomer({ name: "", phone: "", email: "", notes: "" });
+      setShowNewCustomer(false);
+    } catch {
+      addToast("Failed to add customer", "info");
+    } finally {
+      setSavingNewCustomer(false);
+    }
+  }
+
   const customers = buildCustomerList(bookings);
 
   const filtered = search.trim()
@@ -1530,16 +1562,27 @@ function CustomersView({
   }
 
   return (
+    <>
     <div className="bg-white border border-[#e8e8e8] rounded-[12px] overflow-hidden">
-      {/* Search */}
-      <div className="p-4 border-b border-[#eee]">
+      {/* Search + New Customer */}
+      <div className="p-4 border-b border-[#eee] flex items-center gap-3">
         <input
           type="text"
           placeholder="Search by name, phone, or email..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full text-[14px] rounded-[8px] px-4 py-2.5 border border-[#ddd] outline-none focus:border-[#1A5FAC] transition-colors"
+          className="flex-1 text-[14px] rounded-[8px] px-4 py-2.5 border border-[#ddd] outline-none focus:border-[#1A5FAC] transition-colors"
         />
+        <button
+          onClick={() => setShowNewCustomer(true)}
+          className="flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-semibold text-white bg-[#E07B2D] rounded-lg hover:bg-[#CC6A1F] transition-colors whitespace-nowrap"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          New Customer
+        </button>
       </div>
 
       {/* Table */}
@@ -1609,6 +1652,85 @@ function CustomersView({
         </table>
       </div>
     </div>
+
+    {/* ═══ New Customer Modal ═══ */}
+    {showNewCustomer && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="bg-white rounded-[14px] shadow-xl max-w-[440px] w-full mx-4 p-6">
+          <h3 className="text-[18px] font-bold text-[#0B2040] mb-4">New Customer</h3>
+          <div className="flex flex-col gap-3">
+            <div>
+              <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1">
+                Name <span className="text-[#dc2626]">*</span>
+              </label>
+              <input
+                type="text"
+                value={newCustomer.name}
+                onChange={(e) => setNewCustomer((p) => ({ ...p, name: e.target.value }))}
+                placeholder="Full name"
+                className="w-full text-[14px] rounded-[8px] px-3 py-2.5 border border-[#ddd] outline-none focus:border-[#1A5FAC] transition-colors"
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1">
+                Phone
+              </label>
+              <input
+                type="tel"
+                value={newCustomer.phone}
+                onChange={(e) => setNewCustomer((p) => ({ ...p, phone: e.target.value }))}
+                placeholder="(813) 555-1234"
+                className="w-full text-[14px] rounded-[8px] px-3 py-2.5 border border-[#ddd] outline-none focus:border-[#1A5FAC] transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1">
+                Email
+              </label>
+              <input
+                type="email"
+                value={newCustomer.email}
+                onChange={(e) => setNewCustomer((p) => ({ ...p, email: e.target.value }))}
+                placeholder="customer@email.com"
+                className="w-full text-[14px] rounded-[8px] px-3 py-2.5 border border-[#ddd] outline-none focus:border-[#1A5FAC] transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1">
+                Notes
+              </label>
+              <textarea
+                value={newCustomer.notes}
+                onChange={(e) => setNewCustomer((p) => ({ ...p, notes: e.target.value }))}
+                placeholder="Vehicle info, preferences, etc."
+                rows={3}
+                className="w-full text-[14px] rounded-[8px] px-3 py-2.5 border border-[#ddd] outline-none focus:border-[#1A5FAC] transition-colors resize-none"
+              />
+            </div>
+          </div>
+          <div className="flex gap-3 justify-end mt-5">
+            <button
+              onClick={() => {
+                setShowNewCustomer(false);
+                setNewCustomer({ name: "", phone: "", email: "", notes: "" });
+              }}
+              className="px-4 py-2.5 text-[13px] font-semibold text-[#444] border border-[#ddd] rounded-md hover:bg-[#f5f5f5] transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAddCustomer}
+              disabled={!newCustomer.name.trim() || savingNewCustomer}
+              className="px-4 py-2.5 text-[13px] font-semibold text-white bg-[#E07B2D] rounded-md hover:bg-[#CC6A1F] transition-colors disabled:opacity-50"
+            >
+              {savingNewCustomer ? "Adding..." : "Add Customer"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 
