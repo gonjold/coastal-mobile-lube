@@ -88,27 +88,33 @@ export default function MarineContent() {
   return (
     <>
       {/* Section 1: Hero */}
-      <section className="bg-[#0B2040]">
-        <div className="max-w-[1100px] mx-auto px-4 lg:px-6 pt-10 pb-4 md:pt-14 md:pb-8">
+      <section className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #0A1C38 0%, #0B2040 40%, #0F2847 70%, #132E54 100%)" }}>
+        {/* Atmospheric glow layers */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 80% 50% at 20% 50%, rgba(26,95,172,0.12) 0%, transparent 70%)" }} />
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 60% at 80% 30%, rgba(13,138,143,0.06) 0%, transparent 60%)" }} />
+        {/* Subtle grid texture */}
+        <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
+
+        <div className="max-w-[1100px] mx-auto px-4 lg:px-6 pt-10 pb-6 md:pt-14 md:pb-10 relative z-10">
           <div>
-            <p className="text-[13px] uppercase font-bold text-[#6BA3E0] tracking-[1.5px] mb-3">
+            <p className="text-[12px] uppercase font-bold text-[#D9A441] tracking-[2.5px] mb-4">
               Marine Services
             </p>
             <h1 className="text-[30px] md:text-[42px] font-[800] leading-[1.08] text-white tracking-[-1px] mb-5">
               Dockside service for your boat
             </h1>
-            <p className="text-[16px] leading-[1.7] text-white/70 mb-8">
+            <p className="text-[16px] leading-[1.7] text-white/60 mb-8 max-w-[520px]">
               We service outboard and inboard engines right at the marina or
               boat ramp. No hauling, no waiting. Factory-grade parts, certified
               technicians, and a 12-month service warranty on every job.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button href="#marine-quote" variant="primary" size="lg" className="whitespace-nowrap">
+              <Button href="#marine-quote" variant="primary" size="lg" className="whitespace-nowrap shadow-[0_4px_24px_rgba(224,123,45,0.35)]">
                 Get Marine Quote
               </Button>
               <a
                 href="tel:8137225823"
-                className="inline-flex items-center justify-center gap-2 px-[30px] py-[14px] font-semibold text-white bg-transparent border border-white/30 rounded-[var(--radius-button)] hover:border-white/50 transition-all whitespace-nowrap"
+                className="inline-flex items-center justify-center gap-2 px-[30px] py-[14px] font-semibold text-white bg-white/[0.06] border border-white/20 rounded-[var(--radius-button)] hover:bg-white/[0.12] hover:border-white/35 transition-all whitespace-nowrap backdrop-blur-sm"
               >
                 <Phone size={16} />
                 Call 813-722-LUBE
@@ -116,12 +122,18 @@ export default function MarineContent() {
             </div>
           </div>
         </div>
+
+        {/* Bottom gradient fade */}
+        <div className="absolute bottom-0 left-0 right-0 h-[60px] pointer-events-none" style={{ background: "linear-gradient(to bottom, transparent, #0F2847)" }} />
       </section>
 
       <TrustBar />
 
+      {/* Navy-to-light transition */}
+      <div style={{ background: "linear-gradient(to bottom, #0F2847 0%, #1a3a5e 30%, #3a6a8e 60%, #FAFBFC 100%)", height: "60px" }} />
+
       {/* Section 2: Service Packages */}
-      <section className="bg-[#FAFBFC]">
+      <section className="relative" style={{ background: "linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 50%, #FAFBFC 100%)" }}>
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
           <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
             Engine Services
@@ -133,7 +145,7 @@ export default function MarineContent() {
             {packages.map((pkg) => (
               <div
                 key={pkg.name}
-                className={`bg-white border border-[#e8e8e8] rounded-[12px] p-7 ${
+                className={`bg-white border border-[#f0ede6] rounded-[14px] p-7 shadow-[0_2px_20px_rgba(11,32,64,0.06)] hover:shadow-[0_4px_28px_rgba(11,32,64,0.1)] hover:translate-y-[-2px] transition-all duration-300 ${
                   pkg.highlight ? "border-t-[3px] border-t-[#E07B2D]" : ""
                 }`}
               >
@@ -158,11 +170,11 @@ export default function MarineContent() {
             ))}
           </div>
           <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
-            <span className="inline-flex items-center gap-2 text-[14px] text-[#444] font-medium bg-white border border-[#e8e8e8] rounded-[8px] px-4 py-2.5">
+            <span className="inline-flex items-center gap-2 text-[14px] text-[#444] font-medium bg-[#FFF9F4] border border-[#E07B2D]/20 rounded-[8px] px-4 py-2.5">
               <span className="w-2 h-2 rounded-full bg-[#E07B2D] shrink-0" />
               $49.95 travel charge applies
             </span>
-            <span className="inline-flex items-center gap-2 text-[14px] text-[#444] font-medium bg-white border border-[#e8e8e8] rounded-[8px] px-4 py-2.5">
+            <span className="inline-flex items-center gap-2 text-[14px] text-[#444] font-medium bg-[#FFF9F4] border border-[#E07B2D]/20 rounded-[8px] px-4 py-2.5">
               <span className="w-2 h-2 rounded-full bg-[#E07B2D] shrink-0" />
               +$75 for twin engines
             </span>
@@ -170,8 +182,11 @@ export default function MarineContent() {
         </div>
       </section>
 
+      {/* Light transition */}
+      <div style={{ background: "linear-gradient(to bottom, #FAFBFC, #FFFFFF)", height: "40px" }} />
+
       {/* Section 3: Add-On Services */}
-      <section className="bg-white">
+      <section className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #FFFFFF 0%, #F8F6F1 100%)" }}>
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
           <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
             Add-Ons
@@ -183,7 +198,7 @@ export default function MarineContent() {
             {addOnServices.map((service) => (
               <div
                 key={service.name}
-                className="flex items-start gap-2.5 bg-white border border-[#e8e8e8] rounded-[10px] px-[14px] py-[14px]"
+                className="flex items-start gap-2.5 bg-white border border-[#f0ede6] rounded-[10px] px-[14px] py-[14px] shadow-[0_1px_8px_rgba(11,32,64,0.04)] hover:border-[#E07B2D]/30 hover:bg-[#FFF9F4] transition-colors"
               >
                 <span className="inline-block shrink-0 w-1.5 h-1.5 rounded-full bg-[#E07B2D] mt-[7px]" />
                 <div>
@@ -204,13 +219,19 @@ export default function MarineContent() {
         </div>
       </section>
 
+      {/* Warm-to-dark transition */}
+      <div style={{ background: "linear-gradient(to bottom, #F8F6F1 0%, #0F2847 100%)", height: "80px" }} />
+
       {/* Section 4: Where We Service */}
-      <section className="bg-[#0B2040]">
-        <div className="section-inner px-4 lg:px-6 py-10 md:py-14 text-center">
+      <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0B2040 0%, #0F2847 50%, #132E54 100%)" }}>
+        {/* Subtle glow */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 50% 100% at 50% 50%, rgba(13,138,143,0.06) 0%, transparent 70%)" }} />
+
+        <div className="section-inner px-4 lg:px-6 py-10 md:py-14 text-center relative z-10">
           <h2 className="text-[28px] font-[800] text-white mb-3">
             Where we service boats
           </h2>
-          <p className="text-[15px] text-white/70 mb-8 mx-auto max-w-[560px]">
+          <p className="text-[15px] text-white/60 mb-8 mx-auto max-w-[560px]">
             We come to you at marinas, boat ramps, dry storage, and private
             docks across Tampa Bay and Hillsborough County.
           </p>
@@ -294,18 +315,21 @@ function MarineQuoteForm() {
   }
 
   return (
-    <section id="marine-quote" className="bg-[#0B2040]">
-      <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
+    <section id="marine-quote" className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0B2040 0%, #0F2847 50%, #132E54 100%)" }}>
+      {/* Subtle glow */}
+      <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 80% at 50% 50%, rgba(26,95,172,0.08) 0%, transparent 70%)" }} />
+
+      <div className="section-inner px-4 lg:px-6 py-10 md:py-14 relative z-10">
         <div className="text-center mb-8">
           <h2 className="text-[28px] font-[800] text-white mb-3">
             Get a marine service quote
           </h2>
-          <p className="text-[15px] text-white/70 mx-auto max-w-[520px]">
+          <p className="text-[15px] text-white/60 mx-auto max-w-[520px]">
             Tell us about your boat and we will put together a service plan.
           </p>
         </div>
 
-        <div className="bg-white rounded-[12px] p-8 max-w-[560px] mx-auto">
+        <div className="bg-white rounded-[14px] p-8 max-w-[560px] mx-auto shadow-[0_8px_40px_rgba(0,0,0,0.2)]">
           {submitted ? (
             <div className="flex flex-col items-center text-center py-6">
               <div className="w-12 h-12 rounded-full bg-[#22c55e] flex items-center justify-center mb-4">

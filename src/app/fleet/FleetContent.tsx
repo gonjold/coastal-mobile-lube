@@ -149,27 +149,33 @@ export default function FleetContent() {
   return (
     <>
       {/* Section 1: Hero */}
-      <section className="bg-[#0B2040]">
-        <div className="max-w-[1100px] mx-auto px-4 lg:px-6 pt-10 pb-4 md:pt-14 md:pb-8">
+      <section className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #0A1C38 0%, #0B2040 40%, #0F2847 70%, #132E54 100%)" }}>
+        {/* Atmospheric glow layers */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 80% 50% at 20% 50%, rgba(26,95,172,0.12) 0%, transparent 70%)" }} />
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 60% at 80% 30%, rgba(224,123,45,0.06) 0%, transparent 60%)" }} />
+        {/* Subtle grid texture */}
+        <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
+
+        <div className="max-w-[1100px] mx-auto px-4 lg:px-6 pt-10 pb-6 md:pt-14 md:pb-10 relative z-10">
           <div>
-            <p className="text-[13px] uppercase font-bold text-[#6BA3E0] tracking-[1.5px] mb-3">
+            <p className="text-[12px] uppercase font-bold text-[#D9A441] tracking-[2.5px] mb-4">
               Fleet & Commercial
             </p>
             <h1 className="text-[30px] md:text-[42px] font-[800] leading-[1.08] text-white tracking-[-1px] mb-5">
               Keep your fleet on the road
             </h1>
-            <p className="text-[16px] leading-[1.7] text-white/70 mb-8">
+            <p className="text-[16px] leading-[1.7] text-white/60 mb-8 max-w-[520px]">
               Scheduled mobile maintenance for company vehicles, box trucks,
               vans, and commercial fleets. We come to your yard, your lot, or
               your job site. No vehicle downtime, no shop visits.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button href="#fleet-quote" variant="primary" size="lg">
+              <Button href="#fleet-quote" variant="primary" size="lg" className="shadow-[0_4px_24px_rgba(224,123,45,0.35)]">
                 Get Fleet Quote
               </Button>
               <a
                 href="tel:8137225823"
-                className="inline-flex items-center justify-center gap-2 px-[30px] py-[14px] font-semibold text-white bg-transparent border border-white/30 rounded-[var(--radius-button)] hover:border-white/50 transition-all"
+                className="inline-flex items-center justify-center gap-2 px-[30px] py-[14px] font-semibold text-white bg-white/[0.06] border border-white/20 rounded-[var(--radius-button)] hover:bg-white/[0.12] hover:border-white/35 transition-all backdrop-blur-sm"
               >
                 <Phone size={16} />
                 Call 813-722-LUBE
@@ -177,12 +183,18 @@ export default function FleetContent() {
             </div>
           </div>
         </div>
+
+        {/* Bottom gradient fade */}
+        <div className="absolute bottom-0 left-0 right-0 h-[60px] pointer-events-none" style={{ background: "linear-gradient(to bottom, transparent, #0F2847)" }} />
       </section>
 
       <TrustBar />
 
+      {/* Navy-to-light transition */}
+      <div style={{ background: "linear-gradient(to bottom, #0F2847 0%, #1a3a5e 30%, #3a6a8e 60%, #FAFBFC 100%)", height: "60px" }} />
+
       {/* Section 2: What We Cover */}
-      <section className="bg-[#FAFBFC]">
+      <section className="relative" style={{ background: "linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 50%, #FAFBFC 100%)" }}>
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
           <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
             Vehicle Types
@@ -194,7 +206,7 @@ export default function FleetContent() {
             {vehicleTypes.map((type) => (
               <div
                 key={type.title}
-                className="bg-white border border-[#e8e8e8] rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-6 border-t-[3px] border-t-[#0B2040]"
+                className="bg-white border border-[#f0ede6] rounded-[14px] shadow-[0_2px_20px_rgba(11,32,64,0.06)] p-6 border-t-[3px] border-t-[#0B2040] hover:shadow-[0_4px_28px_rgba(11,32,64,0.1)] hover:translate-y-[-2px] transition-all duration-300"
               >
                 <h3 className="text-[18px] font-bold text-[#0B2040] mb-2">
                   {type.title}
@@ -208,9 +220,12 @@ export default function FleetContent() {
         </div>
       </section>
 
+      {/* Light-to-warm transition */}
+      <div style={{ background: "linear-gradient(to bottom, #FAFBFC, #FFFFFF)", height: "40px" }} />
+
       {/* Section 3: How Fleet Service Works */}
-      <section className="bg-white">
-        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
+      <section className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #FFFFFF 0%, #F8F6F1 100%)" }}>
+        <div className="section-inner px-4 lg:px-6 py-12 md:py-16">
           <div className="text-center mb-12">
             <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
               The Process
@@ -219,12 +234,14 @@ export default function FleetContent() {
               Built around your operation
             </h2>
           </div>
-          <div className="relative">
+          <div className="relative max-w-[1000px] mx-auto">
+            {/* Gradient connecting line */}
             <div
-              className="hidden md:block absolute top-[30px] h-[2px] bg-[#eee]"
+              className="hidden md:block absolute top-[36px] h-[2px]"
               style={{
-                left: "calc(12.5% + 30px)",
-                right: "calc(12.5% + 30px)",
+                left: "calc(12.5% + 36px)",
+                right: "calc(12.5% + 36px)",
+                background: "linear-gradient(to right, #0B2040, #E07B2D)",
               }}
             />
             <div className="grid grid-cols-1 md:grid-cols-4 gap-10 md:gap-6">
@@ -234,15 +251,17 @@ export default function FleetContent() {
                   className="flex flex-col items-center text-center relative z-10"
                 >
                   <div
-                    className="flex items-center justify-center w-[60px] h-[60px] rounded-[14px] text-white text-xl font-bold mb-5"
-                    style={{ background: step.bg }}
+                    className="relative flex items-center justify-center w-[72px] h-[72px] rounded-[18px] text-white text-xl font-bold mb-6 shadow-[0_4px_20px_rgba(0,0,0,0.2)]"
+                    style={{ background: step.bg === "#E07B2D" ? "linear-gradient(135deg, #E07B2D, #CC6A1F)" : "linear-gradient(135deg, #0B2040, #132E54)" }}
                   >
-                    {step.num}
+                    <span className="absolute -top-2 -right-2 w-[26px] h-[26px] rounded-full bg-white text-[#0B2040] text-[12px] font-bold flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.12)]">
+                      {step.num}
+                    </span>
                   </div>
                   <h3 className="text-[18px] font-bold text-[#0B2040] mb-2">
                     {step.title}
                   </h3>
-                  <p className="text-[14px] leading-[1.7] text-[#444] max-w-[280px]">
+                  <p className="text-[14px] leading-[1.7] text-[#555] max-w-[280px]">
                     {step.desc}
                   </p>
                 </div>
@@ -252,9 +271,15 @@ export default function FleetContent() {
         </div>
       </section>
 
+      {/* Warm-to-dark transition */}
+      <div style={{ background: "linear-gradient(to bottom, #F8F6F1 0%, #0F2847 100%)", height: "80px" }} />
+
       {/* Section 4: Why Fleets Choose Us */}
-      <section className="bg-[#0B2040]">
-        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
+      <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0B2040 0%, #0F2847 50%, #132E54 100%)" }}>
+        {/* Subtle glow */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 50% 100% at 50% 50%, rgba(224,123,45,0.05) 0%, transparent 70%)" }} />
+
+        <div className="section-inner px-4 lg:px-6 py-10 md:py-14 relative z-10">
           <h2 className="text-[28px] font-extrabold text-white mb-8">
             Why fleet managers choose Coastal Mobile
           </h2>
@@ -267,7 +292,7 @@ export default function FleetContent() {
                 <h3 className="text-[16px] font-bold text-white mb-1">
                   {prop.title}
                 </h3>
-                <p className="text-[14px] text-white/70 leading-[1.7]">
+                <p className="text-[14px] text-white/60 leading-[1.7]">
                   {prop.desc}
                 </p>
               </div>
@@ -276,8 +301,11 @@ export default function FleetContent() {
         </div>
       </section>
 
+      {/* Dark-to-light transition */}
+      <div style={{ background: "linear-gradient(to bottom, #132E54 0%, #1a3a5e 30%, #3a6a8e 60%, #FAFBFC 100%)", height: "60px" }} />
+
       {/* Section 5: Fleet Services List */}
-      <section className="bg-[#FAFBFC]">
+      <section className="relative" style={{ background: "linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 50%, #FAFBFC 100%)" }}>
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
           <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
             Services
@@ -289,7 +317,7 @@ export default function FleetContent() {
             {fleetServices.map((service) => (
               <div
                 key={service.name}
-                className="flex items-start gap-2.5 bg-white border border-[#e8e8e8] rounded-[10px] px-[14px] py-[14px]"
+                className="flex items-start gap-2.5 bg-white border border-[#f0ede6] rounded-[10px] px-[14px] py-[14px] shadow-[0_1px_8px_rgba(11,32,64,0.04)] hover:border-[#E07B2D]/30 hover:bg-[#FFF9F4] transition-colors"
               >
                 <span className="inline-block shrink-0 w-1.5 h-1.5 rounded-full bg-[#E07B2D] mt-[7px]" />
                 <div>
@@ -307,11 +335,17 @@ export default function FleetContent() {
         </div>
       </section>
 
+      {/* Light-to-dark transition */}
+      <div style={{ background: "linear-gradient(to bottom, #FAFBFC 0%, #3a6a8e 50%, #0F2847 100%)", height: "80px" }} />
+
       {/* Section 6: Fleet Quote Form */}
       <FleetQuoteForm />
 
+      {/* Dark-to-light transition */}
+      <div style={{ background: "linear-gradient(to bottom, #132E54 0%, #1a3a5e 30%, #3a6a8e 60%, #FAFBFC 100%)", height: "60px" }} />
+
       {/* Section 7: Fleet FAQs */}
-      <section className="bg-white">
+      <section className="relative" style={{ background: "linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 50%, #FAFBFC 100%)" }}>
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
           <div className="max-w-[700px] mx-auto">
             <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
@@ -411,18 +445,21 @@ function FleetQuoteForm() {
   }
 
   return (
-    <section id="fleet-quote" className="bg-[#0B2040]">
-      <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
+    <section id="fleet-quote" className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0B2040 0%, #0F2847 50%, #132E54 100%)" }}>
+      {/* Subtle glow */}
+      <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 80% at 50% 50%, rgba(26,95,172,0.08) 0%, transparent 70%)" }} />
+
+      <div className="section-inner px-4 lg:px-6 py-10 md:py-14 relative z-10">
         <div className="text-center mb-8">
           <h2 className="text-[28px] font-[800] text-white mb-3">
             Get a fleet quote
           </h2>
-          <p className="text-[15px] text-white/70 mx-auto max-w-[520px]">
+          <p className="text-[15px] text-white/60 mx-auto max-w-[520px]">
             Tell us about your fleet and we will put together a custom maintenance plan within 48 hours.
           </p>
         </div>
 
-        <div className="bg-white rounded-[12px] p-8 max-w-[560px] mx-auto">
+        <div className="bg-white rounded-[14px] p-8 max-w-[560px] mx-auto shadow-[0_8px_40px_rgba(0,0,0,0.2)]">
           {submitted ? (
             <div className="flex flex-col items-center text-center py-6">
               <div className="w-12 h-12 rounded-full bg-[#22c55e] flex items-center justify-center mb-4">
