@@ -199,7 +199,7 @@ export default function AboutPage() {
                 alt="Interior of the Coastal Mobile service van with professional equipment"
                 className="w-full h-auto"
               />
-              <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-5 py-4 bg-white/90 backdrop-blur-sm">
+              <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-5 py-4 bg-white">
                 <span className="text-[14px] font-semibold text-[#0B2040]">
                   Fully equipped mobile shop
                 </span>

@@ -236,7 +236,7 @@ export default function RVContent() {
       {/* ─── Sticky Category Pill Navigation ─── */}
       <div
         ref={pillBarRef}
-        className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#e8e4dc]/60 shadow-[0_2px_12px_rgba(11,32,64,0.06)]"
+        className="sticky top-0 z-40 bg-white border-b border-[#e8e4dc]/60 shadow-[0_2px_12px_rgba(11,32,64,0.06)]"
       >
         <div className="section-inner px-4 lg:px-6">
           <div className="flex gap-2 py-3 overflow-x-auto no-scrollbar">

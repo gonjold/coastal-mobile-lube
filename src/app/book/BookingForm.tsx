@@ -352,7 +352,7 @@ export default function BookingForm() {
 
   /* ─── Styles ─── */
   const inp =
-    "w-full text-[15px] rounded-[10px] px-3.5 py-3 outline-none border border-[#0B2040]/10 bg-white/60 backdrop-blur-sm focus:border-[#E07B2D] focus:bg-white/80 transition-all placeholder:text-[#888]/60";
+    "w-full text-[15px] rounded-[10px] px-3.5 py-3 outline-none border border-[#0B2040]/10 bg-white focus:border-[#E07B2D] transition-all placeholder:text-[#888]/60";
   const lbl =
     "block text-[12px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5";
 
@@ -397,7 +397,7 @@ export default function BookingForm() {
         <section className="bg-gradient-to-b from-[#0F2A52] to-[#F5F7FA]">
           <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
             <div className="max-w-[600px] mx-auto">
-              <div className="bg-white/80 backdrop-blur-xl border border-white/40 rounded-[16px] p-6 md:p-8 shadow-[0_8px_32px_rgba(11,32,64,0.10)]">
+              <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 md:p-8 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
                 <div className="flex flex-col items-center text-center">
                   <div className="w-12 h-12 rounded-full bg-[#22c55e] flex items-center justify-center mb-5">
                     <Check size={24} />
@@ -571,7 +571,7 @@ export default function BookingForm() {
                         className={`relative text-left rounded-[12px] p-4 border-2 transition-all duration-150 cursor-pointer ${
                           on
                             ? "border-[#E07B2D] bg-[#E07B2D]/5 shadow-[0_0_0_1px_rgba(224,123,45,0.2)]"
-                            : "border-[#0B2040]/8 bg-white/70 hover:border-[#E07B2D]/40 hover:shadow-[0_4px_16px_rgba(11,32,64,0.08)] hover:-translate-y-[1px]"
+                            : "border-[#0B2040]/8 bg-white hover:border-[#E07B2D]/40 hover:shadow-[0_4px_16px_rgba(11,32,64,0.08)] hover:-translate-y-[1px]"
                         }`}
                       >
                         {on && (
@@ -621,7 +621,7 @@ export default function BookingForm() {
                         className={`relative text-left rounded-[12px] p-5 border-2 transition-all duration-150 cursor-pointer ${
                           on
                             ? "border-[#E07B2D] bg-[#E07B2D]/5 shadow-[0_0_0_1px_rgba(224,123,45,0.2)]"
-                            : "border-[#0B2040]/8 bg-white/70 hover:border-[#E07B2D]/40 hover:shadow-[0_4px_16px_rgba(11,32,64,0.08)] hover:-translate-y-[1px]"
+                            : "border-[#0B2040]/8 bg-white hover:border-[#E07B2D]/40 hover:shadow-[0_4px_16px_rgba(11,32,64,0.08)] hover:-translate-y-[1px]"
                         }`}
                       >
                         {on && (
@@ -752,7 +752,7 @@ export default function BookingForm() {
                                             className={`relative text-left rounded-[10px] p-3 border-2 transition-all duration-150 cursor-pointer ${
                                               on
                                                 ? "border-[#E07B2D] bg-[#E07B2D]/5"
-                                                : "border-[#0B2040]/8 bg-white/50 hover:border-[#E07B2D]/40 hover:bg-white/70"
+                                                : "border-[#0B2040]/8 bg-white hover:border-[#E07B2D]/40"
                                             }`}
                                           >
                                             {on && (
@@ -789,7 +789,7 @@ export default function BookingForm() {
               </div>
 
               {/* ═══ 6. Booking Form ═══ */}
-              <div className="bg-white/80 backdrop-blur-xl border border-white/40 rounded-[16px] p-6 md:p-8 shadow-[0_8px_32px_rgba(11,32,64,0.10)]">
+              <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 md:p-8 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
                 <h2 className="text-[20px] font-[800] text-[#0B2040] mb-6">
                   Your details
                 </h2>
@@ -809,7 +809,7 @@ export default function BookingForm() {
                         </button>
                       </p>
                     ) : (
-                      <div className="bg-white/40 backdrop-blur-sm border border-[#0B2040]/8 rounded-[10px] p-4">
+                      <div className="bg-white border border-[#0B2040]/8 rounded-[10px] p-4">
                         <div className="flex items-center justify-between mb-3">
                           <span className="text-[13px] font-semibold text-[#444]">
                             Find your info
@@ -912,7 +912,7 @@ export default function BookingForm() {
                           className={`px-4 py-3 rounded-[10px] text-[13px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
                             form.timeWindow === tw.value
                               ? "bg-[#E07B2D] text-white border-[#E07B2D] shadow-[0_2px_8px_rgba(224,123,45,0.3)]"
-                              : "border-[#0B2040]/10 bg-white/50 text-[#444] hover:border-[#E07B2D]/40"
+                              : "border-[#0B2040]/10 bg-white text-[#444] hover:border-[#E07B2D]/40"
                           }`}
                         >
                           {tw.label}
@@ -984,7 +984,7 @@ export default function BookingForm() {
                           className={`flex-1 py-3 rounded-[10px] text-[14px] font-semibold border transition-all cursor-pointer ${
                             form.contactPreference === m
                               ? "bg-[#E07B2D] text-white border-[#E07B2D] shadow-[0_2px_8px_rgba(224,123,45,0.3)]"
-                              : "border-[#0B2040]/10 bg-white/50 text-[#444] hover:border-[#E07B2D]/40"
+                              : "border-[#0B2040]/10 bg-white text-[#444] hover:border-[#E07B2D]/40"
                           }`}
                         >
                           {m.charAt(0).toUpperCase() + m.slice(1)}
@@ -1068,7 +1068,7 @@ export default function BookingForm() {
             {/* ─── Right column: Desktop sidebar ─── */}
             <div className="hidden lg:block">
               <div className="sticky top-6">
-                <div className="bg-white/80 backdrop-blur-xl border border-white/40 rounded-[16px] p-5 shadow-[0_8px_32px_rgba(11,32,64,0.10)]">
+                <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
                   <h3 className="text-[15px] font-bold text-[#0B2040] mb-4">
                     Your services
                   </h3>
