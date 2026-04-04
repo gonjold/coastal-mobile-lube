@@ -143,7 +143,7 @@ export default function AboutPage() {
               The shop on wheels
             </h2>
           </div>
-          <div className="relative rounded-[14px] overflow-hidden shadow-[0_4px_30px_rgba(11,32,64,0.1)] border border-[#f0ede6] bg-white p-4 md:p-6">
+          <div className="relative rounded-[14px] overflow-hidden shadow-[0_8px_40px_rgba(11,32,64,0.12),0_2px_10px_rgba(11,32,64,0.06)] border border-[#f0ede6] bg-white p-4 md:p-6">
             <img
               src={cloudinaryUrl(images.vanWrapSide, { width: 1200 })}
               alt="Coastal Mobile Lube & Tire wrapped service van"
@@ -165,30 +165,36 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
             <div className="space-y-5">
               <p className="text-[15px] leading-[1.7] text-[#444]">
-                I spent three decades in automotive dealership fixed operations.
-                Managing service departments, leading teams of technicians,
-                making sure every vehicle that rolled out met the standard. It
-                was good work, and I learned something important along the way:
-                people do not love taking their car to the shop. They do it
-                because they have to.
+                I spent 30 years in automotive dealership fixed operations.
+                Running service departments, managing teams, and making sure
+                every vehicle that left the bay met a factory standard. It was a
+                good career, and I am proud of the work we did. But over time, I
+                kept coming back to the same thought. People deserve better than
+                sitting in a waiting room all afternoon. They deserve to have
+                someone they trust show up and take care of things right where
+                they are. That is why I left the dealership world and started
+                Coastal Mobile Lube and Tire.
               </p>
               <p className="text-[15px] leading-[1.7] text-[#444]">
-                Coastal Mobile Lube and Tire started with a simple question.
-                What if we brought the shop to you? Same quality, same
-                professional service, same attention to detail. Just without the
-                waiting room, the shuttle ride, and the lost afternoon.
+                We bring factory-level service directly to you in Apollo Beach
+                and across the South Shore. Cars, trucks, boats, RVs, trailers,
+                fleet vehicles. If it has an engine, we take care of it. One
+                thing that sets us apart is vacuum oil extraction. We pull the
+                oil through the dipstick tube instead of removing the drain
+                plug, which means no mess under your vehicle and no risk of a
+                stripped or cross-threaded plug. It is the same technology
+                high-end dealerships use, and now you can get it in your own
+                driveway.
               </p>
               <p className="text-[15px] leading-[1.7] text-[#444]">
-                We are based right here in Apollo Beach, serving the South Shore
-                communities where we live and work. Our business runs on
-                integrity, honesty, hard work, and kindness. Those values come
-                from our faith, and they show up in every interaction. Whether
-                we are changing your oil in the driveway, servicing your boat at
-                the dock, or maintaining a fleet of work trucks, you get the
-                same white-glove care every single time.
+                Everything we do is built on faith-based values. Integrity,
+                honesty, hard work, kindness, and service to others. Those are
+                not just words on our van. They guide how we treat every
+                customer and every job, big or small. When you call Coastal, you
+                get white-glove care and a handshake you can count on.
               </p>
             </div>
-            <div className="relative rounded-[14px] overflow-hidden shadow-[0_4px_24px_rgba(11,32,64,0.1)]">
+            <div className="relative rounded-[14px] overflow-hidden shadow-[0_8px_36px_rgba(11,32,64,0.12),0_2px_8px_rgba(11,32,64,0.06)]">
               <img
                 src={cloudinaryUrl(images.vanInteriorEquipment, {
                   width: 800,
