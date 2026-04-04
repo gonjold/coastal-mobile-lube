@@ -116,7 +116,7 @@ const serviceTabs: { key: TabKey; label: string }[] = [
 ];
 
 const inputClasses =
-  "w-full text-sm rounded-[10px] px-3 py-2.5 outline-none border border-white/10 bg-white/[0.08] text-white placeholder:text-white/40 focus:border-white/25 transition-colors";
+  "w-full text-sm rounded-[10px] px-3 py-2.5 outline-none border border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-400 focus:border-gray-400 transition-colors";
 
 export default function Home() {
   const [bookingTab, setBookingTab] = useState<TabKey>("automotive");
@@ -176,14 +176,14 @@ export default function Home() {
   return (
     <>
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden min-h-[600px]" style={{ background: "linear-gradient(135deg, #0a1628 0%, #0f2847 40%, #162d50 70%, #1a3a5f 100%)" }}>
+      <section className="relative overflow-hidden min-h-[600px]" style={{ background: "linear-gradient(180deg, #0A1628 0%, #0B2040 50%, #0F2847 100%)" }}>
 
         {/* Oval badge watermark — massive brand stamp */}
         <img
           src={cloudinaryUrl(images.logo, { width: 900, quality: "auto" })}
           alt=""
           aria-hidden="true"
-          className="absolute left-1/2 -translate-x-1/2 -top-[60px] w-[550px] md:w-[700px] h-auto pointer-events-none select-none opacity-[0.10] blur-[0.5px]"
+          className="absolute left-1/2 -translate-x-1/2 top-0 w-[55vw] min-w-[500px] max-w-[700px] h-auto pointer-events-none select-none opacity-[0.07]"
           style={{ zIndex: 1 }}
         />
 
@@ -233,26 +233,20 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Booking Widget — frosted glass */}
+            {/* Booking Widget — clean white */}
             <div
-              className="rounded-[16px] p-7 relative overflow-hidden"
+              className="rounded-[16px] p-7 relative overflow-hidden bg-white/95"
               style={{
-                background: "linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%)",
-                backdropFilter: "blur(24px) saturate(1.2)",
-                WebkitBackdropFilter: "blur(24px) saturate(1.2)",
-                border: "1px solid rgba(255,255,255,0.10)",
-                boxShadow: "0 8px 40px rgba(0,0,0,0.35), 0 2px 12px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
               }}
             >
-              {/* Subtle top edge highlight */}
-              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
 
               {quoteSubmitted ? (
                 <div className="flex flex-col items-center text-center py-6 relative z-10">
                   <div className="w-12 h-12 rounded-full bg-[#22c55e] flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(34,197,94,0.3)]">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                   </div>
-                  <h2 className="text-[19px] font-bold text-white mb-2">
+                  <h2 className="text-[19px] font-bold text-[#0B2040] mb-2">
                     We&apos;ll call you back within 2 hours
                   </h2>
                   <a
@@ -264,22 +258,22 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="relative z-10">
-                  <h2 className="text-[19px] font-bold text-white mb-1">
+                  <h2 className="text-[19px] font-bold text-[#0B2040] mb-1">
                     Get a quick quote
                   </h2>
-                  <p className="text-[13px] text-white/45 mb-5">
+                  <p className="text-[13px] text-gray-500 mb-5">
                     Tell us what you need. We will get back to you fast.
                   </p>
 
-                  <div className="flex rounded-[10px] p-1 bg-white/[0.06] mb-5 border border-white/[0.06]">
+                  <div className="flex rounded-[10px] p-1 bg-gray-100 mb-5 border border-gray-200">
                     {bookingTabs.map((tab) => (
                       <button
                         key={tab.key}
                         onClick={() => { setBookingTab(tab.key); setSelectedService(""); }}
                         className={`flex-1 text-[13px] font-semibold py-2 rounded-[8px] transition-all ${
                           bookingTab === tab.key
-                            ? "bg-white/[0.14] text-white shadow-[0_2px_8px_rgba(0,0,0,0.15)]"
-                            : "text-white/45 hover:text-white/65"
+                            ? "bg-white text-[#0B2040] shadow-[0_2px_8px_rgba(0,0,0,0.08)]"
+                            : "text-gray-400 hover:text-gray-600"
                         }`}
                       >
                         {tab.label}
@@ -289,7 +283,7 @@ export default function Home() {
 
                   <div className="flex flex-col gap-4">
                     <div>
-                      <label className="block text-[11px] uppercase font-semibold text-white/50 tracking-[0.5px] mb-1.5">
+                      <label className="block text-[11px] uppercase font-semibold text-gray-500 tracking-[0.5px] mb-1.5">
                         Service Needed
                       </label>
                       <select
@@ -305,7 +299,7 @@ export default function Home() {
                     </div>
 
                     <div>
-                      <label className="block text-[11px] uppercase font-semibold text-white/50 tracking-[0.5px] mb-1.5">
+                      <label className="block text-[11px] uppercase font-semibold text-gray-500 tracking-[0.5px] mb-1.5">
                         Your Name
                       </label>
                       <input
@@ -319,7 +313,7 @@ export default function Home() {
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[11px] uppercase font-semibold text-white/50 tracking-[0.5px] mb-1.5">
+                        <label className="block text-[11px] uppercase font-semibold text-gray-500 tracking-[0.5px] mb-1.5">
                           Zip Code
                         </label>
                         <input
@@ -331,7 +325,7 @@ export default function Home() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[11px] uppercase font-semibold text-white/50 tracking-[0.5px] mb-1.5">
+                        <label className="block text-[11px] uppercase font-semibold text-gray-500 tracking-[0.5px] mb-1.5">
                           Phone
                         </label>
                         <input
@@ -345,7 +339,7 @@ export default function Home() {
                     </div>
 
                     <div>
-                      <label className="block text-[11px] uppercase font-semibold text-white/50 tracking-[0.5px] mb-1.5">
+                      <label className="block text-[11px] uppercase font-semibold text-gray-500 tracking-[0.5px] mb-1.5">
                         Email
                       </label>
                       <input
@@ -358,10 +352,10 @@ export default function Home() {
                     </div>
 
                     <div>
-                      <label className="block text-[11px] uppercase font-semibold text-white/50 tracking-[0.5px] mb-1.5">
+                      <label className="block text-[11px] uppercase font-semibold text-gray-500 tracking-[0.5px] mb-1.5">
                         Best Way to Reach You
                       </label>
-                      <div className="flex rounded-[10px] p-1 bg-white/[0.06] border border-white/[0.06]">
+                      <div className="flex rounded-[10px] p-1 bg-gray-100 border border-gray-200">
                         {(["call", "text", "email"] as const).map((method) => (
                           <button
                             key={method}
@@ -369,8 +363,8 @@ export default function Home() {
                             onClick={() => setContactPreference(method)}
                             className={`flex-1 text-[13px] font-semibold py-2 rounded-[8px] transition-all ${
                               contactPreference === method
-                                ? "bg-white/[0.14] text-white shadow-[0_2px_8px_rgba(0,0,0,0.15)]"
-                                : "text-white/45 hover:text-white/65"
+                                ? "bg-white text-[#0B2040] shadow-[0_2px_8px_rgba(0,0,0,0.08)]"
+                                : "text-gray-400 hover:text-gray-600"
                             }`}
                           >
                             {method.charAt(0).toUpperCase() + method.slice(1)}
@@ -380,7 +374,7 @@ export default function Home() {
                     </div>
 
                     <div>
-                      <label className="block text-[11px] uppercase font-semibold text-white/50 tracking-[0.5px] mb-1.5">
+                      <label className="block text-[11px] uppercase font-semibold text-gray-500 tracking-[0.5px] mb-1.5">
                         Preferred Date
                       </label>
                       <input
@@ -398,7 +392,7 @@ export default function Home() {
                           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                         )}
                       </span>
-                      <span className="text-[14px] text-white/50">My dates are flexible</span>
+                      <span className="text-[14px] text-gray-500">My dates are flexible</span>
                       <input
                         type="checkbox"
                         checked={datesFlexible}
@@ -408,7 +402,7 @@ export default function Home() {
                     </label>
 
                     <div>
-                      <label className="block text-[11px] uppercase font-semibold text-white/50 tracking-[0.5px] mb-1.5">
+                      <label className="block text-[11px] uppercase font-semibold text-gray-500 tracking-[0.5px] mb-1.5">
                         Notes (optional)
                       </label>
                       <textarea
@@ -434,7 +428,7 @@ export default function Home() {
                       </p>
                     )}
 
-                    <p className="text-center text-[12px] text-white/45">
+                    <p className="text-center text-[12px] text-gray-400">
                       or call{" "}
                       <a href="tel:8137225823" className="font-medium text-[#E07B2D]">
                         813-722-LUBE
