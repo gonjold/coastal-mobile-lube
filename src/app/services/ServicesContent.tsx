@@ -144,7 +144,7 @@ const faqItems = [
   },
   {
     q: "What areas do you serve?",
-    a: "We serve Tampa, Brandon, Riverview, Wesley Chapel, Plant City, Temple Terrace, Lutz, Land O' Lakes, and surrounding Hillsborough County communities.",
+    a: "We are based in Apollo Beach and serve the South Shore, including Ruskin, Sun City Center, Sun City, Riverview, Gibsonton, Fish Hawk, Palmetto, Ellenton, Parrish, Balm, and Wimauma.",
   },
   {
     q: "How much does a mobile oil change cost?",

@@ -42,7 +42,7 @@ const serviceAreas = [
   {
     name: "Gibsonton",
     description:
-      "Located right along US-41, Gibsonton is a quick trip from our Apollo Beach shop. We service cars, trucks, and commercial vehicles throughout the Gibsonton corridor.",
+      "Located right along US-41, Gibsonton is a quick trip from our Apollo Beach base. We service cars, trucks, and commercial vehicles throughout the Gibsonton corridor.",
   },
   {
     name: "Palmetto",

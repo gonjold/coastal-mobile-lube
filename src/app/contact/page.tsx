@@ -238,11 +238,11 @@ export default function ContactPage() {
                   </span>
                 </div>
                 <p className="text-[15px] font-semibold text-[#0B2040]">
-                  Tampa and surrounding Hillsborough County
+                  Apollo Beach and the South Shore
                 </p>
                 <p className="text-[13px] text-[#888] mt-1">
-                  Tampa, Brandon, Riverview, Wesley Chapel, Plant City, Temple
-                  Terrace, Lutz, Land O&apos; Lakes
+                  Ruskin, Sun City Center, Riverview, Gibsonton, Fish Hawk,
+                  Palmetto, Ellenton, Parrish, Balm, Wimauma, Sun City
                 </p>
               </div>
 

@@ -25,7 +25,7 @@ const mainServices = [
 
 const moreServices = [
   { name: "Cabin Air Filter", price: "$99.95" },
-  { name: "Battery Replacement", price: "$50" },
+  { name: "Battery Replacement", price: "From $50" },
   { name: "HVAC Recharge", price: "$299.99" },
   { name: "Brake Flush", price: "$239.95" },
   { name: "Coolant Flush", price: "$269.95" },
@@ -174,7 +174,7 @@ export default function BookingForm() {
       } else {
         setLookupMessage({
           type: "info",
-          text: "No worries — fill out the form below and we'll get you set up",
+          text: "No worries, fill out the form below and we will get you set up.",
         });
       }
     } catch {
@@ -266,7 +266,8 @@ export default function BookingForm() {
             </h1>
             <p className="text-[16px] leading-[1.7] text-white/70 max-w-[700px]">
               Pick a service, choose a date, and we will confirm your
-              appointment within 2 hours.
+              appointment within 2 hours. Or call{" "}
+              <a href="tel:8137225823" className="text-[#E07B2D] font-semibold hover:underline">813-722-LUBE</a>.
             </p>
           </div>
         </div>
@@ -711,7 +712,7 @@ export default function BookingForm() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
                 "Factory-grade parts and fluids",
-                "Certified master technicians",
+                "ASE-certified technicians",
                 "12-month service warranty",
                 "No hidden fees, ever",
               ].map((item) => (

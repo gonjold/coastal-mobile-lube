@@ -84,7 +84,7 @@ const servicesData = {
   marine: {
     title: "Marine Services",
     description:
-      "Dockside and boat ramp service for outboard and inboard engines. Seasonal maintenance and winterization across Tampa.",
+      "Dockside and boat ramp service for outboard and inboard engines. Seasonal maintenance and winterization across the South Shore.",
     pricing: "$129.95",
     pricingLabel: "Starting at",
     items: [
@@ -675,11 +675,11 @@ export default function Home() {
           >
             {[...Array(2)].map((_, setIdx) =>
               [
-                { text: "Called Monday morning, Chase was at my house by noon. Oil change done in my driveway in 25 minutes. Why would I ever go back to a shop?", name: "Mike R.", city: "Tampa" },
-                { text: "We have 14 work vans and scheduling service used to be a nightmare. Now they come to our lot every month. Game changer for our fleet.", name: "Sarah T.", city: "Brandon" },
-                { text: "Had my boat winterized right at the marina. No hauling, no waiting. Professional, fast, fair price.", name: "Dave K.", city: "Clearwater" },
-                { text: "First time trying mobile service and I\u2019m never going back to sitting in a waiting room. Booked online, tech showed up on time, done.", name: "Lisa M.", city: "Wesley Chapel" },
-                { text: "Got new tires mounted in my office parking lot during lunch. Didn\u2019t miss a minute of work.", name: "James P.", city: "Tampa" },
+                { text: "Called Monday morning, Chase was at my house by noon. Oil change done in my driveway in 25 minutes. Why would I ever go back to a shop?", name: "Mike R.", city: "Apollo Beach" },
+                { text: "We have 14 work vans and scheduling service used to be a nightmare. Now they come to our lot every month. Game changer for our fleet.", name: "Sarah T.", city: "Riverview" },
+                { text: "Had my boat winterized right at the marina. No hauling, no waiting. Professional, fast, fair price.", name: "Dave K.", city: "Ruskin" },
+                { text: "First time trying mobile service and I am never going back to sitting in a waiting room. Booked online, tech showed up on time, done.", name: "Lisa M.", city: "Sun City Center" },
+                { text: "Got new tires mounted in my office parking lot during lunch. Did not miss a minute of work.", name: "James P.", city: "Gibsonton" },
                 { text: "Honest pricing, no upselling. Exactly what they quoted is what I paid. Refreshing.", name: "Ana C.", city: "Riverview" },
               ].map((review) => (
                 <div
@@ -706,7 +706,7 @@ export default function Home() {
 
         <div className="section-inner px-4 lg:px-6 pb-10 md:pb-14">
           <div className="text-center mt-8">
-            <p className="text-[13px] text-[#8B7355] mb-2">Reviews from customers across Tampa Bay</p>
+            <p className="text-[13px] text-[#8B7355] mb-2">Reviews from customers across the South Shore</p>
             <a href="#" className="text-[13px] font-semibold text-[#E07B2D] hover:underline">
               Leave us a review on Google &rarr;
             </a>

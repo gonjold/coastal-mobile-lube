@@ -74,14 +74,14 @@ const addOnServices = [
 ];
 
 const locations = [
-  "Tampa",
   "Apollo Beach",
   "Ruskin",
-  "Davis Islands",
-  "Westshore",
-  "Gandy",
-  "Courtney Campbell",
-  "Bayshore",
+  "Gibsonton",
+  "Palmetto",
+  "Ellenton",
+  "Riverview",
+  "Sun City",
+  "Sun City Center",
 ];
 
 export default function MarineContent() {
@@ -233,7 +233,7 @@ export default function MarineContent() {
           </h2>
           <p className="text-[15px] text-white/60 mb-8 mx-auto max-w-[560px]">
             We come to you at marinas, boat ramps, dry storage, and private
-            docks across Tampa Bay and Hillsborough County.
+            docks across Apollo Beach and the South Shore.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
             {locations.map((loc, i) => (
