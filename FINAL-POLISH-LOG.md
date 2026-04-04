@@ -41,3 +41,28 @@ Finished: Sat Apr  4 15:25:18 EDT 2026
 
 ## Task P7: FAQ Fix + Final Visual QA
 Started: Sat Apr  4 15:25:21 EDT 2026
+Status: COMPLETED
+Finished: Sat Apr  4 15:28:56 EDT 2026
+---
+## Deploy
+Started: Sat Apr  4 15:28:59 EDT 2026
+error: cannot pull with rebase: You have unstaged changes.
+error: Please commit or stash them.
+To https://github.com/gonjold/coastal-mobile-lube.git
+   71d82e1..acdd225  navy-redesign -> navy-redesign
+│                                                                             │
+╰─────────────────────────────────────────────────────────────────────────────╯
+
+[32mBuild logs: [39m        https://app.netlify.com/projects/coastal-mobile-lube/deploys/69d1668051f3a5190ab00ae3
+[32mFunction logs: [39m     https://app.netlify.com/projects/coastal-mobile-lube/logs/functions?scope=deploy:69d1668051f3a5190ab00ae3
+[32mEdge function Logs: [39mhttps://app.netlify.com/projects/coastal-mobile-lube/logs/edge-functions?scope=deployid:69d1668051f3a5190ab00ae3
+
+If everything looks good on your draft URL, deploy it to your main project URL with the --prod flag:
+netlify deploy --prod
+
+---
+## Pipeline Complete
+Finished: Sat Apr  4 15:29:28 EDT 2026
+
+Navy preview: https://navy-preview--coastal-mobile-lube.netlify.app
+Review the site and compare against COASTAL-FINAL-POLISH-SPEC.md

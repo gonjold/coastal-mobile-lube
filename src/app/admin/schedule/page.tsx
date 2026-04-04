@@ -340,7 +340,7 @@ export default function SchedulePage() {
 
   /* ── Render ── */
   return (
-    <div className="px-4 lg:px-8 py-6 max-w-[1400px] mx-auto">
+    <div className="px-4 lg:px-8 py-6 max-w-[1600px] mx-auto">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-[13px] text-[#888] mb-4">
         <Link href="/admin" className="hover:text-[#1A5FAC] transition-colors">Dashboard</Link>
@@ -452,10 +452,30 @@ export default function SchedulePage() {
         </p>
       </div>
 
-      {/* ═══ TWO-COLUMN LAYOUT ═══ */}
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* LEFT: Bookings List (60%) */}
-        <div className="w-full lg:w-[60%]">
+      {/* ═══ Status Cards ═══ */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div className="bg-[#FFF8F0] rounded-[10px] p-3 text-center">
+          <p className="text-[22px] font-[800] text-[#E07B2D] leading-none mb-0.5">{stats.pending}</p>
+          <p className="text-[11px] text-[#888] font-medium">Pending</p>
+        </div>
+        <div className="bg-[#EBF4FF] rounded-[10px] p-3 text-center">
+          <p className="text-[22px] font-[800] text-[#1A5FAC] leading-none mb-0.5">{stats.confirmed}</p>
+          <p className="text-[11px] text-[#888] font-medium">Confirmed</p>
+        </div>
+        <div className="bg-[#F0FAF0] rounded-[10px] p-3 text-center">
+          <p className="text-[22px] font-[800] text-[#16a34a] leading-none mb-0.5">{stats.completed}</p>
+          <p className="text-[11px] text-[#888] font-medium">Completed</p>
+        </div>
+        <div className="bg-[#f5f5f5] rounded-[10px] p-3 text-center">
+          <p className="text-[22px] font-[800] text-[#999] leading-none mb-0.5">{stats.cancelled}</p>
+          <p className="text-[11px] text-[#888] font-medium">Cancelled</p>
+        </div>
+      </div>
+
+      {/* ═══ RESPONSIVE LAYOUT: sidebar calendar on xl when collapsed, stacked when expanded ═══ */}
+      <div className={`flex flex-col ${expandedId ? '' : 'xl:flex-row'} gap-6`}>
+        {/* Bookings List - full width when expanded, flex-1 on xl when collapsed */}
+        <div className={`w-full ${expandedId ? '' : 'xl:flex-1 xl:min-w-0'}`}>
           {filtered.length === 0 ? (
             <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-12 text-center">
               <div className="w-16 h-16 rounded-full bg-[#f5f5f5] flex items-center justify-center mx-auto mb-4">
@@ -597,9 +617,9 @@ export default function SchedulePage() {
           )}
         </div>
 
-        {/* RIGHT: Mini Calendar (40%) */}
-        <div className="w-full lg:w-[40%]">
-          <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-5 lg:sticky lg:top-6">
+        {/* Calendar - sidebar on xl when no expansion, full width otherwise */}
+        <div className={`w-full ${expandedId ? '' : 'xl:w-[340px] xl:shrink-0'}`}>
+          <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-5 xl:sticky xl:top-6">
             {/* Month navigation */}
             <div className="flex items-center justify-between mb-4">
               <button
@@ -690,24 +710,19 @@ export default function SchedulePage() {
               })}
             </div>
 
-            {/* Mini stats under calendar */}
-            <div className="mt-4 pt-4 border-t border-[#eee] grid grid-cols-2 gap-3">
-              <div className="bg-[#FFF8F0] rounded-[8px] p-3 text-center">
-                <p className="text-[20px] font-[800] text-[#E07B2D] leading-none mb-0.5">{stats.pending}</p>
-                <p className="text-[11px] text-[#888] font-medium">Pending</p>
-              </div>
-              <div className="bg-[#EBF4FF] rounded-[8px] p-3 text-center">
-                <p className="text-[20px] font-[800] text-[#1A5FAC] leading-none mb-0.5">{stats.confirmed}</p>
-                <p className="text-[11px] text-[#888] font-medium">Confirmed</p>
-              </div>
-              <div className="bg-[#F0FAF0] rounded-[8px] p-3 text-center">
-                <p className="text-[20px] font-[800] text-[#16a34a] leading-none mb-0.5">{stats.completed}</p>
-                <p className="text-[11px] text-[#888] font-medium">Completed</p>
-              </div>
-              <div className="bg-[#f5f5f5] rounded-[8px] p-3 text-center">
-                <p className="text-[20px] font-[800] text-[#999] leading-none mb-0.5">{stats.cancelled}</p>
-                <p className="text-[11px] text-[#888] font-medium">Cancelled</p>
-              </div>
+            {/* Legend */}
+            <div className="mt-4 pt-3 border-t border-[#eee] flex flex-wrap gap-3 justify-center">
+              {[
+                { color: "bg-[#E07B2D]", label: "Pending" },
+                { color: "bg-[#1A5FAC]", label: "Confirmed" },
+                { color: "bg-[#16a34a]", label: "Completed" },
+                { color: "bg-[#999]", label: "Cancelled" },
+              ].map((l) => (
+                <div key={l.label} className="flex items-center gap-1.5">
+                  <span className={`w-[7px] h-[7px] rounded-full ${l.color}`} />
+                  <span className="text-[11px] text-[#888] font-medium">{l.label}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -951,9 +966,9 @@ function ExpandedDetail({
 
   return (
     <div className="bg-[#FAFBFC] border-t border-[#eee] px-6 py-5">
-      <div className="flex flex-col md:flex-row gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* LEFT COLUMN - Customer Info */}
-        <div className="w-full md:w-1/3 shrink-0">
+        <div>
           <div className="bg-white border border-[#e8e8e8] rounded-[10px] p-4">
             <h4 className="text-[14px] font-bold text-[#0B2040] mb-3 pb-2 border-b border-[#eee]">Customer Info</h4>
             {customerRows.map((r) => (
@@ -970,7 +985,7 @@ function ExpandedDetail({
         </div>
 
         {/* RIGHT COLUMN - Actions & Communications */}
-        <div className="w-full md:w-2/3">
+        <div>
       {/* Notification buttons */}
       <NotificationButtons
         bookingId={b.id}
