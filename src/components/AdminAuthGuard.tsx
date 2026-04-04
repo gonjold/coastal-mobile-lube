@@ -2,8 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+
+const ALLOWED_ADMIN_EMAILS = [
+  'jon@jgoldco.com',
+  'coastalmobilelube@gmail.com',
+];
 
 export default function AdminAuthGuard({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
@@ -11,9 +16,14 @@ export default function AdminAuthGuard({ children }: { children: React.ReactNode
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        setAuthenticated(true);
+        if (ALLOWED_ADMIN_EMAILS.includes(user.email || '')) {
+          setAuthenticated(true);
+        } else {
+          await signOut(auth);
+          router.push('/admin/login?error=unauthorized');
+        }
       } else {
         router.push('/admin/login');
       }

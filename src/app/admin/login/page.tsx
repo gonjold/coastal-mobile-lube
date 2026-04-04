@@ -1,82 +1,75 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
-export default function AdminLoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+function LoginForm() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const unauthorized = searchParams.get("error") === "unauthorized";
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleGoogleSignIn() {
     setError("");
     setSubmitting(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
       router.push("/admin");
     } catch {
-      setError("Invalid email or password.");
+      setError("Sign in failed. Please try again.");
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0B2040] px-4">
-      <div className="w-full max-w-[400px] bg-white rounded-[12px] p-8">
-        <h1 className="text-[24px] font-[800] text-[#0B2040] mb-1">
-          Admin Login
-        </h1>
-        <p className="text-[14px] text-[#888] mb-6">
-          Coastal Mobile Lube &amp; Tire
-        </p>
+    <div className="w-full max-w-[400px] bg-white rounded-[12px] p-8">
+      <h1 className="text-[24px] font-[800] text-[#0B2040] mb-1">
+        Admin Login
+      </h1>
+      <p className="text-[14px] text-[#888] mb-6">
+        Coastal Mobile Lube &amp; Tire
+      </p>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div>
-            <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
-              Email
-            </label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full text-sm rounded-[10px] px-3 py-2.5 outline-none border-2 border-[#eee] bg-[#fafafa] focus:border-[#1A5FAC] transition-colors"
-              placeholder="you@email.com"
-            />
-          </div>
-          <div>
-            <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
-              Password
-            </label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full text-sm rounded-[10px] px-3 py-2.5 outline-none border-2 border-[#eee] bg-[#fafafa] focus:border-[#1A5FAC] transition-colors"
-              placeholder="Password"
-            />
-          </div>
+      <div className="flex flex-col gap-4">
+        {unauthorized && (
+          <p className="text-[13px] text-red-500 font-medium">
+            Access denied. This account is not authorized for admin access.
+          </p>
+        )}
 
-          {error && (
-            <p className="text-[13px] text-red-500 font-medium">{error}</p>
-          )}
+        {error && (
+          <p className="text-[13px] text-red-500 font-medium">{error}</p>
+        )}
 
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full font-semibold text-white rounded-[8px] py-3 bg-[#E07B2D] hover:bg-[#CC6A1F] transition-colors disabled:opacity-60"
-          >
-            {submitting ? "Signing in..." : "Sign In"}
-          </button>
-        </form>
+        <button
+          onClick={handleGoogleSignIn}
+          disabled={submitting}
+          className="w-full flex items-center justify-center gap-3 bg-white border border-[#ddd] rounded-[8px] px-6 py-3 font-semibold text-[#333] hover:bg-[#fafafa] hover:border-[#bbb] transition-colors disabled:opacity-60"
+        >
+          <svg width="18" height="18" viewBox="0 0 48 48">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 0 1 0-9.18l-7.98-6.19a24.04 24.04 0 0 0 0 21.56l7.98-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          </svg>
+          {submitting ? "Signing in..." : "Sign in with Google"}
+        </button>
       </div>
+    </div>
+  );
+}
+
+export default function AdminLoginPage() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[#0B2040] px-4">
+      <Suspense>
+        <LoginForm />
+      </Suspense>
     </div>
   );
 }
