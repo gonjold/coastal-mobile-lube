@@ -275,10 +275,10 @@ export default function RVContent() {
 /* --- RV Quote Form Component ----------------------------------------- */
 
 const rvInputBase =
-  "w-full text-[15px] rounded-[10px] px-3.5 py-3 outline-none border-2 border-[#eee] bg-white focus:border-[#E07B2D] transition-colors";
+  "w-full text-[15px] rounded-[10px] px-3.5 py-3 outline-none border border-white/[0.15] bg-white/[0.07] text-white placeholder:text-white/40 focus:border-[#E07B2D]/70 focus:bg-white/[0.10] transition-colors";
 
 const rvLabelClass =
-  "block text-[12px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5";
+  "block text-[12px] uppercase font-semibold text-white/50 tracking-[0.5px] mb-1.5";
 
 function RVQuoteForm() {
   const [name, setName] = useState("");
@@ -344,13 +344,24 @@ function RVQuoteForm() {
           </p>
         </div>
 
-        <div className="bg-white rounded-[14px] p-8 max-w-[560px] mx-auto shadow-[0_8px_40px_rgba(0,0,0,0.2)]">
+        <div
+          className="rounded-[16px] p-8 max-w-[560px] mx-auto relative overflow-hidden"
+          style={{
+            background: "linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.03) 100%)",
+            backdropFilter: "blur(24px) saturate(1.2)",
+            WebkitBackdropFilter: "blur(24px) saturate(1.2)",
+            border: "1px solid rgba(255,255,255,0.10)",
+            boxShadow: "0 8px 40px rgba(0,0,0,0.35), 0 2px 12px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)",
+          }}
+        >
+          {/* Top edge highlight */}
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
           {submitted ? (
             <div className="flex flex-col items-center text-center py-6">
               <div className="w-12 h-12 rounded-full bg-[#22c55e] flex items-center justify-center mb-4">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
               </div>
-              <p className="text-[16px] font-semibold text-[#0B2040] mb-2">
+              <p className="text-[16px] font-semibold text-white mb-2">
                 We will call you within 24 hours to discuss your RV service.
               </p>
               <a href="tel:8137225823" className="text-[#E07B2D] font-semibold hover:underline">
@@ -400,7 +411,7 @@ function RVQuoteForm() {
                       className={`flex-1 py-3 rounded-[10px] text-[14px] font-semibold border-2 transition-all cursor-pointer ${
                         contactPreference === method
                           ? "bg-[#E07B2D] text-white border-[#E07B2D]"
-                          : "border-[#eee] text-[#444] hover:border-[#ddd]"
+                          : "border-white/[0.15] text-white/70 hover:border-white/30"
                       }`}
                     >
                       {method.charAt(0).toUpperCase() + method.slice(1)}
@@ -419,12 +430,12 @@ function RVQuoteForm() {
                 />
               </div>
               <label className="flex items-center gap-2 cursor-pointer">
-                <span className={`w-[18px] h-[18px] rounded border-2 flex items-center justify-center transition-colors ${datesFlexible ? "bg-[#E07B2D] border-[#E07B2D]" : "border-[#ddd]"}`}>
+                <span className={`w-[18px] h-[18px] rounded border-2 flex items-center justify-center transition-colors ${datesFlexible ? "bg-[#E07B2D] border-[#E07B2D]" : "border-white/30"}`}>
                   {datesFlexible && (
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                   )}
                 </span>
-                <span className="text-[14px] text-[#888]">My dates are flexible</span>
+                <span className="text-[14px] text-white/50">My dates are flexible</span>
                 <input
                   type="checkbox"
                   checked={datesFlexible}
@@ -462,7 +473,7 @@ function RVQuoteForm() {
                 type="button"
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="w-full py-4 rounded-[10px] bg-[#E07B2D] text-white font-bold text-[16px] hover:bg-[#cc6a1f] transition-colors disabled:opacity-60"
+                className="w-full py-4 rounded-[10px] bg-[#E07B2D] text-white font-bold text-[16px] hover:bg-[#cc6a1f] transition-colors disabled:opacity-60 shadow-[0_4px_24px_rgba(224,123,45,0.35)]"
               >
                 {submitting ? "Submitting..." : "Get RV Quote"}
               </button>

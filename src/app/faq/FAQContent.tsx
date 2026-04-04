@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Phone } from "lucide-react";
+import { ChevronDown, Phone, HelpCircle } from "lucide-react";
+import Link from "next/link";
 
 const faqItems = [
   {
@@ -74,6 +75,9 @@ export default function FAQContent() {
     })),
   };
 
+  const firstHalf = faqItems.slice(0, 7);
+  const secondHalf = faqItems.slice(7);
+
   return (
     <>
       <script
@@ -82,22 +86,73 @@ export default function FAQContent() {
       />
 
       {/* Hero */}
-      <section className="bg-navy py-20 md:py-24 px-6 text-center">
-        <div className="max-w-[680px] mx-auto">
-          <p className="text-[13px] uppercase tracking-[2px] text-[#E07B2D] font-semibold mb-4">
-            Common Questions
-          </p>
-          <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-4">
-            Frequently Asked Questions
-          </h1>
-          <p className="text-[#CBD5E1] text-lg">
-            Everything you need to know about how mobile service works, what we
-            cover, and how to get started.
-          </p>
+      <section
+        className="relative overflow-hidden"
+        style={{
+          background:
+            "linear-gradient(180deg, #0A1C38 0%, #0B2040 40%, #0F2847 70%, #132E54 100%)",
+        }}
+      >
+        {/* Atmospheric glow layers */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(ellipse 80% 50% at 20% 50%, rgba(26,95,172,0.12) 0%, transparent 70%)",
+          }}
+        />
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(ellipse 60% 60% at 80% 30%, rgba(224,123,45,0.06) 0%, transparent 60%)",
+          }}
+        />
+        {/* Subtle grid texture */}
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.03]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
+          }}
+        />
+
+        <div className="section-inner px-4 lg:px-6 pt-10 pb-6 md:pt-14 md:pb-10 relative z-10">
+          <div className="max-w-[680px] mx-auto text-center">
+            <div className="inline-flex items-center gap-2 text-[#D9A441] text-[12px] font-bold tracking-[2.5px] uppercase mb-4">
+              <HelpCircle size={16} />
+              Common Questions
+            </div>
+            <h1 className="text-[30px] md:text-[42px] font-[800] leading-[1.08] text-white tracking-[-1px] mb-5">
+              Frequently Asked Questions
+            </h1>
+            <p className="text-[16px] leading-[1.7] text-white/60 max-w-[520px] mx-auto">
+              Everything you need to know about how mobile service works, what we
+              cover, and how to get started.
+            </p>
+          </div>
         </div>
+
+        {/* Bottom gradient fade */}
+        <div
+          className="absolute bottom-0 left-0 right-0 h-[60px] pointer-events-none"
+          style={{
+            background: "linear-gradient(to bottom, transparent, #0F2847)",
+          }}
+        />
       </section>
 
-      {/* FAQ Accordion */}
+      {/* Navy-to-light transition */}
+      <div
+        style={{
+          background:
+            "linear-gradient(to bottom, #0F2847 0%, #1a3a5e 30%, #3a6a8e 60%, #FAFBFC 100%)",
+          height: "60px",
+        }}
+      />
+
+      {/* FAQ Group 1 — Light section */}
       <section
         className="relative"
         style={{
@@ -105,31 +160,37 @@ export default function FAQContent() {
             "linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 50%, #FAFBFC 100%)",
         }}
       >
-        <div className="section-inner px-4 lg:px-6 py-12 md:py-16">
-          <div className="max-w-[740px] mx-auto">
-            {faqItems.map((faq, i) => (
+        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
+          <div className="max-w-[740px] mx-auto flex flex-col gap-3">
+            {firstHalf.map((faq, i) => (
               <div
                 key={i}
-                className="border-b border-[#eee] first:border-t first:border-[#eee]"
+                className="bg-white border border-[#f0ede6] rounded-[14px] shadow-[0_2px_20px_rgba(11,32,64,0.06)] hover:shadow-[0_4px_28px_rgba(11,32,64,0.1)] transition-all duration-300 overflow-hidden"
               >
                 <button
                   onClick={() => setOpenIndex(openIndex === i ? null : i)}
-                  className="w-full flex items-center justify-between gap-4 py-5 text-left cursor-pointer"
+                  className="w-full flex items-center justify-between gap-4 px-6 py-5 text-left cursor-pointer"
                 >
                   <span className="text-[16px] font-bold text-[#0B2040]">
                     {faq.q}
                   </span>
                   <ChevronDown
                     size={20}
-                    className={`shrink-0 text-[#888] transition-transform duration-200 ${
-                      openIndex === i ? "rotate-180" : ""
+                    className={`shrink-0 transition-transform duration-200 ${
+                      openIndex === i
+                        ? "rotate-180 text-[#E07B2D]"
+                        : "text-[#E07B2D]/60"
                     }`}
                   />
                 </button>
                 {openIndex === i && (
-                  <p className="text-[15px] text-[#444] leading-[1.7] pb-5 pr-8">
-                    {faq.a}
-                  </p>
+                  <div className="px-6 pb-5">
+                    <div className="border-t border-[#f0ede6] pt-4">
+                      <p className="text-[15px] text-[#444] leading-[1.7] pr-8">
+                        {faq.a}
+                      </p>
+                    </div>
+                  </div>
                 )}
               </div>
             ))}
@@ -137,22 +198,112 @@ export default function FAQContent() {
         </div>
       </section>
 
+      {/* Light-to-warm transition */}
+      <div
+        style={{
+          background: "linear-gradient(to bottom, #FAFBFC, #F8F6F1)",
+          height: "40px",
+        }}
+      />
+
+      {/* FAQ Group 2 — Warm sand section */}
+      <section
+        className="relative"
+        style={{
+          background:
+            "linear-gradient(180deg, #F8F6F1 0%, #F4EEE3 50%, #F8F6F1 100%)",
+        }}
+      >
+        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
+          <div className="max-w-[740px] mx-auto flex flex-col gap-3">
+            {secondHalf.map((faq, i) => {
+              const realIndex = i + firstHalf.length;
+              return (
+                <div
+                  key={realIndex}
+                  className="bg-white border border-[#ebe5d8] rounded-[14px] shadow-[0_2px_20px_rgba(11,32,64,0.06)] hover:shadow-[0_4px_28px_rgba(11,32,64,0.1)] transition-all duration-300 overflow-hidden"
+                >
+                  <button
+                    onClick={() =>
+                      setOpenIndex(openIndex === realIndex ? null : realIndex)
+                    }
+                    className="w-full flex items-center justify-between gap-4 px-6 py-5 text-left cursor-pointer"
+                  >
+                    <span className="text-[16px] font-bold text-[#0B2040]">
+                      {faq.q}
+                    </span>
+                    <ChevronDown
+                      size={20}
+                      className={`shrink-0 transition-transform duration-200 ${
+                        openIndex === realIndex
+                          ? "rotate-180 text-[#E07B2D]"
+                          : "text-[#E07B2D]/60"
+                      }`}
+                    />
+                  </button>
+                  {openIndex === realIndex && (
+                    <div className="px-6 pb-5">
+                      <div className="border-t border-[#ebe5d8] pt-4">
+                        <p className="text-[15px] text-[#444] leading-[1.7] pr-8">
+                          {faq.a}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Warm-to-dark transition */}
+      <div
+        style={{
+          background:
+            "linear-gradient(to bottom, #F8F6F1 0%, #0F2847 100%)",
+          height: "80px",
+        }}
+      />
+
       {/* CTA */}
-      <section className="bg-navy py-16 md:py-20 px-6 text-center">
-        <div className="max-w-[600px] mx-auto">
-          <h2 className="text-2xl md:text-3xl font-extrabold text-white mb-4">
+      <section
+        className="relative overflow-hidden"
+        style={{
+          background:
+            "linear-gradient(135deg, #0B2040 0%, #0F2847 50%, #132E54 100%)",
+        }}
+      >
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(ellipse 50% 100% at 50% 50%, rgba(224,123,45,0.05) 0%, transparent 70%)",
+          }}
+        />
+        <div className="section-inner px-4 lg:px-6 py-12 md:py-16 text-center relative z-10">
+          <h2 className="text-[28px] font-extrabold text-white mb-4">
             Still have questions?
           </h2>
-          <p className="text-[#CBD5E1] text-base mb-6">
-            Give us a call and we will be happy to help.
+          <p className="text-[15px] text-white/60 mb-8 max-w-[480px] mx-auto">
+            Give us a call and we will be happy to help. Or book your service
+            online in under two minutes.
           </p>
-          <a
-            href="tel:8137225823"
-            className="inline-flex items-center gap-2 bg-[#E07B2D] hover:bg-[#CC6A1F] text-white font-bold text-lg px-8 py-4 rounded-lg transition-colors"
-          >
-            <Phone size={20} />
-            813-722-LUBE
-          </a>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a
+              href="tel:8137225823"
+              className="inline-flex items-center gap-2 bg-[#E07B2D] hover:bg-[#CC6A1F] text-white font-bold text-lg px-8 py-4 rounded-lg transition-colors shadow-[0_4px_24px_rgba(224,123,45,0.35)]"
+            >
+              <Phone size={20} />
+              813-722-LUBE
+            </a>
+            <Link
+              href="/book"
+              className="inline-flex items-center justify-center gap-2 px-[30px] py-[14px] font-semibold text-white bg-white/[0.06] border border-white/20 rounded-lg hover:bg-white/[0.12] hover:border-white/35 transition-all backdrop-blur-sm"
+            >
+              Book Service Online
+            </Link>
+          </div>
         </div>
       </section>
     </>
