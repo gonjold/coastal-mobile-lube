@@ -187,6 +187,55 @@ function generateGCalUrl(booking: Booking): string {
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDate}/${endDate}&details=${details}&location=${location}`;
 }
 
+/* ─── CSV Export ─────────────────────────────────────────── */
+
+function escapeCsvField(value: string): string {
+  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+function downloadCsv(filename: string, rows: string[][]) {
+  const csv = rows.map((r) => r.map(escapeCsvField).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportBookingsCsv(bookings: Booking[]) {
+  const header = ["Date", "Customer", "Phone", "Email", "Service", "Source", "Status", "Notes", "Created"];
+  const rows = bookings.map((b) => [
+    b.preferredDate || b.confirmedDate || "—",
+    b.name || "—",
+    b.phone || "—",
+    b.email || "—",
+    b.service || "—",
+    b.source || "—",
+    b.status || "—",
+    b.notes || "",
+    b.createdAt?.toDate ? b.createdAt.toDate().toISOString() : "—",
+  ]);
+  downloadCsv(`bookings-${toISODate(new Date())}.csv`, [header, ...rows]);
+}
+
+function exportCustomersCsv(bookings: Booking[]) {
+  const customers = buildCustomerList(bookings);
+  const header = ["Name", "Phone", "Email", "Total Bookings", "Last Booking"];
+  const rows = customers.map((c) => [
+    c.name,
+    c.phone || "—",
+    c.email || "—",
+    String(c.totalBookings),
+    c.lastBookingDate,
+  ]);
+  downloadCsv(`customers-${toISODate(new Date())}.csv`, [header, ...rows]);
+}
+
 /* ─── Component ──────────────────────────────────────────── */
 
 export default function AdminDashboard() {
@@ -577,26 +626,43 @@ export default function AdminDashboard() {
           </span>{" "}
           booking{filtered.length !== 1 ? "s" : ""}
         </p>
-        <div className="flex rounded-lg overflow-hidden border border-[#e8e8e8]">
-          {(
-            [
-              { key: "list", label: "List View" },
-              { key: "calendar", label: "Calendar View" },
-              { key: "customers", label: "Customers" },
-            ] as const
-          ).map((v) => (
-            <button
-              key={v.key}
-              onClick={() => setViewMode(v.key)}
-              className={`px-4 py-2 text-[13px] font-semibold transition-colors ${
-                viewMode === v.key
-                  ? "bg-[#0B2040] text-white"
-                  : "bg-white text-[#444] hover:bg-[#f5f5f5]"
-              }`}
-            >
-              {v.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() =>
+              viewMode === "customers"
+                ? exportCustomersCsv(bookings)
+                : exportBookingsCsv(filtered)
+            }
+            className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-semibold border border-[#e8e8e8] rounded-lg text-[#444] bg-white hover:bg-[#f5f5f5] transition-colors"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Export CSV
+          </button>
+          <div className="flex rounded-lg overflow-hidden border border-[#e8e8e8]">
+            {(
+              [
+                { key: "list", label: "List View" },
+                { key: "calendar", label: "Calendar View" },
+                { key: "customers", label: "Customers" },
+              ] as const
+            ).map((v) => (
+              <button
+                key={v.key}
+                onClick={() => setViewMode(v.key)}
+                className={`px-4 py-2 text-[13px] font-semibold transition-colors ${
+                  viewMode === v.key
+                    ? "bg-[#0B2040] text-white"
+                    : "bg-white text-[#444] hover:bg-[#f5f5f5]"
+                }`}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
