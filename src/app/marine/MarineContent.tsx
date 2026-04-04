@@ -1,76 +1,100 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Phone } from "lucide-react";
 import Button from "@/components/Button";
 import TrustBar from "@/components/TrustBar";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
-const packages = [
-  {
-    name: "Outboard",
-    price: "Starting at $149.95",
-    description: "Dockside oil change service for outboard engines",
-    highlight: false,
-    includes: [
-      "Small (4-cyl and under): $149.95",
-      "V6 / V8: $199.95",
-      "Oil and filter change",
-      "Multi-point engine inspection",
-    ],
-  },
-  {
-    name: "Inboard",
-    price: "Starting at $229.95",
-    description: "Full oil change service for inboard engines",
-    highlight: true,
-    includes: [
-      "Small block: $229.95",
-      "Large block: $279.95",
-      "Oil and filter change",
-      "Multi-point engine inspection",
-    ],
-  },
-  {
-    name: "Diesel Marine",
-    price: "$349.95",
-    description: "Oil change service for all diesel marine engines",
-    highlight: false,
-    includes: [
-      "All diesel marine engines",
-      "Oil and filter change",
-      "Multi-point engine inspection",
-    ],
-  },
+/* ─── Category definitions ─── */
+const categories = [
+  { id: "oil-service", label: "Oil Service", startingAt: "$129.95" },
+  { id: "fuel-fluid", label: "Fuel & Fluid", startingAt: "$29.95" },
+  { id: "diesel", label: "Diesel", startingAt: "$29.95" },
+  { id: "maintenance", label: "Maintenance", startingAt: "$29.95" },
+  { id: "trailer-tire", label: "Trailer & Tire", startingAt: "$29.95" },
+  { id: "brakes", label: "Brakes", startingAt: "$129.95" },
 ];
 
-const addOnServices = [
-  {
-    name: "Lower Unit Service",
-    price: "$149.95",
-    description: "Gear oil change and seal inspection",
-  },
-  {
-    name: "Impeller Replacement",
-    price: "$249.95",
-    description: "Raw water pump maintenance",
-  },
-  {
-    name: "Generator Service",
-    price: "$129.95",
-    description: "Oil change for onboard generators",
-  },
-  {
-    name: "Trailer Tire Mount and Balance",
-    price: "$49.95/tire",
-    description: "Single tire mount and balance",
-  },
-  {
-    name: "Bearing Repack",
-    price: "From $179.95",
-    description: "Trailer wheel bearing service",
-  },
+/* ─── Marine oil service tier cards ─── */
+const oilTiers = [
+  { name: "Generator", price: "$129.95", note: "Onboard generators" },
+  { name: "Outboard Small", price: "$149.95", note: "Up to 6 qts", tag: null },
+  { name: "Outboard V6/V8", price: "$199.95", note: null, tag: null },
+  { name: "Inboard Small Block", price: "$229.95", note: null, tag: "Most common" },
+  { name: "Inboard Big Block", price: "$279.95", note: null, tag: null },
+  { name: "Diesel Marine", price: "$349.95", note: "All diesel marine engines", tag: null },
+];
+
+const oilAddOns = [
+  { name: "Pre-Trip Inspection", price: "$59.95" },
+  { name: "Sea Trial / Ramp Run Support", price: "$149.95" },
+];
+
+/* ─── Fuel & fluid services ─── */
+const fuelFluidServices = [
+  { name: "Fuel Stabilizer Additive", price: "$29.95" },
+  { name: "MOA / Oil Additive", price: "$29.95" },
+  { name: "Battery Terminal Service", price: "$39.95" },
+  { name: "Water-in-Fuel Check", price: "$39.95" },
+  { name: "Fuel System Treatment", price: "$49.95" },
+  { name: "Battery Test / Charging Check", price: "$59.95" },
+  { name: "Corrosion Guard Treatment", price: "$69.95" },
+  { name: "Prop Removal and Reinstall", price: "$79.95" },
+  { name: "Water Separating Fuel Filter", price: "$89.95" },
+  { name: "Engine Fuel Filter", price: "$129.95" },
+  { name: "Lower Unit Gear Lube", price: "$149.95" },
+  { name: "Throttle Body / Intake Service", price: "$149.95" },
+  { name: "Stern Drive Gear Lube", price: "$179.95" },
+  { name: "Racor Dual Filter Set", price: "$199.95" },
+  { name: "Twin Lower Unit Gear Lube", price: "$279.95" },
+  { name: "Cooling System Descale / Flush", price: "$299.95" },
+];
+
+/* ─── Diesel services ─── */
+const dieselServices = [
+  { name: "DEF Top-Off / Handling", price: "$29.95" },
+  { name: "Diesel MOA", price: "$49.95" },
+  { name: "Diesel Fuel Filter Service", price: "$249.95" },
+  { name: "Primary / Secondary Diesel Filters", price: "$329.95" },
+  { name: "Diesel Injection Service", price: "$449.95" },
+  { name: "Dual Coolant Flush (Diesel)", price: "$499.95" },
+];
+
+/* ─── Maintenance services ─── */
+const maintenanceServices = [
+  { name: "Trailer Light Check", price: "$29.95" },
+  { name: "Grease Steering / Pivot Points", price: "$39.95" },
+  { name: "Trailer Hub Temp / Bearing Check", price: "$39.95" },
+  { name: "Bilge / Safety Inspection", price: "$59.95" },
+  { name: "Battery Replacement (labor)", price: "$75.00" },
+  { name: "Engine Air Filter / Flame Arrestor", price: "$79.95" },
+  { name: "Dual Battery Replacement (labor)", price: "$125.00" },
+  { name: "Spark Plug Replacement", price: "from $199.95" },
+  { name: "Impeller Service", price: "$249.95" },
+];
+
+/* ─── Trailer & tire services ─── */
+const trailerTireServices = [
+  { name: "Replace Valve Stem / TPMS", price: "$29.95" },
+  { name: "Trailer Tire Rotation", price: "$39.95" },
+  { name: "Spare Tire Mount", price: "$39.95" },
+  { name: "Trailer Tire M&B (single)", price: "$49.95" },
+  { name: "Trailer Alignment Check", price: "$49.95" },
+  { name: "Trailer Tire Patch", price: "$69.95" },
+  { name: "Hub Service", price: "$129.95" },
+  { name: "Trailer Tire M&B (4 tires)", price: "$159.95" },
+  { name: "Wheel Bearing Repack", price: "from $179.95" },
+  { name: "Aftermarket / Oversized Trailer", price: "+$50/tire" },
+];
+
+/* ─── Brake services ─── */
+const brakeServices = [
+  { name: "Trailer Brake Adjustment", price: "$129.95" },
+  { name: "Surge Brake Inspection / Service", price: "$199.95" },
+  { name: "Trailer Brake Service", price: "$249.95" },
+  { name: "Tandem Trailer Brake Service", price: "from $399.95" },
 ];
 
 const locations = [
@@ -84,15 +108,96 @@ const locations = [
   "Sun City Center",
 ];
 
+/* ─── Reusable: 2-col service grid ─── */
+function ServiceGrid({ items }: { items: { name: string; price: string }[] }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {items.map((item) => (
+        <div
+          key={item.name}
+          className="flex items-center justify-between bg-white border border-[#f0ede6] rounded-[10px] px-5 py-4 shadow-[0_1px_6px_rgba(11,32,64,0.04)]"
+        >
+          <span className="text-[15px] font-medium text-[#0B2040]">{item.name}</span>
+          <span className="text-[15px] font-bold text-[#E07B2D] whitespace-nowrap ml-4">{item.price}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ─── Category section wrapper ─── */
+function CategorySection({
+  id,
+  title,
+  startingAt,
+  description,
+  children,
+  even,
+}: {
+  id: string;
+  title: string;
+  startingAt: string;
+  description: string;
+  children: React.ReactNode;
+  even: boolean;
+}) {
+  return (
+    <section
+      id={id}
+      className="scroll-mt-[120px]"
+      style={{ background: even ? "#FFFFFF" : "#FAFBFC" }}
+    >
+      <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
+        <div className="flex flex-col sm:flex-row sm:items-baseline gap-2 mb-2">
+          <h2 className="text-[26px] font-extrabold text-[#0B2040]">{title}</h2>
+          <span className="text-[14px] font-semibold text-[#E07B2D]">starting at {startingAt}</span>
+        </div>
+        <p className="text-[15px] text-[#555] leading-[1.65] mb-8 max-w-[600px]">{description}</p>
+        {children}
+      </div>
+    </section>
+  );
+}
+
+/* ================================================================
+   Main component
+   ================================================================ */
 export default function MarineContent() {
+  const [activeCategory, setActiveCategory] = useState(categories[0].id);
+  const pillBarRef = useRef<HTMLDivElement>(null);
+
+  /* Track active section on scroll */
+  useEffect(() => {
+    const ids = categories.map((c) => c.id);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveCategory(entry.target.id);
+          }
+        }
+      },
+      { rootMargin: "-30% 0px -60% 0px" }
+    );
+    for (const id of ids) {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    }
+    return () => observer.disconnect();
+  }, []);
+
+  function scrollTo(id: string) {
+    setActiveCategory(id);
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth" });
+  }
+
   return (
     <>
-      {/* Section 1: Hero */}
+      {/* ─── Hero ─── */}
       <section className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #0A1C38 0%, #0B2040 40%, #0F2847 70%, #132E54 100%)" }}>
-        {/* Atmospheric glow layers */}
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 80% 50% at 20% 50%, rgba(26,95,172,0.12) 0%, transparent 70%)" }} />
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 60% at 80% 30%, rgba(13,138,143,0.06) 0%, transparent 60%)" }} />
-        {/* Subtle grid texture */}
         <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)", backgroundSize: "60px 60px" }} />
 
         <div className="section-inner px-4 lg:px-6 pt-10 pb-6 md:pt-14 md:pb-10 relative z-10">
@@ -123,7 +228,6 @@ export default function MarineContent() {
           </div>
         </div>
 
-        {/* Bottom gradient fade */}
         <div className="absolute bottom-0 left-0 right-0 h-[60px] pointer-events-none" style={{ background: "linear-gradient(to bottom, transparent, #0F2847)" }} />
       </section>
 
@@ -132,99 +236,156 @@ export default function MarineContent() {
       {/* Navy-to-light transition */}
       <div style={{ background: "linear-gradient(to bottom, #0F2847 0%, #1a3a5e 30%, #3a6a8e 60%, #FAFBFC 100%)", height: "60px" }} />
 
-      {/* Section 2: Service Packages */}
-      <section className="relative" style={{ background: "linear-gradient(180deg, #FAFBFC 0%, #FFFFFF 50%, #FAFBFC 100%)" }}>
-        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
-          <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
-            Engine Services
-          </p>
-          <h2 className="text-[28px] font-extrabold text-[#0B2040] mb-8">
-            Marine oil change services
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {packages.map((pkg) => (
-              <div
-                key={pkg.name}
-                className={`bg-white border border-[#f0ede6] rounded-[14px] p-7 shadow-[0_2px_20px_rgba(11,32,64,0.06)] hover:shadow-[0_4px_28px_rgba(11,32,64,0.1)] hover:translate-y-[-2px] transition-all duration-300 ${
-                  pkg.highlight ? "border-t-[3px] border-t-[#E07B2D]" : ""
+      {/* ─── Sticky Category Pill Navigation ─── */}
+      <div
+        ref={pillBarRef}
+        className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#e8e4dc]/60 shadow-[0_2px_12px_rgba(11,32,64,0.06)]"
+      >
+        <div className="section-inner px-4 lg:px-6">
+          <div className="flex gap-2 py-3 overflow-x-auto no-scrollbar">
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => scrollTo(cat.id)}
+                className={`whitespace-nowrap px-5 py-2 rounded-full text-[13px] font-semibold transition-all ${
+                  activeCategory === cat.id
+                    ? "bg-[#0B2040] text-white shadow-[0_2px_8px_rgba(11,32,64,0.2)]"
+                    : "bg-[#FAFBFC] text-[#666] hover:bg-[#f0ede6] hover:text-[#0B2040]"
                 }`}
               >
-                <h3 className="text-[20px] font-bold text-[#0B2040] mb-1">
-                  {pkg.name}
-                </h3>
-                <p className="text-[16px] font-semibold text-[#E07B2D] mb-2">
-                  {pkg.price}
-                </p>
-                <p className="text-[14px] text-[#444] leading-[1.7] mb-4">
-                  {pkg.description}
-                </p>
-                <ul className="flex flex-col gap-2">
-                  {pkg.includes.map((item) => (
-                    <li key={item} className="flex items-start gap-2.5">
-                      <span className="inline-block shrink-0 w-1.5 h-1.5 rounded-full bg-[#E07B2D] mt-[7px]" />
-                      <span className="text-[14px] text-[#444]">{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-          <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
-            <span className="inline-flex items-center gap-2 text-[14px] text-[#444] font-medium bg-[#FFF9F4] border border-[#E07B2D]/20 rounded-[8px] px-4 py-2.5">
-              <span className="w-2 h-2 rounded-full bg-[#E07B2D] shrink-0" />
-              $49.95 travel charge applies
-            </span>
-            <span className="inline-flex items-center gap-2 text-[14px] text-[#444] font-medium bg-[#FFF9F4] border border-[#E07B2D]/20 rounded-[8px] px-4 py-2.5">
-              <span className="w-2 h-2 rounded-full bg-[#E07B2D] shrink-0" />
-              +$75 for twin engines
-            </span>
-          </div>
-        </div>
-      </section>
-
-      {/* Light transition */}
-      <div style={{ background: "linear-gradient(to bottom, #FAFBFC, #FFFFFF)", height: "40px" }} />
-
-      {/* Section 3: Add-On Services */}
-      <section className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #FFFFFF 0%, #F8F6F1 100%)" }}>
-        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
-          <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
-            Add-Ons
-          </p>
-          <h2 className="text-[28px] font-extrabold text-[#0B2040] mb-8">
-            Additional marine services
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {addOnServices.map((service) => (
-              <div
-                key={service.name}
-                className="flex items-start gap-2.5 bg-white border border-[#f0ede6] rounded-[10px] px-[14px] py-[14px] shadow-[0_1px_8px_rgba(11,32,64,0.04)] hover:border-[#E07B2D]/30 hover:bg-[#FFF9F4] transition-colors"
-              >
-                <span className="inline-block shrink-0 w-1.5 h-1.5 rounded-full bg-[#E07B2D] mt-[7px]" />
-                <div>
-                  <span className="text-[15px] font-semibold text-[#0B2040]">
-                    {service.name}
-                  </span>
-                  <span className="text-[14px] font-semibold text-[#E07B2D] ml-2">
-                    {service.price}
-                  </span>
-                  <br />
-                  <span className="text-[14px] text-[#666]">
-                    {service.description}
-                  </span>
-                </div>
-              </div>
+                {cat.label}
+              </button>
             ))}
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Warm-to-dark transition */}
-      <div style={{ background: "linear-gradient(to bottom, #F8F6F1 0%, #0F2847 100%)", height: "80px" }} />
+      {/* ================================================================
+         MARINE OIL SERVICE
+         ================================================================ */}
+      <CategorySection
+        id="oil-service"
+        title="Marine Oil Service"
+        startingAt="$129.95"
+        description="Dockside oil change for outboard, inboard, and diesel marine engines. Vacuum extraction, OEM-spec filters, multi-point inspection included."
+        even={false}
+      >
+        {/* Tier cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          {oilTiers.map((tier) => (
+            <div
+              key={tier.name}
+              className={`relative bg-white rounded-[12px] p-6 shadow-[0_2px_12px_rgba(11,32,64,0.06)] ${
+                tier.tag
+                  ? "border-2 border-[#E07B2D]"
+                  : "border border-[#f0ede6]"
+              }`}
+            >
+              {tier.tag && (
+                <span className="absolute -top-3 left-5 bg-[#E07B2D] text-white text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+                  {tier.tag}
+                </span>
+              )}
+              <h3 className="text-[18px] font-bold text-[#0B2040] mb-1">
+                {tier.name}
+              </h3>
+              {tier.note && (
+                <p className="text-[13px] text-[#888] mb-3">{tier.note}</p>
+              )}
+              {!tier.note && <div className="mb-3" />}
+              <p className="text-[28px] font-extrabold text-[#E07B2D]">
+                {tier.price}
+              </p>
+            </div>
+          ))}
+        </div>
 
-      {/* Section 4: Where We Service */}
+        {/* Notes */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-8">
+          <span className="inline-flex items-center gap-2 text-[14px] text-[#444] font-medium bg-[#FFF9F4] border border-[#E07B2D]/20 rounded-[8px] px-4 py-2.5">
+            <span className="w-2 h-2 rounded-full bg-[#E07B2D] shrink-0" />
+            $49.95 travel charge applies
+          </span>
+          <span className="inline-flex items-center gap-2 text-[14px] text-[#444] font-medium bg-[#FFF9F4] border border-[#E07B2D]/20 rounded-[8px] px-4 py-2.5">
+            <span className="w-2 h-2 rounded-full bg-[#E07B2D] shrink-0" />
+            +$75 twin engine surcharge
+          </span>
+        </div>
+
+        {/* Add-on services */}
+        <ServiceGrid items={oilAddOns} />
+      </CategorySection>
+
+      {/* ================================================================
+         FUEL & FLUID SERVICES
+         ================================================================ */}
+      <CategorySection
+        id="fuel-fluid"
+        title="Marine Fuel & Fluid Services"
+        startingAt="$29.95"
+        description="Filters, gear lube, cooling system service, corrosion protection, and fuel system maintenance."
+        even={true}
+      >
+        <ServiceGrid items={fuelFluidServices} />
+      </CategorySection>
+
+      {/* ================================================================
+         DIESEL SERVICES
+         ================================================================ */}
+      <CategorySection
+        id="diesel"
+        title="Marine Diesel Services"
+        startingAt="$29.95"
+        description="Specialized diesel maintenance for marine engines including filters, injection service, and cooling."
+        even={false}
+      >
+        <ServiceGrid items={dieselServices} />
+      </CategorySection>
+
+      {/* ================================================================
+         MAINTENANCE
+         ================================================================ */}
+      <CategorySection
+        id="maintenance"
+        title="Marine Maintenance"
+        startingAt="$29.95"
+        description="Batteries, spark plugs, impellers, filters, inspections, and general upkeep."
+        even={true}
+      >
+        <ServiceGrid items={maintenanceServices} />
+      </CategorySection>
+
+      {/* ================================================================
+         TRAILER & TIRE
+         ================================================================ */}
+      <CategorySection
+        id="trailer-tire"
+        title="Marine Trailer & Tire"
+        startingAt="$29.95"
+        description="Mount and balance, bearing repack, hub service, and trailer tire maintenance."
+        even={false}
+      >
+        <ServiceGrid items={trailerTireServices} />
+      </CategorySection>
+
+      {/* ================================================================
+         BRAKES
+         ================================================================ */}
+      <CategorySection
+        id="brakes"
+        title="Marine Brakes"
+        startingAt="$129.95"
+        description="Trailer brake adjustment, service, and surge brake inspection."
+        even={true}
+      >
+        <ServiceGrid items={brakeServices} />
+      </CategorySection>
+
+      {/* ─── Transition to locations ─── */}
+      <div style={{ background: "linear-gradient(to bottom, #FFFFFF 0%, #3a6a8e 50%, #0F2847 100%)", height: "80px" }} />
+
+      {/* ─── Where We Service ─── */}
       <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0B2040 0%, #0F2847 50%, #132E54 100%)" }}>
-        {/* Subtle glow */}
         <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 50% 100% at 50% 50%, rgba(13,138,143,0.06) 0%, transparent 70%)" }} />
 
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14 text-center relative z-10">
@@ -248,9 +409,8 @@ export default function MarineContent() {
         </div>
       </section>
 
-      {/* Section 5: Marine Quote Form */}
+      {/* ─── Marine Quote Form ─── */}
       <MarineQuoteForm />
-
     </>
   );
 }
@@ -316,7 +476,6 @@ function MarineQuoteForm() {
 
   return (
     <section id="marine-quote" className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0B2040 0%, #0F2847 50%, #132E54 100%)" }}>
-      {/* Subtle glow */}
       <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 80% at 50% 50%, rgba(26,95,172,0.08) 0%, transparent 70%)" }} />
 
       <div className="section-inner px-4 lg:px-6 py-10 md:py-14 relative z-10">
@@ -339,7 +498,6 @@ function MarineQuoteForm() {
             boxShadow: "0 8px 40px rgba(0,0,0,0.35), 0 2px 12px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)",
           }}
         >
-          {/* Top edge highlight */}
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
           {submitted ? (
             <div className="flex flex-col items-center text-center py-6">
