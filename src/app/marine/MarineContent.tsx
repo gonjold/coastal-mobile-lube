@@ -9,82 +9,67 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 const packages = [
   {
-    name: "Dock Ready",
-    price: "Starting at $149",
-    description: "Quick dockside service for single-engine boats",
+    name: "Outboard",
+    price: "Starting at $149.95",
+    description: "Dockside oil change service for outboard engines",
     highlight: false,
     includes: [
-      "Engine oil and filter change",
-      "Lower unit gear oil check",
-      "Battery test",
-      "Visual hull and anode inspection",
-      "Safety systems check",
+      "Small (4-cyl and under): $149.95",
+      "V6 / V8: $199.95",
+      "Oil and filter change",
+      "Multi-point engine inspection",
     ],
   },
   {
-    name: "Captain\u2019s Choice",
-    price: "Starting at $399",
-    description: "Complete annual service per engine",
+    name: "Inboard",
+    price: "Starting at $229.95",
+    description: "Full oil change service for inboard engines",
     highlight: true,
     includes: [
-      "Full oil and filter change",
-      "Lower unit gear oil change with pressure test",
-      "Impeller replacement",
-      "Spark plugs",
-      "Fuel filter and water separator",
-      "Anode inspection and replacement",
-      "Battery service",
-      "Steering cable lubrication",
+      "Small block: $229.95",
+      "Large block: $279.95",
+      "Oil and filter change",
+      "Multi-point engine inspection",
     ],
   },
   {
-    name: "Season Opener",
-    price: "Starting at $249",
-    description: "Get your boat ready for the water",
+    name: "Diesel Marine",
+    price: "$349.95",
+    description: "Oil change service for all diesel marine engines",
     highlight: false,
     includes: [
-      "Fuel system flush and stabilizer",
+      "All diesel marine engines",
       "Oil and filter change",
-      "Battery charge and test",
-      "Impeller inspection",
-      "Lower unit oil change",
-      "Full systems check",
+      "Multi-point engine inspection",
     ],
   },
 ];
 
-const individualServices = [
-  {
-    name: "Outboard Oil Change",
-    description: "Routine maintenance for any outboard",
-  },
-  {
-    name: "Inboard Engine Service",
-    description: "Oil, filters, and fluid check",
-  },
+const addOnServices = [
   {
     name: "Lower Unit Service",
+    price: "$149.95",
     description: "Gear oil change and seal inspection",
   },
   {
     name: "Impeller Replacement",
+    price: "$249.95",
     description: "Raw water pump maintenance",
   },
   {
-    name: "Fuel System Service",
-    description: "Filter, water separator, stabilizer",
+    name: "Generator Service",
+    price: "$129.95",
+    description: "Oil change for onboard generators",
   },
   {
-    name: "Anode and Zinc Replacement",
-    description: "Saltwater corrosion protection",
+    name: "Trailer Tire Mount and Balance",
+    price: "$49.95/tire",
+    description: "Single tire mount and balance",
   },
   {
-    name: "Battery Service",
-    description: "Testing, charging, and replacement",
-  },
-  {
-    name: "Winterization and Storage Prep",
-    description: "Seasonal protection package",
+    name: "Bearing Repack",
+    price: "From $179.95",
+    description: "Trailer wheel bearing service",
   },
 ];
 
@@ -139,10 +124,10 @@ export default function MarineContent() {
       <section className="bg-[#FAFBFC]">
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
           <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
-            Packages
+            Engine Services
           </p>
           <h2 className="text-[28px] font-extrabold text-[#0B2040] mb-8">
-            Marine service packages
+            Marine oil change services
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {packages.map((pkg) => (
@@ -172,20 +157,30 @@ export default function MarineContent() {
               </div>
             ))}
           </div>
+          <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
+            <span className="inline-flex items-center gap-2 text-[14px] text-[#444] font-medium bg-white border border-[#e8e8e8] rounded-[8px] px-4 py-2.5">
+              <span className="w-2 h-2 rounded-full bg-[#E07B2D] shrink-0" />
+              $49.95 travel charge applies
+            </span>
+            <span className="inline-flex items-center gap-2 text-[14px] text-[#444] font-medium bg-white border border-[#e8e8e8] rounded-[8px] px-4 py-2.5">
+              <span className="w-2 h-2 rounded-full bg-[#E07B2D] shrink-0" />
+              +$75 for twin engines
+            </span>
+          </div>
         </div>
       </section>
 
-      {/* Section 3: Individual Services */}
+      {/* Section 3: Add-On Services */}
       <section className="bg-white">
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
           <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
-            A La Carte
+            Add-Ons
           </p>
           <h2 className="text-[28px] font-extrabold text-[#0B2040] mb-8">
-            Individual marine services
+            Additional marine services
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {individualServices.map((service) => (
+            {addOnServices.map((service) => (
               <div
                 key={service.name}
                 className="flex items-start gap-2.5 bg-white border border-[#e8e8e8] rounded-[10px] px-[14px] py-[14px]"
@@ -195,9 +190,12 @@ export default function MarineContent() {
                   <span className="text-[15px] font-semibold text-[#0B2040]">
                     {service.name}
                   </span>
+                  <span className="text-[14px] font-semibold text-[#E07B2D] ml-2">
+                    {service.price}
+                  </span>
+                  <br />
                   <span className="text-[14px] text-[#666]">
-                    {" "}
-                    &mdash; {service.description}
+                    {service.description}
                   </span>
                 </div>
               </div>
