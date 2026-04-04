@@ -1,5 +1,6 @@
 import Link from "next/link";
 import AdminSignOutButton from "./AdminSignOutButton";
+import AdminAuthGuard from "@/components/AdminAuthGuard";
 
 export default function AdminLayout({
   children,
@@ -18,9 +19,9 @@ export default function AdminLayout({
 
       {/* Admin header */}
       <div className="flex items-center justify-between px-4 lg:px-8 py-4 border-b border-[#eee] bg-white">
-        <span className="text-[16px] font-bold text-[#0B2040]">
+        <Link href="/admin" className="text-[16px] font-bold text-[#0B2040] hover:text-[#1A5FAC] transition-colors">
           Coastal Mobile Admin
-        </span>
+        </Link>
         <div className="flex items-center gap-4">
           <Link
             href="/"
@@ -32,7 +33,7 @@ export default function AdminLayout({
         </div>
       </div>
 
-      {children}
+      <AdminAuthGuard>{children}</AdminAuthGuard>
     </>
   );
 }

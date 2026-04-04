@@ -5,3 +5,9 @@ Branch: navy-redesign
 
 ## Task B1: Seed Firestore Pricing Collection
 Started: Sat Apr  4 14:18:19 EDT 2026
+Status: COMPLETED
+Finished: Sat Apr  4 14:24:14 EDT 2026
+---
+
+## Task B2: Admin Home Screen
+Started: Sat Apr  4 14:24:17 EDT 2026
