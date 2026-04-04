@@ -11,3 +11,9 @@ Finished: Sat Apr  4 15:34:00 EDT 2026
 
 ## Task A2: Schedule Page Layout Fix
 Started: Sat Apr  4 15:34:03 EDT 2026
+Status: COMPLETED
+Finished: Sat Apr  4 15:36:43 EDT 2026
+---
+
+## Task A3: Invoice Auto-Populate from Booking
+Started: Sat Apr  4 15:36:46 EDT 2026

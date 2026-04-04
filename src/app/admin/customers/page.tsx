@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Fragment } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -153,6 +154,7 @@ function CustomersView({
   bookings: Booking[];
   addToast: (message: string, type?: "success" | "info") => void;
 }) {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
   const [editingCustomer, setEditingCustomer] = useState<Record<string, { name: string; phone: string; email: string; address: string }>>({});
@@ -312,6 +314,15 @@ function CustomersView({
                             onEditChange={(val) => setEditingCustomer((p) => ({ ...p, [c.key]: val }))}
                             onSave={() => handleSaveCustomer(c)}
                             commsLog={getCombinedCommsLog(c)}
+                            onCreateInvoice={() => {
+                              const params = new URLSearchParams({
+                                from: "customer",
+                                name: c.name === "\u2014" ? "" : c.name,
+                                phone: c.phone || "",
+                                email: c.email || "",
+                              });
+                              router.push(`/admin/invoicing?${params.toString()}`);
+                            }}
                           />
                         </td>
                       </tr>
@@ -413,6 +424,7 @@ function CustomerExpanded({
   onEditChange,
   onSave,
   commsLog,
+  onCreateInvoice,
 }: {
   customer: Customer;
   editingCustomer: Record<string, { name: string; phone: string; email: string; address: string }>;
@@ -420,6 +432,7 @@ function CustomerExpanded({
   onEditChange: (val: { name: string; phone: string; email: string; address: string }) => void;
   onSave: () => void;
   commsLog: Array<{ id: string; type: string; direction: string; summary: string; createdAt: string; bookingService?: string }>;
+  onCreateInvoice: () => void;
 }) {
   const edit = editingCustomer[customer.key] || {
     name: customer.name === "—" ? "" : customer.name,
@@ -457,6 +470,18 @@ function CustomerExpanded({
               className="w-full mt-1 px-4 py-2 text-[13px] font-semibold text-white bg-[#0B2040] rounded-md hover:bg-[#132E54] transition-colors disabled:opacity-50"
             >
               {savingCustomer === customer.key ? "Saving..." : `Save (updates ${customer.totalBookings} booking${customer.totalBookings !== 1 ? "s" : ""})`}
+            </button>
+            <button
+              onClick={onCreateInvoice}
+              className="w-full mt-2 px-4 py-2 text-[13px] font-semibold text-white bg-[#1A5FAC] rounded-md hover:bg-[#174f94] transition-colors inline-flex items-center justify-center gap-2"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+              </svg>
+              Create Invoice
             </button>
           </div>
         </div>

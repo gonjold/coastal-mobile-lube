@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -12,6 +13,7 @@ import {
   updateDoc,
   addDoc,
   deleteDoc,
+  getDoc,
   getDocs,
   serverTimestamp,
 } from "firebase/firestore";
@@ -152,6 +154,20 @@ ${inv.notes ? `<div style="margin-top:32px;padding:16px;background:#f9f9f9;borde
 /* ─── Component ───────────────────────────────────────────── */
 
 export default function InvoicingPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center py-32">
+        <div className="animate-spin w-8 h-8 border-4 border-[#E07B2D] border-t-transparent rounded-full" />
+      </div>
+    }>
+      <InvoicingPageInner />
+    </Suspense>
+  );
+}
+
+function InvoicingPageInner() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -165,6 +181,9 @@ export default function InvoicingPage() {
   const [form, setForm] = useState<InvoiceFormData>(() => defaultForm([]));
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  /* Pre-fill banner */
+  const [prefillNote, setPrefillNote] = useState<string | null>(null);
 
   /* Customer search dropdown */
   const [customerQuery, setCustomerQuery] = useState("");
@@ -241,12 +260,98 @@ export default function InvoicingPage() {
   const totalPaid = invoices.filter((i) => i.status === "paid").length;
   const totalRevenue = invoices.filter((i) => i.status === "paid").reduce((s, i) => s + i.total, 0);
 
+  /* ── Open modal pre-filled from a booking ── */
+  const openCreateFromBooking = useCallback(
+    async (bookingId: string) => {
+      try {
+        const snap = await getDoc(doc(db, "bookings", bookingId));
+        if (!snap.exists()) {
+          addToast("Booking not found", "info");
+          return;
+        }
+        const b = { id: snap.id, ...snap.data() } as Booking;
+        const f = defaultForm(invoices);
+
+        f.customerName = b.name || "";
+        f.customerPhone = b.phone || "";
+        f.customerEmail = b.email || "";
+
+        // Build line items from service field, looking up price from catalog
+        const serviceName = b.service || "";
+        if (serviceName) {
+          const allItems = getAllItems();
+          const match = allItems.find(
+            (s) => s.name.toLowerCase() === serviceName.toLowerCase()
+          );
+          f.lineItems = [
+            {
+              serviceName,
+              quantity: 1,
+              unitPrice: match?.price ?? 0,
+              lineTotal: match?.price ?? 0,
+            },
+          ];
+        }
+
+        const filled = recalcTotals(f);
+        setForm(filled);
+        setEditingId(null);
+        setCustomerQuery(filled.customerName);
+
+        const bookingDate = b.preferredDate || b.confirmedDate || "";
+        setPrefillNote(
+          `Auto-filled from booking${bookingDate ? ` (${bookingDate})` : ""}. Review and adjust before creating.`
+        );
+        setShowForm(true);
+      } catch {
+        addToast("Failed to load booking", "info");
+      }
+    },
+    [invoices]
+  );
+
+  /* ── Open modal pre-filled from customer info only ── */
+  function openCreateFromCustomer(name: string, phone: string, email: string) {
+    const f = defaultForm(invoices);
+    f.customerName = name;
+    f.customerPhone = phone;
+    f.customerEmail = email;
+    setForm(f);
+    setEditingId(null);
+    setCustomerQuery(name);
+    setPrefillNote(null);
+    setShowForm(true);
+  }
+
+  /* ── Check URL params for booking pre-fill ── */
+  const [prefillHandled, setPrefillHandled] = useState(false);
+  useEffect(() => {
+    if (prefillHandled) return;
+    if (loading) return; // wait for invoices to load so invoice number generation works
+    const from = searchParams.get("from");
+    const id = searchParams.get("id");
+    if (from === "booking" && id) {
+      setPrefillHandled(true);
+      openCreateFromBooking(id);
+      // Clean URL params
+      router.replace("/admin/invoicing", { scroll: false });
+    } else if (from === "customer") {
+      setPrefillHandled(true);
+      const name = searchParams.get("name") || "";
+      const phone = searchParams.get("phone") || "";
+      const email = searchParams.get("email") || "";
+      openCreateFromCustomer(name, phone, email);
+      router.replace("/admin/invoicing", { scroll: false });
+    }
+  }, [searchParams, loading, prefillHandled, openCreateFromBooking, router]);
+
   /* ── Form helpers ── */
   function openCreate() {
     const f = defaultForm(invoices);
     setForm(f);
     setEditingId(null);
     setCustomerQuery("");
+    setPrefillNote(null);
     setShowForm(true);
   }
 
@@ -590,7 +695,19 @@ export default function InvoicingPage() {
               </button>
             </div>
 
-            <div className="px-6 py-5 space-y-5 max-h-[calc(100vh-200px)] overflow-y-auto">
+            <div className="px-6 py-5 space-y-5 max-h-[calc(100vh-160px)] overflow-y-auto">
+              {/* Pre-fill note */}
+              {prefillNote && (
+                <div className="flex items-start gap-2 px-4 py-3 bg-[#EBF4FF] border border-[#1A5FAC]/20 rounded-[8px] text-[13px] text-[#0B2040]">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1A5FAC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                  </svg>
+                  {prefillNote}
+                </div>
+              )}
+
               {/* Invoice number + dates */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
@@ -756,9 +873,9 @@ export default function InvoicingPage() {
                 <textarea
                   value={form.notes}
                   onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
-                  rows={3}
+                  rows={4}
                   placeholder="Payment instructions, special notes..."
-                  className="w-full px-3 py-2 text-[14px] border border-[#e8e8e8] rounded-[8px] focus:outline-none focus:border-[#1A5FAC] resize-none"
+                  className="w-full px-3 py-2 text-[14px] border border-[#e8e8e8] rounded-[8px] focus:outline-none focus:border-[#1A5FAC] resize-y min-h-[80px]"
                 />
               </div>
             </div>

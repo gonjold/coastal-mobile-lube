@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Fragment } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -33,6 +34,7 @@ import {
 } from "../shared";
 
 export default function SchedulePage() {
+  const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -603,6 +605,7 @@ export default function SchedulePage() {
                                     confirmAppointment(b.id, b, date, window, duration)
                                   }
                                   onCancelAppointmentSetter={() => setSettingAppointmentId(null)}
+                                  onCreateInvoice={() => router.push(`/admin/invoicing?from=booking&id=${b.id}`)}
                                 />
                               </td>
                             </tr>
@@ -924,6 +927,7 @@ function ExpandedDetail({
   showAppointmentSetter,
   onConfirmAppointment,
   onCancelAppointmentSetter,
+  onCreateInvoice,
 }: {
   booking: Booking;
   editingNotes: Record<string, string>;
@@ -934,6 +938,7 @@ function ExpandedDetail({
   showAppointmentSetter: boolean;
   onConfirmAppointment: (date: string, window: string, duration: string) => void;
   onCancelAppointmentSetter: () => void;
+  onCreateInvoice: () => void;
 }) {
   const [apptDate, setApptDate] = useState(b.preferredDate || toISODate(new Date()));
   const [apptWindow, setApptWindow] = useState(
@@ -994,6 +999,22 @@ function ExpandedDetail({
         email={b.email}
         onToast={onToast}
       />
+
+      {/* Create Invoice button */}
+      <div className="mb-5">
+        <button
+          onClick={onCreateInvoice}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-[8px] text-[13px] font-semibold text-white bg-[#1A5FAC] hover:bg-[#174f94] transition-colors"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+          </svg>
+          Create Invoice
+        </button>
+      </div>
 
       {/* Confirmed appointment details */}
       {(b.status === "confirmed" || b.status === "completed") && b.confirmedDate && (
