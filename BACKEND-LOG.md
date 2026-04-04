@@ -23,3 +23,9 @@ Finished: Sat Apr  4 14:42:22 EDT 2026
 
 ## Task B4: Admin Schedule View
 Started: Sat Apr  4 14:42:25 EDT 2026
+Status: COMPLETED
+Finished: Sat Apr  4 14:48:00 EDT 2026
+---
+
+## Task B5: Admin Customers View
+Started: Sat Apr  4 14:48:03 EDT 2026

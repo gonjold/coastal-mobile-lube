@@ -54,6 +54,18 @@ export default function CustomersPage() {
     return () => unsub();
   }, []);
 
+  const customers = buildCustomerList(bookings);
+
+  /* ── Stats ── */
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const newThisMonth = customers.filter((c) => {
+    const earliest = c.bookings[c.bookings.length - 1];
+    const t = earliest?.createdAt?.toDate?.()?.getTime();
+    return t && t >= monthStart.getTime();
+  }).length;
+  const repeatCustomers = customers.filter((c) => c.totalBookings > 1).length;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-32">
@@ -86,7 +98,45 @@ export default function CustomersPage() {
         </button>
       </div>
 
-      <CustomersView bookings={bookings} addToast={addToast} />
+      {/* ═══ Customer Stats ═══ */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        {[
+          { label: "Total Customers", value: customers.length, icon: (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1A5FAC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+          )},
+          { label: "New This Month", value: newThisMonth, icon: (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="8.5" cy="7" r="4" />
+              <line x1="20" y1="8" x2="20" y2="14" />
+              <line x1="23" y1="11" x2="17" y2="11" />
+            </svg>
+          )},
+          { label: "Repeat Customers", value: repeatCustomers, icon: (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E07B2D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="23 4 23 10 17 10" />
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+            </svg>
+          )},
+        ].map((s) => (
+          <div key={s.label} className="bg-white border border-[#e8e8e8] rounded-[12px] p-4 flex items-center gap-4">
+            <div className="w-10 h-10 rounded-full bg-[#f5f7fa] flex items-center justify-center shrink-0">
+              {s.icon}
+            </div>
+            <div>
+              <p className="text-[24px] font-bold text-[#0B2040] leading-none">{s.value}</p>
+              <p className="text-[12px] text-[#888] mt-1">{s.label}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <CustomersView customers={customers} bookings={bookings} addToast={addToast} />
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   );
@@ -95,9 +145,11 @@ export default function CustomersPage() {
 /* ─── Customers View ─────────────────────────────────────── */
 
 function CustomersView({
+  customers,
   bookings,
   addToast,
 }: {
+  customers: Customer[];
   bookings: Booking[];
   addToast: (message: string, type?: "success" | "info") => void;
 }) {
@@ -134,8 +186,6 @@ function CustomersView({
       setSavingNewCustomer(false);
     }
   }
-
-  const customers = buildCustomerList(bookings);
 
   const filtered = search.trim()
     ? customers.filter((c) => {
