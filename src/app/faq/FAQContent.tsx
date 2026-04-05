@@ -15,7 +15,7 @@ const faqItems = [
   },
   {
     q: "How do I book a service?",
-    a: "You can book online through our website, call us at 813-722-LUBE (813-722-5823), or send a text to the same number. We will confirm your appointment and give you a time window that works for your schedule.",
+    a: "You can book online through our website, call us at 813-722-LUBE, or send a text to the same number. We will confirm your appointment and give you a time window that works for your schedule.",
   },
   {
     q: "What is included in an oil change?",
@@ -39,7 +39,7 @@ const faqItems = [
   },
   {
     q: "Are you licensed and insured?",
-    a: "Yes. Coastal Mobile Lube and Tire is fully licensed and insured. Our technicians are ASE-certified, so you can trust that the work is done right every time.",
+    a: "Yes. Coastal Mobile Lube & Tire is fully licensed and insured. Our technicians are ASE-certified, so you can trust that the work is done right every time.",
   },
   {
     q: "What is vacuum extraction?",
@@ -109,7 +109,7 @@ export default function FAQContent() {
 
       </section>
 
-      {/* All FAQ Items — single continuous list */}
+      {/* All FAQ Items - single continuous list */}
       <section className="relative bg-[#FAFBFC]">
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
           <div className="max-w-[740px] mx-auto flex flex-col gap-3">

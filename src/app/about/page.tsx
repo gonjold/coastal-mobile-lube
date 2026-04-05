@@ -74,7 +74,7 @@ const verticals = [
 export default function AboutPage() {
   return (
     <>
-      {/* Section 1 — Hero */}
+      {/* Section 1 - Hero */}
       <section className="relative overflow-hidden bg-[#0B2040]">
         {/* Oval badge watermark */}
         <img
@@ -126,7 +126,7 @@ export default function AboutPage() {
 
       </section>
 
-      {/* Section 2 — Van Wrap Showcase */}
+      {/* Section 2 - Van Wrap Showcase */}
       <section className="relative bg-[#FAFBFC]">
         <div className="max-w-[1100px] mx-auto px-4 lg:px-6 pt-10 pb-4 md:pt-14 md:pb-6">
           <div className="text-center mb-8">
@@ -145,7 +145,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Section 3 — The Story */}
+      {/* Section 3 - The Story */}
       <section className="relative bg-white">
         <div className="max-w-[1100px] mx-auto px-4 lg:px-6 py-10 md:py-14">
           <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
@@ -157,14 +157,14 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
             <div className="space-y-5">
               <p className="text-[15px] leading-[1.7] text-[#444]">
-                At Coastal Mobile Lube and Tire, we built this business to serve
+                At Coastal Mobile Lube & Tire, we built this business to serve
                 our local community with honesty, convenience, and dependable
                 service. Living in Apollo Beach and working in Tampa, we
                 recognized the need for a better way to help customers maintain
                 their vehicles and equipment without sitting in traffic or
                 waiting at a repair shop. Life is busy, and people deserve
                 service that is professional, reliable, and built around their
-                schedule. That is why Coastal Mobile Lube and Tire was created.
+                schedule. That is why Coastal Mobile Lube & Tire was created.
               </p>
               <p className="text-[15px] leading-[1.7] text-[#444]">
                 With a background in automotive dealerships and fixed operations,
@@ -178,7 +178,7 @@ export default function AboutPage() {
                 leaves no mess on your driveway. No drips, no spills.
               </p>
               <p className="text-[15px] leading-[1.7] text-[#444]">
-                Coastal Mobile Lube and Tire is built on faith-based values that
+                Coastal Mobile Lube & Tire is built on faith-based values that
                 matter: integrity, honesty, hard work, kindness, and service to
                 others. These principles are at the heart of how we operate, how
                 we treat our customers, and how we serve our community. We are
@@ -216,7 +216,7 @@ export default function AboutPage() {
       </section>
 
 
-      {/* Section 4 — Value Props */}
+      {/* Section 4 - Value Props */}
       <section className="relative bg-[#F7F8FA]">
         <div className="max-w-[1100px] mx-auto px-4 lg:px-6 py-10 md:py-14">
           <div className="text-center mb-10">
@@ -251,7 +251,7 @@ export default function AboutPage() {
       </section>
 
 
-      {/* Section 5 — Three Verticals */}
+      {/* Section 5 - Three Verticals */}
       <section className="relative overflow-hidden bg-[#F7F8FA]">
         <div className="max-w-[1100px] mx-auto px-4 lg:px-6 py-12 md:py-16 text-center relative z-10">
           <p className="text-[12px] uppercase font-bold text-[#1A5FAC] tracking-[2.5px] mb-4">
@@ -290,7 +290,7 @@ export default function AboutPage() {
       </section>
 
 
-      {/* Section 6 — CTA */}
+      {/* Section 6 - CTA */}
       <section className="relative bg-[#FAFBFC]">
         <div className="max-w-[1100px] mx-auto px-4 lg:px-6 py-14 md:py-16 text-center">
           <h2 className="text-[28px] md:text-[36px] font-extrabold leading-[1.1] text-[#0B2040] tracking-[-0.5px] mb-4">

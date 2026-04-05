@@ -364,7 +364,7 @@ export default function FleetContent() {
       <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0B2040 0%, #0F2847 50%, #132E54 100%)" }}>
         <div className="section-inner px-4 lg:px-6 py-14 md:py-20 text-center relative z-10">
           <h2 className="text-[28px] md:text-[34px] font-[800] text-white mb-4">
-            Ready to streamline your fleet maintenance?
+            Ready to simplify your fleet maintenance?
           </h2>
           <p className="text-[16px] text-white/60 mb-8 max-w-[520px] mx-auto">
             Get a custom maintenance plan built around your vehicles, your schedule, and your budget.

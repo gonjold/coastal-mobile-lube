@@ -1,0 +1,15 @@
+WO-10 complete. Here's what was done:
+
+**Per-page metadata** (title, description, OG tags) updated on all 8 pages: `/`, `/services`, `/marine`, `/rv`, `/fleet`, `/about`, `/contact`, `/book`
+
+**Canonical URLs** added to all 10 route pages (including `/faq` and `/service-areas` to prevent wrong inheritance from layout)
+
+**JSON-LD structured data** added to `/services` (Automotive Maintenance), `/marine` (Marine Maintenance), `/rv` (RV Maintenance). Homepage LocalBusiness JSON-LD was already present in layout.tsx.
+
+**Dead Google review link** fixed: `href="#"` replaced with `href="/contact"` plus a TODO comment for the real Google Business Profile URL.
+
+**Contact page** refactored to follow the existing pattern (server component wrapper + client `ContactContent.tsx`) to enable metadata export.
+
+**BASE_URL** updated from Netlify subdomain to `https://coastalmobilelube.com`.
+
+Build passed, deployed to production, committed and pushed to main.

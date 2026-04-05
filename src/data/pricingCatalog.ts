@@ -1,5 +1,5 @@
 // ============================================================
-// Coastal Mobile Lube — Complete Pricing Catalog
+// Coastal Mobile Lube - Complete Pricing Catalog
 // Source of truth for all service pricing across divisions.
 // Used by: Firestore seeding, frontend service pages, booking.
 // ============================================================

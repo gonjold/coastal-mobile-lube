@@ -183,7 +183,7 @@ export default function Home() {
       {/* ── Hero ── */}
       <section className="relative overflow-clip min-h-[600px]" style={{ background: "linear-gradient(180deg, #0A1628 0%, #0B2040 50%, #0F2847 100%)" }}>
 
-        {/* Oval badge watermark — massive brand stamp */}
+        {/* Oval badge watermark - massive brand stamp */}
         <img
           src={cloudinaryUrl(images.logo, { width: 900, quality: "auto" })}
           alt=""
@@ -238,7 +238,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Booking Widget — clean white */}
+            {/* Booking Widget - clean white */}
             <div
               className="rounded-[16px] p-7 relative overflow-hidden lg:sticky lg:top-[100px] lg:self-start"
               style={{

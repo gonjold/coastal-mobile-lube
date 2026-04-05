@@ -46,7 +46,7 @@ export default function AdminLayout({
     setMobileOpen(false);
   }, [pathname]);
 
-  /* ── Login page — no admin chrome ── */
+  /* ── Login page - no admin chrome ── */
   if (pathname === "/admin/login") {
     return (
       <>
@@ -164,17 +164,17 @@ export default function AdminLayout({
       />
 
       <div className="flex h-screen bg-[#F5F6F8]">
-        {/* ═══ SIDEBAR — desktop full ═══ */}
+        {/* ═══ SIDEBAR - desktop full ═══ */}
         <aside className="hidden lg:flex flex-col w-[220px] bg-[#0B2040] shrink-0">
           <SidebarInner />
         </aside>
 
-        {/* ═══ SIDEBAR — tablet icons-only ═══ */}
+        {/* ═══ SIDEBAR - tablet icons-only ═══ */}
         <aside className="hidden md:flex lg:hidden flex-col w-[64px] bg-[#0B2040] shrink-0">
           <SidebarInner iconsOnly />
         </aside>
 
-        {/* ═══ SIDEBAR — mobile drawer ═══ */}
+        {/* ═══ SIDEBAR - mobile drawer ═══ */}
         {mobileOpen && (
           <>
             {/* Backdrop */}
@@ -193,7 +193,7 @@ export default function AdminLayout({
         <div className="flex-1 flex flex-col min-w-0">
           {/* ── Top bar ── */}
           <header className="flex items-center gap-4 px-4 lg:px-6 py-3 bg-white border-b border-[#e8e8e8] shrink-0">
-            {/* Hamburger — mobile only */}
+            {/* Hamburger - mobile only */}
             <button
               onClick={() => setMobileOpen(true)}
               className="md:hidden p-1.5 -ml-1 rounded-lg hover:bg-[#f0f0f0] transition-colors"

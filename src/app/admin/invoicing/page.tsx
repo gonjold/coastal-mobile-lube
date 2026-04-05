@@ -287,7 +287,7 @@ ${inv.notes ? `<!-- Notes -->
 
 <!-- Footer -->
 <div style="text-align:center;padding-top:20px;border-top:1px solid #e0e0e0">
-  <p style="font-size:14px;font-weight:600;color:#0B2040;margin-bottom:4px">Thank you for choosing Coastal Mobile Lube and Tire</p>
+  <p style="font-size:14px;font-weight:600;color:#0B2040;margin-bottom:4px">Thank you for choosing Coastal Mobile Lube & Tire</p>
   <p style="font-size:13px;color:#888">813-722-LUBE &nbsp;|&nbsp; coastalmobilelube.com</p>
 </div>
 
@@ -316,7 +316,7 @@ function InvoicingPageInner() {
   const [loading, setLoading] = useState(true);
   const [bookings, setBookings] = useState<Booking[]>([]);
 
-  /* Catalog items for service dropdown — live from Firestore */
+  /* Catalog items for service dropdown - live from Firestore */
   const { services: catalogItems } = useServices();
 
   /* Modal state */

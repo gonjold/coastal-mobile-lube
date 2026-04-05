@@ -51,7 +51,7 @@ export interface Customer {
 /* ─── Formatters ────────────────────────────────────────── */
 
 export function formatPhone(phone?: string): string {
-  if (!phone) return "—";
+  if (!phone) return "-";
   const d = phone.replace(/\D/g, "");
   if (d.length === 10)
     return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
@@ -59,7 +59,7 @@ export function formatPhone(phone?: string): string {
 }
 
 export function formatTimestamp(ts?: FirestoreTimestamp): string {
-  if (!ts) return "—";
+  if (!ts) return "-";
   const d = ts.toDate ? ts.toDate() : new Date(ts as unknown as string);
   return d.toLocaleDateString("en-US", {
     month: "short",
@@ -94,7 +94,7 @@ export function getSourceLabel(source?: string): { label: string; color: string 
     case "admin-manual":
       return { label: "Manual", color: "bg-[#0D8A8F]" };
     default:
-      return { label: source || "—", color: "bg-[#888]" };
+      return { label: source || "-", color: "bg-[#888]" };
   }
 }
 
@@ -109,7 +109,7 @@ export function getStatusStyle(status?: string) {
     case "cancelled":
       return { label: "Cancelled", cls: "bg-[#999] text-white" };
     default:
-      return { label: status || "—", cls: "bg-[#eee] text-[#444]" };
+      return { label: status || "-", cls: "bg-[#eee] text-[#444]" };
   }
 }
 
@@ -204,15 +204,15 @@ function downloadCsv(filename: string, rows: string[][]) {
 export function exportBookingsCsv(bookings: Booking[]) {
   const header = ["Date", "Customer", "Phone", "Email", "Service", "Source", "Status", "Notes", "Created"];
   const rows = bookings.map((b) => [
-    b.preferredDate || b.confirmedDate || "—",
-    b.name || "—",
-    b.phone || "—",
-    b.email || "—",
-    b.service || "—",
-    b.source || "—",
-    b.status || "—",
+    b.preferredDate || b.confirmedDate || "-",
+    b.name || "-",
+    b.phone || "-",
+    b.email || "-",
+    b.service || "-",
+    b.source || "-",
+    b.status || "-",
     b.notes || "",
-    b.createdAt?.toDate ? b.createdAt.toDate().toISOString() : "—",
+    b.createdAt?.toDate ? b.createdAt.toDate().toISOString() : "-",
   ]);
   downloadCsv(`bookings-${toISODate(new Date())}.csv`, [header, ...rows]);
 }
@@ -222,8 +222,8 @@ export function exportCustomersCsv(bookings: Booking[]) {
   const header = ["Name", "Phone", "Email", "Total Bookings", "Last Booking"];
   const rows = customers.map((c) => [
     c.name,
-    c.phone || "—",
-    c.email || "—",
+    c.phone || "-",
+    c.email || "-",
     String(c.totalBookings),
     c.lastBookingDate,
   ]);
@@ -250,7 +250,7 @@ export function buildCustomerList(bookings: Booking[]): Customer[] {
     const latest = sorted[0];
     customers.push({
       key,
-      name: latest.name || "—",
+      name: latest.name || "-",
       phone: latest.phone,
       email: latest.email,
       address: latest.address,

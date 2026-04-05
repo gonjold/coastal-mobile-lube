@@ -66,7 +66,7 @@ async function seedPricing() {
     });
 
     console.log(
-      `  [${category.division.toUpperCase()}] ${category.name} — ${category.items.length} items`
+      `  [${category.division.toUpperCase()}] ${category.name} - ${category.items.length} items`
     );
   }
 

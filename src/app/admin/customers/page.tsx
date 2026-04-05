@@ -294,9 +294,9 @@ function CustomersView({
                           <a href={`tel:${c.phone}`} className="text-[#1A5FAC] hover:underline" onClick={(e) => e.stopPropagation()}>
                             {formatPhone(c.phone)}
                           </a>
-                        ) : "—"}
+                        ) : "-"}
                       </td>
-                      <td className="px-4 py-3 text-[13px] text-[#444] whitespace-nowrap">{c.email || "—"}</td>
+                      <td className="px-4 py-3 text-[13px] text-[#444] whitespace-nowrap">{c.email || "-"}</td>
                       <td className="px-4 py-3 text-[14px] font-semibold text-[#0B2040]">{c.totalBookings}</td>
                       <td className="px-4 py-3 text-[13px] text-[#444] whitespace-nowrap">{c.lastBookingDate}</td>
                       <td className="px-4 py-3 whitespace-nowrap">
@@ -435,7 +435,7 @@ function CustomerExpanded({
   onCreateInvoice: () => void;
 }) {
   const edit = editingCustomer[customer.key] || {
-    name: customer.name === "—" ? "" : customer.name,
+    name: customer.name === "-" ? "" : customer.name,
     phone: customer.phone ? formatPhone(customer.phone) : "",
     email: customer.email || "",
     address: customer.address || "",
@@ -497,7 +497,7 @@ function CustomerExpanded({
               return (
                 <div key={b.id} className="flex items-center justify-between bg-white border border-[#e8e8e8] rounded-[8px] px-4 py-3">
                   <div>
-                    <p className="text-[13px] font-semibold text-[#0B2040]">{b.service || "—"}</p>
+                    <p className="text-[13px] font-semibold text-[#0B2040]">{b.service || "-"}</p>
                     <p className="text-[12px] text-[#888]">{formatTimestamp(b.createdAt)}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0 ml-4">

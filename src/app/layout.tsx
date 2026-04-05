@@ -166,7 +166,7 @@ export default function RootLayout({
         <main className="flex-1 pb-20 lg:pb-0">{children}</main>
         <Footer />
 
-        {/* Mobile Sticky Bottom Bar — visible on all pages */}
+        {/* Mobile Sticky Bottom Bar - visible on all pages */}
         <div id="site-sticky-bar" className="fixed bottom-0 left-0 right-0 flex lg:hidden items-center gap-3 px-4 py-3 bg-white border-t border-[#eee] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] z-[100]">
           <a
             href="tel:8137225823"

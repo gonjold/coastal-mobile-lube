@@ -11,7 +11,7 @@ import {
   serverTimestamp,
   Timestamp,
 } from "firebase/firestore";
-/* pricingCatalog.ts kept as offline backup — all live data comes from Firestore */
+/* pricingCatalog.ts kept as offline backup - all live data comes from Firestore */
 import ToastContainer, { type ToastItem } from "../Toast";
 
 /* ── Types ── */
@@ -55,7 +55,7 @@ const DIVISIONS: { key: Division; label: string }[] = [
   { key: "fleet", label: "Fleet" },
 ];
 
-/* catalogToEditable removed — Firestore is now the sole data source */
+/* catalogToEditable removed - Firestore is now the sole data source */
 
 function editableToFirestore(cats: EditableCategory[]) {
   return cats.map((cat) => ({
@@ -439,7 +439,7 @@ export default function PricingPage() {
                       <input
                         type="text"
                         value={item.note || ""}
-                        placeholder="—"
+                        placeholder="-"
                         onChange={(e) =>
                           updateItemField(cat.id, item.id, "note", e.target.value)
                         }

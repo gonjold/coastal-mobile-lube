@@ -5,7 +5,7 @@ import { db } from "@/lib/firebase";
 import { doc, updateDoc, arrayUnion } from "firebase/firestore";
 
 function formatPhoneDisplay(phone?: string): string {
-  if (!phone) return "—";
+  if (!phone) return "-";
   const d = phone.replace(/\D/g, "");
   if (d.length === 10)
     return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
