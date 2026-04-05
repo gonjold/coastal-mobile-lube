@@ -17,3 +17,9 @@ Finished: Sat Apr  4 22:31:20 EDT 2026
 
 ## Task 3: Wire public pages to Firestore services
 Started: Sat Apr  4 22:31:20 EDT 2026
+Status: COMPLETED
+Finished: Sat Apr  4 22:44:34 EDT 2026
+---
+
+## Task 4: Invoice email Cloud Function
+Started: Sat Apr  4 22:44:34 EDT 2026
