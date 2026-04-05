@@ -11,3 +11,9 @@ Finished: Sat Apr  4 22:22:37 EDT 2026
 
 ## Task 2: Admin service management page
 Started: Sat Apr  4 22:22:37 EDT 2026
+Status: COMPLETED
+Finished: Sat Apr  4 22:31:20 EDT 2026
+---
+
+## Task 3: Wire public pages to Firestore services
+Started: Sat Apr  4 22:31:20 EDT 2026
