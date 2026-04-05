@@ -1,102 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Phone, Check, Clock, MapPin, Wrench, Shield, Award, Tag } from "lucide-react";
 import Button from "@/components/Button";
 import { cloudinaryUrl, images } from "@/lib/cloudinary";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { useServices, type Service } from "@/hooks/useServices";
 
-const bookingServices = {
-  automotive: [
-    "Synthetic Oil Change",
-    "Tire Rotation & Balance",
-    "Tire Sales & Install",
-    "Brake Inspection",
-    "Fluid Top-Off",
-    "Battery Service",
-    "Filter Replacement",
-    "Wiper Blades",
-    "Other (describe below)",
-  ],
-  fleet: [
-    "Scheduled Fleet Maintenance",
-    "Company Vehicle Programs",
-    "Box Truck & Heavy-Duty",
-    "DOT Inspections",
-    "Emergency Mobile Service",
-    "Custom Fleet Plans",
-    "Volume Pricing",
-    "Multi-Vehicle Discounts",
-    "Other (describe below)",
-  ],
-  marine: [
-    "Outboard Oil Change",
-    "Inboard Engine Service",
-    "Lower Unit Service",
-    "Seasonal Winterization",
-    "Boat Ramp Service",
-    "Dock-Side Maintenance",
-    "Fuel System Service",
-    "Cooling System Flush",
-    "Other (describe below)",
-  ],
+/* Fallback service names shown while Firestore loads */
+const fallbackBookingServices: Record<string, string[]> = {
+  automotive: ["Synthetic Oil Change", "Tire Rotation & Balance", "Brake Inspection", "Other (describe below)"],
+  fleet: ["Scheduled Fleet Maintenance", "Emergency Mobile Service", "Other (describe below)"],
+  marine: ["Outboard Oil Change", "Lower Unit Service", "Other (describe below)"],
 };
 
-const servicesData = {
+const fallbackServicesData: Record<string, { title: string; description: string; pricing: string; pricingLabel: string; items: string[]; image: string }> = {
   automotive: {
     title: "Automotive Services",
-    description:
-      "Factory-grade oil changes, tire rotations, brake checks, and preventive maintenance - all performed at your home or office.",
+    description: "Factory-grade oil changes, tire rotations, brake checks, and preventive maintenance - all performed at your home or office.",
     pricing: "$89.95",
     pricingLabel: "Starting at",
-    items: [
-      "Synthetic Oil Change",
-      "Tire Rotation & Balance",
-      "Tire Sales & Installation",
-      "Brake Inspection",
-      "Fluid Top-Off",
-      "Battery Service",
-      "Filter Replacement",
-      "Wiper Blades",
-    ],
+    items: ["Synthetic Oil Change", "Tire Rotation & Balance", "Brake Inspection"],
     image: images.drivewayService,
   },
   fleet: {
     title: "Fleet & Commercial",
-    description:
-      "Scheduled maintenance programs for company vehicles, box trucks, and commercial fleets. Volume pricing and custom plans available.",
+    description: "Scheduled maintenance programs for company vehicles, box trucks, and commercial fleets. Volume pricing and custom plans available.",
     pricing: "Custom quotes",
     pricingLabel: "",
-    items: [
-      "Scheduled Fleet Maintenance",
-      "Company Vehicle Programs",
-      "Box Truck & Heavy-Duty",
-      "DOT Inspections",
-      "Emergency Mobile Service",
-      "Custom Fleet Plans",
-      "Volume Pricing",
-      "Multi-Vehicle Discounts",
-    ],
+    items: ["Scheduled Fleet Maintenance", "Company Vehicle Programs", "Emergency Mobile Service"],
     image: images.commercialService,
   },
   marine: {
     title: "Marine Services",
-    description:
-      "Dockside and boat ramp service for outboard and inboard engines. Seasonal maintenance and winterization across the South Shore.",
+    description: "Dockside and boat ramp service for outboard and inboard engines. Seasonal maintenance and winterization across the South Shore.",
     pricing: "$149.95",
     pricingLabel: "Starting at",
-    items: [
-      "Outboard Oil Change",
-      "Inboard Engine Service",
-      "Lower Unit Service",
-      "Seasonal Winterization",
-      "Boat Ramp Service",
-      "Dock-Side Maintenance",
-      "Fuel System Service",
-      "Cooling System Flush",
-    ],
+    items: ["Outboard Oil Change", "Inboard Engine Service", "Lower Unit Service"],
     image: images.marinaBoatsAlt,
   },
 };
@@ -133,6 +75,50 @@ export default function Home() {
   const [quoteSubmitting, setQuoteSubmitting] = useState(false);
   const [quoteSubmitted, setQuoteSubmitted] = useState(false);
   const [quoteError, setQuoteError] = useState("");
+
+  const { services: allServices } = useServices({ activeOnly: true });
+
+  // Derive booking service names per division from Firestore
+  const bookingServices = useMemo(() => {
+    if (allServices.length === 0) return fallbackBookingServices;
+    const auto = allServices
+      .filter((s) => s.division === "auto" && s.showOnBooking)
+      .map((s) => s.name);
+    const fleet = allServices
+      .filter((s) => s.division === "fleet" && s.showOnBooking)
+      .map((s) => s.name);
+    const marine = allServices
+      .filter((s) => s.division === "marine" && s.showOnBooking)
+      .map((s) => s.name);
+    return {
+      automotive: auto.length > 0 ? [...auto, "Other (describe below)"] : fallbackBookingServices.automotive,
+      fleet: fleet.length > 0 ? [...fleet, "Other (describe below)"] : fallbackBookingServices.fleet,
+      marine: marine.length > 0 ? [...marine, "Other (describe below)"] : fallbackBookingServices.marine,
+    };
+  }, [allServices]);
+
+  // Derive services tab data from Firestore
+  const servicesData = useMemo(() => {
+    if (allServices.length === 0) return fallbackServicesData;
+    const autoPrices = allServices.filter((s) => s.division === "auto").map((s) => s.price);
+    const marinePrices = allServices.filter((s) => s.division === "marine").map((s) => s.price);
+    return {
+      automotive: {
+        ...fallbackServicesData.automotive,
+        pricing: autoPrices.length > 0 ? `$${Math.min(...autoPrices).toFixed(2)}` : "$89.95",
+        items: allServices.filter((s) => s.division === "auto" && s.showOnPricing).map((s) => s.name).slice(0, 8),
+      },
+      fleet: {
+        ...fallbackServicesData.fleet,
+        items: allServices.filter((s) => s.division === "fleet" && s.showOnPricing).map((s) => s.name).slice(0, 8),
+      },
+      marine: {
+        ...fallbackServicesData.marine,
+        pricing: marinePrices.length > 0 ? `$${Math.min(...marinePrices).toFixed(2)}` : "$149.95",
+        items: allServices.filter((s) => s.division === "marine" && s.showOnPricing).map((s) => s.name).slice(0, 8),
+      },
+    };
+  }, [allServices]);
 
   const currentService = servicesData[servicesTab];
 

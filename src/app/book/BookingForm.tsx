@@ -11,7 +11,8 @@ import {
   where,
   getDocs,
 } from "firebase/firestore";
-import { getCatalogByDivision } from "@/data/pricingCatalog";
+import { useServices, type Service } from "@/hooks/useServices";
+import { groupByCategory } from "@/lib/serviceHelpers";
 
 /* ─── Types ────────────────────────────────────────────────────── */
 
@@ -222,90 +223,47 @@ export default function BookingForm() {
   const [division, setDivision] = useState<Division>("auto");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Firestore services
+  const { services: allServices, loading: servicesLoading } = useServices({ activeOnly: true });
+
   /* ── Derived: catalog per division ── */
   const catalog = useMemo(() => {
+    // Filter services by current division
+    let divisionServices: Service[];
     if (division === "auto") {
-      return getCatalogByDivision("auto")
-        .filter(
-          (c) =>
-            c.id !== "auto-labor-rates" &&
-            c.items.some((i) => i.displayOnSite)
-        )
-        .map((c) => ({
-          ...c,
-          items: c.items.filter(
-            (i) => i.displayOnSite && i.subcategory !== "Add-Ons"
-          ),
-        }));
+      divisionServices = allServices.filter((s) => s.division === "auto");
+    } else if (division === "marine") {
+      divisionServices = allServices.filter((s) => s.division === "marine");
+    } else {
+      // RV: cherry-pick from auto + marine
+      divisionServices = allServices.filter(
+        (s) => s.division === "auto" || s.division === "marine"
+      );
     }
 
-    if (division === "marine") {
-      return getCatalogByDivision("marine")
-        .filter(
-          (c) =>
-            !c.id.includes("labor-rates") &&
-            c.items.some((i) => i.displayOnSite)
-        )
-        .map((c) => ({
-          ...c,
-          items: c.items.filter(
-            (i) => i.displayOnSite && i.subcategory !== "Add-Ons"
-          ),
-        }));
-    }
-
-    // RV: cherry-pick from auto + marine
-    const auto = getCatalogByDivision("auto");
-    const marine = getCatalogByDivision("marine");
-
-    const rvCats = auto
-      .filter((c) =>
-        ["auto-oil-changes", "auto-tire-wheel", "auto-brakes"].includes(c.id)
-      )
-      .map((c) => ({
-        ...c,
-        items: c.items.filter(
-          (i) => i.displayOnSite && i.subcategory !== "Add-Ons"
-        ),
-      }));
-
-    // Battery & Electrical
-    const allAutoItems = auto.flatMap((c) => c.items);
-    const allMarineItems = marine.flatMap((c) => c.items);
-
-    const battItems = allAutoItems.filter((i) =>
-      ["auto-bm-battery-replacement", "auto-wf-battery-service"].includes(i.id)
-    );
-    if (battItems.length) {
-      rvCats.push({
-        id: "rv-battery-electrical",
-        name: "Battery & Electrical",
-        division: "auto" as const,
-        description: "Battery replacement and electrical service for RVs",
-        startingAt: Math.min(...battItems.map((i) => i.price)),
-        displayOrder: 10,
-        items: battItems,
-      });
-    }
-
-    // Generator & Chassis
-    const genItems = allMarineItems.filter((i) =>
-      ["marine-os-generator", "marine-bm-grease-steering-pivots"].includes(i.id)
-    );
-    if (genItems.length) {
-      rvCats.push({
-        id: "rv-generator-chassis",
-        name: "Generator & Chassis",
-        division: "auto" as const,
-        description: "Generator oil service and chassis lubrication for RVs",
-        startingAt: Math.min(...genItems.map((i) => i.price)),
-        displayOrder: 11,
-        items: genItems,
-      });
-    }
-
-    return rvCats;
-  }, [division]);
+    // Group by category and transform to the catalog shape used by the Browse panel
+    const grouped = groupByCategory(divisionServices);
+    return grouped.map((g) => ({
+      id: g.category.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      name: g.category,
+      division: (g.services[0]?.division || "auto") as "auto" | "marine" | "fleet",
+      description: "",
+      startingAt: Math.min(...g.services.map((s) => s.price)),
+      displayOrder: g.services[0]?.sortOrder || 0,
+      items: g.services.map((s) => ({
+        id: s.id,
+        category: s.category,
+        subcategory: s.subcategory || "",
+        name: s.name,
+        price: s.price,
+        note: s.notes || "",
+        laborHours: s.laborHours || 0,
+        division: s.division,
+        displayOnSite: s.isActive,
+        displayOrder: s.sortOrder,
+      })),
+    }));
+  }, [division, allServices]);
 
   /* ── Derived: most booked per division ── */
   const currentMostBooked = mostBookedByDivision[division];

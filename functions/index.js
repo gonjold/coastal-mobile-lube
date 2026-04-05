@@ -321,3 +321,127 @@ exports.sendConfirmationEmail = onRequest(
     }
   }
 );
+
+// ─── Invoice email sent to CUSTOMER from admin invoicing page ───────
+
+exports.sendInvoiceEmail = onRequest(
+  {
+    region: "us-east1",
+    secrets: [gmailUser, gmailAppPassword],
+    cors: true,
+  },
+  async (req, res) => {
+    const { customerEmail, customerName, invoiceNumber, lineItems, total, notes } = req.body;
+
+    if (!customerEmail) {
+      res.status(400).json({ success: false, error: "customerEmail is required" });
+      return;
+    }
+    if (!invoiceNumber) {
+      res.status(400).json({ success: false, error: "invoiceNumber is required" });
+      return;
+    }
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: gmailUser.value(),
+        pass: gmailAppPassword.value(),
+      },
+    });
+
+    // Build line items table rows
+    const items = Array.isArray(lineItems) ? lineItems : [];
+    const lineItemRows = items
+      .map(
+        (li) =>
+          `<tr>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e8e8e8; color: #333;">${li.serviceName || ""}</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e8e8e8; text-align: center; color: #333;">${li.quantity || 1}</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e8e8e8; text-align: right; color: #333;">$${(li.unitPrice || 0).toFixed(2)}</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e8e8e8; text-align: right; font-weight: 600; color: #0B2040;">$${(li.lineTotal || 0).toFixed(2)}</td>
+          </tr>`
+      )
+      .join("");
+
+    const formattedTotal = typeof total === "number" ? total.toFixed(2) : "0.00";
+
+    const invoiceHtml = `
+      <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #0B2040; padding: 20px 24px; border-radius: 8px 8px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 20px;">Invoice ${invoiceNumber}</h1>
+          <p style="color: #ccc; margin: 4px 0 0; font-size: 13px;">Coastal Mobile Lube &amp; Tire</p>
+        </div>
+        <div style="background: white; padding: 24px; border: 1px solid #e8e8e8; border-top: none;">
+          <p style="font-size: 16px; color: #333; margin-top: 0;">
+            Hi ${customerName || "there"},
+          </p>
+          <p style="color: #666; line-height: 1.6;">
+            Here is your invoice for recent services. Please review the details below.
+          </p>
+
+          <!-- Line Items Table -->
+          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <thead>
+              <tr style="background: #FAFBFC;">
+                <th style="padding: 10px 14px; text-align: left; font-size: 12px; text-transform: uppercase; color: #888; border-bottom: 2px solid #e8e8e8;">Service</th>
+                <th style="padding: 10px 14px; text-align: center; font-size: 12px; text-transform: uppercase; color: #888; border-bottom: 2px solid #e8e8e8;">Qty</th>
+                <th style="padding: 10px 14px; text-align: right; font-size: 12px; text-transform: uppercase; color: #888; border-bottom: 2px solid #e8e8e8;">Price</th>
+                <th style="padding: 10px 14px; text-align: right; font-size: 12px; text-transform: uppercase; color: #888; border-bottom: 2px solid #e8e8e8;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${lineItemRows}
+            </tbody>
+          </table>
+
+          <!-- Total -->
+          <div style="text-align: right; border-top: 2px solid #0B2040; padding-top: 12px; margin-top: 4px;">
+            <span style="font-size: 14px; color: #666; margin-right: 16px;">Total Due:</span>
+            <span style="font-size: 24px; font-weight: 800; color: #0B2040;">$${formattedTotal}</span>
+          </div>
+
+          ${notes ? `
+          <div style="background: #FAFBFC; border: 1px solid #e8e8e8; border-radius: 8px; padding: 16px; margin-top: 20px;">
+            <p style="font-size: 12px; text-transform: uppercase; color: #888; margin: 0 0 6px; font-weight: 600;">Notes</p>
+            <p style="color: #333; margin: 0; line-height: 1.5;">${notes}</p>
+          </div>` : ""}
+
+          <!-- Payment Instructions -->
+          <div style="margin-top: 24px; padding: 20px; background: #FFF8F0; border: 1px solid #f0dcc4; border-radius: 8px;">
+            <p style="font-weight: 700; color: #0B2040; margin: 0 0 8px; font-size: 15px;">Payment Instructions</p>
+            <p style="color: #555; line-height: 1.6; margin: 0;">
+              We accept cash, check, Venmo, Zelle, and all major credit cards.<br>
+              For questions about this invoice, call or text us at
+              <a href="tel:8137225823" style="color: #1A5FAC; font-weight: 600;">813-722-LUBE</a>.
+            </p>
+          </div>
+
+          <p style="color: #888; font-size: 13px; margin-top: 20px; line-height: 1.5;">
+            Thank you for choosing Coastal Mobile Lube &amp; Tire. We appreciate your business!
+          </p>
+        </div>
+        <div style="background: #0B2040; padding: 16px 24px; border-radius: 0 0 8px 8px; text-align: center;">
+          <p style="color: #ccc; font-size: 12px; margin: 0;">
+            Coastal Mobile Lube &amp; Tire — Tampa, FL<br>
+            Mobile oil changes, tire service, and marine engine maintenance
+          </p>
+        </div>
+      </div>
+    `;
+
+    try {
+      await transporter.sendMail({
+        from: `"Coastal Mobile Lube" <${gmailUser.value()}>`,
+        to: customerEmail,
+        subject: `Invoice ${invoiceNumber} — Coastal Mobile Lube & Tire`,
+        html: invoiceHtml,
+      });
+      console.log(`Invoice email sent to ${customerEmail} for ${invoiceNumber}`);
+      res.json({ success: true });
+    } catch (error) {
+      console.error(`Failed to send invoice to ${customerEmail}:`, error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+);

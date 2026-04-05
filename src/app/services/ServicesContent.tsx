@@ -2,105 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Phone, ChevronDown, ArrowRight } from "lucide-react";
+import { Phone, ArrowRight } from "lucide-react";
 import Button from "@/components/Button";
-
-/* ─── Category definitions ─── */
-const categories = [
-  { id: "oil-changes", label: "Oil Changes", startingAt: "$89.95" },
-  { id: "tires-wheels", label: "Tires & Wheels", startingAt: "$39.95" },
-  { id: "brakes", label: "Brakes", startingAt: "$320" },
-  { id: "fluid-services", label: "Fluid Services", startingAt: "$79.95" },
-  { id: "diesel-services", label: "Diesel Services", startingAt: "$49.95" },
-  { id: "maintenance", label: "Maintenance", startingAt: "$34.95" },
-];
-
-/* ─── Oil change tier cards ─── */
-const oilTiers = [
-  { name: "Synthetic Blend", price: "$89.95", note: "Up to 5 qts", tag: null },
-  { name: "Full Synthetic", price: "$119.95", note: "Up to 5 qts", tag: "Most popular" },
-  { name: "Diesel", price: "$219.95", note: null, tag: null },
-];
-
-const oilBundles = [
-  {
-    oilType: "Synthetic Blend",
-    basic: "$119.95",
-    better: "$139.95",
-    best: "$179.95",
-  },
-  {
-    oilType: "Full Synthetic",
-    basic: "$149.95",
-    better: "$169.95",
-    best: "$209.95",
-  },
-  {
-    oilType: "Diesel",
-    basic: "$259.95",
-    better: "$269.95",
-    best: "$309.95",
-  },
-];
-
-/* ─── Tire & wheel services ─── */
-const tireServices = [
-  { name: "Tire Rotation", price: "$39.95" },
-  { name: "Mount & Balance (single)", price: "$49.95" },
-  { name: "Mount & Balance (4 tires)", price: "$159.95" },
-  { name: "Rotate & Balance", price: "$89.95" },
-  { name: "Tire Patch", price: "$69.95" },
-  { name: "Road Force Balance", price: "$199.95" },
-  { name: "TPMS/Valve Stem", price: "$69.95" },
-];
-
-/* ─── Brake services ─── */
-const brakeServices = [
-  { name: "Front + Rear Brake Job", price: "$320", note: "Pads + resurfacing rotors" },
-  { name: "Transit Front + Rear", price: "$450", note: null },
-  { name: "Dually Front", price: "$450", note: null },
-  { name: "Dually Rear", price: "$720", note: null },
-];
-
-/* ─── Fluid services ─── */
-const fluidServices = [
-  { name: "Battery Service", price: "$79.95" },
-  { name: "Throttle Body Service", price: "$129.95" },
-  { name: "Power Steering Flush", price: "$219.95" },
-  { name: "Brake Flush", price: "$239.95" },
-  { name: "Fuel Induction Service", price: "$239.95" },
-  { name: "Transfer Case Flush", price: "$249.95" },
-  { name: "A/C Evaporator Service", price: "$259.95" },
-  { name: "Coolant Flush", price: "$269.95" },
-  { name: "Front Diff Flush", price: "$269.95" },
-  { name: "Rear Diff Flush", price: "$269.95" },
-  { name: "Stop Squeal", price: "$297.95" },
-  { name: "Transmission Auto", price: "$419.95" },
-  { name: "Transmission Manual", price: "$249.95" },
-];
-
-/* ─── Diesel services ─── */
-const dieselServices = [
-  { name: "Diesel MOA", price: "$49.95" },
-  { name: "F250+ Front Diff Flush", price: "$299.95" },
-  { name: "F250+ Rear Diff Flush", price: "$299.95" },
-  { name: "Diesel Fuel Filters", price: "$399.95" },
-  { name: "Diesel Injection Service", price: "$439.95" },
-  { name: "Dual Coolant Flush", price: "$499.95" },
-  { name: "F450-550 Rear Diff Flush", price: "$399.95" },
-];
-
-/* ─── Maintenance services ─── */
-const maintenanceServices = [
-  { name: "Rear Wiper Blade", price: "$34.95" },
-  { name: "Front Wiper Blades", price: "$79.95" },
-  { name: "Engine Air Filter", price: "$79.95" },
-  { name: "Cabin Air Filter", price: "$99.95" },
-  { name: "Cabin Air Filter w/ Frigi Fresh", price: "$129.95" },
-  { name: "Diesel Air Filter", price: "$119.95" },
-  { name: "Battery Replacement", price: "from $50" },
-  { name: "Diesel Fuel Filters", price: "$399.95" },
-];
+import { useServices, type Service } from "@/hooks/useServices";
+import { groupByCategory } from "@/lib/serviceHelpers";
 
 /* ─── Reusable: 2-col service grid ─── */
 function ServiceGrid({ items }: { items: { name: string; price: string }[] }) {
@@ -157,9 +62,25 @@ function CategorySection({
    Main component
    ================================================================ */
 export default function ServicesContent() {
-  const [activeCategory, setActiveCategory] = useState(categories[0].id);
-  const [bundlesOpen, setBundlesOpen] = useState(false);
+  const { services, categories: firestoreCategories, loading } = useServices({ division: "auto", activeOnly: true });
+  const grouped = groupByCategory(services);
+
+  // Derive category nav from Firestore data
+  const categories = grouped.map((g) => ({
+    id: g.category.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+    label: g.category,
+    startingAt: `$${Math.min(...g.services.map((s) => s.price)).toFixed(2)}`,
+  }));
+
+  const [activeCategory, setActiveCategory] = useState("");
   const pillBarRef = useRef<HTMLDivElement>(null);
+
+  // Set initial active category when data loads
+  useEffect(() => {
+    if (categories.length > 0 && !activeCategory) {
+      setActiveCategory(categories[0].id);
+    }
+  }, [categories, activeCategory]);
 
   /* Track active section on scroll */
   useEffect(() => {
@@ -179,12 +100,29 @@ export default function ServicesContent() {
       if (el) observer.observe(el);
     }
     return () => observer.disconnect();
-  }, []);
+  }, [categories]);
 
   function scrollTo(id: string) {
     setActiveCategory(id);
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth" });
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-32">
+        <div className="animate-spin w-8 h-8 border-4 border-[#E07B2D] border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (grouped.length === 0) {
+    return (
+      <div className="text-center py-32 text-[#888]">
+        <p className="text-lg font-semibold">Services loading...</p>
+        <p className="mt-2">Please check back shortly or call 813-722-LUBE.</p>
+      </div>
+    );
   }
 
   return (
@@ -254,202 +192,34 @@ export default function ServicesContent() {
         </div>
       </div>
 
-      {/* ================================================================
-         OIL CHANGES
-         ================================================================ */}
-      <CategorySection
-        id="oil-changes"
-        title="Oil Changes"
-        startingAt="$89.95"
-        description="Factory-grade oil change performed at your location. Vacuum extraction, OEM-spec filters, no drain plug risk."
-        even={false}
-      >
-        {/* Tier cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          {oilTiers.map((tier) => (
-            <div
-              key={tier.name}
-              className={`relative bg-white rounded-[12px] p-6 shadow-[0_2px_12px_rgba(11,32,64,0.06)] ${
-                tier.tag
-                  ? "border-2 border-[#E07B2D]"
-                  : "border border-[#f0ede6]"
-              }`}
-            >
-              {tier.tag && (
-                <span className="absolute -top-3 left-5 bg-[#E07B2D] text-white text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wide">
-                  {tier.tag}
-                </span>
-              )}
-              <h3 className="text-[18px] font-bold text-[#0B2040] mb-1">
-                {tier.name}
-              </h3>
-              {tier.note && (
-                <p className="text-[13px] text-[#888] mb-3">{tier.note}</p>
-              )}
-              {!tier.note && <div className="mb-3" />}
-              <p className="text-[28px] font-extrabold text-[#E07B2D]">
-                {tier.price}
-              </p>
-            </div>
-          ))}
-        </div>
+      {/* ── Dynamic Service Sections ── */}
+      {grouped.map((group, idx) => {
+        const catId = group.category.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+        const startingAt = `$${Math.min(...group.services.map((s) => s.price)).toFixed(2)}`;
+        const description = firestoreCategories.find(
+          (c) => c.name === group.category
+        )?.description || "";
 
-        {/* Bundle callout */}
-        <div className="bg-[#FFF8F0] border border-[#f0dcc4] rounded-[10px] px-5 py-4 mb-6">
-          <p className="text-[14px] text-[#0B2040] font-semibold">
-            Bundle and save
-          </p>
-          <p className="text-[13px] text-[#555] mt-1">
-            Add tire rotation + multi-point inspection with our Basic, Better,
-            or Best packages starting at $119.95
-          </p>
-        </div>
-
-        {/* Expandable bundles */}
-        <button
-          onClick={() => setBundlesOpen(!bundlesOpen)}
-          className="flex items-center gap-2 text-[14px] font-semibold text-[#0B2040] hover:text-[#E07B2D] transition-colors"
-        >
-          <ChevronDown
-            size={16}
-            className={`transition-transform ${bundlesOpen ? "rotate-180" : ""}`}
-          />
-          View all oil change packages
-        </button>
-
-        {bundlesOpen && (
-          <div className="mt-6 overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[480px]">
-              <thead>
-                <tr className="border-b-2 border-[#e8e4dc]">
-                  <th className="text-[13px] font-bold text-[#0B2040] py-3 pr-4">
-                    Oil Type
-                  </th>
-                  <th className="text-[13px] font-bold text-[#0B2040] py-3 px-4">
-                    Basic
-                  </th>
-                  <th className="text-[13px] font-bold text-[#0B2040] py-3 px-4">
-                    Better
-                  </th>
-                  <th className="text-[13px] font-bold text-[#0B2040] py-3 pl-4">
-                    Best
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {oilBundles.map((row) => (
-                  <tr key={row.oilType} className="border-b border-[#f0ede6]">
-                    <td className="text-[14px] font-medium text-[#0B2040] py-3 pr-4">
-                      {row.oilType}
-                    </td>
-                    <td className="text-[14px] font-semibold text-[#E07B2D] py-3 px-4">
-                      {row.basic}
-                    </td>
-                    <td className="text-[14px] font-semibold text-[#E07B2D] py-3 px-4">
-                      {row.better}
-                    </td>
-                    <td className="text-[14px] font-semibold text-[#E07B2D] py-3 pl-4">
-                      {row.best}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div className="mt-3 text-[12px] text-[#888]">
-              <p>Basic = oil change + tire rotation</p>
-              <p>Better = Basic + MOA additive</p>
-              <p>Best = Better + fuel additives</p>
-            </div>
-          </div>
-        )}
-      </CategorySection>
-
-      {/* ================================================================
-         TIRES & WHEELS
-         ================================================================ */}
-      <CategorySection
-        id="tires-wheels"
-        title="Tires & Wheels"
-        startingAt="$39.95"
-        description="Rotation, mount and balance, patching, and more. All on-site."
-        even={true}
-      >
-        <ServiceGrid items={tireServices} />
-        <p className="text-[13px] text-[#888] mt-4">
-          Oversized/aftermarket tires add $50 per tire for mount and balance,
-          $59.95 for rotation.
-        </p>
-      </CategorySection>
-
-      {/* ================================================================
-         BRAKES
-         ================================================================ */}
-      <CategorySection
-        id="brakes"
-        title="Brakes"
-        startingAt="$320"
-        description="Includes pads and resurfacing rotors. On-site brake service for standard vehicles, transit vans, and duallys."
-        even={false}
-      >
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {brakeServices.map((svc) => (
-            <div
-              key={svc.name}
-              className="bg-white border border-[#f0ede6] rounded-[12px] px-6 py-5 shadow-[0_2px_12px_rgba(11,32,64,0.05)]"
-            >
-              <h3 className="text-[16px] font-bold text-[#0B2040] mb-1">
-                {svc.name}
-              </h3>
-              {svc.note && (
-                <p className="text-[13px] text-[#888] mb-2">{svc.note}</p>
-              )}
-              <p className="text-[24px] font-extrabold text-[#E07B2D]">
-                {svc.price}
-              </p>
-            </div>
-          ))}
-        </div>
-      </CategorySection>
-
-      {/* ================================================================
-         FLUID SERVICES
-         ================================================================ */}
-      <CategorySection
-        id="fluid-services"
-        title="Fluid Services"
-        startingAt="$79.95"
-        description="Wynns professional fluid services for all vehicle systems."
-        even={true}
-      >
-        <ServiceGrid items={fluidServices} />
-      </CategorySection>
-
-      {/* ================================================================
-         DIESEL SERVICES
-         ================================================================ */}
-      <CategorySection
-        id="diesel-services"
-        title="Diesel Services"
-        startingAt="$49.95"
-        description="Specialized diesel maintenance and fluid services."
-        even={false}
-      >
-        <ServiceGrid items={dieselServices} />
-      </CategorySection>
-
-      {/* ================================================================
-         MAINTENANCE
-         ================================================================ */}
-      <CategorySection
-        id="maintenance"
-        title="Maintenance"
-        startingAt="$34.95"
-        description="Filters, wipers, batteries, and basic maintenance items."
-        even={true}
-      >
-        <ServiceGrid items={maintenanceServices} />
-      </CategorySection>
-
+        return (
+          <CategorySection
+            key={catId}
+            id={catId}
+            title={group.category}
+            startingAt={startingAt}
+            description={description}
+            even={idx % 2 === 0}
+          >
+            <ServiceGrid
+              items={group.services.map((s) => ({
+                name: s.name,
+                price: s.priceLabel
+                  ? `${s.priceLabel} $${s.price.toFixed(2)}`
+                  : `$${s.price % 1 === 0 ? `${s.price}` : s.price.toFixed(2)}`,
+              }))}
+            />
+          </CategorySection>
+        );
+      })}
 
       {/* ─── Bottom CTA ─── */}
       <section

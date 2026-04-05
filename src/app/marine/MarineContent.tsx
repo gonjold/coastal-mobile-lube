@@ -4,98 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import { Phone } from "lucide-react";
 import Button from "@/components/Button";
 import TrustBar from "@/components/TrustBar";
+import { useServices } from "@/hooks/useServices";
+import { groupByCategory } from "@/lib/serviceHelpers";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-
-/* ─── Category definitions ─── */
-const categories = [
-  { id: "oil-service", label: "Oil Service", startingAt: "$129.95" },
-  { id: "fuel-fluid", label: "Fuel & Fluid", startingAt: "$29.95" },
-  { id: "diesel", label: "Diesel", startingAt: "$29.95" },
-  { id: "maintenance", label: "Maintenance", startingAt: "$29.95" },
-  { id: "trailer-tire", label: "Trailer & Tire", startingAt: "$29.95" },
-  { id: "brakes", label: "Brakes", startingAt: "$129.95" },
-];
-
-/* ─── Marine oil service tier cards ─── */
-const oilTiers = [
-  { name: "Generator", price: "$129.95", note: "Onboard generators" },
-  { name: "Outboard Small", price: "$149.95", note: "Up to 6 qts", tag: null },
-  { name: "Outboard V6/V8", price: "$199.95", note: null, tag: null },
-  { name: "Inboard Small Block", price: "$229.95", note: null, tag: "Most common" },
-  { name: "Inboard Big Block", price: "$279.95", note: null, tag: null },
-  { name: "Diesel Marine", price: "$349.95", note: "All diesel marine engines", tag: null },
-];
-
-const oilAddOns = [
-  { name: "Pre-Trip Inspection", price: "$59.95" },
-  { name: "Sea Trial / Ramp Run Support", price: "$149.95" },
-];
-
-/* ─── Fuel & fluid services ─── */
-const fuelFluidServices = [
-  { name: "Fuel Stabilizer Additive", price: "$29.95" },
-  { name: "MOA / Oil Additive", price: "$29.95" },
-  { name: "Battery Terminal Service", price: "$39.95" },
-  { name: "Water-in-Fuel Check", price: "$39.95" },
-  { name: "Fuel System Treatment", price: "$49.95" },
-  { name: "Battery Test / Charging Check", price: "$59.95" },
-  { name: "Corrosion Guard Treatment", price: "$69.95" },
-  { name: "Prop Removal and Reinstall", price: "$79.95" },
-  { name: "Water Separating Fuel Filter", price: "$89.95" },
-  { name: "Engine Fuel Filter", price: "$129.95" },
-  { name: "Lower Unit Gear Lube", price: "$149.95" },
-  { name: "Throttle Body / Intake Service", price: "$149.95" },
-  { name: "Stern Drive Gear Lube", price: "$179.95" },
-  { name: "Racor Dual Filter Set", price: "$199.95" },
-  { name: "Twin Lower Unit Gear Lube", price: "$279.95" },
-  { name: "Cooling System Descale / Flush", price: "$299.95" },
-];
-
-/* ─── Diesel services ─── */
-const dieselServices = [
-  { name: "DEF Top-Off / Handling", price: "$29.95" },
-  { name: "Diesel MOA", price: "$49.95" },
-  { name: "Diesel Fuel Filter Service", price: "$249.95" },
-  { name: "Primary / Secondary Diesel Filters", price: "$329.95" },
-  { name: "Diesel Injection Service", price: "$449.95" },
-  { name: "Dual Coolant Flush (Diesel)", price: "$499.95" },
-];
-
-/* ─── Maintenance services ─── */
-const maintenanceServices = [
-  { name: "Trailer Light Check", price: "$29.95" },
-  { name: "Grease Steering / Pivot Points", price: "$39.95" },
-  { name: "Trailer Hub Temp / Bearing Check", price: "$39.95" },
-  { name: "Bilge / Safety Inspection", price: "$59.95" },
-  { name: "Battery Replacement (labor)", price: "$75.00" },
-  { name: "Engine Air Filter / Flame Arrestor", price: "$79.95" },
-  { name: "Dual Battery Replacement (labor)", price: "$125.00" },
-  { name: "Spark Plug Replacement", price: "from $199.95" },
-  { name: "Impeller Service", price: "$249.95" },
-];
-
-/* ─── Trailer & tire services ─── */
-const trailerTireServices = [
-  { name: "Replace Valve Stem / TPMS", price: "$29.95" },
-  { name: "Trailer Tire Rotation", price: "$39.95" },
-  { name: "Spare Tire Mount", price: "$39.95" },
-  { name: "Trailer Tire M&B (single)", price: "$49.95" },
-  { name: "Trailer Alignment Check", price: "$49.95" },
-  { name: "Trailer Tire Patch", price: "$69.95" },
-  { name: "Hub Service", price: "$129.95" },
-  { name: "Trailer Tire M&B (4 tires)", price: "$159.95" },
-  { name: "Wheel Bearing Repack", price: "from $179.95" },
-  { name: "Aftermarket / Oversized Trailer", price: "+$50/tire" },
-];
-
-/* ─── Brake services ─── */
-const brakeServices = [
-  { name: "Trailer Brake Adjustment", price: "$129.95" },
-  { name: "Surge Brake Inspection / Service", price: "$199.95" },
-  { name: "Trailer Brake Service", price: "$249.95" },
-  { name: "Tandem Trailer Brake Service", price: "from $399.95" },
-];
 
 const locations = [
   "Apollo Beach",
@@ -163,8 +75,23 @@ function CategorySection({
    Main component
    ================================================================ */
 export default function MarineContent() {
-  const [activeCategory, setActiveCategory] = useState(categories[0].id);
+  const { services, categories: firestoreCategories, loading } = useServices({ division: "marine", activeOnly: true });
+  const grouped = groupByCategory(services);
+
+  const categories = grouped.map((g) => ({
+    id: g.category.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+    label: g.category,
+    startingAt: `$${Math.min(...g.services.map((s) => s.price)).toFixed(2)}`,
+  }));
+
+  const [activeCategory, setActiveCategory] = useState("");
   const pillBarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (categories.length > 0 && !activeCategory) {
+      setActiveCategory(categories[0].id);
+    }
+  }, [categories, activeCategory]);
 
   /* Track active section on scroll */
   useEffect(() => {
@@ -184,12 +111,29 @@ export default function MarineContent() {
       if (el) observer.observe(el);
     }
     return () => observer.disconnect();
-  }, []);
+  }, [categories]);
 
   function scrollTo(id: string) {
     setActiveCategory(id);
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth" });
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-32">
+        <div className="animate-spin w-8 h-8 border-4 border-[#E07B2D] border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (grouped.length === 0) {
+    return (
+      <div className="text-center py-32 text-[#888]">
+        <p className="text-lg font-semibold">Services loading...</p>
+        <p className="mt-2">Please check back shortly or call 813-722-LUBE.</p>
+      </div>
+    );
   }
 
   return (
@@ -253,126 +197,34 @@ export default function MarineContent() {
         </div>
       </div>
 
-      {/* ================================================================
-         MARINE OIL SERVICE
-         ================================================================ */}
-      <CategorySection
-        id="oil-service"
-        title="Marine Oil Service"
-        startingAt="$129.95"
-        description="Dockside oil change for outboard, inboard, and diesel marine engines. Vacuum extraction, OEM-spec filters, multi-point inspection included."
-        even={false}
-      >
-        {/* Tier cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-          {oilTiers.map((tier) => (
-            <div
-              key={tier.name}
-              className={`relative bg-white rounded-[12px] p-6 shadow-[0_2px_12px_rgba(11,32,64,0.06)] ${
-                tier.tag
-                  ? "border-2 border-[#E07B2D]"
-                  : "border border-[#f0ede6]"
-              }`}
-            >
-              {tier.tag && (
-                <span className="absolute -top-3 left-5 bg-[#E07B2D] text-white text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wide">
-                  {tier.tag}
-                </span>
-              )}
-              <h3 className="text-[18px] font-bold text-[#0B2040] mb-1">
-                {tier.name}
-              </h3>
-              {tier.note && (
-                <p className="text-[13px] text-[#888] mb-3">{tier.note}</p>
-              )}
-              {!tier.note && <div className="mb-3" />}
-              <p className="text-[28px] font-extrabold text-[#E07B2D]">
-                {tier.price}
-              </p>
-            </div>
-          ))}
-        </div>
+      {/* ─── Dynamic Service Sections ─── */}
+      {grouped.map((group, idx) => {
+        const catId = group.category.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+        const startingAt = `$${Math.min(...group.services.map((s) => s.price)).toFixed(2)}`;
+        const description = firestoreCategories.find(
+          (c) => c.name === group.category
+        )?.description || "";
 
-        {/* Notes */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-8">
-          <span className="inline-flex items-center gap-2 text-[14px] text-[#444] font-medium bg-[#FFF9F4] border border-[#E07B2D]/20 rounded-[8px] px-4 py-2.5">
-            <span className="w-2 h-2 rounded-full bg-[#E07B2D] shrink-0" />
-            $49.95 travel charge applies
-          </span>
-          <span className="inline-flex items-center gap-2 text-[14px] text-[#444] font-medium bg-[#FFF9F4] border border-[#E07B2D]/20 rounded-[8px] px-4 py-2.5">
-            <span className="w-2 h-2 rounded-full bg-[#E07B2D] shrink-0" />
-            +$75 twin engine surcharge
-          </span>
-        </div>
-
-        {/* Add-on services */}
-        <ServiceGrid items={oilAddOns} />
-      </CategorySection>
-
-      {/* ================================================================
-         FUEL & FLUID SERVICES
-         ================================================================ */}
-      <CategorySection
-        id="fuel-fluid"
-        title="Marine Fuel & Fluid Services"
-        startingAt="$29.95"
-        description="Filters, gear lube, cooling system service, corrosion protection, and fuel system maintenance."
-        even={true}
-      >
-        <ServiceGrid items={fuelFluidServices} />
-      </CategorySection>
-
-      {/* ================================================================
-         DIESEL SERVICES
-         ================================================================ */}
-      <CategorySection
-        id="diesel"
-        title="Marine Diesel Services"
-        startingAt="$29.95"
-        description="Specialized diesel maintenance for marine engines including filters, injection service, and cooling."
-        even={false}
-      >
-        <ServiceGrid items={dieselServices} />
-      </CategorySection>
-
-      {/* ================================================================
-         MAINTENANCE
-         ================================================================ */}
-      <CategorySection
-        id="maintenance"
-        title="Marine Maintenance"
-        startingAt="$29.95"
-        description="Batteries, spark plugs, impellers, filters, inspections, and general upkeep."
-        even={true}
-      >
-        <ServiceGrid items={maintenanceServices} />
-      </CategorySection>
-
-      {/* ================================================================
-         TRAILER & TIRE
-         ================================================================ */}
-      <CategorySection
-        id="trailer-tire"
-        title="Marine Trailer & Tire"
-        startingAt="$29.95"
-        description="Mount and balance, bearing repack, hub service, and trailer tire maintenance."
-        even={false}
-      >
-        <ServiceGrid items={trailerTireServices} />
-      </CategorySection>
-
-      {/* ================================================================
-         BRAKES
-         ================================================================ */}
-      <CategorySection
-        id="brakes"
-        title="Marine Brakes"
-        startingAt="$129.95"
-        description="Trailer brake adjustment, service, and surge brake inspection."
-        even={true}
-      >
-        <ServiceGrid items={brakeServices} />
-      </CategorySection>
+        return (
+          <CategorySection
+            key={catId}
+            id={catId}
+            title={group.category}
+            startingAt={startingAt}
+            description={description}
+            even={idx % 2 === 0}
+          >
+            <ServiceGrid
+              items={group.services.map((s) => ({
+                name: s.name,
+                price: s.priceLabel
+                  ? `${s.priceLabel} $${s.price.toFixed(2)}`
+                  : `$${s.price % 1 === 0 ? `${s.price}` : s.price.toFixed(2)}`,
+              }))}
+            />
+          </CategorySection>
+        );
+      })}
 
 
       {/* ─── Where We Service ─── */}

@@ -19,7 +19,7 @@ import {
 } from "firebase/firestore";
 import ToastContainer, { type ToastItem } from "../Toast";
 import { type Booking, buildCustomerList, formatPhone, toISODate } from "../shared";
-import { getAllItems, type ServiceItem } from "@/data/pricingCatalog";
+import { useServices, type Service } from "@/hooks/useServices";
 
 /* ─── Types ───────────────────────────────────────────────── */
 
@@ -316,8 +316,8 @@ function InvoicingPageInner() {
   const [loading, setLoading] = useState(true);
   const [bookings, setBookings] = useState<Booking[]>([]);
 
-  /* Catalog items for service dropdown */
-  const catalogItems = useMemo(() => getAllItems(), []);
+  /* Catalog items for service dropdown — live from Firestore */
+  const { services: catalogItems } = useServices();
 
   /* Modal state */
   const [showForm, setShowForm] = useState(false);
@@ -423,8 +423,7 @@ function InvoicingPageInner() {
         // Build line items from service field, looking up price from catalog
         const serviceName = b.service || "";
         if (serviceName) {
-          const allItems = getAllItems();
-          const match = allItems.find(
+          const match = catalogItems.find(
             (s) => s.name.toLowerCase() === serviceName.toLowerCase()
           );
           f.lineItems = [
@@ -542,7 +541,7 @@ function InvoicingPageInner() {
     });
   }
 
-  function selectService(idx: number, item: ServiceItem) {
+  function selectService(idx: number, item: Service) {
     setForm((prev) => {
       const items = [...prev.lineItems];
       items[idx] = {
@@ -1088,9 +1087,9 @@ function LineItemRow({
   canRemove,
 }: {
   item: LineItem;
-  catalogItems: ServiceItem[];
+  catalogItems: Service[];
   onChange: (field: keyof LineItem, value: string | number) => void;
-  onSelectService: (s: ServiceItem) => void;
+  onSelectService: (s: Service) => void;
   onRemove: () => void;
   canRemove: boolean;
 }) {

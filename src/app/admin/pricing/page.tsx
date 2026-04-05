@@ -11,18 +11,24 @@ import {
   serverTimestamp,
   Timestamp,
 } from "firebase/firestore";
-import {
-  pricingCatalog,
-  type ServiceCategory,
-  type ServiceItem,
-} from "@/data/pricingCatalog";
+/* pricingCatalog.ts kept as offline backup — all live data comes from Firestore */
 import ToastContainer, { type ToastItem } from "../Toast";
 
 /* ── Types ── */
 
 type Division = "auto" | "marine" | "fleet";
 
-interface EditableItem extends ServiceItem {
+interface EditableItem {
+  id: string;
+  category: string;
+  subcategory?: string;
+  name: string;
+  price: number;
+  note?: string;
+  laborHours?: number;
+  division: Division;
+  displayOnSite: boolean;
+  displayOrder: number;
   active: boolean;
 }
 
@@ -49,20 +55,7 @@ const DIVISIONS: { key: Division; label: string }[] = [
   { key: "fleet", label: "Fleet" },
 ];
 
-function catalogToEditable(cats: ServiceCategory[]): EditableCategory[] {
-  return cats.map((cat) => ({
-    id: cat.id,
-    name: cat.name,
-    division: cat.division,
-    description: cat.description,
-    startingAt: cat.startingAt,
-    displayOrder: cat.displayOrder,
-    items: cat.items.map((item) => ({
-      ...item,
-      active: item.displayOnSite,
-    })),
-  }));
-}
+/* catalogToEditable removed — Firestore is now the sole data source */
 
 function editableToFirestore(cats: EditableCategory[]) {
   return cats.map((cat) => ({
@@ -107,9 +100,8 @@ export default function PricingPage() {
       try {
         const snap = await getDocs(collection(db, "services"));
         if (snap.empty) {
-          const editable = catalogToEditable(pricingCatalog);
-          setCategories(editable);
-          setOriginalCategories(editable);
+          setCategories([]);
+          setOriginalCategories([]);
         } else {
           const allCats: EditableCategory[] = [];
           let latestUpdate: Date | null = null;
@@ -126,15 +118,13 @@ export default function PricingPage() {
             setOriginalCategories(allCats);
             setLastUpdated(latestUpdate);
           } else {
-            const editable = catalogToEditable(pricingCatalog);
-            setCategories(editable);
-            setOriginalCategories(editable);
+            setCategories([]);
+            setOriginalCategories([]);
           }
         }
       } catch {
-        const editable = catalogToEditable(pricingCatalog);
-        setCategories(editable);
-        setOriginalCategories(editable);
+        setCategories([]);
+        setOriginalCategories([]);
       }
       setLoading(false);
     }
@@ -216,9 +206,8 @@ export default function PricingPage() {
 
   /* ── Reset to original catalog ── */
   function handleReset() {
-    const editable = catalogToEditable(pricingCatalog);
-    setCategories(editable);
-    addToast("Reset to original catalog prices", "info");
+    setCategories(originalCategories);
+    addToast("Reset to last saved state", "info");
   }
 
   /* ── Derived ── */

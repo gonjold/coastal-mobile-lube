@@ -4,71 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import { Phone } from "lucide-react";
 import Button from "@/components/Button";
 import TrustBar from "@/components/TrustBar";
+import { useServices } from "@/hooks/useServices";
+import { groupByCategory } from "@/lib/serviceHelpers";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-
-/* ─── Category definitions ─── */
-const categories = [
-  { id: "oil-service", label: "Oil Service", startingAt: "$89.95" },
-  { id: "fluid-services", label: "Fluid Services", startingAt: "$129.95" },
-  { id: "diesel", label: "Diesel", startingAt: "$49.95" },
-  { id: "tire-wheel", label: "Tire & Wheel", startingAt: "$39.95" },
-  { id: "hvac-electrical", label: "HVAC & Electrical", startingAt: "$50" },
-  { id: "brakes", label: "Brakes", startingAt: "$320" },
-];
-
-/* ─── RV oil service tier cards ─── */
-const oilTiers = [
-  { name: "Synthetic Blend", price: "$89.95", note: "Up to 5 qts", tag: null },
-  { name: "Full Synthetic", price: "$119.95", note: "Up to 5 qts", tag: "Most common" as const },
-  { name: "Diesel Oil Change", price: "$219.95", note: "Class A and diesel pushers", tag: null },
-];
-
-const oilAddOns = [
-  { name: "Semi Syn per qt over 5", price: "$7.00" },
-  { name: "Full Syn per qt over 5", price: "$12.00" },
-];
-
-/* ─── Fluid services ─── */
-const fluidServices = [
-  { name: "Throttle Body Service", price: "$129.95" },
-  { name: "Power Steering Flush", price: "$219.95" },
-  { name: "Brake Flush", price: "$239.95" },
-  { name: "Fuel Induction Service", price: "$239.95" },
-  { name: "Transfer Case Flush", price: "$249.95" },
-  { name: "Coolant Flush", price: "$269.95" },
-  { name: "Transmission Flush", price: "$419.95" },
-];
-
-/* ─── Diesel services ─── */
-const dieselServices = [
-  { name: "Diesel MOA", price: "$49.95" },
-  { name: "Diesel Air Filter", price: "$119.95" },
-  { name: "Diesel Fuel Filters", price: "$399.95" },
-  { name: "Diesel Injection Service", price: "$439.95" },
-  { name: "Dual Coolant Flush (Diesel)", price: "$499.95" },
-];
-
-/* ─── Tire & wheel services ─── */
-const tireWheelServices = [
-  { name: "Tire Rotation", price: "$39.95" },
-  { name: "Tire Rotation Oversized", price: "$59.95" },
-  { name: "Tire Patch", price: "$69.95" },
-  { name: "Mount and Balance (4 Tires)", price: "$159.95" },
-  { name: "Aftermarket/Oversized M&B", price: "+$50/tire" },
-];
-
-/* ─── HVAC & electrical ─── */
-const hvacElectricalServices = [
-  { name: "Battery Replacement", price: "from $50" },
-  { name: "Cabin Air Filter", price: "$99.95" },
-  { name: "HVAC Recharge", price: "$299.99" },
-];
-
-/* ─── Brake services ─── */
-const brakeServices = [
-  { name: "Front and Rear Brakes", price: "$320" },
-];
 
 const valueProps = [
   {
@@ -167,8 +106,23 @@ function CategorySection({
    Main component
    ================================================================ */
 export default function RVContent() {
-  const [activeCategory, setActiveCategory] = useState(categories[0].id);
+  const { services, categories: firestoreCategories, loading } = useServices({ division: "auto", activeOnly: true });
+  const grouped = groupByCategory(services);
+
+  const categories = grouped.map((g) => ({
+    id: g.category.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+    label: g.category,
+    startingAt: `$${Math.min(...g.services.map((s) => s.price)).toFixed(2)}`,
+  }));
+
+  const [activeCategory, setActiveCategory] = useState("");
   const pillBarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (categories.length > 0 && !activeCategory) {
+      setActiveCategory(categories[0].id);
+    }
+  }, [categories, activeCategory]);
 
   /* Track active section on scroll */
   useEffect(() => {
@@ -188,12 +142,29 @@ export default function RVContent() {
       if (el) observer.observe(el);
     }
     return () => observer.disconnect();
-  }, []);
+  }, [categories]);
 
   function scrollTo(id: string) {
     setActiveCategory(id);
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth" });
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-32">
+        <div className="animate-spin w-8 h-8 border-4 border-[#E07B2D] border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (grouped.length === 0) {
+    return (
+      <div className="text-center py-32 text-[#888]">
+        <p className="text-lg font-semibold">Services loading...</p>
+        <p className="mt-2">Please check back shortly or call 813-722-LUBE.</p>
+      </div>
+    );
   }
 
   return (
@@ -257,126 +228,33 @@ export default function RVContent() {
         </div>
       </div>
 
-      {/* ================================================================
-         RV OIL SERVICE
-         ================================================================ */}
-      <CategorySection
-        id="oil-service"
-        title="RV Oil Service"
-        startingAt="$89.95"
-        description="Full oil and filter change with multi-point inspection. Gas and diesel engines, all RV classes. Larger engines that take more than 5 quarts are no problem."
-        even={false}
-      >
-        {/* Tier cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-          {oilTiers.map((tier) => (
-            <div
-              key={tier.name}
-              className={`relative bg-white rounded-[12px] p-6 shadow-[0_2px_12px_rgba(11,32,64,0.06)] ${
-                tier.tag
-                  ? "border-2 border-[#E07B2D]"
-                  : "border border-[#f0ede6]"
-              }`}
-            >
-              {tier.tag && (
-                <span className="absolute -top-3 left-5 bg-[#E07B2D] text-white text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wide">
-                  {tier.tag}
-                </span>
-              )}
-              <h3 className="text-[18px] font-bold text-[#0B2040] mb-1">
-                {tier.name}
-              </h3>
-              {tier.note && (
-                <p className="text-[13px] text-[#888] mb-3">{tier.note}</p>
-              )}
-              {!tier.note && <div className="mb-3" />}
-              <p className="text-[28px] font-extrabold text-[#E07B2D]">
-                {tier.price}
-              </p>
-            </div>
-          ))}
-        </div>
+      {grouped.map((group, idx) => {
+        const catId = group.category.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+        const startingAt = `$${Math.min(...group.services.map((s) => s.price)).toFixed(2)}`;
+        const description = firestoreCategories.find(
+          (c) => c.name === group.category
+        )?.description || "";
 
-        {/* Notes */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-8">
-          <span className="inline-flex items-center gap-2 text-[14px] text-[#444] font-medium bg-[#FFF9F4] border border-[#E07B2D]/20 rounded-[8px] px-4 py-2.5">
-            <span className="w-2 h-2 rounded-full bg-[#E07B2D] shrink-0" />
-            Generator oil service also available
-          </span>
-          <span className="inline-flex items-center gap-2 text-[14px] text-[#444] font-medium bg-[#FFF9F4] border border-[#E07B2D]/20 rounded-[8px] px-4 py-2.5">
-            <span className="w-2 h-2 rounded-full bg-[#E07B2D] shrink-0" />
-            Extra quart charges for larger engines
-          </span>
-        </div>
-
-        {/* Add-on services */}
-        <ServiceGrid items={oilAddOns} />
-      </CategorySection>
-
-      {/* ================================================================
-         FLUID SERVICES
-         ================================================================ */}
-      <CategorySection
-        id="fluid-services"
-        title="RV Fluid Services"
-        startingAt="$129.95"
-        description="Professional fluid exchange and treatment services for all RV systems. Transmission, coolant, brake, power steering, and fuel system maintenance."
-        even={true}
-      >
-        <ServiceGrid items={fluidServices} />
-      </CategorySection>
-
-      {/* ================================================================
-         DIESEL SERVICES
-         ================================================================ */}
-      <CategorySection
-        id="diesel"
-        title="RV Diesel Services"
-        startingAt="$49.95"
-        description="Specialized diesel maintenance for Class A motorhomes, diesel pushers, and diesel-powered RVs. Injection service, fuel filters, and cooling system maintenance."
-        even={false}
-      >
-        <ServiceGrid items={dieselServices} />
-      </CategorySection>
-
-      {/* ================================================================
-         TIRE & WHEEL
-         ================================================================ */}
-      <CategorySection
-        id="tire-wheel"
-        title="RV Tire & Wheel"
-        startingAt="$39.95"
-        description="Tire rotation, mount and balance, and tire repair for all RV classes. Oversized and aftermarket tire service available."
-        even={true}
-      >
-        <ServiceGrid items={tireWheelServices} />
-      </CategorySection>
-
-      {/* ================================================================
-         HVAC & ELECTRICAL
-         ================================================================ */}
-      <CategorySection
-        id="hvac-electrical"
-        title="HVAC & Electrical"
-        startingAt="from $50"
-        description="Air conditioning recharge, battery replacement, and cabin air filter service. Keep your RV comfortable on the road and in camp."
-        even={false}
-      >
-        <ServiceGrid items={hvacElectricalServices} />
-      </CategorySection>
-
-      {/* ================================================================
-         BRAKES
-         ================================================================ */}
-      <CategorySection
-        id="brakes"
-        title="RV Brakes"
-        startingAt="$320"
-        description="Complete brake pad replacement with rotor resurfacing. Front and rear service for motorhomes and tow vehicles."
-        even={true}
-      >
-        <ServiceGrid items={brakeServices} />
-      </CategorySection>
+        return (
+          <CategorySection
+            key={catId}
+            id={catId}
+            title={group.category}
+            startingAt={startingAt}
+            description={description}
+            even={idx % 2 === 0}
+          >
+            <ServiceGrid
+              items={group.services.map((s) => ({
+                name: s.name,
+                price: s.priceLabel
+                  ? `${s.priceLabel} $${s.price.toFixed(2)}`
+                  : `$${s.price % 1 === 0 ? `${s.price}` : s.price.toFixed(2)}`,
+              }))}
+            />
+          </CategorySection>
+        );
+      })}
 
 
       {/* ─── Why RV Owners Choose Us ─── */}
