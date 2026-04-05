@@ -15,6 +15,8 @@ import { getCatalogByDivision } from "@/data/pricingCatalog";
 
 /* ─── Types ────────────────────────────────────────────────────── */
 
+type Division = "auto" | "marine" | "rv";
+
 interface SelectedService {
   id: string;
   name: string;
@@ -40,7 +42,15 @@ type Errors = Partial<Record<keyof FormData | "services", string>>;
 
 /* ─── Static Data ──────────────────────────────────────────────── */
 
-const mostBooked = [
+interface MostBookedItem {
+  id: string;
+  name: string;
+  price: number;
+  startingAt: boolean;
+  desc: string;
+}
+
+const mostBookedAuto: MostBookedItem[] = [
   { id: "auto-oc-synthetic-blend", name: "Synthetic Blend Oil Change", price: 89.95, startingAt: true, desc: "Up to 5 quarts of synthetic blend oil plus filter" },
   { id: "auto-oc-full-synthetic", name: "Full Synthetic Oil Change", price: 119.95, startingAt: true, desc: "Up to 5 quarts of full synthetic oil plus filter" },
   { id: "auto-tw-tire-rotation", name: "Tire Rotation", price: 39.95, startingAt: false, desc: "All four tires rotated to extend tread life" },
@@ -48,6 +58,30 @@ const mostBooked = [
   { id: "auto-br-front-rear", name: "Front + Rear Brakes", price: 320, startingAt: true, desc: "Pads and rotor resurfacing, front and rear" },
   { id: "auto-bm-cabin-air-filter", name: "Cabin Air Filter", price: 99.95, startingAt: false, desc: "Fresh cabin filter for cleaner air inside your vehicle" },
 ];
+
+const mostBookedMarine: MostBookedItem[] = [
+  { id: "marine-os-outboard-small", name: "Outboard Oil Change (Small)", price: 149.95, startingAt: false, desc: "Up to 6 quarts for outboard engines" },
+  { id: "marine-os-outboard-v6-v8", name: "Outboard V6/V8 Oil Change", price: 199.95, startingAt: false, desc: "Full service oil change for V6 and V8 outboards" },
+  { id: "marine-ff-lower-unit-gear-lube", name: "Lower Unit Gear Lube", price: 149.95, startingAt: false, desc: "Drain and refill lower unit gear lubricant" },
+  { id: "marine-os-pre-trip-inspection", name: "Pre-Trip Inspection", price: 59.95, startingAt: false, desc: "Multi-point inspection before you hit the water" },
+  { id: "marine-bm-impeller-service", name: "Impeller Service", price: 249.95, startingAt: false, desc: "Water pump impeller replacement" },
+  { id: "marine-ff-water-sep-fuel-filter", name: "Water Separating Fuel Filter", price: 89.95, startingAt: false, desc: "Replace your water separating fuel filter" },
+];
+
+const mostBookedRV: MostBookedItem[] = [
+  { id: "auto-oc-full-synthetic", name: "Full Synthetic Oil Change", price: 119.95, startingAt: true, desc: "Up to 5 quarts of full synthetic oil plus filter" },
+  { id: "auto-oc-diesel", name: "Diesel Oil Change", price: 219.95, startingAt: false, desc: "Diesel oil change for RV engines and chassis" },
+  { id: "auto-tw-tire-rotation", name: "Tire Rotation", price: 39.95, startingAt: false, desc: "All four tires rotated to extend tread life" },
+  { id: "auto-br-front-rear", name: "Front + Rear Brakes", price: 320, startingAt: true, desc: "Pads and rotor resurfacing, front and rear" },
+  { id: "marine-os-generator", name: "Generator Oil Service", price: 129.95, startingAt: false, desc: "Oil and filter service for your onboard generator" },
+  { id: "auto-wf-battery-service", name: "Battery Service", price: 79.95, startingAt: false, desc: "Full battery service and terminal cleaning" },
+];
+
+const mostBookedByDivision: Record<Division, MostBookedItem[]> = {
+  auto: mostBookedAuto,
+  marine: mostBookedMarine,
+  rv: mostBookedRV,
+};
 
 const bundleItems = [
   { id: "auto-oc-syn-blend-basic", tier: "Basic", price: 119.95, tagline: "Oil change + tire rotation", detail: "Synthetic blend oil change and tire rotation" },
@@ -68,6 +102,18 @@ const timeWindows = [
   { value: "afternoon", label: "Afternoon (12-3)" },
   { value: "late-afternoon", label: "Late Afternoon (3-5)" },
 ];
+
+const divisionTabs: { key: Division; label: string }[] = [
+  { key: "auto", label: "Automotive" },
+  { key: "marine", label: "Marine" },
+  { key: "rv", label: "RV" },
+];
+
+const divisionSubtitles: Record<Division, string> = {
+  auto: "Pick a service, choose a date, and we will confirm your appointment within 2 hours.",
+  marine: "Select your marine service. We come to your marina, boat ramp, or private dock.",
+  rv: "Select your RV service. We come to your campsite, storage lot, or driveway.",
+};
 
 /* ─── Helpers ──────────────────────────────────────────────────── */
 
@@ -101,6 +147,14 @@ function fmtPhone(p: string) {
   return d.length === 10
     ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`
     : p;
+}
+
+/** Fuzzy search: all query words must appear in the combined text */
+function matchesSearch(query: string, ...texts: (string | undefined)[]): boolean {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!words.length) return true;
+  const combined = texts.filter(Boolean).join(" ").toLowerCase();
+  return words.every((w) => combined.includes(w));
 }
 
 /* ─── Checkmark Icon ───────────────────────────────────────────── */
@@ -164,10 +218,14 @@ export default function BookingForm() {
   // Mobile cart
   const [cartOpen, setCartOpen] = useState(false);
 
-  /* ── Derived ── */
-  const catalog = useMemo(
-    () =>
-      getCatalogByDivision("auto")
+  // Division & Search
+  const [division, setDivision] = useState<Division>("auto");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  /* ── Derived: catalog per division ── */
+  const catalog = useMemo(() => {
+    if (division === "auto") {
+      return getCatalogByDivision("auto")
         .filter(
           (c) =>
             c.id !== "auto-labor-rates" &&
@@ -178,9 +236,112 @@ export default function BookingForm() {
           items: c.items.filter(
             (i) => i.displayOnSite && i.subcategory !== "Add-Ons"
           ),
-        })),
-    []
-  );
+        }));
+    }
+
+    if (division === "marine") {
+      return getCatalogByDivision("marine")
+        .filter(
+          (c) =>
+            !c.id.includes("labor-rates") &&
+            c.items.some((i) => i.displayOnSite)
+        )
+        .map((c) => ({
+          ...c,
+          items: c.items.filter(
+            (i) => i.displayOnSite && i.subcategory !== "Add-Ons"
+          ),
+        }));
+    }
+
+    // RV: cherry-pick from auto + marine
+    const auto = getCatalogByDivision("auto");
+    const marine = getCatalogByDivision("marine");
+
+    const rvCats = auto
+      .filter((c) =>
+        ["auto-oil-changes", "auto-tire-wheel", "auto-brakes"].includes(c.id)
+      )
+      .map((c) => ({
+        ...c,
+        items: c.items.filter(
+          (i) => i.displayOnSite && i.subcategory !== "Add-Ons"
+        ),
+      }));
+
+    // Battery & Electrical
+    const allAutoItems = auto.flatMap((c) => c.items);
+    const allMarineItems = marine.flatMap((c) => c.items);
+
+    const battItems = allAutoItems.filter((i) =>
+      ["auto-bm-battery-replacement", "auto-wf-battery-service"].includes(i.id)
+    );
+    if (battItems.length) {
+      rvCats.push({
+        id: "rv-battery-electrical",
+        name: "Battery & Electrical",
+        division: "auto" as const,
+        description: "Battery replacement and electrical service for RVs",
+        startingAt: Math.min(...battItems.map((i) => i.price)),
+        displayOrder: 10,
+        items: battItems,
+      });
+    }
+
+    // Generator & Chassis
+    const genItems = allMarineItems.filter((i) =>
+      ["marine-os-generator", "marine-bm-grease-steering-pivots"].includes(i.id)
+    );
+    if (genItems.length) {
+      rvCats.push({
+        id: "rv-generator-chassis",
+        name: "Generator & Chassis",
+        division: "auto" as const,
+        description: "Generator oil service and chassis lubrication for RVs",
+        startingAt: Math.min(...genItems.map((i) => i.price)),
+        displayOrder: 11,
+        items: genItems,
+      });
+    }
+
+    return rvCats;
+  }, [division]);
+
+  /* ── Derived: most booked per division ── */
+  const currentMostBooked = mostBookedByDivision[division];
+
+  /* ── Derived: search filtering ── */
+  const isSearching = searchQuery.trim().length > 0;
+
+  const filteredMostBooked = useMemo(() => {
+    if (!isSearching) return currentMostBooked;
+    return currentMostBooked.filter((item) =>
+      matchesSearch(searchQuery, item.name, item.desc)
+    );
+  }, [currentMostBooked, searchQuery, isSearching]);
+
+  const filteredCatalog = useMemo(() => {
+    if (!isSearching) return catalog;
+    return catalog
+      .map((cat) => ({
+        ...cat,
+        items: cat.items.filter((item) =>
+          matchesSearch(
+            searchQuery,
+            item.name,
+            cat.name,
+            cat.description,
+            item.subcategory,
+            item.note
+          )
+        ),
+      }))
+      .filter((cat) => cat.items.length > 0);
+  }, [catalog, searchQuery, isSearching]);
+
+  const noSearchResults =
+    isSearching && filteredMostBooked.length === 0 && filteredCatalog.length === 0;
+
   const subtotal = selected.reduce((s, x) => s + x.price, 0);
 
   /* ── Toggle service ── */
@@ -348,6 +509,7 @@ export default function BookingForm() {
     setShowLookup(false);
     setCartOpen(false);
     setBrowseOpen(false);
+    setSearchQuery("");
   }
 
   /* ─── Styles ─── */
@@ -497,15 +659,33 @@ export default function BookingForm() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_20%,rgba(224,123,45,0.05),transparent_50%)]" />
         <div className="relative section-inner px-4 lg:px-6 pt-12 pb-6 md:pt-16 md:pb-8">
           <div className="max-w-[700px]">
-            <p className="text-[13px] uppercase font-bold text-[#6BA3E0] tracking-[1.5px] mb-3">
-              Automotive Service
-            </p>
+            {/* Division tabs */}
+            <div className="flex gap-2 mb-4">
+              {divisionTabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => {
+                    setDivision(tab.key);
+                    setBrowseOpen(false);
+                    setActiveCat("all");
+                    setSearchQuery("");
+                  }}
+                  className={`px-5 py-2.5 rounded-lg text-[14px] font-bold transition-all ${
+                    division === tab.key
+                      ? "bg-[#0F2A44] text-white"
+                      : "border border-gray-300 text-gray-300 hover:border-white/40 hover:text-white"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
             <h1 className="text-[28px] md:text-[34px] font-[800] leading-[1.1] text-white tracking-[-1px] mb-4">
               Book your service
             </h1>
             <p className="text-[16px] leading-[1.7] text-white/60 max-w-[700px]">
-              Pick a service, choose a date, and we will confirm your
-              appointment within 2 hours. Or call{" "}
+              {divisionSubtitles[division]} Or call{" "}
               <a
                 href="tel:8137225823"
                 className="text-[#E07B2D] font-semibold hover:underline"
@@ -521,23 +701,16 @@ export default function BookingForm() {
       {/* ═══ Content ═══ */}
       <section className="bg-[#F5F7FA]">
         <div className="section-inner px-4 lg:px-6 py-8 md:py-12">
-          {/* 8. Fleet / Marine redirect */}
+          {/* Fleet note */}
           <p className="text-center text-[13px] text-[#999] mb-8">
-            Looking for{" "}
+            Need fleet service?{" "}
             <Link
               href="/fleet"
               className="text-[#E07B2D] font-semibold hover:underline"
             >
-              fleet
-            </Link>{" "}
-            or{" "}
-            <Link
-              href="/marine"
-              className="text-[#E07B2D] font-semibold hover:underline"
-            >
-              marine
-            </Link>{" "}
-            service? Get a custom quote on those pages.
+              Get a custom fleet quote
+            </Link>
+            .
           </p>
 
           {errors.services && (
@@ -552,241 +725,321 @@ export default function BookingForm() {
           <div className="max-w-[1100px] mx-auto lg:grid lg:grid-cols-[1fr_320px] lg:gap-8">
             {/* ─── Left column ─── */}
             <div>
-              {/* ═══ 2. Most Booked ═══ */}
-              <div className="mb-8">
-                <h2 className="text-[20px] font-[800] text-[#0B2040] mb-1">
-                  Most booked
-                </h2>
-                <p className="text-[14px] text-[#666] mb-5">
-                  Tap to add to your service list
-                </p>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {mostBooked.map((item) => {
-                    const on = has(item.id);
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => toggle(item)}
-                        className={`relative text-left rounded-[12px] p-4 border-2 transition-all duration-150 cursor-pointer ${
-                          on
-                            ? "border-[#E07B2D] bg-[#E07B2D]/5 shadow-[0_0_0_1px_rgba(224,123,45,0.2)]"
-                            : "border-[#0B2040]/8 bg-white hover:border-[#E07B2D]/40 hover:shadow-[0_4px_16px_rgba(11,32,64,0.08)] hover:-translate-y-[1px]"
-                        }`}
-                      >
-                        {on && (
-                          <span className="absolute top-3 right-3 w-5 h-5 rounded-full bg-[#E07B2D] flex items-center justify-center">
-                            <Check size={12} />
-                          </span>
-                        )}
-                        <span className="block text-[14px] font-semibold text-[#0B2040] mb-1 pr-6">
-                          {item.name}
-                        </span>
-                        <span className="block text-[14px] font-bold text-[#E07B2D] mb-1.5">
-                          {item.startingAt ? "starting at " : ""}
-                          {fmtPrice(item.price)}
-                        </span>
-                        <span className="block text-[12px] text-[#888] leading-[1.4]">
-                          {item.desc}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* ═══ 3. Bundle Upsell ═══ */}
-              <div className="mb-8">
-                <h2 className="text-[20px] font-[800] text-[#0B2040] mb-1">
-                  Save with a package
-                </h2>
-                <p className="text-[14px] text-[#666] mb-5">
-                  Synthetic blend bundles. Also available in Full Synthetic and
-                  Diesel in the full catalog below.
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {bundleItems.map((b) => {
-                    const on = has(b.id);
-                    return (
-                      <button
-                        key={b.id}
-                        type="button"
-                        onClick={() =>
-                          toggle({
-                            id: b.id,
-                            name: `${b.tier} Bundle`,
-                            price: b.price,
-                          })
-                        }
-                        className={`relative text-left rounded-[12px] p-5 border-2 transition-all duration-150 cursor-pointer ${
-                          on
-                            ? "border-[#E07B2D] bg-[#E07B2D]/5 shadow-[0_0_0_1px_rgba(224,123,45,0.2)]"
-                            : "border-[#0B2040]/8 bg-white hover:border-[#E07B2D]/40 hover:shadow-[0_4px_16px_rgba(11,32,64,0.08)] hover:-translate-y-[1px]"
-                        }`}
-                      >
-                        {on && (
-                          <span className="absolute top-3 right-3 w-5 h-5 rounded-full bg-[#E07B2D] flex items-center justify-center">
-                            <Check size={12} />
-                          </span>
-                        )}
-                        <span className="text-[12px] uppercase font-bold text-[#0B2040]/40 tracking-[1px]">
-                          {b.tier}
-                        </span>
-                        <span className="block text-[22px] font-[800] text-[#E07B2D] mt-1">
-                          {fmtPrice(b.price)}
-                        </span>
-                        <span className="block text-[14px] font-semibold text-[#0B2040] mt-1">
-                          {b.tagline}
-                        </span>
-                        <span className="block text-[12px] text-[#888] mt-1">
-                          {b.detail}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* ═══ 4. Browse All Services ═══ */}
-              <div className="mb-8">
-                <button
-                  type="button"
-                  onClick={() => setBrowseOpen(!browseOpen)}
-                  className="flex items-center gap-2 text-[16px] font-bold text-[#0B2040] hover:text-[#E07B2D] transition-colors"
-                >
+              {/* ═══ Search Bar ═══ */}
+              <div className="mb-6 relative">
+                <div className="relative">
                   <svg
-                    width="16"
-                    height="16"
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#888]"
+                    width="18"
+                    height="18"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth="2.5"
+                    strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    className={`transition-transform duration-200 ${browseOpen ? "rotate-90" : ""}`}
                   >
-                    <polyline points="9 18 15 12 9 6" />
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="M21 21l-4.35-4.35" />
                   </svg>
-                  Browse all services
-                </button>
-
-                {browseOpen && (
-                  <div className="mt-4">
-                    {/* Category pills */}
-                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-3 mb-4">
-                      <button
-                        type="button"
-                        onClick={() => setActiveCat("all")}
-                        className={`whitespace-nowrap px-4 py-2 rounded-full text-[13px] font-semibold transition-all ${
-                          activeCat === "all"
-                            ? "bg-[#0B2040] text-white shadow-[0_2px_8px_rgba(11,32,64,0.2)]"
-                            : "bg-[#FAFBFC] text-[#666] hover:bg-[#f0ede6] hover:text-[#0B2040]"
-                        }`}
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search for a service (e.g. oil change, tire rotation, brakes...)"
+                    className="w-full rounded-lg border border-gray-300 pl-11 pr-10 py-3 text-[15px] outline-none focus:ring-2 focus:ring-[#0F2A44] focus:border-[#0F2A44] transition-all placeholder:text-[#888]/60"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#0B2040]/10 flex items-center justify-center hover:bg-[#0B2040]/20 transition-colors"
+                    >
+                      <svg
+                        width="10"
+                        height="10"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#666"
+                        strokeWidth="3"
+                        strokeLinecap="round"
                       >
-                        All
-                      </button>
-                      {catalog.map((cat) => (
+                        <path d="M18 6L6 18M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* ═══ No search results ═══ */}
+              {noSearchResults && (
+                <div className="mb-8 text-center py-8">
+                  <p className="text-[15px] text-[#666]">
+                    No services found for &ldquo;{searchQuery}&rdquo;. Try a
+                    different search or call{" "}
+                    <a
+                      href="tel:8137225823"
+                      className="text-[#E07B2D] font-semibold hover:underline"
+                    >
+                      813-722-LUBE
+                    </a>
+                    .
+                  </p>
+                </div>
+              )}
+
+              {/* ═══ 2. Most Booked ═══ */}
+              {filteredMostBooked.length > 0 && (
+                <div className="mb-8">
+                  <h2 className="text-[20px] font-[800] text-[#0B2040] mb-1">
+                    Most booked
+                  </h2>
+                  <p className="text-[14px] text-[#666] mb-5">
+                    Tap to add to your service list
+                  </p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {filteredMostBooked.map((item) => {
+                      const on = has(item.id);
+                      return (
                         <button
-                          key={cat.id}
+                          key={item.id}
                           type="button"
-                          onClick={() => setActiveCat(cat.id)}
-                          className={`whitespace-nowrap px-4 py-2 rounded-full text-[13px] font-semibold transition-all ${
-                            activeCat === cat.id
-                              ? "bg-[#0B2040] text-white shadow-[0_2px_8px_rgba(11,32,64,0.2)]"
-                              : "bg-[#FAFBFC] text-[#666] hover:bg-[#f0ede6] hover:text-[#0B2040]"
+                          onClick={() => toggle(item)}
+                          className={`relative text-left rounded-[12px] p-4 border-2 transition-all duration-150 cursor-pointer ${
+                            on
+                              ? "border-[#E07B2D] bg-[#E07B2D]/5 shadow-[0_0_0_1px_rgba(224,123,45,0.2)]"
+                              : "border-[#0B2040]/8 bg-white hover:border-[#E07B2D]/40 hover:shadow-[0_4px_16px_rgba(11,32,64,0.08)] hover:-translate-y-[1px]"
                           }`}
                         >
-                          {cat.name}
+                          {on && (
+                            <span className="absolute top-3 right-3 w-5 h-5 rounded-full bg-[#E07B2D] flex items-center justify-center">
+                              <Check size={12} />
+                            </span>
+                          )}
+                          <span className="block text-[14px] font-semibold text-[#0B2040] mb-1 pr-6">
+                            {item.name}
+                          </span>
+                          <span className="block text-[14px] font-bold text-[#E07B2D] mb-1.5">
+                            {item.startingAt ? "starting at " : ""}
+                            {fmtPrice(item.price)}
+                          </span>
+                          <span className="block text-[12px] text-[#888] leading-[1.4]">
+                            {item.desc}
+                          </span>
                         </button>
-                      ))}
-                    </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
-                    {/* Category items */}
-                    <div className="flex flex-col gap-6">
-                      {catalog
-                        .filter(
-                          (c) => activeCat === "all" || c.id === activeCat
-                        )
-                        .map((cat) => {
-                          // Group items by subcategory
-                          const groups = new Map<
-                            string,
-                            typeof cat.items
-                          >();
-                          for (const item of cat.items) {
-                            const key = item.subcategory || "";
-                            if (!groups.has(key)) groups.set(key, []);
-                            groups.get(key)!.push(item);
+              {/* ═══ 3. Bundle Upsell (auto & rv only, hidden when searching) ═══ */}
+              {(division === "auto" || division === "rv") && !isSearching && (
+                <div className="mb-8">
+                  <h2 className="text-[20px] font-[800] text-[#0B2040] mb-1">
+                    Save with a package
+                  </h2>
+                  <p className="text-[14px] text-[#666] mb-5">
+                    Synthetic blend bundles. Also available in Full Synthetic and
+                    Diesel in the full catalog below.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {bundleItems.map((b) => {
+                      const on = has(b.id);
+                      return (
+                        <button
+                          key={b.id}
+                          type="button"
+                          onClick={() =>
+                            toggle({
+                              id: b.id,
+                              name: `${b.tier} Bundle`,
+                              price: b.price,
+                            })
                           }
+                          className={`relative text-left rounded-[12px] p-5 border-2 transition-all duration-150 cursor-pointer ${
+                            on
+                              ? "border-[#E07B2D] bg-[#E07B2D]/5 shadow-[0_0_0_1px_rgba(224,123,45,0.2)]"
+                              : "border-[#0B2040]/8 bg-white hover:border-[#E07B2D]/40 hover:shadow-[0_4px_16px_rgba(11,32,64,0.08)] hover:-translate-y-[1px]"
+                          }`}
+                        >
+                          {on && (
+                            <span className="absolute top-3 right-3 w-5 h-5 rounded-full bg-[#E07B2D] flex items-center justify-center">
+                              <Check size={12} />
+                            </span>
+                          )}
+                          <span className="text-[12px] uppercase font-bold text-[#0B2040]/40 tracking-[1px]">
+                            {b.tier}
+                          </span>
+                          <span className="block text-[22px] font-[800] text-[#E07B2D] mt-1">
+                            {fmtPrice(b.price)}
+                          </span>
+                          <span className="block text-[14px] font-semibold text-[#0B2040] mt-1">
+                            {b.tagline}
+                          </span>
+                          <span className="block text-[12px] text-[#888] mt-1">
+                            {b.detail}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
-                          return (
-                            <div key={cat.id}>
-                              <p className="text-[11px] uppercase font-bold text-[#0B2040]/40 tracking-[1.5px] mb-3">
-                                {cat.name}
-                              </p>
-                              {Array.from(groups.entries()).map(
-                                ([sub, items]) => (
-                                  <div
-                                    key={sub || "default"}
-                                    className={sub ? "mb-3" : ""}
-                                  >
-                                    {sub && (
-                                      <p className="text-[10px] uppercase font-semibold text-[#0B2040]/25 tracking-[1px] mb-2 ml-1">
-                                        {sub}
-                                      </p>
-                                    )}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                      {items.map((item) => {
-                                        const on = has(item.id);
-                                        return (
-                                          <button
-                                            key={item.id}
-                                            type="button"
-                                            onClick={() =>
-                                              toggle({
-                                                id: item.id,
-                                                name: item.name,
-                                                price: item.price,
-                                              })
-                                            }
-                                            className={`relative text-left rounded-[10px] p-3 border-2 transition-all duration-150 cursor-pointer ${
-                                              on
-                                                ? "border-[#E07B2D] bg-[#E07B2D]/5"
-                                                : "border-[#0B2040]/8 bg-white hover:border-[#E07B2D]/40"
-                                            }`}
-                                          >
-                                            {on && (
-                                              <span className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[#E07B2D] flex items-center justify-center">
-                                                <Check size={10} />
-                                              </span>
-                                            )}
-                                            <span className="block text-[14px] font-semibold text-[#0B2040]">
-                                              {item.name}
-                                            </span>
-                                            <div className="flex items-center gap-2">
-                                              <span className="text-[13px] font-semibold text-[#E07B2D]">
-                                                {fmtPrice(item.price)}
-                                              </span>
-                                              {item.note && (
-                                                <span className="text-[11px] text-[#888]">
-                                                  {item.note}
+              {/* ═══ 4. Browse All Services ═══ */}
+              {!noSearchResults && (
+                <div className="mb-8">
+                  {!isSearching ? (
+                    <button
+                      type="button"
+                      onClick={() => setBrowseOpen(!browseOpen)}
+                      className="flex items-center gap-2 text-[16px] font-bold text-[#0B2040] hover:text-[#E07B2D] transition-colors"
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={`transition-transform duration-200 ${browseOpen ? "rotate-90" : ""}`}
+                      >
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                      Browse all services
+                    </button>
+                  ) : (
+                    <h2 className="text-[16px] font-bold text-[#0B2040] mb-1">
+                      Search results
+                    </h2>
+                  )}
+
+                  {(isSearching || browseOpen) && (
+                    <div className="mt-4">
+                      {/* Category pills (hidden when searching) */}
+                      {!isSearching && (
+                        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-3 mb-4">
+                          <button
+                            type="button"
+                            onClick={() => setActiveCat("all")}
+                            className={`whitespace-nowrap px-4 py-2 rounded-full text-[13px] font-semibold transition-all ${
+                              activeCat === "all"
+                                ? "bg-[#0B2040] text-white shadow-[0_2px_8px_rgba(11,32,64,0.2)]"
+                                : "bg-[#FAFBFC] text-[#666] hover:bg-[#f0ede6] hover:text-[#0B2040]"
+                            }`}
+                          >
+                            All
+                          </button>
+                          {catalog.map((cat) => (
+                            <button
+                              key={cat.id}
+                              type="button"
+                              onClick={() => setActiveCat(cat.id)}
+                              className={`whitespace-nowrap px-4 py-2 rounded-full text-[13px] font-semibold transition-all ${
+                                activeCat === cat.id
+                                  ? "bg-[#0B2040] text-white shadow-[0_2px_8px_rgba(11,32,64,0.2)]"
+                                  : "bg-[#FAFBFC] text-[#666] hover:bg-[#f0ede6] hover:text-[#0B2040]"
+                              }`}
+                            >
+                              {cat.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Category items */}
+                      <div className="flex flex-col gap-6">
+                        {(isSearching ? filteredCatalog : catalog)
+                          .filter(
+                            (c) =>
+                              isSearching ||
+                              activeCat === "all" ||
+                              c.id === activeCat
+                          )
+                          .map((cat) => {
+                            // Group items by subcategory
+                            const groups = new Map<
+                              string,
+                              typeof cat.items
+                            >();
+                            for (const item of cat.items) {
+                              const key = item.subcategory || "";
+                              if (!groups.has(key)) groups.set(key, []);
+                              groups.get(key)!.push(item);
+                            }
+
+                            return (
+                              <div key={cat.id}>
+                                <p className="text-[11px] uppercase font-bold text-[#0B2040]/40 tracking-[1.5px] mb-3">
+                                  {cat.name}
+                                </p>
+                                {Array.from(groups.entries()).map(
+                                  ([sub, items]) => (
+                                    <div
+                                      key={sub || "default"}
+                                      className={sub ? "mb-3" : ""}
+                                    >
+                                      {sub && (
+                                        <p className="text-[10px] uppercase font-semibold text-[#0B2040]/25 tracking-[1px] mb-2 ml-1">
+                                          {sub}
+                                        </p>
+                                      )}
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        {items.map((item) => {
+                                          const on = has(item.id);
+                                          return (
+                                            <button
+                                              key={item.id}
+                                              type="button"
+                                              onClick={() =>
+                                                toggle({
+                                                  id: item.id,
+                                                  name: item.name,
+                                                  price: item.price,
+                                                })
+                                              }
+                                              className={`relative text-left rounded-[10px] p-3 border-2 transition-all duration-150 cursor-pointer ${
+                                                on
+                                                  ? "border-[#E07B2D] bg-[#E07B2D]/5"
+                                                  : "border-[#0B2040]/8 bg-white hover:border-[#E07B2D]/40"
+                                              }`}
+                                            >
+                                              {on && (
+                                                <span className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[#E07B2D] flex items-center justify-center">
+                                                  <Check size={10} />
                                                 </span>
                                               )}
-                                            </div>
-                                          </button>
-                                        );
-                                      })}
+                                              <span className="block text-[14px] font-semibold text-[#0B2040]">
+                                                {item.name}
+                                              </span>
+                                              <div className="flex items-center gap-2">
+                                                <span className="text-[13px] font-semibold text-[#E07B2D]">
+                                                  {fmtPrice(item.price)}
+                                                </span>
+                                                {item.note && (
+                                                  <span className="text-[11px] text-[#888]">
+                                                    {item.note}
+                                                  </span>
+                                                )}
+                                              </div>
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
                                     </div>
-                                  </div>
-                                )
-                              )}
-                            </div>
-                          );
-                        })}
+                                  )
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
 
               {/* ═══ 6. Booking Form ═══ */}
               <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 md:p-8 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
