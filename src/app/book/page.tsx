@@ -2,9 +2,17 @@ import type { Metadata } from "next";
 import BookingForm from "./BookingForm";
 
 export const metadata: Metadata = {
-  title: "Book Mobile Service | Coastal Mobile Lube & Tire",
+  title: "Book Service",
   description:
-    "Schedule mobile oil changes, tire service, brake repair, and more. We come to your home or office in Apollo Beach and the South Shore. Book online in under 60 seconds.",
+    "Book mobile auto, marine, or RV service online. Choose your service, pick a date, and we come to you.",
+  openGraph: {
+    title: "Book Service | Coastal Mobile Lube & Tire",
+    description:
+      "Book mobile auto, marine, or RV service online. Choose your service, pick a date, and we come to you.",
+    url: "https://coastalmobilelube.com/book",
+    type: "website",
+  },
+  alternates: { canonical: "https://coastalmobilelube.com/book" },
 };
 
 export default function BookPage() {

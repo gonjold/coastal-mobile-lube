@@ -5,9 +5,17 @@ import Button from "@/components/Button";
 import { cloudinaryUrl, images } from "@/lib/cloudinary";
 
 export const metadata: Metadata = {
-  title: "About Us | Coastal Mobile Lube & Tire | Apollo Beach, FL",
+  title: "About Us",
   description:
-    "30 years of dealership fixed ops experience, now mobile in Apollo Beach and the South Shore. Meet the team behind Coastal Mobile Lube and Tire.",
+    "30 years of dealership experience, now mobile. Licensed, insured, ASE-certified technicians serving Tampa Bay.",
+  openGraph: {
+    title: "About Us | Coastal Mobile Lube & Tire",
+    description:
+      "30 years of dealership experience, now mobile. Licensed, insured, ASE-certified technicians serving Tampa Bay.",
+    url: "https://coastalmobilelube.com/about",
+    type: "website",
+  },
+  alternates: { canonical: "https://coastalmobilelube.com/about" },
 };
 
 const valueProps = [

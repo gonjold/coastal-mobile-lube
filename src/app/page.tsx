@@ -707,7 +707,8 @@ export default function Home() {
         <div className="section-inner px-4 lg:px-6 pb-10 md:pb-14">
           <div className="text-center mt-8">
             <p className="text-[13px] text-[#8B7355] mb-2">Reviews from customers across the South Shore</p>
-            <a href="#" className="text-[13px] font-semibold text-[#E07B2D] hover:underline">
+            {/* TODO: Replace with real Google Business Profile review URL from Jason */}
+            <a href="/contact" className="text-[13px] font-semibold text-[#E07B2D] hover:underline">
               Leave us a review on Google &rarr;
             </a>
           </div>

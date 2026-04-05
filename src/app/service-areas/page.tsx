@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: "Service Areas | Coastal Mobile Lube & Tire",
   description:
     "Mobile oil changes, tire service, and maintenance in Apollo Beach, Riverview, Ruskin, Sun City Center, and 12 South Shore communities. We come to you.",
+  alternates: { canonical: "https://coastalmobilelube.com/service-areas" },
 };
 
 const serviceAreas = [

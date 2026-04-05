@@ -2,11 +2,35 @@ import type { Metadata } from "next";
 import RVContent from "./RVContent";
 
 export const metadata: Metadata = {
-  title: "RV Mobile Service | Coastal Mobile Lube & Tire | Apollo Beach",
+  title: "RV & Trailer Services",
   description:
-    "Mobile oil changes, tire service, and maintenance for RVs at your park, campsite, or storage lot. Serving Apollo Beach and the South Shore. Call 813-722-LUBE.",
+    "Mobile RV oil changes, generator service, roof inspection, brake and tire service for all RV classes. We come to your RV park or storage facility.",
+  openGraph: {
+    title: "RV & Trailer Services | Coastal Mobile Lube & Tire",
+    description:
+      "Mobile RV oil changes, generator service, roof inspection, brake and tire service for all RV classes. We come to your RV park or storage facility.",
+    url: "https://coastalmobilelube.com/rv",
+    type: "website",
+  },
+  alternates: { canonical: "https://coastalmobilelube.com/rv" },
 };
 
 export default function RVPage() {
-  return <RVContent />;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    provider: { "@type": "LocalBusiness", name: "Coastal Mobile Lube & Tire" },
+    serviceType: "RV Maintenance",
+    areaServed: "Tampa Bay, FL",
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <RVContent />
+    </>
+  );
 }

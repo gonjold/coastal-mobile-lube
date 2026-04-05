@@ -2,10 +2,17 @@ import type { Metadata } from "next";
 import FleetContent from "./FleetContent";
 
 export const metadata: Metadata = {
-  title:
-    "Fleet & Commercial Mobile Service | Apollo Beach FL | Coastal Mobile Lube & Tire",
+  title: "Fleet Services",
   description:
-    "Mobile fleet maintenance for company vehicles, box trucks, vans, and commercial fleets in Apollo Beach and the South Shore. Scheduled programs, volume pricing, and zero vehicle downtime. Call 813-722-LUBE.",
+    "Scheduled fleet maintenance for businesses in Tampa Bay. Custom plans, on-site service, detailed reporting. Keep your fleet running.",
+  openGraph: {
+    title: "Fleet Services | Coastal Mobile Lube & Tire",
+    description:
+      "Scheduled fleet maintenance for businesses in Tampa Bay. Custom plans, on-site service, detailed reporting. Keep your fleet running.",
+    url: "https://coastalmobilelube.com/fleet",
+    type: "website",
+  },
+  alternates: { canonical: "https://coastalmobilelube.com/fleet" },
 };
 
 export default function FleetPage() {

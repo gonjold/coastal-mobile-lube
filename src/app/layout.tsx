@@ -12,7 +12,7 @@ const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
 });
 
-const BASE_URL = "https://coastal-mobile-lube.netlify.app";
+const BASE_URL = "https://coastalmobilelube.com";
 const OG_IMAGE =
   "https://res.cloudinary.com/dgcdcqjrz/image/upload/w_1200,h_630,c_fill,q_auto:good,f_jpg/v1774318456/hero-van-driveway_nag1pq.jpg";
 
@@ -20,16 +20,17 @@ export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
     default:
-      "Coastal Mobile Lube & Tire | Mobile Oil Change, Tire & Marine Service in Apollo Beach FL",
+      "Coastal Mobile Lube & Tire | Mobile Auto, Marine & RV Service | Tampa Bay",
     template: "%s | Coastal Mobile Lube & Tire",
   },
   description:
-    "Mobile oil change, tire service, and marine engine maintenance in Apollo Beach, FL. 30 years of dealership expertise brought to your driveway, parking lot, or marina. Call 813-722-LUBE.",
+    "Factory-trained mobile mechanics serving Tampa Bay. Oil changes, brakes, tires, marine engine service, and RV maintenance at your location. Call 813-722-LUBE.",
+  alternates: { canonical: BASE_URL },
   openGraph: {
     title:
-      "Coastal Mobile Lube & Tire | Mobile Oil Change, Tire & Marine Service",
+      "Coastal Mobile Lube & Tire | Mobile Auto, Marine & RV Service | Tampa Bay",
     description:
-      "Mobile oil change, tire service, and marine engine maintenance in Apollo Beach, FL. 30 years of dealership expertise brought to your driveway, parking lot, or marina.",
+      "Factory-trained mobile mechanics serving Tampa Bay. Oil changes, brakes, tires, marine engine service, and RV maintenance at your location. Call 813-722-LUBE.",
     url: BASE_URL,
     siteName: "Coastal Mobile Lube & Tire",
     images: [
