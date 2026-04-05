@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Phone, ChevronDown } from "lucide-react";
 import Button from "@/components/Button";
 import TrustBar from "@/components/TrustBar";
+import { cloudinaryUrl, images } from "@/lib/cloudinary";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
@@ -150,8 +151,13 @@ export default function FleetContent() {
     <>
       {/* Section 1: Hero */}
       <section className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #0A1C38 0%, #0B2040 40%, #0F2847 70%, #132E54 100%)" }}>
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-15"
+          style={{ backgroundImage: `url(${cloudinaryUrl(images.fleetVehicles, { width: 1600, height: 900 })})` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0A1C38]/80 to-[#132E54]/90" />
 
-        <div className="section-inner px-4 lg:px-6 pt-10 pb-6 md:pt-14 md:pb-10 relative z-10">
+        <div className="section-inner px-4 lg:px-6 pt-20 pb-12 md:pt-28 md:pb-16 relative z-10">
           <div>
             <p className="text-[12px] uppercase font-bold text-[#D9A441] tracking-[2.5px] mb-4">
               Fleet & Commercial
@@ -182,6 +188,39 @@ export default function FleetContent() {
       </section>
 
       <TrustBar />
+
+      {/* Vehicles We Service */}
+      <section className="relative bg-white">
+        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
+          <div className="text-center mb-8">
+            <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
+              What We Cover
+            </p>
+            <h2 className="text-[28px] font-extrabold text-[#0B2040]">
+              Vehicles We Service
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {[
+              { label: "Box Trucks", icon: "🚛" },
+              { label: "Vans & Sprinters", icon: "🚐" },
+              { label: "Pickup Trucks", icon: "🛻" },
+              { label: "Sedans & SUVs", icon: "🚗" },
+              { label: "Heavy Equipment", icon: "⚙️" },
+              { label: "Specialty Vehicles", icon: "🔧" },
+            ].map((v) => (
+              <div
+                key={v.label}
+                className="flex items-center gap-3 rounded-[12px] px-5 py-4 text-white"
+                style={{ background: "linear-gradient(135deg, #0B2040, #132E54)" }}
+              >
+                <span className="text-2xl">{v.icon}</span>
+                <span className="text-[15px] font-semibold">{v.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Section 2: What We Cover */}
       <section className="relative bg-[#FAFBFC]">
@@ -320,6 +359,30 @@ export default function FleetContent() {
       {/* Section 6: Fleet Quote Form */}
       <FleetQuoteForm />
 
+
+      {/* Fleet CTA */}
+      <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0B2040 0%, #0F2847 50%, #132E54 100%)" }}>
+        <div className="section-inner px-4 lg:px-6 py-14 md:py-20 text-center relative z-10">
+          <h2 className="text-[28px] md:text-[34px] font-[800] text-white mb-4">
+            Ready to streamline your fleet maintenance?
+          </h2>
+          <p className="text-[16px] text-white/60 mb-8 max-w-[520px] mx-auto">
+            Get a custom maintenance plan built around your vehicles, your schedule, and your budget.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button href="#fleet-quote" variant="primary" size="lg" className="shadow-[0_4px_24px_rgba(224,123,45,0.35)]">
+              Get a Fleet Quote
+            </Button>
+            <a
+              href="tel:8137225823"
+              className="inline-flex items-center justify-center gap-2 px-[30px] py-[14px] font-semibold text-white bg-white/[0.06] border border-white/20 rounded-[var(--radius-button)] hover:bg-white/[0.12] hover:border-white/35 transition-all backdrop-blur-sm"
+            >
+              <Phone size={16} />
+              Call 813-722-LUBE
+            </a>
+          </div>
+        </div>
+      </section>
 
       {/* Section 7: Fleet FAQs */}
       <section className="relative bg-[#FAFBFC]">
