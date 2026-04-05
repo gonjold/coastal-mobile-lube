@@ -63,7 +63,9 @@ function CategorySection({
    ================================================================ */
 export default function ServicesContent() {
   const { services, categories: firestoreCategories, loading } = useServices({ division: "auto", activeOnly: true });
-  const grouped = groupByCategory(services);
+  const grouped = groupByCategory(services).filter(
+    (g) => !/labor\s*rate/i.test(g.category)
+  );
 
   // Derive category nav from Firestore data
   const categories = grouped.map((g) => ({
@@ -213,7 +215,7 @@ export default function ServicesContent() {
               items={group.services.map((s) => ({
                 name: s.name,
                 price: s.priceLabel
-                  ? `${s.priceLabel} $${s.price.toFixed(2)}`
+                  ? s.priceLabel
                   : `$${s.price % 1 === 0 ? `${s.price}` : s.price.toFixed(2)}`,
               }))}
             />

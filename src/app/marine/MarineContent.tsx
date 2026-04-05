@@ -218,7 +218,7 @@ export default function MarineContent() {
               items={group.services.map((s) => ({
                 name: s.name,
                 price: s.priceLabel
-                  ? `${s.priceLabel} $${s.price.toFixed(2)}`
+                  ? s.priceLabel
                   : `$${s.price % 1 === 0 ? `${s.price}` : s.price.toFixed(2)}`,
               }))}
             />

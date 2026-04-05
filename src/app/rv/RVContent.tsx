@@ -106,7 +106,7 @@ function CategorySection({
    Main component
    ================================================================ */
 export default function RVContent() {
-  const { services, categories: firestoreCategories, loading } = useServices({ division: "auto", activeOnly: true });
+  const { services, categories: firestoreCategories, loading } = useServices({ division: "rv", activeOnly: true });
   const grouped = groupByCategory(services);
 
   const categories = grouped.map((g) => ({
@@ -158,11 +158,11 @@ export default function RVContent() {
     );
   }
 
-  if (grouped.length === 0) {
+  if (!loading && grouped.length === 0) {
     return (
       <div className="text-center py-32 text-[#888]">
-        <p className="text-lg font-semibold">Services loading...</p>
-        <p className="mt-2">Please check back shortly or call 813-722-LUBE.</p>
+        <p className="text-lg font-semibold">RV services coming soon</p>
+        <p className="mt-2">Call 813-722-LUBE for a custom RV service quote today.</p>
       </div>
     );
   }
@@ -248,7 +248,7 @@ export default function RVContent() {
               items={group.services.map((s) => ({
                 name: s.name,
                 price: s.priceLabel
-                  ? `${s.priceLabel} $${s.price.toFixed(2)}`
+                  ? s.priceLabel
                   : `$${s.price % 1 === 0 ? `${s.price}` : s.price.toFixed(2)}`,
               }))}
             />
