@@ -10,6 +10,7 @@ const navLinks = [
   { label: "Automotive", href: "/services" },
   { label: "Fleet", href: "/fleet" },
   { label: "Marine", href: "/marine" },
+  { label: "RV & Trailer", href: "/rv" },
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
 ];

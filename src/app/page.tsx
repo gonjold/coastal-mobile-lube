@@ -14,6 +14,7 @@ const fallbackBookingServices: Record<string, string[]> = {
   automotive: ["Synthetic Oil Change", "Tire Rotation & Balance", "Brake Inspection", "Other (describe below)"],
   fleet: ["Scheduled Fleet Maintenance", "Emergency Mobile Service", "Other (describe below)"],
   marine: ["Outboard Oil Change", "Lower Unit Service", "Other (describe below)"],
+  rv: ["Generator Service & Inspection", "RV Oil & Filter Change", "Slide-Out Lubrication & Maintenance", "Other (describe below)"],
 };
 
 const fallbackServicesData: Record<string, { title: string; description: string; pricing: string; pricingLabel: string; items: string[]; image: string }> = {
@@ -41,20 +42,30 @@ const fallbackServicesData: Record<string, { title: string; description: string;
     items: ["Outboard Oil Change", "Inboard Engine Service", "Lower Unit Service"],
     image: images.marinaBoatsAlt,
   },
+  rv: {
+    title: "RV & Trailer Services",
+    description: "On-site maintenance for motorhomes, travel trailers, and fifth wheels. Generator service, roof inspections, and slide-out care wherever you're parked.",
+    pricing: "$129.95",
+    pricingLabel: "Starting at",
+    items: ["Generator Service & Inspection", "Roof Seal & Leak Inspection", "RV Oil & Filter Change", "Slide-Out Lubrication & Maintenance"],
+    image: images.drivewayServiceAlt,
+  },
 };
 
-type TabKey = "automotive" | "fleet" | "marine";
+type TabKey = "automotive" | "fleet" | "marine" | "rv";
 
 const bookingTabs: { key: TabKey; label: string }[] = [
   { key: "automotive", label: "Automotive" },
   { key: "fleet", label: "Fleet" },
   { key: "marine", label: "Marine" },
+  { key: "rv", label: "RV & Trailer" },
 ];
 
 const serviceTabs: { key: TabKey; label: string }[] = [
   { key: "automotive", label: "Automotive" },
   { key: "fleet", label: "Fleet & Commercial" },
   { key: "marine", label: "Marine" },
+  { key: "rv", label: "RV & Trailer" },
 ];
 
 const inputClasses =
@@ -90,10 +101,14 @@ export default function Home() {
     const marine = allServices
       .filter((s) => s.division === "marine" && s.showOnBooking)
       .map((s) => s.name);
+    const rv = allServices
+      .filter((s) => s.division === "rv" && s.showOnBooking)
+      .map((s) => s.name);
     return {
       automotive: auto.length > 0 ? [...auto, "Other (describe below)"] : fallbackBookingServices.automotive,
       fleet: fleet.length > 0 ? [...fleet, "Other (describe below)"] : fallbackBookingServices.fleet,
       marine: marine.length > 0 ? [...marine, "Other (describe below)"] : fallbackBookingServices.marine,
+      rv: rv.length > 0 ? [...rv, "Other (describe below)"] : fallbackBookingServices.rv,
     };
   }, [allServices]);
 
@@ -116,6 +131,10 @@ export default function Home() {
         ...fallbackServicesData.marine,
         pricing: marinePrices.length > 0 ? `$${Math.min(...marinePrices).toFixed(2)}` : "$149.95",
         items: allServices.filter((s) => s.division === "marine" && s.showOnPricing).map((s) => s.name).slice(0, 8),
+      },
+      rv: {
+        ...fallbackServicesData.rv,
+        items: allServices.filter((s) => s.division === "rv" && s.showOnPricing).map((s) => s.name).slice(0, 8),
       },
     };
   }, [allServices]);
@@ -179,7 +198,7 @@ export default function Home() {
             {/* Left Column */}
             <div className="lg:sticky lg:top-[100px] lg:self-start">
               <p className="text-[12px] uppercase font-bold text-[#D9A441] tracking-[2.5px] mb-4">
-                Mobile automotive. Fleet. Marine.
+                Mobile automotive. Fleet. Marine. RV & Trailer.
               </p>
               <h1 className="text-[36px] md:text-[52px] font-extrabold leading-[1.06] text-white tracking-[-1.5px] mb-5" style={{ textShadow: "0 2px 20px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2)" }}>
                 The shop that comes to{" "}
@@ -189,8 +208,8 @@ export default function Home() {
                 </span>
               </h1>
               <p className="text-[17px] leading-[1.7] text-white/60 max-w-[440px] mb-8">
-                Mobile oil changes, tire service, fleet maintenance, and marine engine
-                care. We come to your driveway, your parking lot, or your dock.
+                Mobile oil changes, tire service, fleet maintenance, marine engine
+                care, and RV & trailer service. We come to your driveway, your parking lot, or your dock.
                 No shop visit needed.
               </p>
 
@@ -441,7 +460,7 @@ export default function Home() {
               What we handle on-site
             </h2>
             <p className="text-[15px] text-[#555] mx-auto max-w-[480px]">
-              Everything your vehicle, fleet, or boat needs. Brought directly to
+              Everything your vehicle, fleet, boat, or RV needs. Brought directly to
               your location by a factory-trained technician.
             </p>
           </div>
@@ -489,6 +508,14 @@ export default function Home() {
                   </div>
                 ))}
               </div>
+              {servicesTab === "rv" && (
+                <Link
+                  href="/rv"
+                  className="inline-block mt-5 text-[14px] font-semibold text-[#E07B2D] hover:underline"
+                >
+                  View All RV &amp; Trailer Services &rarr;
+                </Link>
+              )}
             </div>
 
             <div className="relative rounded-[14px] overflow-hidden shadow-[0_4px_24px_rgba(11,32,64,0.1)]">

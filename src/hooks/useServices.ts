@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import {
   collection,
   query,
-  orderBy,
   where,
   onSnapshot,
   type QueryConstraint,
@@ -21,7 +20,7 @@ export interface Service {
   priceLabel: string;
   category: string;
   subcategory: string;
-  division: "auto" | "marine" | "fleet";
+  division: "auto" | "marine" | "fleet" | "rv";
   sortOrder: number;
   isActive: boolean;
   showOnBooking: boolean;
@@ -36,7 +35,7 @@ export interface Service {
 export interface ServiceCategory {
   id: string;
   name: string;
-  division: "auto" | "marine" | "fleet";
+  division: "auto" | "marine" | "fleet" | "rv";
   description: string;
   startingAt: number;
   sortOrder: number;
@@ -46,7 +45,7 @@ export interface ServiceCategory {
 }
 
 export interface UseServicesOptions {
-  division?: "auto" | "marine" | "fleet";
+  division?: "auto" | "marine" | "fleet" | "rv";
   category?: string;
   activeOnly?: boolean;
 }
@@ -72,16 +71,16 @@ export function useServices(
 
   // Subscribe to services collection
   useEffect(() => {
-    const constraints: QueryConstraint[] = [orderBy("sortOrder", "asc")];
+    const constraints: QueryConstraint[] = [];
 
     if (division) {
-      constraints.unshift(where("division", "==", division));
+      constraints.push(where("division", "==", division));
     }
     if (category) {
-      constraints.unshift(where("category", "==", category));
+      constraints.push(where("category", "==", category));
     }
     if (activeOnly) {
-      constraints.unshift(where("isActive", "==", true));
+      constraints.push(where("isActive", "==", true));
     }
 
     const q = query(collection(db, "services"), ...constraints);
@@ -93,6 +92,7 @@ export function useServices(
           id: doc.id,
           ...doc.data(),
         })) as Service[];
+        docs.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
         setServices(docs);
         setLoading(false);
       },
@@ -107,13 +107,13 @@ export function useServices(
 
   // Subscribe to serviceCategories collection
   useEffect(() => {
-    const constraints: QueryConstraint[] = [orderBy("sortOrder", "asc")];
+    const constraints: QueryConstraint[] = [];
 
     if (division) {
-      constraints.unshift(where("division", "==", division));
+      constraints.push(where("division", "==", division));
     }
     if (activeOnly) {
-      constraints.unshift(where("isActive", "==", true));
+      constraints.push(where("isActive", "==", true));
     }
 
     const q = query(collection(db, "serviceCategories"), ...constraints);
@@ -125,6 +125,7 @@ export function useServices(
           id: doc.id,
           ...doc.data(),
         })) as ServiceCategory[];
+        docs.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
         setCategories(docs);
       },
       (err) => {

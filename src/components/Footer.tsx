@@ -32,7 +32,7 @@ export default function Footer() {
               className="max-w-[180px] h-auto object-contain mb-1"
             />
             <p className="text-sm text-white/40">
-              Automotive. Fleet. Marine.
+              Automotive. Fleet. Marine. RV & Trailer.
             </p>
             <a
               href="tel:8137225823"
