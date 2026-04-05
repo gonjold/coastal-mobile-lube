@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Phone } from "lucide-react";
 import Button from "@/components/Button";
 import TrustBar from "@/components/TrustBar";
+import { cloudinaryUrl, images } from "@/lib/cloudinary";
 import { useServices } from "@/hooks/useServices";
 import { groupByCategory } from "@/lib/serviceHelpers";
 import { db } from "@/lib/firebase";
@@ -19,6 +20,15 @@ const locations = [
   "Sun City",
   "Sun City Center",
 ];
+
+/* ─── Category → image mapping ─── */
+function getCategoryImage(category: string): string | null {
+  const lower = category.toLowerCase();
+  if (lower.includes("engine") || lower.includes("oil") || lower.includes("outboard") || lower.includes("inboard") || lower.includes("diesel")) return cloudinaryUrl(images.marinaBoats, { width: 800, height: 600 });
+  if (lower.includes("lower unit") || lower.includes("impeller") || lower.includes("generator") || lower.includes("add-on")) return cloudinaryUrl(images.marinaBoatsAlt, { width: 800, height: 600 });
+  if (lower.includes("trailer") || lower.includes("bearing") || lower.includes("tire")) return cloudinaryUrl(images.fleetVehicles, { width: 800, height: 600 });
+  return null;
+}
 
 /* ─── Reusable: 2-col service grid ─── */
 function ServiceGrid({ items }: { items: { name: string; price: string }[] }) {
@@ -43,6 +53,7 @@ function CategorySection({
   title,
   startingAt,
   description,
+  image,
   children,
   even,
 }: {
@@ -50,6 +61,7 @@ function CategorySection({
   title: string;
   startingAt: string;
   description: string;
+  image?: string | null;
   children: React.ReactNode;
   even: boolean;
 }) {
@@ -60,12 +72,25 @@ function CategorySection({
       style={{ background: even ? "#FFFFFF" : "#FAFBFC" }}
     >
       <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
-        <div className="flex flex-col sm:flex-row sm:items-baseline gap-2 mb-2">
-          <h2 className="text-[26px] font-extrabold text-[#0B2040]">{title}</h2>
-          <span className="text-[14px] font-semibold text-[#E07B2D]">starting at {startingAt}</span>
+        <div className={`grid grid-cols-1 ${image ? "lg:grid-cols-[3fr_2fr]" : ""} gap-8`}>
+          <div className={image ? "order-2 lg:order-1" : ""}>
+            <div className="flex flex-col sm:flex-row sm:items-baseline gap-2 mb-2">
+              <h2 className="text-[26px] font-extrabold text-[#0B2040]">{title}</h2>
+              <span className="text-[14px] font-semibold text-[#E07B2D]">starting at {startingAt}</span>
+            </div>
+            <p className="text-[15px] text-[#555] leading-[1.65] mb-8 max-w-[600px]">{description}</p>
+            {children}
+          </div>
+          {image && (
+            <div className="order-1 lg:order-2">
+              <img
+                src={image}
+                alt={title}
+                className="w-full object-cover aspect-[4/3] rounded-lg shadow-md lg:max-h-[300px]"
+              />
+            </div>
+          )}
         </div>
-        <p className="text-[15px] text-[#555] leading-[1.65] mb-8 max-w-[600px]">{description}</p>
-        {children}
       </div>
     </section>
   );
@@ -189,6 +214,7 @@ export default function MarineContent() {
             title={group.category}
             startingAt={startingAt}
             description={description}
+            image={getCategoryImage(group.category)}
             even={idx % 2 === 0}
           >
             <ServiceGrid
