@@ -130,11 +130,9 @@ export default function AboutPage() {
             </h2>
           </div>
           <div className="relative rounded-[14px] overflow-hidden shadow-[0_8px_40px_rgba(11,32,64,0.12),0_2px_10px_rgba(11,32,64,0.06)] border border-[#f0ede6] bg-white p-4 md:p-6">
-            <img
-              src={cloudinaryUrl(images.vanWrapSide, { width: 1200 })}
-              alt="Coastal Mobile Lube & Tire wrapped service van"
-              className="w-full h-auto rounded-[10px]"
-            />
+            <div className="w-full rounded-[10px] bg-[#F0EDE6] flex items-center justify-center py-20">
+              <p className="text-[15px] text-[#999] font-medium italic">Van photos coming soon</p>
+            </div>
           </div>
         </div>
       </section>
