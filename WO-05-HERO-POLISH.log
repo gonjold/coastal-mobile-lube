@@ -1,0 +1,12 @@
+All done. Here's the summary:
+
+**WO-05 Complete**
+
+| Task | Status |
+|---|---|
+| **1. Fix broken van image on /about** | Fixed — both `coastal-van-wrap-side.png` and `coastal-van-wrap-rear.png` return 404 from Cloudinary (never uploaded). Replaced the broken `<img>` with a styled placeholder: "Van photos coming soon" |
+| **2. Hero form frosted glass** | Verified — `backdrop-filter: blur(16px)`, `rgba(255,255,255,0.12)` background, white labels, `bg-white/20` inputs all present |
+| **3. Hero badge/watermark** | Verified — bottom-right at `opacity-[0.05]`, large (`55vw`, 500-700px), z-index below content |
+| **4. Hero section spacing** | Verified — generous padding (`pt-12 pb-12 md:pt-20 md:pb-16`), `gap-10 lg:gap-14` grid, comfortable margins throughout |
+
+Live at: https://coastal-mobile-lube.netlify.app

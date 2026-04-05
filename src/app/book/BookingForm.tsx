@@ -107,7 +107,7 @@ const timeWindows = [
 const divisionTabs: { key: Division; label: string }[] = [
   { key: "auto", label: "Automotive" },
   { key: "marine", label: "Marine" },
-  { key: "rv", label: "RV" },
+  { key: "rv", label: "RV & Trailer" },
 ];
 
 const divisionSubtitles: Record<Division, string> = {
@@ -629,10 +629,10 @@ export default function BookingForm() {
                     setActiveCat("all");
                     setSearchQuery("");
                   }}
-                  className={`px-5 py-2.5 rounded-lg text-[14px] font-bold transition-all ${
+                  className={`px-5 py-2.5 rounded-full text-[13px] font-semibold transition-all ${
                     division === tab.key
-                      ? "bg-[#0F2A44] text-white"
-                      : "border border-gray-300 text-gray-300 hover:border-white/40 hover:text-white"
+                      ? "bg-[#0B2040] text-white shadow-[0_2px_8px_rgba(11,32,64,0.2)]"
+                      : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
                   }`}
                 >
                   {tab.label}
@@ -659,18 +659,6 @@ export default function BookingForm() {
       {/* ═══ Content ═══ */}
       <section className="bg-[#F5F7FA]">
         <div className="section-inner px-4 lg:px-6 py-8 md:py-12">
-          {/* Fleet note */}
-          <p className="text-center text-[13px] text-[#999] mb-8">
-            Need fleet service?{" "}
-            <Link
-              href="/fleet"
-              className="text-[#E07B2D] font-semibold hover:underline"
-            >
-              Get a custom fleet quote
-            </Link>
-            .
-          </p>
-
           {errors.services && (
             <div className="max-w-[900px] mx-auto mb-4">
               <p className="text-center text-[13px] text-red-500 font-medium bg-red-50 rounded-[10px] py-2 px-4">
@@ -704,7 +692,7 @@ export default function BookingForm() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search for a service (e.g. oil change, tire rotation, brakes...)"
+                    placeholder="Search services..."
                     className="w-full rounded-lg border border-gray-300 pl-11 pr-10 py-3 text-[15px] outline-none focus:ring-2 focus:ring-[#0F2A44] focus:border-[#0F2A44] transition-all placeholder:text-[#888]/60"
                   />
                   {searchQuery && (

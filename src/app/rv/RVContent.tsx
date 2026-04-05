@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Phone } from "lucide-react";
+import { Phone, ChevronDown } from "lucide-react";
 import Button from "@/components/Button";
 import TrustBar from "@/components/TrustBar";
 import { useServices } from "@/hooks/useServices";
@@ -49,6 +49,25 @@ const locations = [
   "Palmetto",
   "Ellenton",
   "Fish Hawk",
+];
+
+const rvFaqItems = [
+  {
+    q: "What types of RVs do you service?",
+    a: "Class A, B, C motorhomes, fifth wheels, travel trailers, toy haulers, and pop-ups.",
+  },
+  {
+    q: "Do you come to RV parks and campgrounds?",
+    a: "Yes, we service RVs at parks, campgrounds, storage facilities, and your driveway.",
+  },
+  {
+    q: "How do I prepare my RV for service?",
+    a: "Make sure the area around the service point is accessible, have your keys ready, and let us know about any specific concerns.",
+  },
+  {
+    q: "Do you service trailer brakes and tires?",
+    a: "Yes, we handle all trailer maintenance including brakes, tires, bearings, and lights.",
+  },
 ];
 
 /* ─── Reusable: 2-col service grid ─── */
@@ -107,7 +126,9 @@ function CategorySection({
    ================================================================ */
 export default function RVContent() {
   const { services, categories: firestoreCategories, loading } = useServices({ division: "rv", activeOnly: true });
-  const grouped = groupByCategory(services);
+  const grouped = groupByCategory(services).filter(
+    (g) => !/labor\s*rate/i.test(g.category)
+  );
 
   const categories = grouped.map((g) => ({
     id: g.category.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
@@ -309,9 +330,105 @@ export default function RVContent() {
       </section>
 
 
+      {/* ─── CTA: Ready to Book? ─── */}
+      <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0B2040 0%, #0F2847 50%, #132E54 100%)" }}>
+        <div className="section-inner px-4 lg:px-6 py-10 md:py-14 text-center relative z-10">
+          <h2 className="text-[28px] font-[800] text-white mb-3">
+            Ready to book?
+          </h2>
+          <p className="text-[15px] text-white/60 mb-8 mx-auto max-w-[520px]">
+            Schedule your RV service online or give us a call. We come to you.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button href="/book" variant="primary" size="lg" className="whitespace-nowrap shadow-[0_4px_24px_rgba(224,123,45,0.35)]">
+              Book RV Service
+            </Button>
+            <a
+              href="tel:8137225823"
+              className="inline-flex items-center justify-center gap-2 px-[30px] py-[14px] font-semibold text-white bg-white/[0.06] border border-white/20 rounded-[var(--radius-button)] hover:bg-white/[0.12] hover:border-white/35 transition-all whitespace-nowrap backdrop-blur-sm"
+            >
+              <Phone size={16} />
+              Call 813-722-LUBE
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Trust Badges ─── */}
+      <section className="bg-white border-y border-[#e8e4dc]/60">
+        <div className="section-inner px-4 lg:px-6 py-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            {[
+              { label: "Fully Licensed", sub: "& Insured" },
+              { label: "ASE-Certified", sub: "Technicians" },
+              { label: "12-Month Warranty", sub: "On Every Job" },
+              { label: "Transparent Pricing", sub: "No Hidden Fees" },
+            ].map((badge) => (
+              <div key={badge.label}>
+                <p className="text-[15px] font-bold text-[#0B2040]">{badge.label}</p>
+                <p className="text-[13px] text-[#666]">{badge.sub}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── FAQ ─── */}
+      <RVFaq />
+
       {/* ─── RV Quote Form ─── */}
       <RVQuoteForm />
     </>
+  );
+}
+
+/* ─── RV FAQ Component ──────────────────────────────────── */
+
+function RVFaq() {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  return (
+    <section className="relative bg-[#FAFBFC]">
+      <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
+        <h2 className="text-[28px] font-extrabold text-[#0B2040] mb-8 text-center">
+          Frequently Asked Questions
+        </h2>
+        <div className="max-w-[740px] mx-auto flex flex-col gap-3">
+          {rvFaqItems.map((faq, i) => (
+            <div
+              key={i}
+              className="bg-white border border-[#E8E8E8] rounded-[14px] shadow-[0_2px_20px_rgba(11,32,64,0.06)] hover:shadow-[0_4px_28px_rgba(11,32,64,0.1)] transition-all duration-300 overflow-hidden"
+            >
+              <button
+                onClick={() => setOpenIndex(openIndex === i ? null : i)}
+                className="w-full flex items-center justify-between gap-4 px-6 py-5 text-left cursor-pointer"
+              >
+                <span className="text-[16px] font-bold text-[#0B2040]">
+                  {faq.q}
+                </span>
+                <ChevronDown
+                  size={20}
+                  className={`shrink-0 transition-transform duration-200 ${
+                    openIndex === i
+                      ? "rotate-180 text-[#E07B2D]"
+                      : "text-[#E07B2D]/60"
+                  }`}
+                />
+              </button>
+              {openIndex === i && (
+                <div className="px-6 pb-5">
+                  <div className="border-t border-[#E8E8E8] pt-4">
+                    <p className="text-[15px] text-[#444] leading-[1.7] pr-8">
+                      {faq.a}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 

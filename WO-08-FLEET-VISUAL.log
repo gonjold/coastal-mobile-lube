@@ -1,0 +1,8 @@
+Done. All 4 changes from WO-COASTAL-08 completed:
+
+1. **Hero Enhancement** - Added fleet vehicle background image from Cloudinary with dark overlay, increased vertical padding (`pt-20 pb-12` / `pt-28 pb-16`)
+2. **Vehicle Type Icons** - Added "Vehicles We Service" section with 6 cards (Box Trucks, Vans & Sprinters, Pickup Trucks, Sedans & SUVs, Heavy Equipment, Specialty Vehicles) in a 2-col mobile / 3-col desktop grid with navy gradient backgrounds
+3. **Trust Badges** - Already present via `<TrustBar />` component (same one used on /marine)
+4. **Fleet CTA** - Added "Ready to streamline your fleet maintenance?" section with two buttons (Get a Fleet Quote + Call 813-722-LUBE) before the FAQ section
+
+Live at: https://coastal-mobile-lube.netlify.app/fleet

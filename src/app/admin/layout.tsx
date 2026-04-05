@@ -10,6 +10,7 @@ import AdminAuthGuard from "@/components/AdminAuthGuard";
 /* ── Nav items ── */
 const NAV = [
   { label: "Dashboard", href: "/admin", icon: IconHome },
+  { label: "Services", href: "/admin/services", icon: IconWrench },
   { label: "Schedule", href: "/admin/schedule", icon: IconCalendar },
   { label: "Customers", href: "/admin/customers", icon: IconPeople },
   { label: "Invoicing", href: "/admin/invoicing", icon: IconReceipt },
@@ -347,6 +348,22 @@ function IconTag({ className }: { className?: string }) {
     >
       <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
       <line x1="7" y1="7" x2="7.01" y2="7" />
+    </svg>
+  );
+}
+
+function IconWrench({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
     </svg>
   );
 }
