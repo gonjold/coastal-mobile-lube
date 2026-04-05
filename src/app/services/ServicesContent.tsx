@@ -215,7 +215,7 @@ export default function ServicesContent() {
               items={group.services.map((s) => ({
                 name: s.name,
                 price: s.priceLabel
-                  ? s.priceLabel
+                  ? (/^\$/.test(s.priceLabel) || /\d/.test(s.priceLabel) ? s.priceLabel : "Call for price")
                   : `$${s.price % 1 === 0 ? `${s.price}` : s.price.toFixed(2)}`,
               }))}
             />
