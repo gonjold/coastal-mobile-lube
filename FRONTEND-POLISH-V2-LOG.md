@@ -23,3 +23,9 @@ Finished: Sat Apr  4 23:05:20 EDT 2026
 
 ## Task 4: Booking page search bar and marine/RV booking
 Started: Sat Apr  4 23:05:20 EDT 2026
+Status: COMPLETED
+Finished: Sat Apr  4 23:18:33 EDT 2026
+---
+
+## Task 5: Add service images from white version to navy pages
+Started: Sat Apr  4 23:18:33 EDT 2026
