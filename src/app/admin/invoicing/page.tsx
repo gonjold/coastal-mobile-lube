@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
 import {
   collection,
   onSnapshot,
@@ -594,6 +594,32 @@ function InvoicingPageInner() {
         });
         addToast(statusOverride === "sent" ? "Invoice created and marked as sent" : "Invoice saved as draft");
       }
+
+      // Send invoice email when status is "sent" and customer has an email
+      if (statusOverride === "sent" && form.customerEmail) {
+        try {
+          const idToken = await auth.currentUser?.getIdToken();
+          await fetch("https://us-east1-coastal-mobile-lube.cloudfunctions.net/sendInvoiceEmail", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+            },
+            body: JSON.stringify({
+              customerEmail: form.customerEmail,
+              customerName: form.customerName,
+              invoiceNumber: form.invoiceNumber,
+              lineItems: form.lineItems.filter((li) => li.serviceName.trim()),
+              total: form.total,
+              notes: form.notes,
+            }),
+          });
+          addToast(`Invoice email sent to ${form.customerEmail}`, "success");
+        } catch {
+          addToast("Invoice saved but email failed to send", "info");
+        }
+      }
+
       setShowForm(false);
     } catch {
       addToast("Error saving invoice", "info");

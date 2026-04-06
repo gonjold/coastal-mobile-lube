@@ -8,6 +8,7 @@ import { auth } from '@/lib/firebase';
 const ALLOWED_ADMIN_EMAILS = [
   'jon@jgoldco.com',
   'coastalmobilelube@gmail.com',
+  'jonrgold@gmail.com',
 ];
 
 export default function AdminAuthGuard({ children }: { children: React.ReactNode }) {

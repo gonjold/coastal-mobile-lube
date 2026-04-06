@@ -1,0 +1,15 @@
+WO-11 complete. Here's what was done:
+
+**Em dashes removed** from 12 files (comments, fallback values, placeholders) — all replaced with regular hyphens.
+
+**Text quality fixes:**
+- "streamline" → "simplify" in fleet CTA heading
+- Removed numeric phone `(813-722-5823)` from FAQ customer-facing text
+- Fixed 5 instances of "Lube and Tire" → "Lube & Tire" (about, FAQ, invoicing)
+
+**Key info verified consistent:**
+- Phone: 813-722-LUBE everywhere customer-facing; numeric only in `tel:` links and Schema.org
+- Service area: Tampa Bay
+- Business name: Coastal Mobile Lube & Tire
+
+Deployed to https://coastal-mobile-lube.netlify.app and pushed to `main`.

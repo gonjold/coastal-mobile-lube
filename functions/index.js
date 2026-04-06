@@ -1,6 +1,10 @@
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { defineSecret } = require("firebase-functions/params");
 const nodemailer = require("nodemailer");
+const admin = require("firebase-admin");
+
+admin.initializeApp();
+const firestoreDb = admin.firestore();
 
 const gmailUser = defineSecret("GMAIL_USER");
 const gmailAppPassword = defineSecret("GMAIL_APP_PASSWORD");
@@ -202,18 +206,48 @@ function buildGoogleCalendarUrl(booking) {
 // Email sent to CUSTOMER when admin confirms a booking
 const { onRequest } = require("firebase-functions/v2/https");
 
+const allowedOrigins = [
+  "https://coastal-mobile-lube.netlify.app",
+  "https://coastalmobilelube.com",
+  "http://localhost:3000",
+];
+
 exports.sendConfirmationEmail = onRequest(
   {
     region: "us-east1",
     secrets: [gmailUser, gmailAppPassword],
-    cors: true,
+    cors: allowedOrigins,
   },
   async (req, res) => {
     const { booking, bookingId } = req.body;
 
-    if (!booking || !booking.email) {
-      res.json({ success: false, error: "No email address on file" });
+    // Required fields check
+    if (!booking || !bookingId || !booking.email || !booking.name) {
+      res.status(400).json({ success: false, error: "Missing required fields" });
       return;
+    }
+
+    // Rate limiting: max 20 emails per hour
+    try {
+      const rateLimitRef = firestoreDb.collection("rateLimits").doc("emailsSent");
+      const rateLimitDoc = await rateLimitRef.get();
+      const now = Date.now();
+      const oneHourAgo = now - 60 * 60 * 1000;
+
+      if (rateLimitDoc.exists) {
+        const data = rateLimitDoc.data();
+        const timestamps = (data.timestamps || []).filter((t) => t > oneHourAgo);
+        if (timestamps.length >= 20) {
+          res.status(429).json({ success: false, error: "Too many requests" });
+          return;
+        }
+        await rateLimitRef.update({ timestamps: [...timestamps, now] });
+      } else {
+        await rateLimitRef.set({ timestamps: [now] });
+      }
+    } catch (rateLimitError) {
+      console.error("Rate limit check failed:", rateLimitError);
+      // Allow the email to send if rate limiting fails — don't block legitimate requests
     }
 
     const transporter = nodemailer.createTransport({
@@ -328,9 +362,21 @@ exports.sendInvoiceEmail = onRequest(
   {
     region: "us-east1",
     secrets: [gmailUser, gmailAppPassword],
-    cors: true,
+    cors: allowedOrigins,
   },
   async (req, res) => {
+    // Auth check — admin only
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    try {
+      const token = authHeader.split('Bearer ')[1];
+      await admin.auth().verifyIdToken(token);
+    } catch (error) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+
     const { customerEmail, customerName, invoiceNumber, lineItems, total, notes } = req.body;
 
     if (!customerEmail) {
