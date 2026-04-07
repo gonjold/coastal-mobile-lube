@@ -37,13 +37,13 @@ export default function MobileQuickQuote() {
     setSubmitting(true);
     try {
       await addDoc(collection(db, "bookings"), {
-        customerName: name.trim(),
-        customerPhone: phone.replace(/\D/g, ""),
-        customerEmail: email.trim(),
+        name: name.trim(),
+        phone: phone.replace(/\D/g, ""),
+        email: email.trim(),
         serviceCategory: service,
         contactPreference: contactPref,
         source: "mobile-quick-quote",
-        status: "new",
+        status: "pending",
         createdAt: serverTimestamp(),
       });
       setMessage({ type: "success", text: "Got it! We'll reach out shortly." });

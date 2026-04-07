@@ -9,9 +9,13 @@ export interface Booking {
   name?: string;
   phone?: string;
   email?: string;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
   contactPreference?: string;
   service?: string;
   serviceCategory?: string;
+  selectedServices?: Array<{ id: string; name: string; price: number | null; category: string }>;
   source?: string;
   status?: string;
   address?: string;
@@ -137,6 +141,13 @@ export function formatTimeWindow(tw?: string): string | undefined {
   return labels[tw] || tw;
 }
 
+export function getServiceLabel(b: Booking): string {
+  if (b.service) return b.service;
+  if (b.selectedServices?.length) return b.selectedServices.map((s) => s.name).join(", ");
+  if (b.serviceCategory) return b.serviceCategory;
+  return "";
+}
+
 export function isNewBooking(b: Booking): boolean {
   if (b.status !== "pending") return false;
   if (!b.createdAt?.toDate) return false;
@@ -205,10 +216,10 @@ export function exportBookingsCsv(bookings: Booking[]) {
   const header = ["Date", "Customer", "Phone", "Email", "Service", "Source", "Status", "Notes", "Created"];
   const rows = bookings.map((b) => [
     b.preferredDate || b.confirmedDate || "-",
-    b.name || "-",
-    b.phone || "-",
-    b.email || "-",
-    b.service || "-",
+    b.name || b.customerName || "-",
+    b.phone || b.customerPhone || "-",
+    b.email || b.customerEmail || "-",
+    getServiceLabel(b) || "-",
     b.source || "-",
     b.status || "-",
     b.notes || "",
@@ -235,7 +246,9 @@ export function exportCustomersCsv(bookings: Booking[]) {
 export function buildCustomerList(bookings: Booking[]): Customer[] {
   const map = new Map<string, Booking[]>();
   bookings.forEach((b) => {
-    const key = b.phone?.replace(/\D/g, "") || b.email?.toLowerCase() || b.id;
+    const phone = b.phone || b.customerPhone;
+    const email = b.email || b.customerEmail;
+    const key = phone?.replace(/\D/g, "") || email?.toLowerCase() || b.id;
     if (!map.has(key)) map.set(key, []);
     map.get(key)!.push(b);
   });
@@ -250,9 +263,9 @@ export function buildCustomerList(bookings: Booking[]): Customer[] {
     const latest = sorted[0];
     customers.push({
       key,
-      name: latest.name || "-",
-      phone: latest.phone,
-      email: latest.email,
+      name: latest.name || latest.customerName || "-",
+      phone: latest.phone || latest.customerPhone,
+      email: latest.email || latest.customerEmail,
       address: latest.address,
       totalBookings: sorted.length,
       lastBookingDate: formatTimestamp(latest.createdAt),

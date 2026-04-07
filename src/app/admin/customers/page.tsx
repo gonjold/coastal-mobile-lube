@@ -22,6 +22,7 @@ import {
   formatTimestamp,
   getStatusStyle,
   getSourceLabel,
+  getServiceLabel,
   buildCustomerList,
   exportCustomersCsv,
 } from "../shared";
@@ -229,7 +230,7 @@ function CustomersView({
     const all: Array<{ id: string; type: string; direction: string; summary: string; createdAt: string; createdBy: string; bookingService?: string }> = [];
     customer.bookings.forEach((b) => {
       (b.commsLog || []).forEach((entry) => {
-        all.push({ ...entry, bookingService: b.service || b.name || b.id });
+        all.push({ ...entry, bookingService: getServiceLabel(b) || b.name || b.id });
       });
     });
     return all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -497,7 +498,7 @@ function CustomerExpanded({
               return (
                 <div key={b.id} className="flex items-center justify-between bg-white border border-[#e8e8e8] rounded-[8px] px-4 py-3">
                   <div>
-                    <p className="text-[13px] font-semibold text-[#0B2040]">{b.service || "-"}</p>
+                    <p className="text-[13px] font-semibold text-[#0B2040]">{getServiceLabel(b) || "-"}</p>
                     <p className="text-[12px] text-[#888]">{formatTimestamp(b.createdAt)}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0 ml-4">
