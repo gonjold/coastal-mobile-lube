@@ -18,6 +18,7 @@ import {
   type ServiceCategory,
 } from "@/hooks/useServices";
 import ToastContainer, { type ToastItem } from "../Toast";
+import ServicePreviewPanel from "./ServicePreviewPanel";
 
 /* ── Constants ── */
 
@@ -180,6 +181,7 @@ export default function ServicesPage() {
   );
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [saving, setSaving] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   // Inline editing state: key = "serviceId:field"
   const [inlineEdits, setInlineEdits] = useState<Record<string, string>>({});
@@ -588,6 +590,12 @@ export default function ServicesPage() {
               className="pl-9 pr-4 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:border-[#0F2A44] w-[200px]"
             />
           </div>
+          <button
+            onClick={() => setShowPreview(true)}
+            className="px-4 py-2 text-[13px] font-semibold border border-gray-300 rounded-lg text-[#555] hover:text-[#0B2040] hover:border-gray-400 transition-colors"
+          >
+            Preview
+          </button>
           <button
             onClick={openNewCategory}
             className="px-4 py-2 text-[13px] font-semibold border border-gray-200 rounded-lg text-[#0B2040] hover:bg-gray-50 transition-colors"
@@ -1348,6 +1356,11 @@ export default function ServicesPage() {
           setToasts((p) => p.filter((t) => t.id !== id))
         }
       />
+
+      {/* Preview Panel */}
+      {showPreview && (
+        <ServicePreviewPanel onClose={() => setShowPreview(false)} />
+      )}
     </div>
   );
 }
