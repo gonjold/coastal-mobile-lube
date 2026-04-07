@@ -5,7 +5,7 @@ import { Phone, ChevronDown } from "lucide-react";
 import Button from "@/components/Button";
 import TrustBar from "@/components/TrustBar";
 import { useBooking } from "@/contexts/BookingContext";
-import { cloudinaryUrl, images } from "@/lib/cloudinary";
+
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
@@ -33,24 +33,53 @@ const processSteps = [
     title: "Consultation",
     desc: "We learn your fleet size, vehicle mix, and maintenance needs. No commitment.",
     bg: "#0B2040",
+    icon: (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+        <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+      </svg>
+    ),
   },
   {
     num: "2",
     title: "Custom plan",
     desc: "We build a maintenance schedule and pricing structure that fits your budget and your vehicles.",
     bg: "#0B2040",
+    icon: (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="3" y1="10" x2="21" y2="10" />
+      </svg>
+    ),
   },
   {
     num: "3",
     title: "Scheduled visits",
     desc: "Our van shows up on schedule at your location. Your team keeps working.",
     bg: "#0B2040",
+    icon: (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M1 3h15v13H1z" />
+        <path d="M16 8h4l3 3v5h-7V8z" />
+        <circle cx="5.5" cy="18.5" r="2.5" />
+        <circle cx="18.5" cy="18.5" r="2.5" />
+      </svg>
+    ),
   },
   {
     num: "4",
     title: "Reporting",
     desc: "You get service records, maintenance history, and upcoming service alerts for every vehicle.",
     bg: "#E07B2D",
+    icon: (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="20" x2="18" y2="10" />
+        <line x1="12" y1="20" x2="12" y2="4" />
+        <line x1="6" y1="20" x2="6" y2="14" />
+      </svg>
+    ),
   },
 ];
 
@@ -153,13 +182,8 @@ export default function FleetContent() {
     <>
       {/* Section 1: Hero */}
       <section className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #0A1C38 0%, #0B2040 40%, #0F2847 70%, #132E54 100%)" }}>
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-15"
-          style={{ backgroundImage: `url(${cloudinaryUrl(images.fleetVehicles, { width: 1600, height: 900 })})` }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0A1C38]/80 to-[#132E54]/90" />
 
-        <div className="section-inner px-4 lg:px-6 pt-20 pb-12 md:pt-28 md:pb-16 relative z-10">
+        <div className="section-inner px-4 lg:px-6 pt-10 pb-6 md:pt-14 md:pb-10 relative z-10">
           <div>
             <p className="text-[12px] uppercase font-bold text-[#D9A441] tracking-[2.5px] mb-4">
               Fleet & Commercial
@@ -173,7 +197,7 @@ export default function FleetContent() {
               your job site. No vehicle downtime, no shop visits.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button href="#fleet-quote" variant="primary" size="lg" className="shadow-[0_4px_24px_rgba(224,123,45,0.35)]">
+              <Button href="#fleet-quote" variant="primary" size="lg" className="text-[18px] px-10 py-5 shadow-[0_4px_24px_rgba(224,123,45,0.35)]">
                 Get Fleet Quote
               </Button>
               <a
@@ -204,20 +228,20 @@ export default function FleetContent() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
-              { label: "Box Trucks", icon: "🚛" },
-              { label: "Vans & Sprinters", icon: "🚐" },
-              { label: "Pickup Trucks", icon: "🛻" },
-              { label: "Sedans & SUVs", icon: "🚗" },
-              { label: "Heavy Equipment", icon: "⚙️" },
-              { label: "Specialty Vehicles", icon: "🔧" },
-            ].map((v) => (
+              "Box Trucks",
+              "Vans & Sprinters",
+              "Pickup Trucks",
+              "Sedans & SUVs",
+              "Heavy Equipment",
+              "Specialty Vehicles",
+            ].map((label) => (
               <div
-                key={v.label}
+                key={label}
                 className="flex items-center gap-3 rounded-[12px] px-5 py-4 text-white"
                 style={{ background: "linear-gradient(135deg, #0B2040, #132E54)" }}
               >
-                <span className="text-2xl">{v.icon}</span>
-                <span className="text-[15px] font-semibold">{v.label}</span>
+                <span className="w-2 h-2 rounded-full bg-[#E07B2D] shrink-0" />
+                <span className="text-[15px] font-semibold">{label}</span>
               </div>
             ))}
           </div>
@@ -283,6 +307,7 @@ export default function FleetContent() {
                     className="relative flex items-center justify-center w-[72px] h-[72px] rounded-[18px] text-white text-xl font-bold mb-6 shadow-[0_4px_20px_rgba(0,0,0,0.2)]"
                     style={{ background: step.bg === "#E07B2D" ? "linear-gradient(135deg, #E07B2D, #CC6A1F)" : "linear-gradient(135deg, #0B2040, #132E54)" }}
                   >
+                    {step.icon}
                     <span className="absolute -top-2 -right-2 w-[26px] h-[26px] rounded-full bg-white text-[#0B2040] text-[12px] font-bold flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.12)]">
                       {step.num}
                     </span>

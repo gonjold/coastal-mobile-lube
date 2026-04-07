@@ -157,32 +157,6 @@ export default function RVContent() {
     }
   }, [categories, activeCategory]);
 
-  /* Track active section on scroll */
-  useEffect(() => {
-    const ids = categories.map((c) => c.id);
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setActiveCategory(entry.target.id);
-          }
-        }
-      },
-      { rootMargin: "-30% 0px -60% 0px" }
-    );
-    for (const id of ids) {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
-    }
-    return () => observer.disconnect();
-  }, [categories]);
-
-  function scrollTo(id: string) {
-    setActiveCategory(id);
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: "smooth" });
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-32">
@@ -247,7 +221,7 @@ export default function RVContent() {
             {categories.map((cat) => (
               <button
                 key={cat.id}
-                onClick={() => scrollTo(cat.id)}
+                onClick={() => setActiveCategory(cat.id)}
                 className={`whitespace-nowrap px-5 py-2 rounded-full text-[13px] font-semibold transition-all ${
                   activeCategory === cat.id
                     ? "bg-[#0B2040] text-white shadow-[0_2px_8px_rgba(11,32,64,0.2)]"
@@ -261,7 +235,7 @@ export default function RVContent() {
         </div>
       </div>
 
-      {grouped.map((group, idx) => {
+      {grouped.filter((g) => g.category.toLowerCase().replace(/[^a-z0-9]+/g, "-") === activeCategory).map((group, idx) => {
         const catId = group.category.toLowerCase().replace(/[^a-z0-9]+/g, "-");
         const startingAt = `$${Math.min(...group.services.map((s) => s.price)).toFixed(2)}`;
         const description = firestoreCategories.find(
