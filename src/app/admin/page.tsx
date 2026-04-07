@@ -79,7 +79,7 @@ export default function AdminHome() {
       {/* ═══ TOP ROW - Quick Stats ═══ */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {/* Total Bookings */}
-        <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-5">
+        <Link href="/admin/schedule" className="bg-white border border-[#e8e8e8] rounded-[12px] p-5 hover:border-[#1A5FAC]/30 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-[10px] bg-[#EBF4FF] flex items-center justify-center">
               <Calendar className="w-5 h-5 text-[#1A5FAC]" />
@@ -87,10 +87,10 @@ export default function AdminHome() {
           </div>
           <p className="text-[32px] font-[800] text-[#0B2040] leading-none mb-1">{totalBookings}</p>
           <p className="text-[13px] text-[#888] font-medium">Total Bookings</p>
-        </div>
+        </Link>
 
         {/* This Week */}
-        <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-5">
+        <Link href="/admin/schedule?time=week" className="bg-white border border-[#e8e8e8] rounded-[12px] p-5 hover:border-[#16a34a]/30 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-[10px] bg-[#F0FAF0] flex items-center justify-center">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -101,13 +101,13 @@ export default function AdminHome() {
           </div>
           <p className="text-[32px] font-[800] text-[#16a34a] leading-none mb-1">{weeklyBookings}</p>
           <p className="text-[13px] text-[#888] font-medium">This Week</p>
-        </div>
+        </Link>
 
         {/* Pending - orange highlight only when > 0 */}
-        <div className={`bg-white rounded-[12px] p-5 ${
+        <Link href="/admin/schedule?status=pending" className={`bg-white rounded-[12px] p-5 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all ${
           pendingCount > 0
             ? "border-2 border-[#E07B2D]/30"
-            : "border border-[#e8e8e8]"
+            : "border border-[#e8e8e8] hover:border-[#E07B2D]/30"
         }`}>
           <div className="flex items-center gap-3 mb-3">
             <div className={`w-10 h-10 rounded-[10px] flex items-center justify-center ${
@@ -125,10 +125,10 @@ export default function AdminHome() {
           <p className={`text-[13px] font-semibold ${
             pendingCount > 0 ? "text-[#E07B2D]" : "text-[#888]"
           }`}>Pending</p>
-        </div>
+        </Link>
 
         {/* Total Customers */}
-        <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-5">
+        <Link href="/admin/customers" className="bg-white border border-[#e8e8e8] rounded-[12px] p-5 hover:border-[#7c3aed]/30 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-[10px] bg-[#F5F0FF] flex items-center justify-center">
               <Users className="w-5 h-5 text-[#7c3aed]" />
@@ -136,7 +136,7 @@ export default function AdminHome() {
           </div>
           <p className="text-[32px] font-[800] text-[#7c3aed] leading-none mb-1">{totalCustomers}</p>
           <p className="text-[13px] text-[#888] font-medium">Total Customers</p>
-        </div>
+        </Link>
       </div>
 
       {/* ═══ QUICK ACTIONS ═══ */}

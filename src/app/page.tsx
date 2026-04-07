@@ -109,7 +109,8 @@ export default function Home() {
     return result;
   }, [allFirestoreCategories]);
 
-  /* Compute per-category min prices from Firestore services */
+  /* Compute per-category min prices from Firestore services,
+     falling back to the category's startingAt value when no per-service prices exist */
   const categoryPrices = useMemo(() => {
     const prices: Record<string, Record<string, number | null>> = {};
     for (const [tabKey, categories] of Object.entries(effectiveCategories) as [TabKey, CategoryConfig[]][]) {
@@ -120,11 +121,19 @@ export default function Home() {
         const validPrices = divServices
           .filter((s) => cat.firestoreCategories.includes(s.category) && s.price > 0)
           .map((s) => s.price);
-        prices[tabKey][cat.displayName] = validPrices.length > 0 ? Math.min(...validPrices) : null;
+        if (validPrices.length > 0) {
+          prices[tabKey][cat.displayName] = Math.min(...validPrices);
+        } else {
+          // Fallback: use startingAt from the Firestore category
+          const fsCat = allFirestoreCategories.find(
+            (c) => c.division === divKey && cat.firestoreCategories.includes(c.name)
+          );
+          prices[tabKey][cat.displayName] = fsCat && fsCat.startingAt > 0 ? fsCat.startingAt : null;
+        }
       }
     }
     return prices;
-  }, [allServices, effectiveCategories]);
+  }, [allServices, allFirestoreCategories, effectiveCategories]);
 
   const currentCategories = effectiveCategories[servicesTab] ?? DIVISION_CATEGORIES[servicesTab];
   const currentPrices = categoryPrices[servicesTab] ?? {};

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Fragment } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -36,12 +36,17 @@ import {
 
 export default function SchedulePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
-  /* Quick time filter */
-  const [timeFilter, setTimeFilter] = useState<"today" | "week" | "month" | "all">("all");
-  const [statusFilter, setStatusFilter] = useState("bookings");
+  /* Quick time filter — initialise from URL ?time= and ?status= */
+  const validTimeFilters = ["today", "week", "month", "all"] as const;
+  const validStatusFilters = ["bookings", "pending", "confirmed", "completed", "cancelled", "leads", "all"];
+  const initialTime = validTimeFilters.find((v) => v === searchParams.get("time")) ?? "all";
+  const initialStatus = validStatusFilters.find((v) => v === searchParams.get("status")) ?? "bookings";
+  const [timeFilter, setTimeFilter] = useState<"today" | "week" | "month" | "all">(initialTime);
+  const [statusFilter, setStatusFilter] = useState(initialStatus);
 
   /* List */
   const [expandedId, setExpandedId] = useState<string | null>(null);
