@@ -102,9 +102,14 @@ export default function Home() {
 
         <div className="section-inner px-4 lg:px-6 pt-16 pb-16 md:pt-24 md:pb-20 relative z-10">
           <div className="max-w-3xl mx-auto text-center">
-            <p className="text-[12px] uppercase font-bold text-[#D9A441] tracking-[2.5px] mb-4">
-              Mobile automotive. Fleet. Marine. RV & Trailer.
-            </p>
+            <div className="mb-4 flex flex-col items-center gap-[5px]">
+              <p className="text-[12px] uppercase font-bold text-[#F97316] tracking-[3px]">
+                Mobile Service
+              </p>
+              <p className="text-[14px] font-normal text-white/70">
+                Cars. Trucks. RVs. Trailers. Boats. Your entire fleet.
+              </p>
+            </div>
             <h1 className="text-[36px] md:text-[52px] font-extrabold leading-[1.06] text-white tracking-[-1.5px] mb-5" style={{ textShadow: "0 2px 20px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2)" }}>
               The shop that comes to{" "}
               <span className="relative">
@@ -129,7 +134,7 @@ export default function Home() {
               </a>
             </div>
 
-            <div className="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 pt-7 border-t border-white/[0.08]">
+            <div className="hidden md:flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 pt-7 border-t border-white/[0.08]">
               {["Factory-trained techs", "Licensed & insured", "Same-day availability"].map((item) => (
                 <div key={item} className="flex items-center gap-2.5">
                   <div className="flex items-center justify-center shrink-0 w-[22px] h-[22px] rounded-full bg-[#0D8A8F]/15 shadow-[0_0_8px_rgba(13,138,143,0.15)]" style={{ border: "1px solid rgba(13,138,143,0.2)" }}>

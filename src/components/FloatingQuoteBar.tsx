@@ -74,155 +74,97 @@ export default function FloatingQuoteBar() {
     );
   }
 
-  const labelClass = "block text-[10px] uppercase tracking-[1.5px] text-white/60 mb-1 font-semibold";
+  const labelClass = "block text-[11px] uppercase tracking-[0.5px] text-[#475569] mb-1 font-semibold";
   const inputClass =
-    "w-full bg-transparent text-white text-[14px] placeholder:text-white/50 border-b border-white/20 focus:border-[#E07B2D] outline-none py-2 transition-colors";
+    "w-full bg-white text-[#1e293b] text-[14px] placeholder:text-[#94a3b8] border border-[#E2E8F0] focus:border-[#E07B2D] outline-none px-3 py-[10px] rounded-lg transition-colors";
 
   return (
-    <div
-      className="fixed z-50 bottom-4 left-4 right-4 md:bottom-6 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-[calc(100%-48px)] md:max-w-[900px]"
-    >
+    <div className="fixed z-50 bottom-6 right-6 w-[380px] max-[480px]:bottom-4 max-[480px]:right-4 max-[480px]:left-4 max-[480px]:w-auto">
       <div
-        className="relative rounded-[16px] px-5 py-5 md:px-6 md:py-4"
+        className="relative rounded-[16px] p-5"
         style={{
-          background: "rgba(11, 36, 71, 0.85)",
+          background: "rgba(255, 255, 255, 0.95)",
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
-          border: "1px solid rgba(255,255,255,0.15)",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+          border: "1px solid rgba(0,0,0,0.08)",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
         }}
       >
         {/* Close button */}
         <button
           onClick={() => setCollapsed(true)}
-          className="absolute top-3 right-3 text-white/40 hover:text-white transition-colors"
+          className="absolute top-3 right-3 text-[#94a3b8] hover:text-[#475569] transition-colors"
           aria-label="Minimize quote bar"
         >
           <X size={16} />
         </button>
 
+        {/* Header */}
+        <div className="mb-4 pr-6">
+          <p className="text-[16px] font-bold text-[#0B2447]">Get a Quick Quote</p>
+          <p className="text-[13px] text-[#64748B]">We&apos;ll get back to you within the hour.</p>
+        </div>
+
         {message ? (
-          <p className={`text-center text-[15px] font-semibold py-2 ${message.type === "success" ? "text-[#22c55e]" : "text-red-400"}`}>
+          <p className={`text-center text-[15px] font-semibold py-2 ${message.type === "success" ? "text-[#22c55e]" : "text-red-500"}`}>
             {message.text}
           </p>
         ) : (
-          <>
-            {/* ── Desktop: single row ── */}
-            <div className="hidden md:flex items-end gap-3">
-              <div className="flex-1 min-w-0">
-                <label className={labelClass}>Name</label>
-                <input type="text" placeholder="Your name" className={inputClass} value={name} onChange={(e) => setName(e.target.value)} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <label className={labelClass}>Phone</label>
-                <input type="tel" placeholder="Phone number" className={inputClass} value={phone} onChange={(e) => setPhone(e.target.value)} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <label className={labelClass}>Email</label>
-                <input type="email" placeholder="Email address" className={inputClass} value={email} onChange={(e) => setEmail(e.target.value)} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <label className={labelClass}>Service</label>
-                <div className="relative">
-                  <select
-                    className="w-full bg-transparent text-white text-[14px] border-b border-white/20 focus:border-[#E07B2D] outline-none py-2 appearance-none pr-6 transition-colors"
-                    value={service}
-                    onChange={(e) => setService(e.target.value)}
-                  >
-                    <option value="" className="text-[#333]">What do you need?</option>
-                    {serviceOptions.map((s) => (
-                      <option key={s} value={s} className="text-[#333]">{s}</option>
-                    ))}
-                  </select>
-                  <svg className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-white/40" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-                </div>
-              </div>
-              <div className="shrink-0">
-                <label className={labelClass}>Contact</label>
-                <div className="flex gap-1">
-                  {(["call", "text", "email"] as ContactPref[]).map((pref) => (
-                    <button
-                      key={pref}
-                      onClick={() => setContactPref(pref)}
-                      className={`text-[12px] font-semibold px-3 py-[7px] rounded-full capitalize transition-all ${
-                        contactPref === pref
-                          ? "bg-[#E07B2D] text-white"
-                          : "bg-transparent text-white border border-white/30 hover:border-white/50"
-                      }`}
-                    >
-                      {pref}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <button
-                onClick={handleSubmit}
-                disabled={!canSubmit}
-                className="shrink-0 whitespace-nowrap font-bold text-white text-[14px] rounded-full px-6 py-[10px] bg-[#E07B2D] hover:bg-[#CC6A1F] transition-colors disabled:opacity-50 shadow-[0_4px_16px_rgba(224,123,45,0.3)]"
-              >
-                {submitting ? "Sending..." : "Get My Quote"}
-              </button>
+          <div className="flex flex-col gap-3">
+            <div>
+              <label className={labelClass}>Name</label>
+              <input type="text" placeholder="Your name" className={inputClass} value={name} onChange={(e) => setName(e.target.value)} />
             </div>
-
-            {/* ── Mobile: stacked ── */}
-            <div className="md:hidden space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelClass}>Name</label>
-                  <input type="text" placeholder="Your name" className={inputClass} value={name} onChange={(e) => setName(e.target.value)} />
-                </div>
-                <div>
-                  <label className={labelClass}>Phone</label>
-                  <input type="tel" placeholder="Phone number" className={inputClass} value={phone} onChange={(e) => setPhone(e.target.value)} />
-                </div>
-              </div>
-              <div>
-                <label className={labelClass}>Email</label>
-                <input type="email" placeholder="Email address" className={inputClass} value={email} onChange={(e) => setEmail(e.target.value)} />
-              </div>
-              <div>
-                <label className={labelClass}>Service</label>
-                <div className="relative">
-                  <select
-                    className="w-full bg-transparent text-white text-[14px] border-b border-white/20 focus:border-[#E07B2D] outline-none py-2 appearance-none pr-6 transition-colors"
-                    value={service}
-                    onChange={(e) => setService(e.target.value)}
-                  >
-                    <option value="" className="text-[#333]">What do you need?</option>
-                    {serviceOptions.map((s) => (
-                      <option key={s} value={s} className="text-[#333]">{s}</option>
-                    ))}
-                  </select>
-                  <svg className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-white/40" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-                </div>
-              </div>
-              <div>
-                <label className={labelClass}>Preferred Contact</label>
-                <div className="flex gap-2 mt-1">
-                  {(["call", "text", "email"] as ContactPref[]).map((pref) => (
-                    <button
-                      key={pref}
-                      onClick={() => setContactPref(pref)}
-                      className={`text-[12px] font-semibold px-4 py-[7px] rounded-full capitalize transition-all ${
-                        contactPref === pref
-                          ? "bg-[#E07B2D] text-white"
-                          : "bg-transparent text-white border border-white/30 hover:border-white/50"
-                      }`}
-                    >
-                      {pref}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <button
-                onClick={handleSubmit}
-                disabled={!canSubmit}
-                className="w-full font-bold text-white text-[14px] rounded-full px-6 py-3 bg-[#E07B2D] hover:bg-[#CC6A1F] transition-colors disabled:opacity-50 shadow-[0_4px_16px_rgba(224,123,45,0.3)]"
-              >
-                {submitting ? "Sending..." : "Get My Quote"}
-              </button>
+            <div>
+              <label className={labelClass}>Phone</label>
+              <input type="tel" placeholder="Phone number" className={inputClass} value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
-          </>
+            <div>
+              <label className={labelClass}>Email</label>
+              <input type="email" placeholder="Email address" className={inputClass} value={email} onChange={(e) => setEmail(e.target.value)} />
+            </div>
+            <div>
+              <label className={labelClass}>Service</label>
+              <div className="relative">
+                <select
+                  className="w-full bg-white text-[#1e293b] text-[14px] border border-[#E2E8F0] focus:border-[#E07B2D] outline-none px-3 py-[10px] rounded-lg appearance-none pr-8 transition-colors"
+                  value={service}
+                  onChange={(e) => setService(e.target.value)}
+                >
+                  <option value="">What do you need?</option>
+                  {serviceOptions.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+                <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#94a3b8]" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+              </div>
+            </div>
+            <div>
+              <label className={labelClass}>Preferred Contact</label>
+              <div className="flex gap-2 mt-1">
+                {(["call", "text", "email"] as ContactPref[]).map((pref) => (
+                  <button
+                    key={pref}
+                    onClick={() => setContactPref(pref)}
+                    className={`text-[12px] font-semibold px-4 py-[7px] rounded-full capitalize transition-all ${
+                      contactPref === pref
+                        ? "bg-[#E07B2D] text-white"
+                        : "bg-[#f1f5f9] text-[#475569] hover:bg-[#e2e8f0]"
+                    }`}
+                  >
+                    {pref}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button
+              onClick={handleSubmit}
+              disabled={!canSubmit}
+              className="w-full font-bold text-white text-[15px] rounded-lg px-6 py-3 bg-[#E07B2D] hover:bg-[#CC6A1F] transition-colors disabled:opacity-50 shadow-[0_4px_16px_rgba(224,123,45,0.3)] mt-1"
+            >
+              {submitting ? "Sending..." : "Get My Quote"}
+            </button>
+          </div>
         )}
       </div>
     </div>
