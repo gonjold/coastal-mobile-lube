@@ -95,9 +95,15 @@ function CategorySection({
    ================================================================ */
 export default function ServicesContent() {
   const { services, categories: firestoreCategories, loading } = useServices({ division: "auto", activeOnly: true });
+
+  // Separate packages from regular services
+  const packages = services.filter((s) => s.type === "package").sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  const regularServices = services.filter((s) => s.type !== "package");
+
   const autoPriority = ["oil", "tire", "wheel", "brake", "basic maintenance", "hvac"];
-  const grouped = groupByCategory(services)
+  const grouped = groupByCategory(regularServices)
     .filter((g) => !/labor\s*rate/i.test(g.category))
+    .filter((g) => !/coastal\s*packages?/i.test(g.category))
     .sort((a, b) => {
       const aIdx = autoPriority.findIndex((p) => a.category.toLowerCase().includes(p));
       const bIdx = autoPriority.findIndex((p) => b.category.toLowerCase().includes(p));
@@ -186,6 +192,56 @@ export default function ServicesContent() {
 
       </section>
 
+      {/* ─── Coastal Packages ─── */}
+      {packages.length > 0 && (
+        <section className="relative bg-[#FAFBFC]">
+          <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
+            <div className="text-center mb-8">
+              <h2 className="text-[28px] font-extrabold text-[#0B2040]">Coastal Packages</h2>
+              <p className="text-[15px] text-[#555] mt-2">Bundle and save on routine maintenance</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {packages.map((pkg) => {
+                const isFeatured = pkg.featured === true;
+                return (
+                  <div
+                    key={pkg.id}
+                    className={`relative bg-white rounded-[14px] shadow-[0_2px_20px_rgba(11,32,64,0.06)] p-7 flex flex-col ${
+                      isFeatured
+                        ? "border-t-[3px] border-t-[#E07B2D] border border-[#E07B2D]/20"
+                        : "border border-[#f0ede6]"
+                    }`}
+                  >
+                    {isFeatured && (
+                      <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#E07B2D] text-white text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full">
+                        Most Popular
+                      </span>
+                    )}
+                    <h3 className="text-[20px] font-bold text-[#0B2040] mb-1">{pkg.displayName || pkg.name}</h3>
+                    <p className="text-[14px] font-semibold text-[#E07B2D] mb-4">Starting at ${pkg.price.toFixed(2)}</p>
+                    <ul className="flex-1 flex flex-col gap-2 mb-6">
+                      {pkg.bundleItems.map((item: string) => (
+                        <li key={item} className="flex items-start gap-2 text-[14px] text-[#444] leading-[1.5]">
+                          <span className="inline-block shrink-0 w-1.5 h-1.5 rounded-full bg-[#E07B2D] mt-[7px]" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      type="button"
+                      onClick={() => openBooking({ division: "Automotive", serviceId: pkg.id })}
+                      className="w-full py-3 rounded-[10px] bg-[#E07B2D] text-white font-bold text-[15px] hover:bg-[#cc6a1f] transition-colors shadow-[0_4px_16px_rgba(224,123,45,0.25)] cursor-pointer"
+                    >
+                      Book This Package
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ─── Sticky Category Pill Navigation ─── */}
       <div
         ref={pillBarRef}
@@ -230,13 +286,13 @@ export default function ServicesContent() {
           >
             <ServiceGrid
               items={group.services.map((s) => ({
-                name: s.name,
+                name: s.displayName || s.name,
                 price: s.priceLabel
                   ? (/^\$/.test(s.priceLabel) || /\d/.test(s.priceLabel) ? s.priceLabel : "Call for price")
                   : `$${s.price % 1 === 0 ? `${s.price}` : s.price.toFixed(2)}`,
               }))}
               onItemClick={(item) => {
-                const svc = group.services.find((s) => s.name === item.name);
+                const svc = group.services.find((s) => (s.displayName || s.name) === item.name);
                 openBooking({
                   division: "Automotive",
                   categoryId: group.category,

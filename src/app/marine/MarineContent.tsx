@@ -232,13 +232,13 @@ export default function MarineContent() {
           >
             <ServiceGrid
               items={group.services.map((s) => ({
-                name: s.name,
+                name: s.displayName || s.name,
                 price: s.priceLabel
                   ? (/^\$/.test(s.priceLabel) || /\d/.test(s.priceLabel) ? s.priceLabel : "Call for price")
                   : `$${s.price % 1 === 0 ? `${s.price}` : s.price.toFixed(2)}`,
               }))}
               onItemClick={(item) => {
-                const svc = group.services.find((s) => s.name === item.name);
+                const svc = group.services.find((s) => (s.displayName || s.name) === item.name);
                 openBooking({
                   division: "Marine",
                   categoryId: group.category,

@@ -279,19 +279,25 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  /* ── Coastal Packages (auto division only) ── */
+  const coastalPackages = divKey === "auto"
+    ? allServices.filter((s) => s.type === "package" && s.division === "auto").sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    : [];
+
   /* ── Build category groups ── */
   const categoryGroups: CategoryGroup[] = (() => {
-    const divServices = allServices.filter((s) => s.division === divKey);
+    const divServices = allServices.filter((s) => s.division === divKey && s.type !== "package");
     if (divServices.length > 0) {
       const grouped = groupByCategory(divServices);
       const groups: CategoryGroup[] = grouped
         .filter((g) => !/labor\s*rate/i.test(g.category))
+        .filter((g) => !/coastal\s*packages?/i.test(g.category))
         .filter((g) => !(divKey === "marine" && /marine\s*brakes/i.test(g.category)))
         .map((g) => ({
           category: g.category,
           services: g.services.map((s) => ({
             id: s.id,
-            name: s.name,
+            name: s.displayName || s.name,
             price: s.price,
             category: g.category,
           })),
@@ -1140,6 +1146,78 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                   </button>
                 ))}
               </div>
+
+              {/* Coastal Packages (auto only) */}
+              {coastalPackages.length > 0 && !servicesLoading && (
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#0B2447", marginBottom: 2 }}>Coastal Packages</div>
+                  <div style={{ fontSize: 12, color: "#94A3B8", marginBottom: 12 }}>Bundle and save</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {coastalPackages.map((pkg) => {
+                      const isSelected = isServiceSelected(pkg.id);
+                      return (
+                        <button
+                          key={pkg.id}
+                          type="button"
+                          onClick={() => toggleService({ id: pkg.id, name: pkg.displayName || pkg.name, price: pkg.price, category: "Coastal Packages" })}
+                          style={{
+                            position: "relative",
+                            background: isSelected ? "#FFF7ED" : "#FFFFFF",
+                            border: `1px solid ${isSelected ? "#F97316" : "#E2E8F0"}`,
+                            borderRadius: 12,
+                            padding: "12px 14px",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "flex-start",
+                            gap: 10,
+                            textAlign: "left",
+                            transition: "all 0.15s",
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: 18, height: 18, borderRadius: 4, flexShrink: 0, marginTop: 2,
+                              border: isSelected ? "none" : "2px solid #CBD5E1",
+                              background: isSelected ? "#F97316" : "#FFFFFF",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                            }}
+                          >
+                            {isSelected && (
+                              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="9 3 5 9 3 7" />
+                              </svg>
+                            )}
+                          </span>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                              <span style={{ fontSize: 14, fontWeight: 700, color: "#0B2447" }}>{pkg.displayName || pkg.name}</span>
+                              <span style={{ fontSize: 14, fontWeight: 700, color: "#F97316", whiteSpace: "nowrap", marginLeft: 8 }}>${pkg.price.toFixed(2)}</span>
+                            </div>
+                            {pkg.featured && (
+                              <span style={{ display: "inline-block", fontSize: 10, fontWeight: 700, color: "#fff", background: "#F97316", borderRadius: 4, padding: "1px 6px", marginTop: 3, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                                Most Popular
+                              </span>
+                            )}
+                            <ul style={{ margin: "6px 0 0", padding: 0, listStyle: "none" }}>
+                              {pkg.bundleItems.map((item: string, i: number) => (
+                                <li key={i} style={{ fontSize: 11, color: "#64748B", lineHeight: 1.5, display: "flex", alignItems: "baseline", gap: 5 }}>
+                                  <span style={{ width: 3, height: 3, borderRadius: "50%", background: "#94A3B8", flexShrink: 0, marginTop: 5, display: "inline-block" }} />
+                                  {item}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "16px 0" }}>
+                    <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
+                    <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 500, whiteSpace: "nowrap" }}>Or choose individual services</span>
+                    <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
+                  </div>
+                </div>
+              )}
 
               {/* Category Cards Grid */}
               {servicesLoading ? (

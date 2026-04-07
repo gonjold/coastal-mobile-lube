@@ -253,13 +253,13 @@ export default function RVContent() {
           >
             <ServiceGrid
               items={group.services.map((s) => ({
-                name: s.name,
+                name: s.displayName || s.name,
                 price: s.priceLabel
                   ? s.priceLabel
                   : `$${s.price % 1 === 0 ? `${s.price}` : s.price.toFixed(2)}`,
               }))}
               onItemClick={(item) => {
-                const svc = group.services.find((s) => s.name === item.name);
+                const svc = group.services.find((s) => (s.displayName || s.name) === item.name);
                 openBooking({
                   division: "RV",
                   categoryId: group.category,

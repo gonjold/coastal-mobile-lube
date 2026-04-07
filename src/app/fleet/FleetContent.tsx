@@ -215,68 +215,7 @@ export default function FleetContent() {
 
       <TrustBar />
 
-      {/* Vehicles We Service */}
-      <section className="relative bg-white">
-        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
-          <div className="text-center mb-8">
-            <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
-              What We Cover
-            </p>
-            <h2 className="text-[28px] font-extrabold text-[#0B2040]">
-              Vehicles We Service
-            </h2>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {[
-              "Box Trucks",
-              "Vans & Sprinters",
-              "Pickup Trucks",
-              "Sedans & SUVs",
-              "Heavy Equipment",
-              "Specialty Vehicles",
-            ].map((label) => (
-              <div
-                key={label}
-                className="flex items-center gap-3 rounded-[12px] px-5 py-4 text-white"
-                style={{ background: "linear-gradient(135deg, #0B2040, #132E54)" }}
-              >
-                <span className="w-2 h-2 rounded-full bg-[#E07B2D] shrink-0" />
-                <span className="text-[15px] font-semibold">{label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Section 2: What We Cover */}
-      <section className="relative bg-[#FAFBFC]">
-        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
-          <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
-            Vehicle Types
-          </p>
-          <h2 className="text-[28px] font-extrabold text-[#0B2040] mb-8">
-            Light-duty to heavy-duty
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {vehicleTypes.map((type) => (
-              <div
-                key={type.title}
-                className="bg-white border border-[#f0ede6] rounded-[14px] shadow-[0_2px_20px_rgba(11,32,64,0.06)] p-6 border-t-[3px] border-t-[#0B2040] hover:shadow-[0_4px_28px_rgba(11,32,64,0.1)] hover:translate-y-[-2px] transition-all duration-300"
-              >
-                <h3 className="text-[18px] font-bold text-[#0B2040] mb-2">
-                  {type.title}
-                </h3>
-                <p className="text-[14px] text-[#444] leading-[1.7]">
-                  {type.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-
-      {/* Section 3: How Fleet Service Works */}
+      {/* Section 2: How Fleet Service Works (The Process) */}
       <section className="relative overflow-hidden bg-white">
         <div className="section-inner px-4 lg:px-6 py-12 md:py-16">
           <div className="text-center mb-12">
@@ -321,6 +260,66 @@ export default function FleetContent() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Vehicles We Service */}
+      <section className="relative bg-white">
+        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
+          <div className="text-center mb-8">
+            <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
+              What We Cover
+            </p>
+            <h2 className="text-[28px] font-extrabold text-[#0B2040]">
+              Vehicles We Service
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {[
+              "Box Trucks",
+              "Vans & Sprinters",
+              "Pickup Trucks",
+              "Sedans & SUVs",
+              "Heavy Equipment",
+              "Specialty Vehicles",
+            ].map((label) => (
+              <div
+                key={label}
+                className="flex items-center gap-3 rounded-[12px] px-5 py-4 text-white"
+                style={{ background: "linear-gradient(135deg, #0B2040, #132E54)" }}
+              >
+                <span className="w-2 h-2 rounded-full bg-[#E07B2D] shrink-0" />
+                <span className="text-[15px] font-semibold">{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Vehicle Types */}
+      <section className="relative bg-[#FAFBFC]">
+        <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
+          <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
+            Vehicle Types
+          </p>
+          <h2 className="text-[28px] font-extrabold text-[#0B2040] mb-8">
+            Light-duty to heavy-duty
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {vehicleTypes.map((type) => (
+              <div
+                key={type.title}
+                className="bg-white border border-[#f0ede6] rounded-[14px] shadow-[0_2px_20px_rgba(11,32,64,0.06)] p-6 border-t-[3px] border-t-[#0B2040] hover:shadow-[0_4px_28px_rgba(11,32,64,0.1)] hover:translate-y-[-2px] transition-all duration-300"
+              >
+                <h3 className="text-[18px] font-bold text-[#0B2040] mb-2">
+                  {type.title}
+                </h3>
+                <p className="text-[14px] text-[#444] leading-[1.7]">
+                  {type.description}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
