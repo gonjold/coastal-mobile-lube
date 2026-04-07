@@ -17,6 +17,7 @@ export interface Booking {
   serviceCategory?: string;
   selectedServices?: Array<{ id: string; name: string; price: number | null; category: string }>;
   source?: string;
+  type?: string;
   status?: string;
   address?: string;
   preferredDate?: string;
@@ -132,6 +133,8 @@ export function getStatusStyle(status?: string) {
       return { label: "Completed", cls: "bg-[#16a34a] text-white" };
     case "cancelled":
       return { label: "Cancelled", cls: "bg-[#999] text-white" };
+    case "new-lead":
+      return { label: "New Lead", cls: "bg-[#7c3aed] text-white" };
     default:
       return { label: status || "-", cls: "bg-[#eee] text-[#444]" };
   }
@@ -173,6 +176,7 @@ export function getServiceLabel(b: Booking): string {
 }
 
 export function isNewBooking(b: Booking): boolean {
+  if (b.type === "lead") return false;
   if (b.status !== "pending") return false;
   if (!b.createdAt?.toDate) return false;
   const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;

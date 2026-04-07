@@ -44,7 +44,8 @@ export default function MobileQuickQuote() {
         serviceCategory: service,
         contactPreference: contactPref,
         source: "mobile-quick-quote",
-        status: "pending",
+        type: "lead",
+        status: "new-lead",
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });

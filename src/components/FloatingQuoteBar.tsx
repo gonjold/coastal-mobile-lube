@@ -47,7 +47,8 @@ export default function FloatingQuoteBar() {
         serviceCategory: service,
         contactPreference: contactPref,
         source: "floating-quick-quote",
-        status: "pending",
+        type: "lead",
+        status: "new-lead",
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });

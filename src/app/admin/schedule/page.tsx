@@ -41,7 +41,7 @@ export default function SchedulePage() {
 
   /* Quick time filter */
   const [timeFilter, setTimeFilter] = useState<"today" | "week" | "month" | "all">("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("bookings");
 
   /* List */
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -104,7 +104,16 @@ export default function SchedulePage() {
 
   /* ── Client-side filtering ── */
   const filtered = bookings.filter((b) => {
-    if (statusFilter !== "all" && b.status !== statusFilter) return false;
+    // Lead / booking separation
+    if (statusFilter === "bookings") {
+      if (b.type === "lead") return false;
+    } else if (statusFilter === "leads") {
+      if (b.type !== "lead") return false;
+    } else if (statusFilter !== "all") {
+      // Specific status filter — exclude leads
+      if (b.type === "lead") return false;
+      if (b.status !== statusFilter) return false;
+    }
 
     // Time filter
     if (timeFilter !== "all") {
@@ -136,9 +145,10 @@ export default function SchedulePage() {
     return true;
   });
 
-  /* ── Sort: NEW pending → pending → confirmed → completed → cancelled ── */
+  /* ── Sort: leads → NEW pending → pending → confirmed → completed → cancelled ── */
   filtered.sort((a, b) => {
     const priority = (bk: Booking) => {
+      if (bk.type === "lead") return -1;
       if (isNewBooking(bk)) return 0;
       if (bk.status === "pending") return 1;
       if (bk.status === "confirmed") return 2;
@@ -158,14 +168,17 @@ export default function SchedulePage() {
     return getBookingCalendarDate(b) === todayISO;
   }).length;
 
-  /* ── Stats (unfiltered) ── */
-  const cancelled = bookings.filter((b) => b.status === "cancelled").length;
+  /* ── Stats (unfiltered, excluding leads from booking stats) ── */
+  const bookingsOnly = bookings.filter((b) => b.type !== "lead");
+  const cancelled = bookingsOnly.filter((b) => b.status === "cancelled").length;
+  const leads = bookings.filter((b) => b.type === "lead").length;
   const stats = {
-    total: bookings.length - cancelled,
-    pending: bookings.filter((b) => b.status === "pending").length,
-    confirmed: bookings.filter((b) => b.status === "confirmed").length,
-    completed: bookings.filter((b) => b.status === "completed").length,
+    total: bookingsOnly.length - cancelled,
+    pending: bookingsOnly.filter((b) => b.status === "pending").length,
+    confirmed: bookingsOnly.filter((b) => b.status === "confirmed").length,
+    completed: bookingsOnly.filter((b) => b.status === "completed").length,
     cancelled,
+    leads,
   };
 
   /* ── Status update (optimistic) ── */
@@ -313,6 +326,32 @@ export default function SchedulePage() {
     }
   }
 
+  /* ── Convert lead to booking ── */
+  async function convertToBooking(id: string) {
+    setBookings((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, type: "booking", status: "pending" } : b))
+    );
+    try {
+      const entry = {
+        id: crypto.randomUUID(),
+        type: "note" as const,
+        direction: "outbound" as const,
+        summary: "Lead converted to booking",
+        createdAt: new Date().toISOString(),
+        createdBy: "admin",
+      };
+      await updateDoc(doc(db, "bookings", id), {
+        type: "booking",
+        status: "pending",
+        updatedAt: serverTimestamp(),
+        commsLog: arrayUnion(entry),
+      });
+      addToast("Lead converted to booking");
+    } catch {
+      /* onSnapshot will correct */
+    }
+  }
+
   /* ── Calendar data ── */
   const calYear = calendarDate.getFullYear();
   const calMonth = calendarDate.getMonth();
@@ -410,20 +449,33 @@ export default function SchedulePage() {
 
         {/* Status filter pills */}
         <div className="flex rounded-lg overflow-hidden border border-[#e8e8e8]">
-          {["all", "pending", "confirmed", "completed", "cancelled"].map((v) => (
+          {[
+            { key: "bookings", label: "Bookings" },
+            { key: "pending", label: "Pending" },
+            { key: "confirmed", label: "Confirmed" },
+            { key: "completed", label: "Completed" },
+            { key: "cancelled", label: "Cancelled" },
+            { key: "leads", label: "Leads" },
+            { key: "all", label: "All" },
+          ].map((v) => (
             <button
-              key={v}
-              onClick={() => setStatusFilter(v)}
+              key={v.key}
+              onClick={() => setStatusFilter(v.key)}
               className={`px-3 py-2 text-[13px] font-semibold transition-colors ${
-                statusFilter === v
+                statusFilter === v.key
                   ? "bg-[#0B2040] text-white"
                   : "bg-white text-[#444] hover:bg-[#f5f5f5]"
               }`}
             >
-              {v.charAt(0).toUpperCase() + v.slice(1)}
-              {v === "pending" && stats.pending > 0 && (
+              {v.label}
+              {v.key === "pending" && stats.pending > 0 && (
                 <span className="ml-1.5 inline-block px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#E07B2D] text-white leading-none">
                   {stats.pending}
+                </span>
+              )}
+              {v.key === "leads" && stats.leads > 0 && (
+                <span className="ml-1.5 inline-block px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#7c3aed] text-white leading-none">
+                  {stats.leads}
                 </span>
               )}
             </button>
@@ -451,12 +503,12 @@ export default function SchedulePage() {
         <p className="text-[14px] text-[#888] ml-auto">
           Showing{" "}
           <span className="font-semibold text-[#0B2040]">{filtered.length}</span>{" "}
-          booking{filtered.length !== 1 ? "s" : ""}
+          {statusFilter === "leads" ? "lead" : "booking"}{filtered.length !== 1 ? "s" : ""}
         </p>
       </div>
 
       {/* ═══ Status Cards ═══ */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
         <div className="bg-[#FFF8F0] rounded-[10px] p-3 text-center">
           <p className="text-[22px] font-[800] text-[#E07B2D] leading-none mb-0.5">{stats.pending}</p>
           <p className="text-[11px] text-[#888] font-medium">Pending</p>
@@ -468,6 +520,10 @@ export default function SchedulePage() {
         <div className="bg-[#F0FAF0] rounded-[10px] p-3 text-center">
           <p className="text-[22px] font-[800] text-[#16a34a] leading-none mb-0.5">{stats.completed}</p>
           <p className="text-[11px] text-[#888] font-medium">Completed</p>
+        </div>
+        <div className="bg-[#f5f0ff] rounded-[10px] p-3 text-center">
+          <p className="text-[22px] font-[800] text-[#7c3aed] leading-none mb-0.5">{stats.leads}</p>
+          <p className="text-[11px] text-[#888] font-medium">Leads</p>
         </div>
         <div className="bg-[#f5f5f5] rounded-[10px] p-3 text-center">
           <p className="text-[22px] font-[800] text-[#999] leading-none mb-0.5">{stats.cancelled}</p>
@@ -528,9 +584,11 @@ export default function SchedulePage() {
                               }
                             }}
                             className={`border-b border-[#f0f0f0] cursor-pointer transition-colors ${
-                              bIsNew
-                                ? "bg-[#FFF8F0] border-l-4 border-l-[#E07B2D]"
-                                : isExpanded ? "bg-[#FAFBFC]" : "hover:bg-[#FAFBFC]"
+                              b.type === "lead"
+                                ? "bg-[#f5f0ff] border-l-4 border-l-[#7c3aed]"
+                                : bIsNew
+                                  ? "bg-[#FFF8F0] border-l-4 border-l-[#E07B2D]"
+                                  : isExpanded ? "bg-[#FAFBFC]" : "hover:bg-[#FAFBFC]"
                             }`}
                           >
                             <td className="px-4 py-3 text-[13px] text-[#444] whitespace-nowrap">
@@ -538,6 +596,9 @@ export default function SchedulePage() {
                             </td>
                             <td className="px-4 py-3 text-[14px] font-semibold text-[#0B2040] whitespace-nowrap">
                               {b.name || "\u2014"}
+                              {b.type === "lead" && (
+                                <span className="ml-2 inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold text-white bg-[#7c3aed]">LEAD</span>
+                              )}
                               {bIsNew && (
                                 <span className="ml-2 inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold text-white bg-[#E07B2D]">NEW</span>
                               )}
@@ -574,6 +635,7 @@ export default function SchedulePage() {
                             <td className="px-4 py-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                               <StatusActions
                                 status={b.status}
+                                type={b.type}
                                 onConfirm={() => {
                                   setSettingAppointmentId(b.id);
                                   setExpandedId(b.id);
@@ -581,6 +643,10 @@ export default function SchedulePage() {
                                 onComplete={() => updateStatus(b.id, "completed")}
                                 onCancel={() => setCancelConfirmId(b.id)}
                                 onDelete={() => setDeleteConfirmId(b.id)}
+                                onConvertToBooking={() => convertToBooking(b.id)}
+                                onContactCustomer={() => {
+                                  setExpandedId(b.id);
+                                }}
                               />
                             </td>
                           </tr>
@@ -694,13 +760,15 @@ export default function SchedulePage() {
                           <span
                             key={b.id}
                             className={`w-[5px] h-[5px] rounded-full ${
-                              b.status === "pending"
-                                ? "bg-[#E07B2D]"
-                                : b.status === "confirmed"
-                                  ? "bg-[#1A5FAC]"
-                                  : b.status === "cancelled"
-                                    ? "bg-[#999]"
-                                    : "bg-[#16a34a]"
+                              b.type === "lead"
+                                ? "bg-[#7c3aed]"
+                                : b.status === "pending"
+                                  ? "bg-[#E07B2D]"
+                                  : b.status === "confirmed"
+                                    ? "bg-[#1A5FAC]"
+                                    : b.status === "cancelled"
+                                      ? "bg-[#999]"
+                                      : "bg-[#16a34a]"
                             }`}
                           />
                         ))}
@@ -720,6 +788,7 @@ export default function SchedulePage() {
                 { color: "bg-[#E07B2D]", label: "Pending" },
                 { color: "bg-[#1A5FAC]", label: "Confirmed" },
                 { color: "bg-[#16a34a]", label: "Completed" },
+                { color: "bg-[#7c3aed]", label: "Lead" },
                 { color: "bg-[#999]", label: "Cancelled" },
               ].map((l) => (
                 <div key={l.label} className="flex items-center gap-1.5">
@@ -805,22 +874,28 @@ export default function SchedulePage() {
 
 function StatusActions({
   status,
+  type,
   onConfirm,
   onComplete,
   onCancel,
   onDelete,
+  onConvertToBooking,
+  onContactCustomer,
 }: {
   status?: string;
+  type?: string;
   onConfirm: () => void;
   onComplete: () => void;
   onCancel: () => void;
   onDelete: () => void;
+  onConvertToBooking: () => void;
+  onContactCustomer: () => void;
 }) {
   const trashBtn = (
     <button
       onClick={onDelete}
       className="ml-2 p-1.5 text-[#aaa] hover:text-[#dc2626] transition-colors rounded"
-      title="Delete booking"
+      title="Delete"
     >
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="3 6 5 6 21 6" />
@@ -828,6 +903,26 @@ function StatusActions({
       </svg>
     </button>
   );
+
+  if (type === "lead") {
+    return (
+      <div className="flex items-center gap-2">
+        <button
+          onClick={onContactCustomer}
+          className="px-3 py-1.5 text-[12px] font-semibold text-white bg-[#7c3aed] rounded-md hover:bg-[#6d28d9] transition-colors"
+        >
+          Contact Customer
+        </button>
+        <button
+          onClick={onConvertToBooking}
+          className="px-3 py-1.5 text-[12px] font-semibold text-[#1A5FAC] border border-[#1A5FAC] rounded-md hover:bg-[#1A5FAC] hover:text-white transition-colors"
+        >
+          Convert to Booking
+        </button>
+        {trashBtn}
+      </div>
+    );
+  }
 
   if (status === "pending") {
     return (
