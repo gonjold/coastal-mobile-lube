@@ -11,20 +11,32 @@ function formatPrice(svc: Service): string {
   return "Call for price";
 }
 
-/* ── Main Preview Panel ── */
-export default function ServicePreviewPanel({ onClose }: { onClose: () => void }) {
-  const { services, categories: firestoreCategories, loading } = useServices({ division: "auto", activeOnly: true });
+const DIVISION_LABELS: Record<string, string> = {
+  auto: "Automotive Services",
+  marine: "Marine Services",
+  fleet: "Fleet Services",
+};
 
-  const packages = services.filter((s) => s.type === "package").sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+/* ── Main Preview Panel ── */
+export default function ServicePreviewPanel({ division = "auto", onClose }: { division?: "auto" | "marine" | "fleet"; onClose: () => void }) {
+  const { services, categories: firestoreCategories, loading } = useServices({ division, activeOnly: true });
+
+  const isAuto = division === "auto";
+  const packages = isAuto
+    ? services.filter((s) => s.type === "package").sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    : [];
   const regularServices = services.filter((s) => s.type !== "package");
 
   const autoPriority = ["oil", "tire", "wheel", "brake", "basic maintenance", "hvac"];
+  const marinePriority = ["oil"];
   const grouped = groupByCategory(regularServices)
     .filter((g) => !/labor\s*rate/i.test(g.category))
     .filter((g) => !/coastal\s*packages?/i.test(g.category))
+    .filter((g) => division !== "marine" || !/marine\s*brakes?/i.test(g.category))
     .sort((a, b) => {
-      const aIdx = autoPriority.findIndex((p) => a.category.toLowerCase().includes(p));
-      const bIdx = autoPriority.findIndex((p) => b.category.toLowerCase().includes(p));
+      const priority = division === "marine" ? marinePriority : autoPriority;
+      const aIdx = priority.findIndex((p) => a.category.toLowerCase().includes(p));
+      const bIdx = priority.findIndex((p) => b.category.toLowerCase().includes(p));
       if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
       if (aIdx !== -1) return -1;
       if (bIdx !== -1) return 1;
@@ -37,7 +49,7 @@ export default function ServicePreviewPanel({ onClose }: { onClose: () => void }
     label: g.category,
   }));
   const tabs = [
-    ...(packages.length > 0 ? [{ id: PACKAGES_TAB_ID, label: "Coastal Packages" }] : []),
+    ...(isAuto && packages.length > 0 ? [{ id: PACKAGES_TAB_ID, label: "Coastal Packages" }] : []),
     ...categoryTabs,
   ];
 
@@ -49,7 +61,14 @@ export default function ServicePreviewPanel({ onClose }: { onClose: () => void }
     requestAnimationFrame(() => setVisible(true));
   }, []);
 
-  // Set initial tab
+  // Reset tab when division or tabs change
+  useEffect(() => {
+    if (tabs.length > 0) {
+      setActiveTab(tabs[0].id);
+    }
+  }, [division]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Set initial tab if empty
   useEffect(() => {
     if (tabs.length > 0 && !activeTab) {
       setActiveTab(tabs[0].id);
@@ -79,7 +98,7 @@ export default function ServicePreviewPanel({ onClose }: { onClose: () => void }
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
           <div>
             <h2 className="text-[16px] font-bold text-[#0B2040]">Public Page Preview</h2>
-            <p className="text-[11px] text-gray-400 mt-0.5">Automotive Services</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">{DIVISION_LABELS[division] || "Services"}</p>
           </div>
           <button
             onClick={handleClose}

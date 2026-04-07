@@ -1359,7 +1359,7 @@ export default function ServicesPage() {
 
       {/* Preview Panel */}
       {showPreview && (
-        <ServicePreviewPanel onClose={() => setShowPreview(false)} />
+        <ServicePreviewPanel division={activeDivision} onClose={() => setShowPreview(false)} />
       )}
     </div>
   );
