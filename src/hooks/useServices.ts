@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   collection,
   query,
@@ -70,6 +70,7 @@ export function useServices(
   const [services, setServices] = useState<Service[]>([]);
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [categoriesLoaded, setCategoriesLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Subscribe to services collection
@@ -130,6 +131,7 @@ export function useServices(
         })) as ServiceCategory[];
         docs.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
         setCategories(docs);
+        setCategoriesLoaded(true);
       },
       (err) => {
         setError(err.message);
@@ -139,5 +141,17 @@ export function useServices(
     return unsubscribe;
   }, [division, activeOnly]);
 
-  return { services, categories, loading, error };
+  // When activeOnly is set, filter out services whose category is inactive
+  const filteredServices = useMemo(() => {
+    if (!activeOnly || !categoriesLoaded) return services;
+    const activeCategoryNames = new Set(categories.map((c) => c.name));
+    return services.filter((s) => activeCategoryNames.has(s.category));
+  }, [services, categories, activeOnly, categoriesLoaded]);
+
+  return {
+    services: filteredServices,
+    categories,
+    loading: loading || (activeOnly ? !categoriesLoaded : false),
+    error,
+  };
 }
