@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Phone, Check, Clock, MapPin, Wrench, Shield, Award, Tag } from "lucide-react";
+import { Phone, Check, Clock, MapPin, Wrench, Shield, Award, Tag, ChevronRight, ChevronDown } from "lucide-react";
 import { useBooking } from "@/contexts/BookingContext";
 import Button from "@/components/Button";
 import { cloudinaryUrl, images } from "@/lib/cloudinary";
@@ -55,6 +55,7 @@ const serviceTabs: { key: TabKey; label: string }[] = [
 export default function Home() {
   const { openBooking } = useBooking();
   const [servicesTab, setServicesTab] = useState<TabKey>("automotive");
+  const [expandedService, setExpandedService] = useState<string | null>(null);
 
   const { services: allServices } = useServices({ activeOnly: true });
 
@@ -87,10 +88,17 @@ export default function Home() {
 
   const currentService = servicesData[servicesTab];
 
+  const divisionIcons: Record<TabKey, typeof Wrench> = {
+    automotive: Wrench,
+    fleet: MapPin,
+    marine: Shield,
+    rv: Tag,
+  };
+
   return (
     <>
       {/* ── Hero ── */}
-      <section className="relative overflow-clip min-h-[600px]" style={{ background: "linear-gradient(180deg, #0A1628 0%, #0B2040 50%, #0F2847 100%)" }}>
+      <section className="relative overflow-clip md:min-h-[600px]" style={{ background: "linear-gradient(180deg, #0A1628 0%, #0B2040 50%, #0F2847 100%)" }}>
 
         {/* Oval badge watermark - massive brand stamp */}
         <img
@@ -100,28 +108,34 @@ export default function Home() {
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-auto opacity-[0.04] z-0 pointer-events-none select-none"
         />
 
-        <div className="section-inner px-4 lg:px-6 pt-16 pb-16 md:pt-24 md:pb-20 relative z-10">
+        <div className="section-inner px-4 lg:px-6 pt-10 pb-10 md:pt-24 md:pb-20 relative z-10">
           <div className="max-w-3xl mx-auto text-center">
-            <div className="mb-4 flex flex-col items-center gap-[5px]">
-              <p className="text-[12px] uppercase font-bold text-[#F97316] tracking-[3px]">
+            <div className="mb-3 md:mb-4 flex flex-col items-center gap-[5px]">
+              <p className="text-[11px] md:text-[12px] uppercase font-bold text-[#F97316] tracking-[3px]">
                 Mobile Service
               </p>
-              <p className="text-[14px] font-normal text-white/70">
+              <p className="text-[13px] md:text-[14px] font-normal text-white/70">
                 Cars. Trucks. RVs. Trailers. Boats. Your entire fleet.
               </p>
             </div>
-            <h1 className="text-[36px] md:text-[52px] font-extrabold leading-[1.06] text-white tracking-[-1.5px] mb-5" style={{ textShadow: "0 2px 20px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2)" }}>
+            <h1 className="text-[30px] md:text-[52px] font-extrabold leading-[1.06] text-white tracking-[-1.5px] mb-3 md:mb-5" style={{ textShadow: "0 2px 20px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2)" }}>
               The shop that comes to{" "}
               <span className="relative">
                 <span className="text-[#E07B2D]">you.</span>
                 <span className="absolute -bottom-1 left-0 right-0 h-[3px] rounded-full bg-[#E07B2D]/40" />
               </span>
             </h1>
-            <p className="text-[17px] leading-[1.7] text-white/60 max-w-[620px] mx-auto mb-8">
+            {/* Mobile subtext — short */}
+            <p className="md:hidden text-[15px] leading-[1.6] text-white/60 max-w-[620px] mx-auto mb-6">
+              We come to your driveway, parking lot, or dock. No shop visit needed.
+            </p>
+            {/* Desktop subtext — full */}
+            <p className="hidden md:block text-[17px] leading-[1.7] text-white/60 max-w-[620px] mx-auto mb-8">
               Mobile oil changes, tire service, fleet maintenance, marine engine care, and RV service. We come to your driveway, your parking lot, or your dock.
             </p>
 
-            <div className="flex flex-col sm:flex-row justify-center gap-3 mb-8">
+            {/* Hero CTA buttons — desktop only, mobile uses sticky bottom bar */}
+            <div className="hidden md:flex flex-col sm:flex-row justify-center gap-3 mb-8">
               <Button variant="primary" size="lg" className="whitespace-nowrap shadow-[0_4px_24px_rgba(224,123,45,0.35)]" onClick={openBooking}>
                 Book Service
               </Button>
@@ -151,21 +165,21 @@ export default function Home() {
 
       {/* ── How It Works ── */}
       <section className="relative overflow-hidden bg-white">
-        <div className="section-inner px-4 lg:px-6 py-14 md:py-20">
-          <div className="text-center mb-12">
-            <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
+        <div className="section-inner px-4 lg:px-6 py-8 md:py-20">
+          <div className="text-center mb-6 md:mb-12">
+            <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-2 md:mb-3">
               How It Works
             </p>
-            <h2 className="text-[28px] md:text-[34px] font-extrabold text-[#0B2040]">
+            <h2 className="text-[24px] md:text-[34px] font-extrabold text-[#0B2040]">
               Three steps. That&apos;s it.
             </h2>
           </div>
 
           <div className="relative max-w-[900px] mx-auto">
-            {/* Connecting line */}
+            {/* Connecting line — desktop only */}
             <div className="hidden md:block absolute top-[60px] h-[2px]" style={{ left: "calc(16.67% + 40px)", right: "calc(16.67% + 40px)", background: "linear-gradient(to right, #E07B2D, #D9A441, #0D8A8F)" }} />
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
               {[
                 {
                   num: "1",
@@ -191,18 +205,18 @@ export default function Home() {
               ].map((step) => (
                 <div key={step.num} className="flex flex-col items-center text-center relative z-10">
                   <div
-                    className="relative flex items-center justify-center w-[72px] h-[72px] rounded-[18px] text-white text-xl font-bold mb-6 shadow-[0_4px_20px_rgba(0,0,0,0.2)]"
+                    className="relative flex items-center justify-center w-[56px] h-[56px] md:w-[72px] md:h-[72px] rounded-[14px] md:rounded-[18px] text-white text-xl font-bold mb-3 md:mb-6 shadow-[0_4px_20px_rgba(0,0,0,0.2)]"
                     style={{ background: step.gradient }}
                   >
-                    <span className="absolute top-2 left-2.5 text-[20px] font-extrabold text-white/30 leading-none">
+                    <span className="absolute top-1.5 left-2 md:top-2 md:left-2.5 text-[16px] md:text-[20px] font-extrabold text-white/30 leading-none">
                       {step.num}
                     </span>
                     {step.icon}
                   </div>
-                  <h3 className="text-[18px] font-bold text-[#0B2040] mb-2">
+                  <h3 className="text-[16px] md:text-[18px] font-bold text-[#0B2040] mb-1 md:mb-2">
                     {step.title}
                   </h3>
-                  <p className="text-[14px] leading-[1.7] text-[#555] max-w-[260px]">
+                  <p className="text-[13px] md:text-[14px] leading-[1.6] md:leading-[1.7] text-[#555] max-w-[260px]">
                     {step.desc}
                   </p>
                 </div>
@@ -214,29 +228,30 @@ export default function Home() {
 
       {/* ── Services ── */}
       <section className="relative bg-[#F0EDE6]">
-        <div className="section-inner px-4 lg:px-6 pt-10 pb-14 md:pt-14">
-          <div className="text-center mb-10">
-            <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
+        <div className="section-inner px-4 lg:px-6 pt-8 pb-10 md:pt-14 md:pb-14">
+          <div className="text-center mb-6 md:mb-10">
+            <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-2 md:mb-3">
               Services
             </p>
-            <h2 className="text-[28px] md:text-[34px] font-extrabold text-[#0B2040] mb-3">
+            <h2 className="text-[24px] md:text-[34px] font-extrabold text-[#0B2040] mb-2 md:mb-3">
               What we handle on-site
             </h2>
-            <p className="text-[15px] text-[#555] mx-auto max-w-[480px]">
+            <p className="hidden md:block text-[15px] text-[#555] mx-auto max-w-[480px]">
               Everything your vehicle, fleet, boat, or RV needs. Brought directly to
               your location by a factory-trained technician.
             </p>
           </div>
 
-          <div className="flex justify-center gap-2 mb-10">
+          {/* Division pills — scrollable on mobile, centered on desktop */}
+          <div className="flex md:justify-center gap-2 mb-6 md:mb-10 overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0 md:overflow-visible scrollbar-hide">
             {serviceTabs.map((tab) => (
               <button
                 key={tab.key}
-                onClick={() => setServicesTab(tab.key)}
-                className={`text-[14px] font-semibold px-5 py-2.5 rounded-full transition-all ${
+                onClick={() => { setServicesTab(tab.key); setExpandedService(null); }}
+                className={`text-[13px] md:text-[14px] font-semibold px-4 md:px-5 py-2 md:py-2.5 rounded-full transition-all whitespace-nowrap flex-shrink-0 ${
                   servicesTab === tab.key
                     ? "bg-[#0B2040] text-white shadow-[0_2px_12px_rgba(11,32,64,0.25)]"
-                    : "bg-[#F0EDE6] text-[#666] hover:bg-[#E8E4DC] hover:text-[#444]"
+                    : "bg-white md:bg-[#F0EDE6] text-[#666] hover:bg-[#E8E4DC] hover:text-[#444]"
                 }`}
               >
                 {tab.label}
@@ -244,7 +259,57 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
+          {/* ── Mobile: compact service list with accordion ── */}
+          <div className="md:hidden flex flex-col gap-2">
+            {currentService.items.map((item) => {
+              const isExpanded = expandedService === `${servicesTab}-${item}`;
+              return (
+                <div key={item} className="bg-white rounded-[12px] border border-[#f0ede6] overflow-hidden">
+                  <button
+                    onClick={() => setExpandedService(isExpanded ? null : `${servicesTab}-${item}`)}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left"
+                  >
+                    <div className="w-[32px] h-[32px] rounded-[8px] flex items-center justify-center shrink-0" style={{ background: "#E07B2D10" }}>
+                      {(() => { const Icon = divisionIcons[servicesTab]; return <Icon size={16} className="text-[#E07B2D]" />; })()}
+                    </div>
+                    <span className="flex-1 text-[14px] font-semibold text-[#0B2040]">{item}</span>
+                    <span className="text-[13px] font-bold text-[#E07B2D] mr-1">{currentService.pricing !== "Custom quotes" ? currentService.pricing : ""}</span>
+                    {isExpanded
+                      ? <ChevronDown size={16} className="text-[#999] shrink-0" />
+                      : <ChevronRight size={16} className="text-[#999] shrink-0" />}
+                  </button>
+                  {isExpanded && (
+                    <div className="px-4 pb-3 pt-0 border-t border-[#f0ede6]">
+                      <p className="text-[13px] text-[#555] leading-[1.6] py-2">{currentService.description}</p>
+                      {currentService.pricingLabel && (
+                        <p className="text-[12px] text-[#888] mb-2">
+                          {currentService.pricingLabel}{" "}
+                          <span className="font-bold text-[#0B2040]">{currentService.pricing}</span>
+                        </p>
+                      )}
+                      <button
+                        onClick={openBooking}
+                        className="w-full text-[13px] font-semibold text-white py-2.5 rounded-[8px] bg-[#E07B2D] hover:bg-[#CC6A1F] transition-colors mt-1"
+                      >
+                        Book This Service
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {servicesTab === "rv" && (
+              <Link
+                href="/rv"
+                className="inline-block mt-2 text-[14px] font-semibold text-[#E07B2D] hover:underline text-center"
+              >
+                View All RV &amp; Trailer Services &rarr;
+              </Link>
+            )}
+          </div>
+
+          {/* ── Desktop: original card + image layout ── */}
+          <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
             <div className="bg-white rounded-[14px] p-7 shadow-[0_2px_20px_rgba(11,32,64,0.06)] border border-[#f0ede6]">
               <h3 className="text-[22px] font-bold text-[#0B2040] mb-3">
                 {currentService.title}
@@ -321,8 +386,8 @@ export default function Home() {
         {/* Bottom edge accent */}
         <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: "linear-gradient(to right, transparent, rgba(217,164,65,0.3), transparent)" }} />
 
-        <div className="section-inner px-6 py-12 md:py-14 relative z-10">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+        <div className="section-inner px-4 md:px-6 py-8 md:py-14 relative z-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 text-center">
             {[
               { value: "30+", label: "Years in fixed ops" },
               { value: "<1hr", label: "Most services completed" },
@@ -330,10 +395,10 @@ export default function Home() {
               { value: "$0", label: "Surprise fees. Ever." },
             ].map((stat, i) => (
               <div key={stat.label} className={`relative ${i < 3 ? "md:after:content-[''] md:after:absolute md:after:right-0 md:after:top-1/2 md:after:-translate-y-1/2 md:after:h-[40px] md:after:w-px md:after:bg-white/10" : ""}`}>
-                <p className="text-[36px] md:text-[42px] font-extrabold text-[#E07B2D] mb-1 tracking-tight">
+                <p className="text-[28px] md:text-[42px] font-extrabold text-[#E07B2D] mb-0.5 md:mb-1 tracking-tight">
                   {stat.value}
                 </p>
-                <p className="text-[13px] text-white/50 font-medium">{stat.label}</p>
+                <p className="text-[11px] md:text-[13px] text-white/50 font-medium">{stat.label}</p>
               </div>
             ))}
           </div>
@@ -343,12 +408,12 @@ export default function Home() {
 
       {/* ── Reviews ── */}
       <section className="overflow-hidden bg-[#F4EEE3]">
-        <div className="section-inner px-4 lg:px-6 pt-10 md:pt-14 pb-4">
-          <div className="text-center mb-10">
-            <p className="text-[12px] uppercase font-bold text-[#D9A441] tracking-[1.5px] mb-3">
+        <div className="section-inner px-4 lg:px-6 pt-8 md:pt-14 pb-2 md:pb-4">
+          <div className="text-center mb-6 md:mb-10">
+            <p className="text-[12px] uppercase font-bold text-[#D9A441] tracking-[1.5px] mb-2 md:mb-3">
               Reviews
             </p>
-            <h2 className="text-[28px] md:text-[34px] font-extrabold text-[#0F2847]">
+            <h2 className="text-[24px] md:text-[34px] font-extrabold text-[#0F2847]">
               What our customers say
             </h2>
           </div>
@@ -363,7 +428,7 @@ export default function Home() {
 
         <div className="group">
           <div
-            className="flex gap-5 w-max"
+            className="flex gap-3 md:gap-5 w-max"
             style={{ animation: "reviewScroll 35s linear infinite" }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.animationPlayState = "paused"; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.animationPlayState = "running"; }}
@@ -379,19 +444,19 @@ export default function Home() {
               ].map((review) => (
                 <div
                   key={`${setIdx}-${review.name}`}
-                  className="w-[350px] flex-shrink-0 bg-white rounded-[14px] p-6 flex flex-col shadow-[0_2px_16px_rgba(139,115,85,0.08)] border border-[#EDE8DF]"
+                  className="w-[280px] md:w-[350px] flex-shrink-0 bg-white rounded-[14px] p-4 md:p-6 flex flex-col shadow-[0_2px_16px_rgba(139,115,85,0.08)] border border-[#EDE8DF]"
                 >
-                  <div className="text-[#D9A441] text-[16px] mb-3 tracking-wide">
+                  <div className="text-[#D9A441] text-[14px] md:text-[16px] mb-2 md:mb-3 tracking-wide">
                     {"★★★★★"}
                   </div>
-                  <p className="text-[14px] leading-[1.7] text-[#2C2C2C] flex-1 mb-4">
+                  <p className="text-[13px] md:text-[14px] leading-[1.6] md:leading-[1.7] text-[#2C2C2C] flex-1 mb-3 md:mb-4">
                     &ldquo;{review.text}&rdquo;
                   </p>
-                  <div className="flex items-center justify-between pt-3 border-t border-[#F0EDE6]">
-                    <span className="text-[13px] font-bold text-[#0F2847]">
+                  <div className="flex items-center justify-between pt-2 md:pt-3 border-t border-[#F0EDE6]">
+                    <span className="text-[12px] md:text-[13px] font-bold text-[#0F2847]">
                       {review.name} <span className="font-normal text-[#999]">- {review.city}</span>
                     </span>
-                    <span className="text-[11px] text-[#aaa] font-medium">Google Review</span>
+                    <span className="text-[10px] md:text-[11px] text-[#aaa] font-medium">Google Review</span>
                   </div>
                 </div>
               ))
@@ -399,8 +464,8 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="section-inner px-4 lg:px-6 pb-10 md:pb-14">
-          <div className="text-center mt-8">
+        <div className="section-inner px-4 lg:px-6 pb-8 md:pb-14">
+          <div className="text-center mt-6 md:mt-8">
             <p className="text-[13px] text-[#8B7355] mb-2">Reviews from customers across the South Shore</p>
             {/* TODO: Replace with real Google Business Profile review URL from Jason */}
             <a href="/contact" className="text-[13px] font-semibold text-[#E07B2D] hover:underline">
@@ -416,8 +481,8 @@ export default function Home() {
 
       {/* ── Trust Bar (inline) ── */}
       <section className="relative bg-[#F8F6F1]">
-        <div className="section-inner px-4 lg:px-6 py-12">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-0">
+        <div className="section-inner px-4 lg:px-6 py-6 md:py-12">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-0">
             {[
               { icon: Shield, text: "Fully Licensed & Insured", color: "#1A5FAC" },
               { icon: Wrench, text: "ASE-Certified Technicians", color: "#0D8A8F" },
@@ -426,17 +491,18 @@ export default function Home() {
             ].map((item, i) => (
               <div
                 key={item.text}
-                className={`flex flex-col items-center gap-3 text-center justify-center ${
+                className={`flex flex-col items-center gap-2 md:gap-3 text-center justify-center ${
                   i < 3 ? "md:border-r md:border-[#eee]" : ""
                 } md:px-6`}
               >
                 <div
-                  className="w-[52px] h-[52px] rounded-[14px] flex items-center justify-center"
+                  className="w-[40px] h-[40px] md:w-[52px] md:h-[52px] rounded-[10px] md:rounded-[14px] flex items-center justify-center"
                   style={{ background: `${item.color}10` }}
                 >
-                  <item.icon size={26} className="shrink-0" style={{ color: item.color }} strokeWidth={1.5} />
+                  <item.icon size={20} className="shrink-0 md:hidden" style={{ color: item.color }} strokeWidth={1.5} />
+                  <item.icon size={26} className="shrink-0 hidden md:block" style={{ color: item.color }} strokeWidth={1.5} />
                 </div>
-                <span className="text-[13px] font-semibold text-[#0F2847]">
+                <span className="text-[12px] md:text-[13px] font-semibold text-[#0F2847]">
                   {item.text}
                 </span>
               </div>
@@ -446,8 +512,8 @@ export default function Home() {
       </section>
 
 
-      {/* ── CTA ── */}
-      <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0A1C38 0%, #0F2847 40%, #132E54 100%)" }}>
+      {/* ── CTA — hidden on mobile, sticky bottom bar handles it ── */}
+      <section className="hidden md:block relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0A1C38 0%, #0F2847 40%, #132E54 100%)" }}>
 
         {/* Badge watermark echo */}
         <img

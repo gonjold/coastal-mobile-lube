@@ -28,6 +28,9 @@ export default function FloatingQuoteBar() {
 
   if (bookingOpen) return null;
 
+  /* Hide entirely on mobile — the sticky bottom bar handles CTAs below 768px */
+  const hiddenOnMobile = "hidden lg:block";
+
   const canSubmit = name.trim().length > 0 && phone.trim().length > 0 && !submitting;
 
   async function handleSubmit() {
@@ -66,7 +69,7 @@ export default function FloatingQuoteBar() {
     return (
       <button
         onClick={() => setCollapsed(false)}
-        className="fixed bottom-[80px] lg:bottom-6 right-4 lg:right-6 z-50 flex items-center gap-2 px-5 py-3 rounded-full bg-[#E07B2D] text-white font-semibold text-[14px] shadow-[0_4px_20px_rgba(224,123,45,0.4)] hover:bg-[#CC6A1F] transition-colors"
+        className={`fixed bottom-[80px] lg:bottom-6 right-4 lg:right-6 z-50 items-center gap-2 px-5 py-3 rounded-full bg-[#E07B2D] text-white font-semibold text-[14px] shadow-[0_4px_20px_rgba(224,123,45,0.4)] hover:bg-[#CC6A1F] transition-colors ${hiddenOnMobile} lg:!flex`}
       >
         <ChevronUp size={16} />
         Get a Quote
@@ -79,7 +82,7 @@ export default function FloatingQuoteBar() {
     "w-full bg-white text-[#1e293b] text-[14px] placeholder:text-[#94a3b8] border border-[#E2E8F0] focus:border-[#E07B2D] outline-none px-3 py-[10px] rounded-lg transition-colors";
 
   return (
-    <div className="fixed z-50 bottom-[80px] lg:bottom-6 right-4 lg:right-6 w-[380px] max-[480px]:left-4 max-[480px]:w-auto">
+    <div className={`fixed z-50 bottom-[80px] lg:bottom-6 right-4 lg:right-6 w-[380px] max-[480px]:left-4 max-[480px]:w-auto ${hiddenOnMobile}`}>
       <div
         className="relative rounded-[16px] p-5"
         style={{
