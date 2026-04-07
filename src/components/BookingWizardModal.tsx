@@ -227,6 +227,8 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
   const [showManualFields, setShowManualFields] = useState(false);
   const [, setModelsFetchKey] = useState(0);
   const ymmDropdownRef = useRef<HTMLDivElement>(null);
+  const [prefetchLoading, setPrefetchLoading] = useState(false);
+  const prefetchStartedRef = useRef(false);
 
   /* ── Step 3: Details ── */
   const [customerName, setCustomerName] = useState("");
@@ -425,6 +427,28 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
       .finally(() => setMakesLoading(false));
   }, [isOpen]);
 
+  /* ── Pre-fetch models for top 30 popular makes (desktop search) ── */
+  useEffect(() => {
+    if (!isOpen || prefetchStartedRef.current) return;
+    prefetchStartedRef.current = true;
+    setPrefetchLoading(true);
+    Promise.allSettled(
+      POPULAR_MAKES.map((make) =>
+        fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/GetModelsForMake/${encodeURIComponent(make)}?format=json`)
+          .then((r) => r.json())
+          .then((data: { Results?: { Model_Name?: string }[] }) => {
+            const models = [...new Set(
+              (data.Results || []).map((r) => r.Model_Name || "").filter((s) => s.length > 0)
+            )].sort((a, b) => a.localeCompare(b));
+            modelsCacheRef.current[make] = models;
+          })
+      )
+    ).then(() => {
+      setPrefetchLoading(false);
+      setModelsFetchKey((k) => k + 1);
+    });
+  }, [isOpen]);
+
   /* ── Fetch models for selected make ── */
   useEffect(() => {
     if (!vehicleMake) {
@@ -559,7 +583,7 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
   const hasVehicleSelected = !!(vehicleYear || vehicleMake || vehicleModel);
 
   function computeYmmSuggestions(): { year: string; make: string; model: string; display: string }[] {
-    if (!ymmSearch.trim() || allMakes.length === 0) return [];
+    if (!ymmSearch.trim()) return [];
     const trimmed = ymmSearch.trim();
     let year = "";
     let rest = trimmed;
@@ -573,41 +597,104 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
     if (!rest && !year) return [];
 
     const lowerRest = rest.toLowerCase();
-    const suggestions: { year: string; make: string; model: string; display: string }[] = [];
+    const scored: { year: string; make: string; model: string; display: string; score: number }[] = [];
+    const seen = new Set<string>();
 
-    // Try to find exact make match at start of rest
-    const sortedMakes = [...allMakes].sort((a, b) => b.length - a.length);
-    const exactMake = lowerRest
-      ? sortedMakes.find(
-          (m) => lowerRest.startsWith(m.toLowerCase()) && (lowerRest.length === m.length || lowerRest[m.length] === " ")
-        )
-      : undefined;
+    // Build flat model list from all cached makes
+    const allCachedModels = Object.entries(modelsCacheRef.current).flatMap(([make, models]) =>
+      models.map((model) => ({ make, model }))
+    );
+    const popularSet = new Set(POPULAR_MAKES.map((m) => m.toLowerCase()));
 
-    if (exactMake) {
-      const afterMake = rest.slice(exactMake.length).trim().toLowerCase();
-      const models = modelsCacheRef.current[exactMake] || [];
-      const filtered = afterMake ? models.filter((m) => m.toLowerCase().includes(afterMake)) : models;
-      filtered.slice(0, 8).forEach((model) => {
-        suggestions.push({ year, make: exactMake, model, display: [year, exactMake, model].filter(Boolean).join(" ") });
-      });
-      if (suggestions.length > 0) return suggestions;
+    function add(y: string, make: string, model: string, score: number) {
+      const key = `${y}|${make.toLowerCase()}|${model.toLowerCase()}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      scored.push({ year: y, make, model, display: [y, make, model].filter(Boolean).join(" "), score });
     }
 
-    // No exact make or no models yet — show matching makes
     if (lowerRest) {
-      const matching = allMakes.filter((m) => m.toLowerCase().includes(lowerRest));
-      matching.slice(0, 8).forEach((make) => {
-        suggestions.push({ year, make, model: "", display: [year, make].filter(Boolean).join(" ") });
-      });
+      // Try exact make match at start of input (longest first)
+      const cachedMakeNames = [...new Set(allCachedModels.map((c) => c.make))];
+      const allKnownMakes = [...new Set([...cachedMakeNames, ...allMakes])];
+      const sortedMakes = allKnownMakes.sort((a, b) => b.length - a.length);
+      const foundMake = sortedMakes.find(
+        (m) => lowerRest.startsWith(m.toLowerCase()) && (lowerRest.length === m.length || lowerRest[m.length] === " ")
+      );
+
+      if (foundMake) {
+        const afterMake = rest.slice(foundMake.length).trim().toLowerCase();
+        // Case-insensitive cache lookup
+        const cacheKey = Object.keys(modelsCacheRef.current).find((k) => k.toLowerCase() === foundMake.toLowerCase());
+        const models = cacheKey ? modelsCacheRef.current[cacheKey] : [];
+
+        if (models.length > 0) {
+          const filtered = afterMake ? models.filter((m) => m.toLowerCase().includes(afterMake)) : models;
+          filtered.forEach((model) => {
+            const ml = model.toLowerCase();
+            let score = 30;
+            if (afterMake) {
+              if (ml === afterMake) score = 10;
+              else if (ml.startsWith(afterMake)) score = 20;
+            } else {
+              score = 15;
+            }
+            add(year, cacheKey || foundMake, model, score);
+          });
+        } else {
+          // Models not cached yet — show make-only for drill-down
+          add(year, foundMake, "", 15);
+        }
+      }
+
+      // Model-first search across all cached models
+      if (!foundMake || scored.length === 0) {
+        allCachedModels.forEach(({ make, model }) => {
+          const ml = model.toLowerCase();
+          if (!ml.includes(lowerRest)) return;
+          let score = 60;
+          if (ml === lowerRest) score = 40;
+          else if (ml.startsWith(lowerRest)) score = 50;
+          if (popularSet.has(make.toLowerCase())) score -= 5;
+          add(year, make, model, score);
+        });
+      }
+
+      // Make-name substring search (fallback if no results yet)
+      if (scored.length === 0) {
+        const makeMatches = allMakes.filter((m) => m.toLowerCase().includes(lowerRest));
+        makeMatches.forEach((make) => {
+          const ml = make.toLowerCase();
+          let base = 70;
+          if (ml === lowerRest) base = 40;
+          else if (ml.startsWith(lowerRest)) base = 50;
+          if (popularSet.has(ml)) base -= 5;
+
+          const ck = Object.keys(modelsCacheRef.current).find((k) => k.toLowerCase() === ml);
+          const models = ck ? modelsCacheRef.current[ck] : [];
+          if (models.length > 0) {
+            models.forEach((model) => add(year, ck || make, model, base));
+          } else {
+            add(year, make, "", base);
+          }
+        });
+      }
     } else if (year) {
-      POPULAR_MAKES.forEach((pm) => {
-        const actual = allMakes.find((m) => m.toLowerCase() === pm.toLowerCase());
-        if (actual && suggestions.length < 8) {
-          suggestions.push({ year, make: actual, model: "", display: `${year} ${actual}` });
+      // Year-only — show popular makes for drill-down
+      POPULAR_MAKES.forEach((pm, idx) => {
+        const ck = Object.keys(modelsCacheRef.current).find((k) => k.toLowerCase() === pm.toLowerCase());
+        if (ck) {
+          add(year, ck, "", idx);
+        } else {
+          const actual = allMakes.find((m) => m.toLowerCase() === pm.toLowerCase());
+          if (actual) add(year, actual, "", idx);
         }
       });
     }
-    return suggestions;
+
+    return scored
+      .sort((a, b) => a.score - b.score || a.display.localeCompare(b.display))
+      .map((s) => ({ year: s.year, make: s.make, model: s.model, display: s.display }));
   }
 
   function selectYmmSuggestion(s: { year: string; make: string; model: string }) {
@@ -1260,7 +1347,7 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
                                 setYmmDropdownOpen(true);
                               }}
                               onFocus={() => { if (ymmSearch.trim()) setYmmDropdownOpen(true); }}
-                              placeholder="Search your vehicle... e.g. 2020 Toyota Tundra"
+                              placeholder={prefetchLoading ? "Loading vehicle database..." : "Search your vehicle... e.g. 2020 Toyota Tundra"}
                               style={{
                                 width: "100%", padding: "14px 20px 14px 44px", border: "1px solid #E2E8F0",
                                 borderRadius: 16, fontSize: 18, outline: "none", fontFamily: "inherit",
@@ -1275,21 +1362,21 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
                               return (
                                 <div
                                   style={{
-                                    position: "absolute", top: "100%", left: 0, right: 0, zIndex: 20,
+                                    position: "absolute", top: "100%", left: 0, right: 0, zIndex: 100,
                                     background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 12,
                                     boxShadow: "0 8px 24px rgba(0,0,0,0.12)", marginTop: 4, padding: "16px 20px",
                                   }}
                                 >
-                                  <div style={{ fontSize: 14, color: "#64748B" }}>
-                                    No matches found. Try a different spelling or{" "}
-                                    <button
-                                      type="button"
-                                      onClick={() => { setShowManualFields(true); setYmmDropdownOpen(false); }}
-                                      style={{ background: "none", border: "none", cursor: "pointer", color: "#F97316", fontWeight: 600, fontSize: 14, padding: 0 }}
-                                    >
-                                      enter details manually
-                                    </button>.
+                                  <div style={{ fontSize: 14, color: "#64748B", marginBottom: 8 }}>
+                                    No matches for &ldquo;{ymmSearch.trim()}&rdquo;. Try searching by make or model name.
                                   </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => { setShowManualFields(true); setYmmDropdownOpen(false); }}
+                                    style={{ background: "none", border: "none", cursor: "pointer", color: "#F97316", fontWeight: 600, fontSize: 14, padding: 0 }}
+                                  >
+                                    or enter details manually
+                                  </button>
                                 </div>
                               );
                             }
@@ -1298,7 +1385,7 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
                             return (
                               <div
                                 style={{
-                                  position: "absolute", top: "100%", left: 0, right: 0, zIndex: 20,
+                                  position: "absolute", top: "100%", left: 0, right: 0, zIndex: 100,
                                   background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 12,
                                   boxShadow: "0 8px 24px rgba(0,0,0,0.12)", marginTop: 4,
                                   maxHeight: 320, overflowY: "auto",
@@ -1330,6 +1417,11 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
                                     </button>
                                   );
                                 })}
+                                {suggestions.length > 8 && (
+                                  <div style={{ padding: "8px 20px 10px", fontSize: 12, color: "#94A3B8", textAlign: "center", borderTop: "1px solid #F1F5F9" }}>
+                                    Showing 8 of {suggestions.length} results
+                                  </div>
+                                )}
                               </div>
                             );
                           })()}
