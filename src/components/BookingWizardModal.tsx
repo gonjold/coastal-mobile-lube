@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp, getDocs, query, where, orderBy, limit as firestoreLimit } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, getDocs, query, where, limit as firestoreLimit } from "firebase/firestore";
 import { useServices, type Service } from "@/hooks/useServices";
 import { groupByCategory } from "@/lib/serviceHelpers";
 import SearchableSelect from "./SearchableSelect";
@@ -29,6 +29,19 @@ interface CategoryGroup {
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+}
+
+interface LookupBooking {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  vehicleYear: string;
+  vehicleMake: string;
+  vehicleModel: string;
+  services: string;
+  date: string;
+  sortKey: number;
 }
 
 /* ─── Constants ───────────────────────────────────────────── */
@@ -244,6 +257,7 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupMsg, setLookupMsg] = useState("");
   const [lookupDone, setLookupDone] = useState(false);
+  const [lookupResults, setLookupResults] = useState<LookupBooking[]>([]);
 
   /* ── Submit ── */
   const [submitting, setSubmitting] = useState(false);
@@ -797,6 +811,7 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
     setLookupLoading(false);
     setLookupMsg("");
     setLookupDone(false);
+    setLookupResults([]);
   }
 
   /* ── "Been here before?" lookup ── */
@@ -805,21 +820,34 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
     if (digits.length < 7) return;
     setLookupLoading(true);
     setLookupMsg("");
+    setLookupResults([]);
     try {
       const q = query(
         collection(db, "bookings"),
         where("customerPhone", "==", digits),
-        orderBy("createdAt", "desc"),
-        firestoreLimit(1),
+        firestoreLimit(10),
       );
       const snap = await getDocs(q);
       if (!snap.empty) {
-        const d = snap.docs[0].data();
-        if (d.customerName) setCustomerName(d.customerName);
-        if (d.customerPhone) setCustomerPhone(d.customerPhone);
-        if (d.customerEmail) setCustomerEmail(d.customerEmail);
-        setLookupDone(true);
-        setLookupMsg("");
+        const results: LookupBooking[] = snap.docs.map((doc) => {
+          const d = doc.data();
+          const svcs = (d.selectedServices || []).map((s: { name?: string }) => s.name || "").filter(Boolean).join(", ");
+          const ts = d.createdAt?.toDate?.();
+          return {
+            id: doc.id,
+            customerName: d.customerName || "",
+            customerPhone: d.customerPhone || "",
+            customerEmail: d.customerEmail || "",
+            vehicleYear: d.vehicleYear || "",
+            vehicleMake: d.vehicleMake || "",
+            vehicleModel: d.vehicleModel || "",
+            services: svcs,
+            date: ts ? ts.toLocaleDateString() : "",
+            sortKey: ts ? ts.getTime() : 0,
+          };
+        });
+        results.sort((a, b) => b.sortKey - a.sortKey);
+        setLookupResults(results);
       } else {
         setLookupMsg("No previous bookings found with that number. No worries, fill in your details below.");
       }
@@ -828,6 +856,94 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
     } finally {
       setLookupLoading(false);
     }
+  }
+
+  function applyLookupBooking(b: LookupBooking) {
+    if (b.vehicleYear) setVehicleYear(b.vehicleYear);
+    if (b.vehicleMake) setVehicleMake(b.vehicleMake);
+    if (b.vehicleModel) setVehicleModel(b.vehicleModel);
+    if (b.customerName) setCustomerName(b.customerName);
+    if (b.customerPhone) setCustomerPhone(b.customerPhone);
+    if (b.customerEmail) setCustomerEmail(b.customerEmail);
+    setLookupDone(true);
+    setLookupResults([]);
+    setLookupMsg("");
+  }
+
+  function renderLookupUI(prompt: string) {
+    if (lookupDone) return null;
+    return (
+      <div style={{ marginBottom: 16 }}>
+        {!lookupOpen ? (
+          <button
+            type="button"
+            onClick={() => setLookupOpen(true)}
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 0, fontSize: 13, fontWeight: 500, color: "#F97316" }}
+          >
+            {prompt}
+          </button>
+        ) : (
+          <div style={{ background: "#FFF7ED", border: "1px solid #FDBA74", borderRadius: 10, padding: "12px 14px", marginTop: 8 }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                type="tel"
+                value={lookupPhone}
+                onChange={(e) => setLookupPhone(e.target.value)}
+                placeholder="Enter the phone number you used last time"
+                style={{
+                  flex: 1, padding: "8px 12px", border: "1px solid #E2E8F0", borderRadius: 8,
+                  fontSize: 13, outline: "none", fontFamily: "inherit", background: "#FFFFFF", color: "#1E293B",
+                }}
+              />
+              <button
+                type="button"
+                onClick={handleLookup}
+                disabled={lookupLoading}
+                style={{
+                  padding: "8px 14px", borderRadius: 8, border: "1px solid #F97316",
+                  background: "transparent", color: "#F97316", fontSize: 13, fontWeight: 600,
+                  cursor: lookupLoading ? "not-allowed" : "pointer", whiteSpace: "nowrap",
+                }}
+              >
+                {lookupLoading ? "Looking..." : "Look me up"}
+              </button>
+            </div>
+            {lookupMsg && (
+              <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 8 }}>{lookupMsg}</div>
+            )}
+            {lookupResults.length > 0 && (
+              <div style={{ marginTop: 10 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#475569", marginBottom: 6 }}>
+                  Select a previous booking:
+                </div>
+                {lookupResults.map((b) => (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() => applyLookupBooking(b)}
+                    style={{
+                      display: "block", width: "100%", textAlign: "left", padding: "10px 12px",
+                      background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 8,
+                      cursor: "pointer", marginBottom: 6, transition: "border-color 0.15s",
+                    }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "#F97316"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "#E2E8F0"; }}
+                  >
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#0B2447" }}>
+                      {[b.vehicleYear, b.vehicleMake, b.vehicleModel].filter(Boolean).join(" ") || "No vehicle info"}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>
+                      {b.services || "No services listed"}
+                    </div>
+                    {b.date && <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>{b.date}</div>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
   }
 
   /* ── Scroll to top on step change ── */
@@ -1155,6 +1271,8 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
               <h3 style={{ fontSize: 18, fontWeight: 700, color: "#0B2447", margin: "0 0 16px" }}>
                 {isMarine ? "Vessel Information" : "Vehicle Information"}
               </h3>
+
+              {renderLookupUI("Been here before? We can auto-fill your vehicle info.")}
 
               {isMarine ? (
                 <div>
@@ -1504,49 +1622,7 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
               <h3 style={{ fontSize: 18, fontWeight: 700, color: "#0B2447", margin: "0 0 4px" }}>Your Details</h3>
 
               {/* "Been here before?" sign-in link */}
-              {!lookupDone && (
-                <div style={{ marginBottom: 16 }}>
-                  {!lookupOpen ? (
-                    <button
-                      type="button"
-                      onClick={() => setLookupOpen(true)}
-                      style={{ background: "none", border: "none", cursor: "pointer", padding: 0, fontSize: 13, fontWeight: 500, color: "#F97316" }}
-                    >
-                      Been here before? Sign in to auto-fill your details.
-                    </button>
-                  ) : (
-                    <div style={{ background: "#FFF7ED", border: "1px solid #FDBA74", borderRadius: 10, padding: "12px 14px", marginTop: 8 }}>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <input
-                          type="tel"
-                          value={lookupPhone}
-                          onChange={(e) => setLookupPhone(e.target.value)}
-                          placeholder="Enter the phone number you used last time"
-                          style={{
-                            flex: 1, padding: "8px 12px", border: "1px solid #E2E8F0", borderRadius: 8,
-                            fontSize: 13, outline: "none", fontFamily: "inherit", background: "#FFFFFF", color: "#1E293B",
-                          }}
-                        />
-                        <button
-                          type="button"
-                          onClick={handleLookup}
-                          disabled={lookupLoading}
-                          style={{
-                            padding: "8px 14px", borderRadius: 8, border: "1px solid #F97316",
-                            background: "transparent", color: "#F97316", fontSize: 13, fontWeight: 600,
-                            cursor: lookupLoading ? "not-allowed" : "pointer", whiteSpace: "nowrap",
-                          }}
-                        >
-                          {lookupLoading ? "Looking..." : "Look me up"}
-                        </button>
-                      </div>
-                      {lookupMsg && (
-                        <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 8 }}>{lookupMsg}</div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
+              {renderLookupUI("Been here before? Sign in to auto-fill your details.")}
 
               <div style={{ marginBottom: 14 }}>
                 <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Full Name *</label>

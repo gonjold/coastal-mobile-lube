@@ -8,7 +8,9 @@ service cloud.firestore {
     // Admin only: can READ, UPDATE, DELETE
     match /bookings/{bookingId} {
       allow create: if true;
-      allow read, update, delete: if request.auth != null;
+      // Public phone-lookup: allow list queries with a limit (used by "Been here before?" feature)
+      allow list: if request.query.limit != null && request.query.limit <= 10;
+      allow get, update, delete: if request.auth != null;
     }
 
     // SERVICES COLLECTION (pricing map)
