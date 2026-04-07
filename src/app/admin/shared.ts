@@ -27,6 +27,16 @@ export interface Booking {
   fleetSize?: string;
   engineType?: string;
   engineCount?: string;
+  division?: string;
+  vehicleYear?: string;
+  vehicleMake?: string;
+  vehicleModel?: string;
+  vinOrHull?: string;
+  vesselYear?: string;
+  vesselMake?: string;
+  vesselModel?: string;
+  otherDescription?: string;
+  rvType?: string;
   adminNotes?: string;
   commsLog?: Array<{ id: string; type: "call" | "text" | "email" | "note"; direction: "outbound" | "inbound"; summary: string; createdAt: string; createdBy: string }>;
   confirmedDate?: string;
@@ -97,6 +107,16 @@ export function getSourceLabel(source?: string): { label: string; color: string 
       return { label: "Marine", color: "bg-[#7c3aed]" };
     case "admin-manual":
       return { label: "Manual", color: "bg-[#0D8A8F]" };
+    case "booking-wizard-v4":
+      return { label: "Wizard", color: "bg-[#1A5FAC]" };
+    case "booking-page-v3":
+      return { label: "Book Page", color: "bg-[#1A5FAC]" };
+    case "floating-quick-quote":
+      return { label: "Quick Quote", color: "bg-[#E07B2D]" };
+    case "mobile-quick-quote":
+      return { label: "Quick Quote", color: "bg-[#E07B2D]" };
+    case "rv-page":
+      return { label: "RV", color: "bg-[#7c3aed]" };
     default:
       return { label: source || "-", color: "bg-[#888]" };
   }
@@ -137,13 +157,17 @@ export function formatTimeWindow(tw?: string): string | undefined {
     "afternoon": "Afternoon (1-3)",
     "late-afternoon": "Late Afternoon (3-5)",
     "lateAfternoon": "Late Afternoon (3-5)",
+    "late": "Late (4-6)",
   };
   return labels[tw] || tw;
 }
 
 export function getServiceLabel(b: Booking): string {
   if (b.service) return b.service;
-  if (b.selectedServices?.length) return b.selectedServices.map((s) => s.name).join(", ");
+  if (b.selectedServices?.length) {
+    const names = b.selectedServices.map((s) => s.name || (s as Record<string, unknown>).label).filter(Boolean).join(", ");
+    if (names) return names;
+  }
   if (b.serviceCategory) return b.serviceCategory;
   return "";
 }
@@ -171,7 +195,7 @@ export function parseArrivalWindowHours(window: string): { start: number; end: n
 }
 
 export function generateGCalUrl(booking: Booking): string {
-  const title = encodeURIComponent(`Coastal Mobile - ${booking.service || "Service"} - ${booking.name || "Customer"}`);
+  const title = encodeURIComponent(`Coastal Mobile - ${getServiceLabel(booking) || "Service"} - ${booking.name || "Customer"}`);
   const dateStr = booking.confirmedDate || booking.preferredDate || new Date(Date.now() + 86400000).toISOString().split("T")[0];
   let startHour = 9;
   let endHour = 10;
@@ -186,7 +210,7 @@ export function generateGCalUrl(booking: Booking): string {
   const startDate = dateStr.replace(/-/g, "") + "T" + String(startHour).padStart(2, "0") + "0000";
   const endDate = dateStr.replace(/-/g, "") + "T" + String(endHour).padStart(2, "0") + "0000";
   const details = encodeURIComponent(
-    `Service: ${booking.service || "TBD"}\nCustomer: ${booking.name || "N/A"}\nPhone: ${booking.phone || "N/A"}\nEmail: ${booking.email || "N/A"}\nContact Pref: ${booking.contactPreference || "N/A"}\nSource: ${booking.source || "N/A"}\nArrival: ${booking.confirmedArrivalWindow || "TBD"}\nNotes: ${booking.notes || "None"}\nAdmin: https://coastal-mobile-lube.netlify.app/admin`
+    `Service: ${getServiceLabel(booking) || "TBD"}\nCustomer: ${booking.name || "N/A"}\nPhone: ${booking.phone || "N/A"}\nEmail: ${booking.email || "N/A"}\nContact Pref: ${booking.contactPreference || "N/A"}\nSource: ${booking.source || "N/A"}\nArrival: ${booking.confirmedArrivalWindow || "TBD"}\nNotes: ${booking.notes || "None"}\nAdmin: https://coastal-mobile-lube.netlify.app/admin`
   );
   const location = encodeURIComponent(booking.address || booking.zip || "Apollo Beach, FL");
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDate}/${endDate}&details=${details}&location=${location}`;

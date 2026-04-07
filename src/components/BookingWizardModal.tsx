@@ -259,6 +259,8 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
   const [customerEmail, setCustomerEmail] = useState("");
   const [preferredDate, setPreferredDate] = useState("");
   const [preferredTime, setPreferredTime] = useState("");
+  const [contactPreference, setContactPreference] = useState<"call" | "text" | "email">("call");
+  const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
 
   /* ── "Been here before?" lookup ── */
@@ -810,8 +812,11 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
     setSubmitting(true);
     setSubmitError("");
     try {
+      const serviceNames = selectedServices.map((s) => s.name);
+      if (otherSelected && otherText.trim()) serviceNames.push(`Other: ${otherText.trim()}`);
       await addDoc(collection(db, "bookings"), {
         division: divKey,
+        service: serviceNames.join(", "),
         selectedServices: selectedServices.map((s) => ({ id: s.id, name: s.name, price: s.price, category: s.category })),
         otherDescription: otherSelected ? otherText.trim() : "",
         vinOrHull: vinOrHull.trim(),
@@ -824,12 +829,15 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
         name: customerName.trim(),
         phone: customerPhone.replace(/\D/g, ""),
         email: customerEmail.trim().toLowerCase(),
+        contactPreference,
+        address: address.trim(),
         preferredDate,
-        preferredTime,
+        timeWindow: preferredTime,
         notes: notes.trim(),
         source: "booking-wizard-v4",
         status: "pending",
         createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       });
       setSubmitted(true);
       setTimeout(() => {
@@ -863,6 +871,8 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
     setCustomerEmail("");
     setPreferredDate("");
     setPreferredTime("");
+    setContactPreference("call");
+    setAddress("");
     setNotes("");
     setSubmitting(false);
     setSubmitted(false);
@@ -1932,6 +1942,45 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                 </div>
               </div>
 
+              {/* Contact Preference */}
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Best way to reach you</label>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {(["call", "text", "email"] as const).map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setContactPreference(opt)}
+                      style={{
+                        flex: 1, padding: "10px 0", borderRadius: 10, fontSize: 13, fontWeight: 600,
+                        border: contactPreference === opt ? "2px solid #F97316" : "1px solid #E2E8F0",
+                        background: contactPreference === opt ? "#FFF7ED" : "#FFFFFF",
+                        color: contactPreference === opt ? "#F97316" : "#64748B",
+                        cursor: "pointer", fontFamily: "inherit", textTransform: "capitalize",
+                      }}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Service Address */}
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Service Address</label>
+                <input
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Where should we come? (street address or cross streets)"
+                  style={{
+                    width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
+                    fontSize: 14, outline: "none", fontFamily: "inherit",
+                    background: "#FFFFFF", color: "#1E293B",
+                  }}
+                />
+              </div>
+
               <div>
                 <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Anything else we should know?</label>
                 <textarea
@@ -2007,6 +2056,8 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                   <div>{customerName}</div>
                   <div>{customerPhone}</div>
                   {customerEmail && <div>{customerEmail}</div>}
+                  <div>Contact: {contactPreference}</div>
+                  {address && <div>Address: {address}</div>}
                   {preferredDate && <div>Date: {preferredDate}</div>}
                   {preferredTime && <div>Time: {TIME_SLOTS.find((t) => t.value === preferredTime)?.label}</div>}
                   {notes && <div style={{ marginTop: 6, color: "#475569" }}>Notes: {notes}</div>}

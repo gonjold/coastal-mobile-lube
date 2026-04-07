@@ -43,11 +43,13 @@ export default function FloatingQuoteBar() {
         name: name.trim(),
         phone: phone.replace(/\D/g, ""),
         email: email.trim(),
+        service: service,
         serviceCategory: service,
         contactPreference: contactPref,
         source: "floating-quick-quote",
         status: "pending",
         createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       });
       setMessage({ type: "success", text: "Got it! We'll reach out shortly." });
       setTimeout(() => {

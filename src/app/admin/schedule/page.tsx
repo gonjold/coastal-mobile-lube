@@ -31,6 +31,7 @@ import {
   isNewBooking,
   generateGCalUrl,
   exportBookingsCsv,
+  getServiceLabel,
 } from "../shared";
 
 export default function SchedulePage() {
@@ -558,7 +559,7 @@ export default function SchedulePage() {
                               )}
                             </td>
                             <td className="px-4 py-3 text-[13px] text-[#444] whitespace-nowrap max-w-[180px] truncate">
-                              {b.service || "\u2014"}
+                              {getServiceLabel(b) || "\u2014"}
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap">
                               <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold text-white ${source.color}`}>
@@ -957,9 +958,12 @@ function ExpandedDetail({
     { label: "Dates Flexible", value: b.datesFlexible ? "Yes" : undefined },
     { label: "Notes", value: b.notes },
     { label: "Status", value: b.status },
-    { label: "Service", value: b.service },
+    { label: "Service", value: getServiceLabel(b) },
     { label: "Category", value: b.serviceCategory },
     { label: "Time Window", value: formatTimeWindow(b.timeWindow) },
+    { label: "Vehicle", value: [b.vehicleYear, b.vehicleMake, b.vehicleModel].filter(Boolean).join(" ") || undefined },
+    { label: "VIN/Hull", value: b.vinOrHull },
+    { label: "Vessel", value: [b.vesselYear, b.vesselMake, b.vesselModel].filter(Boolean).join(" ") || undefined },
     { label: "Zip", value: b.zip },
     { label: "Fleet Size", value: b.fleetSize },
     { label: "Engine Type", value: b.engineType },

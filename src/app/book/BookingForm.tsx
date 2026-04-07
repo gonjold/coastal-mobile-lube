@@ -563,7 +563,7 @@ export default function BookingForm() {
         vehicleMake: vehicleMake.trim(),
         vehicleModel: vehicleModel.trim(),
         name: contactName.trim(),
-        zipCode: zipCode.trim(),
+        zip: zipCode.trim(),
         phone: strip(phone),
         email: email.trim().toLowerCase(),
         contactPreference: contactMethod.toLowerCase(),
