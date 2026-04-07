@@ -6,41 +6,55 @@ import { Phone, Check, Clock, MapPin, Wrench, Shield, Award, Tag, ChevronRight, 
 import { useBooking } from "@/contexts/BookingContext";
 import Button from "@/components/Button";
 import { cloudinaryUrl, images } from "@/lib/cloudinary";
-import { useServices, type Service } from "@/hooks/useServices";
+import { useServices } from "@/hooks/useServices";
 
-const fallbackServicesData: Record<string, { title: string; description: string; pricing: string; pricingLabel: string; items: string[]; image: string }> = {
-  automotive: {
-    title: "Automotive Services",
-    description: "Factory-grade oil changes, tire rotations, brake checks, and preventive maintenance - all performed at your home or office.",
-    pricing: "$89.95",
-    pricingLabel: "Starting at",
-    items: ["Synthetic Oil Change", "Tire Rotation & Balance", "Brake Inspection"],
-    image: images.drivewayService,
-  },
-  fleet: {
-    title: "Fleet & Commercial",
-    description: "Scheduled maintenance programs for company vehicles, box trucks, and commercial fleets. Volume pricing and custom plans available.",
-    pricing: "Custom quotes",
-    pricingLabel: "",
-    items: ["Scheduled Fleet Maintenance", "Company Vehicle Programs", "Emergency Mobile Service"],
-    image: images.commercialService,
-  },
-  marine: {
-    title: "Marine Services",
-    description: "Dockside and boat ramp service for outboard and inboard engines. Seasonal maintenance and winterization across the South Shore.",
-    pricing: "$149.95",
-    pricingLabel: "Starting at",
-    items: ["Outboard Oil Change", "Inboard Engine Service", "Lower Unit Service"],
-    image: images.marinaBoatsAlt,
-  },
-  rv: {
-    title: "RV Services",
-    description: "On-site maintenance for motorhomes, travel trailers, and fifth wheels. Generator service, roof inspections, and slide-out care wherever you're parked.",
-    pricing: "$129.95",
-    pricingLabel: "Starting at",
-    items: ["Generator Service & Inspection", "Roof Seal & Leak Inspection", "RV Oil & Filter Change", "Slide-Out Lubrication & Maintenance"],
-    image: images.drivewayServiceAlt,
-  },
+/* ── Homepage category configs per division ── */
+
+interface CategoryConfig {
+  displayName: string;
+  description: string;
+  firestoreCategories: string[]; // matched against service.category for min price
+  ctaLabel?: string;
+  ctaAction?: "fleet-quote";
+}
+
+const DIVISION_CATEGORIES: Record<TabKey, CategoryConfig[]> = {
+  automotive: [
+    { displayName: "Oil Changes", description: "Conventional, synthetic blend, full synthetic, and diesel oil changes. Factory-grade service at your location.", firestoreCategories: ["Oil Changes"] },
+    { displayName: "Tires & Wheels", description: "Tire rotation, flat repair, mount and balance, TPMS service, and new tire installation.", firestoreCategories: ["Tire/Wheel"] },
+    { displayName: "Brakes", description: "Front and rear brake pads, full brake jobs, and brake fluid flush.", firestoreCategories: ["Brakes"] },
+    { displayName: "Basic Maintenance", description: "Wiper blades, air filters, cabin filters, batteries, coolant flush, belts, and more.", firestoreCategories: ["Basic Maintenance"] },
+    { displayName: "A/C & Heating", description: "A/C diagnostic, EVAC and recharge, and heating system service.", firestoreCategories: ["HVAC"] },
+  ],
+  fleet: [
+    { displayName: "Custom Fleet Maintenance Programs", description: "Scheduled maintenance for your entire fleet. Volume pricing available.", firestoreCategories: ["Preventive Maintenance Tiers"], ctaLabel: "Request Fleet Quote", ctaAction: "fleet-quote" },
+  ],
+  marine: [
+    { displayName: "Oil Service", description: "Outboard and inboard engine oil changes, filter replacement, and lower unit service.", firestoreCategories: ["Marine Oil Service"] },
+    { displayName: "Engine Service", description: "Fuel system service, diesel maintenance, and comprehensive engine diagnostics.", firestoreCategories: ["Marine Fuel/Fluid Services", "Marine Diesel Services"] },
+    { displayName: "Electrical & Maintenance", description: "Battery service, wiring, lighting, belts, hoses, and marine system diagnostics.", firestoreCategories: ["Marine Basic Maintenance"] },
+    { displayName: "Winterization", description: "Complete winterization service to protect your boat during the off-season.", firestoreCategories: ["Marine Basic Maintenance"] },
+  ],
+  rv: [
+    { displayName: "Oil & Lube", description: "Full synthetic and diesel oil changes for motorhomes and tow vehicles.", firestoreCategories: ["Oil Changes"] },
+    { displayName: "Tires & Wheels", description: "Tire rotation, flat repair, mount and balance, and TPMS service for RVs.", firestoreCategories: ["Tire/Wheel"] },
+    { displayName: "Brakes", description: "Brake pads, rotors, and brake system service for all RV types.", firestoreCategories: ["Brakes"] },
+    { displayName: "Maintenance", description: "Generator service, roof inspections, slide-out care, filters, and more.", firestoreCategories: ["Basic Maintenance"] },
+  ],
+};
+
+const DIVISION_KEY_MAP: Record<TabKey, string> = {
+  automotive: "auto",
+  fleet: "fleet",
+  marine: "marine",
+  rv: "rv",
+};
+
+const DIVISION_LINKS: Record<TabKey, { href: string; label: string }> = {
+  automotive: { href: "/services", label: "View all Automotive services" },
+  fleet: { href: "/fleet", label: "View all Fleet services" },
+  marine: { href: "/marine", label: "View all Marine services" },
+  rv: { href: "/rv", label: "View all RV services" },
 };
 
 type TabKey = "automotive" | "fleet" | "marine" | "rv";
@@ -66,34 +80,26 @@ export default function Home() {
 
   const { services: allServices } = useServices({ activeOnly: true });
 
-  /* Derive services tab data from Firestore */
-  const servicesData = useMemo(() => {
-    if (allServices.length === 0) return fallbackServicesData;
-    const autoPrices = allServices.filter((s) => s.division === "auto").map((s) => s.price);
-    const marinePrices = allServices.filter((s) => s.division === "marine").map((s) => s.price);
-    return {
-      automotive: {
-        ...fallbackServicesData.automotive,
-        pricing: autoPrices.length > 0 ? `$${Math.min(...autoPrices).toFixed(2)}` : "$89.95",
-        items: allServices.filter((s) => s.division === "auto" && s.showOnPricing).map((s) => s.name).slice(0, 8),
-      },
-      fleet: {
-        ...fallbackServicesData.fleet,
-        items: allServices.filter((s) => s.division === "fleet" && s.showOnPricing).map((s) => s.name).slice(0, 8),
-      },
-      marine: {
-        ...fallbackServicesData.marine,
-        pricing: marinePrices.length > 0 ? `$${Math.min(...marinePrices).toFixed(2)}` : "$149.95",
-        items: allServices.filter((s) => s.division === "marine" && s.showOnPricing).map((s) => s.name).slice(0, 8),
-      },
-      rv: {
-        ...fallbackServicesData.rv,
-        items: allServices.filter((s) => s.division === "rv" && s.showOnPricing).map((s) => s.name).slice(0, 8),
-      },
-    };
+  /* Compute per-category min prices from Firestore services */
+  const categoryPrices = useMemo(() => {
+    const prices: Record<string, Record<string, number | null>> = {};
+    for (const [tabKey, categories] of Object.entries(DIVISION_CATEGORIES) as [TabKey, CategoryConfig[]][]) {
+      prices[tabKey] = {};
+      const divKey = DIVISION_KEY_MAP[tabKey];
+      const divServices = allServices.filter((s) => s.division === divKey);
+      for (const cat of categories) {
+        const validPrices = divServices
+          .filter((s) => cat.firestoreCategories.includes(s.category) && s.price > 0)
+          .map((s) => s.price);
+        prices[tabKey][cat.displayName] = validPrices.length > 0 ? Math.min(...validPrices) : null;
+      }
+    }
+    return prices;
   }, [allServices]);
 
-  const currentService = servicesData[servicesTab];
+  const currentCategories = DIVISION_CATEGORIES[servicesTab];
+  const currentPrices = categoryPrices[servicesTab] ?? {};
+  const currentLink = DIVISION_LINKS[servicesTab];
 
   const divisionIcons: Record<TabKey, typeof Wrench> = {
     automotive: Wrench,
@@ -266,119 +272,146 @@ export default function Home() {
             ))}
           </div>
 
-          {/* ── Mobile: compact service list with accordion ── */}
+          {/* ── Mobile: category accordion ── */}
           <div className="md:hidden flex flex-col gap-2">
-            {currentService.items.map((item) => {
-              const isExpanded = expandedService === `${servicesTab}-${item}`;
+            {currentCategories.map((cat) => {
+              const key = `${servicesTab}-${cat.displayName}`;
+              const isExpanded = expandedService === key;
+              const price = currentPrices[cat.displayName];
+              const Icon = divisionIcons[servicesTab];
               return (
-                <div key={item} className="bg-white rounded-[12px] border border-[#f0ede6] overflow-hidden">
+                <div key={key} className="bg-white rounded-[12px] border border-[#f0ede6] overflow-hidden">
                   <button
-                    onClick={() => setExpandedService(isExpanded ? null : `${servicesTab}-${item}`)}
+                    onClick={() => setExpandedService(isExpanded ? null : key)}
                     className="w-full flex items-center gap-3 px-4 py-3 text-left"
                   >
                     <div className="w-[32px] h-[32px] rounded-[8px] flex items-center justify-center shrink-0" style={{ background: "#E07B2D10" }}>
-                      {(() => { const Icon = divisionIcons[servicesTab]; return <Icon size={16} className="text-[#E07B2D]" />; })()}
+                      <Icon size={16} className="text-[#E07B2D]" />
                     </div>
-                    <span className="flex-1 text-[14px] font-semibold text-[#0B2040]">{item}</span>
-                    <span className="text-[13px] font-bold text-[#E07B2D] mr-1">{currentService.pricing !== "Custom quotes" ? currentService.pricing : ""}</span>
+                    <span className="flex-1 text-[14px] font-semibold text-[#0B2040]">{cat.displayName}</span>
+                    {price != null && (
+                      <span className="text-[12px] font-bold text-[#E07B2D] mr-1">${price.toFixed(2)}</span>
+                    )}
                     {isExpanded
                       ? <ChevronDown size={16} className="text-[#999] shrink-0" />
                       : <ChevronRight size={16} className="text-[#999] shrink-0" />}
                   </button>
                   {isExpanded && (
                     <div className="px-4 pb-3 pt-0 border-t border-[#f0ede6]">
-                      <p className="text-[13px] text-[#555] leading-[1.6] py-2">{currentService.description}</p>
-                      {currentService.pricingLabel && (
+                      <p className="text-[13px] text-[#555] leading-[1.6] py-2">{cat.description}</p>
+                      {price != null ? (
                         <p className="text-[12px] text-[#888] mb-2">
-                          {currentService.pricingLabel}{" "}
-                          <span className="font-bold text-[#0B2040]">{currentService.pricing}</span>
+                          Starting at{" "}
+                          <span className="font-bold text-[#0B2040]">${price.toFixed(2)}</span>
                         </p>
+                      ) : !cat.ctaAction && (
+                        <p className="text-[12px] text-[#888] mb-2">Call for pricing</p>
                       )}
                       <button
-                        onClick={() => openBooking({ division: TAB_TO_DIVISION[servicesTab] })}
+                        onClick={() => openBooking({
+                          division: TAB_TO_DIVISION[servicesTab],
+                          categoryId: cat.firestoreCategories[0],
+                        })}
                         className="w-full text-[13px] font-semibold text-white py-2.5 rounded-[8px] bg-[#E07B2D] hover:bg-[#CC6A1F] transition-colors mt-1"
                       >
-                        Book This Service
+                        {cat.ctaLabel ?? "Book This Service"}
                       </button>
                     </div>
                   )}
                 </div>
               );
             })}
-            {servicesTab === "rv" && (
-              <Link
-                href="/rv"
-                className="inline-block mt-2 text-[14px] font-semibold text-[#E07B2D] hover:underline text-center"
-              >
-                View All RV Services &rarr;
-              </Link>
-            )}
+            <Link
+              href={currentLink.href}
+              className="inline-block mt-2 text-[14px] font-semibold text-[#E07B2D] hover:underline text-center"
+            >
+              View All Services &rarr;
+            </Link>
           </div>
 
-          {/* ── Desktop: original card + image layout ── */}
-          <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
-            <div className="bg-white rounded-[14px] p-7 shadow-[0_2px_20px_rgba(11,32,64,0.06)] border border-[#f0ede6]">
-              <h3 className="text-[22px] font-bold text-[#0B2040] mb-3">
-                {currentService.title}
-              </h3>
-              <p className="text-[15px] text-[#555] leading-[1.7] mb-5">
-                {currentService.description}
-              </p>
-              <div className="mb-6 flex items-baseline gap-2">
-                <span className="text-[12px] text-[#888] uppercase tracking-wide">
-                  {currentService.pricingLabel}
-                </span>
-                <span className="text-[30px] font-extrabold text-[#0B2040]">
-                  {currentService.pricing}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-2.5">
-                {currentService.items.map((item) => (
-                  <button
-                    type="button"
-                    key={item}
-                    onClick={() => openBooking({ division: TAB_TO_DIVISION[servicesTab] })}
-                    className="flex items-center gap-2.5 text-[13px] text-[#444] bg-[#FAFBFC] border border-[#f0ede6] rounded-[10px] px-3.5 py-[10px] hover:border-[#E07B2D]/30 hover:bg-[#FFF9F4] hover:shadow-[0_2px_8px_rgba(224,123,45,0.1)] transition-all cursor-pointer text-left"
+          {/* ── Desktop: category cards + optional image ── */}
+          <div className={`hidden md:grid items-start gap-8 ${servicesTab === "automotive" ? "grid-cols-1 lg:grid-cols-5" : ""}`}>
+            {/* Category cards grid */}
+            <div className={`grid gap-4 ${
+              servicesTab === "automotive"
+                ? "lg:col-span-3 grid-cols-1 xl:grid-cols-2"
+                : servicesTab === "fleet"
+                  ? "grid-cols-1 max-w-xl mx-auto"
+                  : "grid-cols-2 lg:grid-cols-3"
+            }`}>
+              {currentCategories.map((cat) => {
+                const price = currentPrices[cat.displayName];
+                return (
+                  <div
+                    key={cat.displayName}
+                    className="bg-white rounded-[14px] p-5 shadow-[0_2px_20px_rgba(11,32,64,0.06)] border border-[#f0ede6] flex flex-col"
                   >
-                    <span className="inline-block shrink-0 w-1.5 h-1.5 rounded-full bg-[#E07B2D]" />
-                    {item}
-                  </button>
-                ))}
-              </div>
-              {servicesTab === "rv" && (
-                <Link
-                  href="/rv"
-                  className="inline-block mt-5 text-[14px] font-semibold text-[#E07B2D] hover:underline"
-                >
-                  View All RV Services &rarr;
-                </Link>
-              )}
+                    <h3 className="text-[18px] font-bold text-[#0B2040] mb-1">
+                      {cat.displayName}
+                    </h3>
+                    {price != null ? (
+                      <p className="text-[14px] font-semibold text-[#E07B2D] mb-2">
+                        Starting at ${price.toFixed(2)}
+                      </p>
+                    ) : !cat.ctaAction ? (
+                      <p className="text-[14px] font-semibold text-[#E07B2D] mb-2">
+                        Call for pricing
+                      </p>
+                    ) : null}
+                    <p className="text-[14px] text-[#555] leading-[1.6] mb-4 flex-1 line-clamp-2">
+                      {cat.description}
+                    </p>
+                    <button
+                      onClick={() => openBooking({
+                        division: TAB_TO_DIVISION[servicesTab],
+                        categoryId: cat.firestoreCategories[0],
+                      })}
+                      className="text-[13px] font-semibold text-[#E07B2D] border border-[#E07B2D] rounded-[8px] px-4 py-2 hover:bg-[#FFF9F4] hover:shadow-[0_2px_8px_rgba(224,123,45,0.12)] transition-all self-start"
+                    >
+                      {cat.ctaLabel ?? "Book This Service"}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
 
-            <div className="relative rounded-[14px] overflow-hidden shadow-[0_4px_24px_rgba(11,32,64,0.1)]">
-              <img
-                src={cloudinaryUrl(currentService.image, { width: 800, height: 600 })}
-                alt={currentService.title}
-                className="w-full h-auto"
-              />
-              <div
-                className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-5 py-4"
-                style={{
-                  background: "linear-gradient(to right, rgba(255,255,255,0.92), rgba(255,255,255,0.88))",
-                  backdropFilter: "blur(12px)",
-                  WebkitBackdropFilter: "blur(12px)",
-                }}
-              >
-                <span className="text-[14px] font-semibold text-[#0B2040]">
-                  Ready to book?
-                </span>
-                <button
-                  onClick={() => openBooking({ division: TAB_TO_DIVISION[servicesTab] })}
-                  className="text-[13px] font-semibold text-white px-5 py-2.5 rounded-[8px] bg-[#E07B2D] hover:bg-[#CC6A1F] transition-colors shadow-[0_2px_8px_rgba(224,123,45,0.3)]"
+            {/* Service image — Automotive only */}
+            {servicesTab === "automotive" && (
+              <div className="hidden lg:block lg:col-span-2 relative rounded-[14px] overflow-hidden shadow-[0_4px_24px_rgba(11,32,64,0.1)]">
+                <img
+                  src={cloudinaryUrl(images.drivewayService, { width: 800, height: 600 })}
+                  alt="Mobile automotive service"
+                  className="w-full h-auto"
+                />
+                <div
+                  className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-5 py-4"
+                  style={{
+                    background: "linear-gradient(to right, rgba(255,255,255,0.92), rgba(255,255,255,0.88))",
+                    backdropFilter: "blur(12px)",
+                    WebkitBackdropFilter: "blur(12px)",
+                  }}
                 >
-                  Get Quote
-                </button>
+                  <span className="text-[14px] font-semibold text-[#0B2040]">
+                    Ready to book?
+                  </span>
+                  <button
+                    onClick={() => openBooking({ division: TAB_TO_DIVISION[servicesTab] })}
+                    className="text-[13px] font-semibold text-white px-5 py-2.5 rounded-[8px] bg-[#E07B2D] hover:bg-[#CC6A1F] transition-colors shadow-[0_2px_8px_rgba(224,123,45,0.3)]"
+                  >
+                    Get Quote
+                  </button>
+                </div>
               </div>
+            )}
+
+            {/* "View All" link below cards — desktop */}
+            <div className={`${servicesTab === "automotive" ? "lg:col-span-5" : ""} text-center mt-2`}>
+              <Link
+                href={currentLink.href}
+                className="text-[14px] font-semibold text-[#E07B2D] hover:underline"
+              >
+                {currentLink.label} &rarr;
+              </Link>
             </div>
           </div>
         </div>
