@@ -1480,9 +1480,9 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
                               return (
                                 <div
                                   style={{
-                                    position: "absolute", top: "100%", left: 0, right: 0, zIndex: 100,
+                                    position: "absolute", bottom: "100%", left: 0, right: 0, zIndex: 100,
                                     background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 12,
-                                    boxShadow: "0 8px 24px rgba(0,0,0,0.12)", marginTop: 4, padding: "16px 20px",
+                                    boxShadow: "0 8px 24px rgba(0,0,0,0.12)", marginBottom: 4, padding: "16px 20px",
                                   }}
                                 >
                                   <div style={{ fontSize: 14, color: "#64748B", marginBottom: 8 }}>
@@ -1503,9 +1503,9 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
                             return (
                               <div
                                 style={{
-                                  position: "absolute", top: "100%", left: 0, right: 0, zIndex: 100,
+                                  position: "absolute", bottom: "100%", left: 0, right: 0, zIndex: 100,
                                   background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 12,
-                                  boxShadow: "0 8px 24px rgba(0,0,0,0.12)", marginTop: 4,
+                                  boxShadow: "0 8px 24px rgba(0,0,0,0.12)", marginBottom: 4,
                                   maxHeight: 280, overflowY: "auto",
                                 }}
                               >
