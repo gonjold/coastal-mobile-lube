@@ -78,12 +78,28 @@ export default function Home() {
   const [servicesTab, setServicesTab] = useState<TabKey>("automotive");
   const [expandedService, setExpandedService] = useState<string | null>(null);
 
-  const { services: allServices } = useServices({ activeOnly: true });
+  const { services: allServices, categories: allFirestoreCategories } = useServices({ activeOnly: true });
+
+  /* Build RV categories dynamically from Firestore serviceCategories */
+  const effectiveRvCategories = useMemo((): CategoryConfig[] => {
+    const rvCats = allFirestoreCategories
+      .filter((c) => c.division === "rv" && !/labor\s*rate/i.test(c.name))
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+
+    if (rvCats.length === 0) return DIVISION_CATEGORIES.rv;
+
+    return rvCats.map((c) => ({
+      displayName: c.name,
+      description: c.description || `${c.name} services for your RV.`,
+      firestoreCategories: [c.name],
+    }));
+  }, [allFirestoreCategories]);
 
   /* Compute per-category min prices from Firestore services */
   const categoryPrices = useMemo(() => {
+    const effective = { ...DIVISION_CATEGORIES, rv: effectiveRvCategories };
     const prices: Record<string, Record<string, number | null>> = {};
-    for (const [tabKey, categories] of Object.entries(DIVISION_CATEGORIES) as [TabKey, CategoryConfig[]][]) {
+    for (const [tabKey, categories] of Object.entries(effective) as [TabKey, CategoryConfig[]][]) {
       prices[tabKey] = {};
       const divKey = DIVISION_KEY_MAP[tabKey];
       const divServices = allServices.filter((s) => s.division === divKey);
@@ -95,9 +111,9 @@ export default function Home() {
       }
     }
     return prices;
-  }, [allServices]);
+  }, [allServices, effectiveRvCategories]);
 
-  const currentCategories = DIVISION_CATEGORIES[servicesTab];
+  const currentCategories = servicesTab === "rv" ? effectiveRvCategories : DIVISION_CATEGORIES[servicesTab];
   const currentPrices = categoryPrices[servicesTab] ?? {};
   const currentLink = DIVISION_LINKS[servicesTab];
 

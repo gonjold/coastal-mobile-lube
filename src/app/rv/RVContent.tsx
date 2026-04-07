@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Phone, ChevronDown } from "lucide-react";
 import Button from "@/components/Button";
-import TrustBar from "@/components/TrustBar";
 import { useBooking } from "@/contexts/BookingContext";
 import { useServices } from "@/hooks/useServices";
 import { groupByCategory } from "@/lib/serviceHelpers";
@@ -208,8 +207,6 @@ export default function RVContent() {
         </div>
 
       </section>
-
-      <TrustBar />
 
       {/* ─── Sticky Category Pill Navigation ─── */}
       <div

@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Phone } from "lucide-react";
 import Button from "@/components/Button";
-import TrustBar from "@/components/TrustBar";
 import { useBooking } from "@/contexts/BookingContext";
 import { cloudinaryUrl, images } from "@/lib/cloudinary";
 import { useServices } from "@/hooks/useServices";
@@ -188,8 +187,6 @@ export default function MarineContent() {
         </div>
 
       </section>
-
-      <TrustBar />
 
       {/* ─── Sticky Category Pill Navigation ─── */}
       <div
