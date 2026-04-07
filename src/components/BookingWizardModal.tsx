@@ -828,7 +828,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
         preferredTime,
         notes: notes.trim(),
         source: "booking-wizard-v4",
-        status: "new",
+        status: "pending",
         createdAt: serverTimestamp(),
       });
       setSubmitted(true);
