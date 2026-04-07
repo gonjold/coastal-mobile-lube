@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import BookingForm from "./BookingForm";
+import BookRedirect from "./BookRedirect";
 
 export const metadata: Metadata = {
   title: "Book Service",
@@ -16,5 +16,5 @@ export const metadata: Metadata = {
 };
 
 export default function BookPage() {
-  return <BookingForm />;
+  return <BookRedirect />;
 }

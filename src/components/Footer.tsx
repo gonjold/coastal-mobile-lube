@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { Phone } from "lucide-react";
+import { useBooking } from "@/contexts/BookingContext";
 
 const serviceLinks = [
   { label: "Automotive", href: "/services" },
@@ -18,6 +21,8 @@ const companyLinks = [
 ];
 
 export default function Footer() {
+  const { openBooking } = useBooking();
+
   return (
     <footer className="bg-[#0B2040]">
       <div className="section-inner px-6 pt-12 pb-6">
@@ -50,13 +55,22 @@ export default function Footer() {
             </h3>
             <ul className="flex flex-col gap-2.5">
               {serviceLinks.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-[#aaa] hover:text-white transition-colors"
-                  >
-                    {link.label}
-                  </Link>
+                <li key={link.label}>
+                  {link.href === "/book" ? (
+                    <button
+                      onClick={openBooking}
+                      className="text-sm text-[#aaa] hover:text-white transition-colors"
+                    >
+                      {link.label}
+                    </button>
+                  ) : (
+                    <Link
+                      href={link.href}
+                      className="text-sm text-[#aaa] hover:text-white transition-colors"
+                    >
+                      {link.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
@@ -69,13 +83,22 @@ export default function Footer() {
             </h3>
             <ul className="flex flex-col gap-2.5">
               {companyLinks.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-[#aaa] hover:text-white transition-colors"
-                  >
-                    {link.label}
-                  </Link>
+                <li key={link.label}>
+                  {link.href === "/book" ? (
+                    <button
+                      onClick={openBooking}
+                      className="text-sm text-[#aaa] hover:text-white transition-colors"
+                    >
+                      {link.label}
+                    </button>
+                  ) : (
+                    <Link
+                      href={link.href}
+                      className="text-sm text-[#aaa] hover:text-white transition-colors"
+                    >
+                      {link.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronDown, Phone, HelpCircle } from "lucide-react";
 import Link from "next/link";
+import { useBooking } from "@/contexts/BookingContext";
 
 const faqItems = [
   {
@@ -61,6 +62,7 @@ const faqItems = [
 
 export default function FAQContent() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const { openBooking } = useBooking();
 
   const faqSchema = {
     "@context": "https://schema.org",
@@ -174,12 +176,12 @@ export default function FAQContent() {
               <Phone size={20} />
               813-722-LUBE
             </a>
-            <Link
-              href="/book"
+            <button
+              onClick={openBooking}
               className="inline-flex items-center justify-center gap-2 px-[30px] py-[14px] font-semibold text-white bg-white/[0.06] border border-white/20 rounded-lg hover:bg-white/[0.12] hover:border-white/35 transition-all backdrop-blur-sm"
             >
               Book Service Online
-            </Link>
+            </button>
           </div>
         </div>
       </section>

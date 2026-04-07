@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MapPin, ArrowRight } from "lucide-react";
+import { BookServiceLink } from "@/components/BookServiceButton";
 
 export const metadata: Metadata = {
   title: "Service Areas | Coastal Mobile Lube & Tire",
@@ -153,13 +154,12 @@ export default function ServiceAreasPage() {
             </a>
             .
           </p>
-          <Link
-            href="/book"
+          <BookServiceLink
             className="inline-flex items-center gap-2 bg-[#E07B2D] hover:bg-[#CC6A1F] text-white font-bold px-8 py-3.5 rounded-lg transition-colors shadow-[0_4px_24px_rgba(224,123,45,0.35)]"
           >
             Book Service Now
             <ArrowRight size={18} />
-          </Link>
+          </BookServiceLink>
         </div>
       </section>
     </>
@@ -195,13 +195,12 @@ function ServiceAreaCard({
       <p className="text-[14px] text-[#444] leading-[1.7] mb-5 flex-1">
         {area.description}
       </p>
-      <Link
-        href="/book"
+      <BookServiceLink
         className="inline-flex items-center gap-1.5 text-[#E07B2D] font-semibold text-sm hover:text-[#CC6A1F] transition-colors"
       >
         Book Service in {area.name}
         <ArrowRight size={15} />
-      </Link>
+      </BookServiceLink>
     </div>
   );
 }

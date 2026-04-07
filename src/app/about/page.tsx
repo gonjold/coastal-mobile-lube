@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Phone, Check } from "lucide-react";
 import Button from "@/components/Button";
+import BookServiceButton from "@/components/BookServiceButton";
 import { cloudinaryUrl, images } from "@/lib/cloudinary";
 
 export const metadata: Metadata = {
@@ -301,9 +302,9 @@ export default function AboutPage() {
             available within the week.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button href="/book" variant="primary" size="lg" className="shadow-[0_4px_24px_rgba(224,123,45,0.35)]">
+            <BookServiceButton variant="primary" size="lg" className="shadow-[0_4px_24px_rgba(224,123,45,0.35)]">
               Book Service
-            </Button>
+            </BookServiceButton>
             <Button href="tel:8137225823" variant="secondary" size="lg">
               <Phone size={16} className="mr-2" />
               Call 813-722-LUBE

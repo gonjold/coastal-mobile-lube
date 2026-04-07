@@ -101,9 +101,17 @@ function CategorySection({
    ================================================================ */
 export default function MarineContent() {
   const { services, categories: firestoreCategories, loading } = useServices({ division: "marine", activeOnly: true });
-  const grouped = groupByCategory(services).filter(
-    (g) => !/labor\s*rate/i.test(g.category)
-  );
+  const marinePriority = ["oil"];
+  const grouped = groupByCategory(services)
+    .filter((g) => !/labor\s*rate/i.test(g.category))
+    .sort((a, b) => {
+      const aIdx = marinePriority.findIndex((p) => a.category.toLowerCase().includes(p));
+      const bIdx = marinePriority.findIndex((p) => b.category.toLowerCase().includes(p));
+      if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+      if (aIdx !== -1) return -1;
+      if (bIdx !== -1) return 1;
+      return 0;
+    });
 
   const categories = grouped.map((g) => ({
     id: g.category.toLowerCase().replace(/[^a-z0-9]+/g, "-"),

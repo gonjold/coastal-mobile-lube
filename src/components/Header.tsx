@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Phone, Menu, X } from "lucide-react";
 import Button from "./Button";
+import { useBooking } from "@/contexts/BookingContext";
 
 const navLinks = [
   { label: "Automotive", href: "/services" },
@@ -19,6 +20,7 @@ export default function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
+  const { openBooking } = useBooking();
 
   useEffect(() => {
     function handleScroll() {
@@ -46,9 +48,16 @@ export default function Header() {
     >
       <div className="section-inner flex items-center justify-between px-4 py-3 lg:px-6">
         {/* Logo */}
-        <Link href="/" className="shrink-0 flex flex-col">
-          <span className="text-white font-[800] text-[18px] leading-tight">Coastal Mobile</span>
-          <span className="text-white/45 font-semibold text-[12px] uppercase tracking-[2px]">Lube &amp; Tire</span>
+        <Link href="/" className="shrink-0 flex items-center gap-2">
+          <img
+            src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_200,q_auto:good,f_png/v1774315498/Coastal_Lube_logo_v1_zbx9qs.png"
+            alt="Coastal Mobile Lube & Tire"
+            className="h-8 lg:h-10 w-auto object-contain"
+          />
+          <div className="flex flex-col">
+            <span className="text-white font-[800] text-[18px] leading-tight">Coastal Mobile</span>
+            <span className="text-white/45 font-semibold text-[12px] uppercase tracking-[2px]">Lube &amp; Tire</span>
+          </div>
         </Link>
 
         {/* Desktop Nav */}
@@ -77,7 +86,7 @@ export default function Header() {
             <Phone size={14} />
             813-722-LUBE
           </a>
-          <Button href="/book" variant="primary" size="sm">
+          <Button variant="primary" size="sm" onClick={openBooking}>
             Book Service
           </Button>
         </div>
@@ -143,10 +152,10 @@ export default function Header() {
                 813-722-LUBE
               </a>
               <Button
-                href="/book"
                 variant="primary"
                 size="md"
                 className="w-full justify-center"
+                onClick={() => { openBooking(); setDrawerOpen(false); }}
               >
                 Book Service
               </Button>

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Phone, ChevronDown } from "lucide-react";
 import Button from "@/components/Button";
 import TrustBar from "@/components/TrustBar";
+import { useBooking } from "@/contexts/BookingContext";
 import { useServices } from "@/hooks/useServices";
 import { groupByCategory } from "@/lib/serviceHelpers";
 import { db } from "@/lib/firebase";
@@ -125,6 +126,7 @@ function CategorySection({
    Main component
    ================================================================ */
 export default function RVContent() {
+  const { openBooking } = useBooking();
   const { services, categories: firestoreCategories, loading } = useServices({ division: "rv", activeOnly: true });
   const grouped = groupByCategory(services).filter(
     (g) => !/labor\s*rate/i.test(g.category)
@@ -340,7 +342,7 @@ export default function RVContent() {
             Schedule your RV service online or give us a call. We come to you.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button href="/book" variant="primary" size="lg" className="whitespace-nowrap shadow-[0_4px_24px_rgba(224,123,45,0.35)]">
+            <Button variant="primary" size="lg" className="whitespace-nowrap shadow-[0_4px_24px_rgba(224,123,45,0.35)]" onClick={openBooking}>
               Book RV Service
             </Button>
             <a

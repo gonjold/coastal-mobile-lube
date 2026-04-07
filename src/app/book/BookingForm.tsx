@@ -1,399 +1,535 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { db } from "@/lib/firebase";
-import {
-  collection,
-  addDoc,
-  serverTimestamp,
-  query,
-  where,
-  getDocs,
-} from "firebase/firestore";
-import { useServices, type Service } from "@/hooks/useServices";
-import { groupByCategory } from "@/lib/serviceHelpers";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { useServices } from "@/hooks/useServices";
 
-/* ─── Types ────────────────────────────────────────────────────── */
+/* ─── Types ────────────────────────────────────────────────── */
 
-type Division = "auto" | "marine" | "rv";
+type Division = "Automotive" | "Fleet" | "Marine" | "RV & Trailer";
+type DivisionKey = "auto" | "fleet" | "marine" | "rv";
 
-interface SelectedService {
+interface ServiceItem {
+  name: string;
+  price: number | null;
+  firestoreId?: string;
+}
+
+interface CategoryDef {
   id: string;
-  name: string;
-  price: number;
+  label: string;
+  services: ServiceItem[];
 }
 
-interface FormData {
-  preferredDate: string;
-  timeWindow: string;
-  name: string;
-  phone: string;
-  email: string;
-  contactPreference: "call" | "text" | "email";
-  datesFlexible: boolean;
-  address: string;
-  vehicleYear: string;
-  vehicleMake: string;
-  vehicleModel: string;
-  notes: string;
+interface SelectedItem {
+  key?: string;
+  catId: string;
+  label: string;
+  isCategory: boolean;
+  price: number | null;
 }
 
-type Errors = Partial<Record<keyof FormData | "services", string>>;
+/* ─── Constants ────────────────────────────────────────────── */
 
-/* ─── Static Data ──────────────────────────────────────────────── */
-
-interface MostBookedItem {
-  id: string;
-  name: string;
-  price: number;
-  startingAt: boolean;
-  desc: string;
-}
-
-const mostBookedAuto: MostBookedItem[] = [
-  { id: "auto-oc-synthetic-blend", name: "Synthetic Blend Oil Change", price: 89.95, startingAt: true, desc: "Up to 5 quarts of synthetic blend oil plus filter" },
-  { id: "auto-oc-full-synthetic", name: "Full Synthetic Oil Change", price: 119.95, startingAt: true, desc: "Up to 5 quarts of full synthetic oil plus filter" },
-  { id: "auto-tw-tire-rotation", name: "Tire Rotation", price: 39.95, startingAt: false, desc: "All four tires rotated to extend tread life" },
-  { id: "auto-tw-mount-balance-4", name: "Mount & Balance (4 Tires)", price: 159.95, startingAt: false, desc: "Mount and balance all four tires on your vehicle" },
-  { id: "auto-br-front-rear", name: "Front + Rear Brakes", price: 320, startingAt: true, desc: "Pads and rotor resurfacing, front and rear" },
-  { id: "auto-bm-cabin-air-filter", name: "Cabin Air Filter", price: 99.95, startingAt: false, desc: "Fresh cabin filter for cleaner air inside your vehicle" },
+const DIVISIONS: Division[] = [
+  "Automotive",
+  "Marine",
+  "RV & Trailer",
+  "Fleet",
 ];
 
-const mostBookedMarine: MostBookedItem[] = [
-  { id: "marine-os-outboard-small", name: "Outboard Oil Change (Small)", price: 149.95, startingAt: false, desc: "Up to 6 quarts for outboard engines" },
-  { id: "marine-os-outboard-v6-v8", name: "Outboard V6/V8 Oil Change", price: 199.95, startingAt: false, desc: "Full service oil change for V6 and V8 outboards" },
-  { id: "marine-ff-lower-unit-gear-lube", name: "Lower Unit Gear Lube", price: 149.95, startingAt: false, desc: "Drain and refill lower unit gear lubricant" },
-  { id: "marine-os-pre-trip-inspection", name: "Pre-Trip Inspection", price: 59.95, startingAt: false, desc: "Multi-point inspection before you hit the water" },
-  { id: "marine-bm-impeller-service", name: "Impeller Service", price: 249.95, startingAt: false, desc: "Water pump impeller replacement" },
-  { id: "marine-ff-water-sep-fuel-filter", name: "Water Separating Fuel Filter", price: 89.95, startingAt: false, desc: "Replace your water separating fuel filter" },
-];
-
-const mostBookedRV: MostBookedItem[] = [
-  { id: "auto-oc-full-synthetic", name: "Full Synthetic Oil Change", price: 119.95, startingAt: true, desc: "Up to 5 quarts of full synthetic oil plus filter" },
-  { id: "auto-oc-diesel", name: "Diesel Oil Change", price: 219.95, startingAt: false, desc: "Diesel oil change for RV engines and chassis" },
-  { id: "auto-tw-tire-rotation", name: "Tire Rotation", price: 39.95, startingAt: false, desc: "All four tires rotated to extend tread life" },
-  { id: "auto-br-front-rear", name: "Front + Rear Brakes", price: 320, startingAt: true, desc: "Pads and rotor resurfacing, front and rear" },
-  { id: "marine-os-generator", name: "Generator Oil Service", price: 129.95, startingAt: false, desc: "Oil and filter service for your onboard generator" },
-  { id: "auto-wf-battery-service", name: "Battery Service", price: 79.95, startingAt: false, desc: "Full battery service and terminal cleaning" },
-];
-
-const mostBookedByDivision: Record<Division, MostBookedItem[]> = {
-  auto: mostBookedAuto,
-  marine: mostBookedMarine,
-  rv: mostBookedRV,
+const DIVISION_KEYS: Record<Division, DivisionKey> = {
+  Automotive: "auto",
+  Fleet: "fleet",
+  Marine: "marine",
+  "RV & Trailer": "rv",
 };
 
-const bundleItems = [
-  { id: "auto-oc-syn-blend-basic", tier: "Basic", price: 119.95, tagline: "Oil change + tire rotation", detail: "Synthetic blend oil change and tire rotation" },
-  { id: "auto-oc-syn-blend-better", tier: "Better", price: 139.95, tagline: "Basic + MOA additive", detail: "Everything in Basic plus MOA engine treatment" },
-  { id: "auto-oc-syn-blend-best", tier: "Best", price: 179.95, tagline: "Basic + MOA + fuel additives", detail: "Everything in Better plus fuel system additives" },
-];
+const currentYear = 2026;
+const YEARS = Array.from({ length: 40 }, (_, i) => currentYear + 1 - i);
 
-const oilChangeIds = ["auto-oc-synthetic-blend", "auto-oc-full-synthetic", "auto-oc-diesel"];
-const allBundleIds = [
-  "auto-oc-syn-blend-basic", "auto-oc-syn-blend-better", "auto-oc-syn-blend-best",
-  "auto-oc-full-syn-basic", "auto-oc-full-syn-better", "auto-oc-full-syn-best",
-  "auto-oc-diesel-basic", "auto-oc-diesel-better", "auto-oc-diesel-best",
-];
-
-const timeWindows = [
-  { value: "morning", label: "Morning (7-10)" },
-  { value: "late-morning", label: "Late Morning (10-12)" },
-  { value: "afternoon", label: "Afternoon (12-3)" },
-  { value: "late-afternoon", label: "Late Afternoon (3-5)" },
-];
-
-const divisionTabs: { key: Division; label: string }[] = [
-  { key: "auto", label: "Automotive" },
-  { key: "marine", label: "Marine" },
-  { key: "rv", label: "RV & Trailer" },
-];
-
-const divisionSubtitles: Record<Division, string> = {
-  auto: "Pick a service, choose a date, and we will confirm your appointment within 2 hours.",
-  marine: "Select your marine service. We come to your marina, boat ramp, or private dock.",
-  rv: "Select your RV service. We come to your campsite, storage lot, or driveway.",
+const FALLBACK_CATEGORIES: Record<Division, CategoryDef[]> = {
+  Automotive: [
+    {
+      id: "oil",
+      label: "Oil Change",
+      services: [
+        { name: "Synthetic Blend", price: 79.95 },
+        { name: "Full Synthetic", price: 99.95 },
+        { name: "High Mileage Synthetic", price: 109.95 },
+        { name: "Diesel Oil Change", price: 129.95 },
+      ],
+    },
+    {
+      id: "tires",
+      label: "Tires",
+      services: [
+        { name: "Mount and Balance Single", price: 35 },
+        { name: "Mount and Balance 4 Tires", price: 120 },
+        { name: "Tire Rotation", price: 29.95 },
+        { name: "Flat Repair", price: 25 },
+      ],
+    },
+    {
+      id: "brakes",
+      label: "Brakes",
+      services: [
+        { name: "Front Brake Job", price: 249.95 },
+        { name: "Rear Brake Job", price: 249.95 },
+        { name: "Front and Rear Brake Job", price: 449.95 },
+      ],
+    },
+    {
+      id: "battery",
+      label: "Battery",
+      services: [
+        { name: "Battery Replacement", price: 149.95 },
+        { name: "Battery Service", price: 39.95 },
+      ],
+    },
+    {
+      id: "maintenance",
+      label: "Maintenance",
+      services: [
+        { name: "Coolant Flush", price: 129.95 },
+        { name: "Transmission Flush", price: 179.95 },
+        { name: "Power Steering Flush", price: 99.95 },
+      ],
+    },
+    {
+      id: "hvac",
+      label: "HVAC",
+      services: [
+        { name: "EVAC and Recharge", price: 179.95 },
+        { name: "Cabin Air Filter", price: 39.95 },
+      ],
+    },
+    {
+      id: "wipers",
+      label: "Wipers",
+      services: [
+        { name: "Front Wiper Blades", price: 29.95 },
+        { name: "Rear Wiper Blade", price: 19.95 },
+      ],
+    },
+    { id: "other", label: "Other", services: [] },
+  ],
+  Fleet: [
+    {
+      id: "oil",
+      label: "Oil Change",
+      services: [
+        { name: "Fleet Synthetic Blend", price: null },
+        { name: "Fleet Full Synthetic", price: null },
+      ],
+    },
+    {
+      id: "tires",
+      label: "Tire Service",
+      services: [
+        { name: "Mount and Balance", price: null },
+        { name: "Tire Rotation", price: null },
+      ],
+    },
+    {
+      id: "battery",
+      label: "Battery",
+      services: [{ name: "Battery Replacement", price: null }],
+    },
+    {
+      id: "brakes",
+      label: "Brakes",
+      services: [
+        { name: "Front Brake Job", price: null },
+        { name: "Rear Brake Job", price: null },
+      ],
+    },
+    {
+      id: "pm",
+      label: "Preventive Maintenance",
+      services: [
+        { name: "Fluid Flush", price: null },
+        { name: "Filter Service", price: null },
+      ],
+    },
+    { id: "other", label: "Other", services: [] },
+  ],
+  Marine: [
+    {
+      id: "oil",
+      label: "Oil Change",
+      services: [
+        { name: "Inboard Oil Change", price: 149.95 },
+        { name: "Outboard Oil Change", price: 99.95 },
+        { name: "Stern Drive Oil Change", price: 129.95 },
+      ],
+    },
+    {
+      id: "engine",
+      label: "Engine Service",
+      services: [
+        { name: "Impeller Replacement", price: 199.95 },
+        { name: "Fuel Filter", price: 79.95 },
+      ],
+    },
+    {
+      id: "winter",
+      label: "Winterization",
+      services: [
+        { name: "Winterization", price: 249.95 },
+        { name: "De-Winterization", price: 199.95 },
+      ],
+    },
+    { id: "other", label: "Other", services: [] },
+  ],
+  "RV & Trailer": [
+    {
+      id: "oil",
+      label: "Oil Change",
+      services: [
+        { name: "RV Oil Change", price: 129.95 },
+        { name: "Generator Oil Change", price: 89.95 },
+      ],
+    },
+    {
+      id: "tires",
+      label: "Tire Service",
+      services: [
+        { name: "Mount and Balance", price: 45 },
+        { name: "Tire Rotation", price: 39.95 },
+      ],
+    },
+    {
+      id: "generator",
+      label: "Generator",
+      services: [
+        { name: "Generator Service", price: 149.95 },
+        { name: "Generator Tune-Up", price: 99.95 },
+      ],
+    },
+    {
+      id: "roof",
+      label: "Roof / Exterior",
+      services: [
+        { name: "Roof Inspection", price: 79.95 },
+        { name: "Sealant Application", price: 149.95 },
+      ],
+    },
+    { id: "other", label: "Other", services: [] },
+  ],
 };
 
-/* ─── Helpers ──────────────────────────────────────────────────── */
+const VEHICLE_ID_LABELS: Record<
+  Division,
+  { label: string; placeholder: string; hint: string; showYMM: boolean }
+> = {
+  Automotive: {
+    label: "VIN",
+    placeholder: "Enter VIN",
+    hint: "Found on driver's door jamb sticker",
+    showYMM: true,
+  },
+  Fleet: {
+    label: "VIN",
+    placeholder: "Enter VIN",
+    hint: "Found on driver's door jamb sticker",
+    showYMM: true,
+  },
+  Marine: {
+    label: "Hull #",
+    placeholder: "Enter Hull #",
+    hint: "Stamped on boat transom",
+    showYMM: false,
+  },
+  "RV & Trailer": {
+    label: "VIN",
+    placeholder: "Enter VIN",
+    hint: "Found on driver's door jamb sticker",
+    showYMM: true,
+  },
+};
+
+/* ─── Helpers ──────────────────────────────────────────────── */
 
 function strip(phone: string) {
   return phone.replace(/\D/g, "");
 }
 
-function tomorrow() {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().split("T")[0];
-}
-
-function maxDate() {
-  const d = new Date();
-  d.setDate(d.getDate() + 60);
-  return d.toISOString().split("T")[0];
-}
-
-function fmtDate(iso: string) {
-  const [y, m, d] = iso.split("-");
-  return `${Number(m)}/${Number(d)}/${y}`;
-}
-
-function fmtPrice(n: number) {
-  return n % 1 === 0 ? `$${n}` : `$${n.toFixed(2)}`;
-}
-
-function fmtPhone(p: string) {
-  const d = p.replace(/\D/g, "");
-  return d.length === 10
-    ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`
-    : p;
-}
-
-/** Fuzzy search: all query words must appear in the combined text */
-function matchesSearch(query: string, ...texts: (string | undefined)[]): boolean {
-  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
-  if (!words.length) return true;
-  const combined = texts.filter(Boolean).join(" ").toLowerCase();
-  return words.every((w) => combined.includes(w));
-}
-
-/* ─── Checkmark Icon ───────────────────────────────────────────── */
-
-function Check({ size = 10, color = "white" }: { size?: number; color?: string }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={color}
-      strokeWidth="3"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
    COMPONENT
-   ═══════════════════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════════ */
 
 export default function BookingForm() {
   /* ── State ── */
-  const [selected, setSelected] = useState<SelectedService[]>([]);
-  const [form, setForm] = useState<FormData>({
-    preferredDate: "",
-    timeWindow: "",
-    name: "",
-    phone: "",
-    email: "",
-    contactPreference: "call",
-    datesFlexible: false,
-    address: "",
-    vehicleYear: "",
-    vehicleMake: "",
-    vehicleModel: "",
-    notes: "",
-  });
-  const [errors, setErrors] = useState<Errors>({});
+  const [division, setDivision] = useState<Division>("Automotive");
+  const [selectedCat, setSelectedCat] = useState<CategoryDef | null>(null);
+  const [expandedCat, setExpandedCat] = useState<string | null>(null);
+  const [selectedServices, setSelectedServices] = useState<SelectedItem[]>([]);
+  const [otherSelected, setOtherSelected] = useState(false);
+  const [otherText, setOtherText] = useState("");
+
+  const [vinOrHull, setVinOrHull] = useState("");
+  const [vehicleYear, setVehicleYear] = useState("");
+  const [vehicleMake, setVehicleMake] = useState("");
+  const [vehicleModel, setVehicleModel] = useState("");
+  const [vinDecoding, setVinDecoding] = useState(false);
+  const vinAbortRef = useRef<AbortController | null>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scannerError, setScannerError] = useState("");
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+
+  const [contactName, setContactName] = useState("");
+  const [zipCode, setZipCode] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [contactMethod, setContactMethod] = useState("Call");
+  const [preferredDate, setPreferredDate] = useState("");
+  const [notes, setNotes] = useState("");
+
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Returning customer
-  const [showLookup, setShowLookup] = useState(false);
-  const [lookupPhone, setLookupPhone] = useState("");
-  const [lookupLoading, setLookupLoading] = useState(false);
-  const [lookupMsg, setLookupMsg] = useState<{
-    type: "success" | "info";
-    text: string;
-  } | null>(null);
-  const [returning, setReturning] = useState(false);
+  /* ── Firestore ── */
+  const {
+    services: allServices,
+    categories: firestoreCategories,
+    loading: servicesLoading,
+  } = useServices({ activeOnly: true });
 
-  // Browse All
-  const [browseOpen, setBrowseOpen] = useState(false);
-  const [activeCat, setActiveCat] = useState("all");
+  /* ── Derived ── */
+  const categories = FALLBACK_CATEGORIES[division] || [];
+  const vehicleId = VEHICLE_ID_LABELS[division];
 
-  // Mobile cart
-  const [cartOpen, setCartOpen] = useState(false);
-
-  // Division & Search
-  const [division, setDivision] = useState<Division>("auto");
-  const [searchQuery, setSearchQuery] = useState("");
-
-  // Firestore services
-  const { services: allServices, loading: servicesLoading } = useServices({ activeOnly: true });
-
-  /* ── Derived: catalog per division ── */
-  const catalog = useMemo(() => {
-    // Filter services by current division
-    let divisionServices: Service[];
-    if (division === "auto") {
-      divisionServices = allServices.filter((s) => s.division === "auto");
-    } else if (division === "marine") {
-      divisionServices = allServices.filter((s) => s.division === "marine");
-    } else {
-      // RV: cherry-pick from auto + marine
-      divisionServices = allServices.filter(
-        (s) => s.division === "auto" || s.division === "marine"
-      );
-    }
-
-    // Group by category and transform to the catalog shape used by the Browse panel
-    const grouped = groupByCategory(divisionServices);
-    return grouped.map((g) => ({
-      id: g.category.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-      name: g.category,
-      division: (g.services[0]?.division || "auto") as "auto" | "marine" | "fleet",
-      description: "",
-      startingAt: Math.min(...g.services.map((s) => s.price)),
-      displayOrder: g.services[0]?.sortOrder || 0,
-      items: g.services.map((s) => ({
-        id: s.id,
-        category: s.category,
-        subcategory: s.subcategory || "",
-        name: s.name,
-        price: s.price,
-        note: s.notes || "",
-        laborHours: s.laborHours || 0,
-        division: s.division,
-        displayOnSite: s.isActive,
-        displayOrder: s.sortOrder,
-      })),
-    }));
-  }, [division, allServices]);
-
-  /* ── Derived: most booked per division ── */
-  const currentMostBooked = mostBookedByDivision[division];
-
-  /* ── Derived: search filtering ── */
-  const isSearching = searchQuery.trim().length > 0;
-
-  const filteredMostBooked = useMemo(() => {
-    if (!isSearching) return currentMostBooked;
-    return currentMostBooked.filter((item) =>
-      matchesSearch(searchQuery, item.name, item.desc)
-    );
-  }, [currentMostBooked, searchQuery, isSearching]);
-
-  const filteredCatalog = useMemo(() => {
-    if (!isSearching) return catalog;
-    return catalog
-      .map((cat) => ({
-        ...cat,
-        items: cat.items.filter((item) =>
-          matchesSearch(
-            searchQuery,
-            item.name,
-            cat.name,
-            cat.description,
-            item.subcategory,
-            item.note
-          )
-        ),
-      }))
-      .filter((cat) => cat.items.length > 0);
-  }, [catalog, searchQuery, isSearching]);
-
-  const noSearchResults =
-    isSearching && filteredMostBooked.length === 0 && filteredCatalog.length === 0;
-
-  const subtotal = selected.reduce((s, x) => s + x.price, 0);
-
-  /* ── Toggle service ── */
-  function toggle(svc: SelectedService) {
-    setSelected((prev) => {
-      if (prev.some((s) => s.id === svc.id))
-        return prev.filter((s) => s.id !== svc.id);
-
-      let next = [...prev, svc];
-
-      // Bundles and standalone oil changes are mutually exclusive
-      if (allBundleIds.includes(svc.id)) {
-        next = next.filter(
-          (s) =>
-            s.id === svc.id ||
-            (!oilChangeIds.includes(s.id) && !allBundleIds.includes(s.id))
-        );
-      }
-      if (oilChangeIds.includes(svc.id)) {
-        next = next.filter((s) => !allBundleIds.includes(s.id));
-      }
-
-      return next;
-    });
-    if (errors.services)
-      setErrors((p) => ({ ...p, services: undefined }));
-  }
-
-  function has(id: string) {
-    return selected.some((s) => s.id === id);
-  }
-
-  /* ── Form helpers ── */
-  function set<K extends keyof FormData>(k: K, v: FormData[K]) {
-    setForm((p) => ({ ...p, [k]: v }));
-    if (errors[k]) setErrors((p) => ({ ...p, [k]: undefined }));
-  }
-
-  function validate(): Errors {
-    const e: Errors = {};
-    if (!selected.length)
-      e.services = "Please select at least one service";
-    if (!form.preferredDate) e.preferredDate = "Please pick a date";
-    if (!form.timeWindow) e.timeWindow = "Please choose a time window";
-    if (!form.name.trim()) e.name = "Name is required";
-    if (!form.phone.trim()) {
-      e.phone = "Phone is required";
-    } else if (strip(form.phone).length < 10) {
-      e.phone = "Please enter a valid phone number";
-    }
-    if (!form.address.trim()) e.address = "Address is required";
-    return e;
-  }
-
-  /* ── Customer lookup ── */
-  async function handleLookup() {
-    const digits = strip(lookupPhone);
-    if (digits.length < 10) {
-      setLookupMsg({ type: "info", text: "Enter a valid phone number" });
+  /* VIN auto-decode via NHTSA (free, no key) */
+  useEffect(() => {
+    vinAbortRef.current?.abort();
+    const cleaned = vinOrHull.replace(/\s/g, "");
+    if (division === "Marine" || cleaned.length !== 17) {
+      setVinDecoding(false);
       return;
     }
-    setLookupLoading(true);
-    setLookupMsg(null);
+    const ac = new AbortController();
+    vinAbortRef.current = ac;
+    setVinDecoding(true);
+    fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVin/${cleaned}?format=json`, { signal: ac.signal })
+      .then((r) => r.json())
+      .then((data: { Results?: { VariableId: number; Value: string | null }[] }) => {
+        if (ac.signal.aborted) return;
+        const results = data.Results ?? [];
+        const get = (id: number) => results.find((r) => r.VariableId === id)?.Value?.trim() || "";
+        const y = get(29);
+        const m = get(26);
+        const mo = get(28);
+        if (y) setVehicleYear(y);
+        if (m) setVehicleMake(m);
+        if (mo) setVehicleModel(mo);
+      })
+      .catch(() => {/* leave fields editable on failure */})
+      .finally(() => { if (!ac.signal.aborted) setVinDecoding(false); });
+    return () => ac.abort();
+  }, [vinOrHull, division]);
+
+  /* VIN barcode scanner */
+  const stopScanner = useCallback(async () => {
     try {
-      const q = query(
-        collection(db, "bookings"),
-        where("phone", "==", digits)
-      );
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        const d = snap.docs[0].data();
-        setForm((p) => ({
-          ...p,
-          name: d.name || p.name,
-          phone: d.phone || p.phone,
-          email: d.email || p.email,
-          address: d.address || p.address,
-        }));
-        setReturning(true);
-        setLookupMsg({ type: "success", text: "Welcome back!" });
-      } else {
-        setLookupMsg({
-          type: "info",
-          text: "No worries, fill out the form below and we will get you set up.",
-        });
+      if (scannerRef.current) {
+        const state = scannerRef.current.getState();
+        if (state === 2 /* SCANNING */ || state === 3 /* PAUSED */) {
+          await scannerRef.current.stop();
+        }
+        scannerRef.current.clear();
       }
-    } catch {
-      setLookupMsg({
-        type: "info",
-        text: "Could not look up your info right now. Please fill out the form below.",
-      });
-    } finally {
-      setLookupLoading(false);
+    } catch { /* already stopped */ }
+    scannerRef.current = null;
+  }, []);
+
+  const closeScanner = useCallback(() => {
+    stopScanner();
+    setScannerOpen(false);
+    setScannerError("");
+  }, [stopScanner]);
+
+  useEffect(() => {
+    if (!scannerOpen) return;
+    const divId = "vin-barcode-reader";
+    const el = document.getElementById(divId);
+    if (!el) return;
+
+    const scanner = new Html5Qrcode(divId, {
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+      ],
+      verbose: false,
+    });
+    scannerRef.current = scanner;
+
+    scanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 280, height: 100 } },
+      (decoded) => {
+        const cleaned = decoded.replace(/\s/g, "").toUpperCase();
+        setVinOrHull(cleaned);
+        closeScanner();
+      },
+      () => {/* ignore per-frame scan errors */},
+    ).catch(() => {
+      setScannerError("Camera not available");
+      setTimeout(() => closeScanner(), 1500);
+    });
+
+    return () => { stopScanner(); };
+  }, [scannerOpen, closeScanner, stopScanner]);
+
+  /* Cleanup on unmount */
+  useEffect(() => {
+    return () => { stopScanner(); };
+  }, [stopScanner]);
+
+  function getServicesForCategory(cat: CategoryDef): ServiceItem[] {
+    if (servicesLoading || !allServices.length) return cat.services;
+
+    const divKey = DIVISION_KEYS[division];
+    let matched = allServices.filter(
+      (s) =>
+        s.division === divKey &&
+        s.category.toLowerCase() === cat.label.toLowerCase()
+    );
+
+    if (divKey === "rv" && matched.length === 0) {
+      matched = allServices.filter(
+        (s) =>
+          (s.division === "auto" || s.division === "marine") &&
+          s.category.toLowerCase() === cat.label.toLowerCase()
+      );
     }
+
+    if (matched.length > 0) {
+      return matched.map((s) => ({
+        name: s.name,
+        price: s.price,
+        firestoreId: s.id,
+      }));
+    }
+
+    return cat.services;
+  }
+
+  function getStartingPrice(cat: CategoryDef): number | null {
+    const divKey = DIVISION_KEYS[division];
+    const fsCat = firestoreCategories.find(
+      (c) =>
+        c.division === divKey &&
+        c.name.toLowerCase() === cat.label.toLowerCase()
+    );
+    if (fsCat && fsCat.startingAt > 0) return fsCat.startingAt;
+
+    const services = getServicesForCategory(cat);
+    const prices = services
+      .filter((s) => s.price != null)
+      .map((s) => s.price as number);
+    return prices.length > 0 ? Math.min(...prices) : null;
+  }
+
+  /* ── Handlers ── */
+
+  function handleCatClick(cat: CategoryDef) {
+    if (cat.id === "other") {
+      setOtherSelected((prev) => {
+        if (prev) setOtherText("");
+        return !prev;
+      });
+      setSelectedCat(cat);
+      setExpandedCat(null);
+      return;
+    }
+
+    if (selectedCat?.id === cat.id) {
+      setExpandedCat(expandedCat === cat.id ? null : cat.id);
+    } else {
+      setSelectedCat(cat);
+      setExpandedCat(null);
+      const hasSpecifics = selectedServices.some(
+        (s) => s.catId === cat.id && !s.isCategory
+      );
+      if (!hasSpecifics) {
+        setSelectedServices((prev) => [
+          ...prev.filter((s) => s.catId !== cat.id),
+          { catId: cat.id, label: cat.label, isCategory: true, price: null },
+        ]);
+      }
+    }
+    if (errors.services) setErrors((p) => ({ ...p, services: "" }));
+  }
+
+  function handleServiceToggle(cat: CategoryDef, service: ServiceItem) {
+    const key = `${cat.id}-${service.name}`;
+    const exists = selectedServices.find((s) => s.key === key);
+
+    if (exists) {
+      const remaining = selectedServices.filter((s) => s.key !== key);
+      const otherSpecifics = remaining.some(
+        (s) => s.catId === cat.id && !s.isCategory
+      );
+      if (!otherSpecifics) {
+        setSelectedServices([
+          ...remaining,
+          { catId: cat.id, label: cat.label, isCategory: true, price: null },
+        ]);
+      } else {
+        setSelectedServices(remaining);
+      }
+    } else {
+      setSelectedServices((prev) => [
+        ...prev.filter((s) => !(s.catId === cat.id && s.isCategory)),
+        {
+          key,
+          catId: cat.id,
+          label: `${cat.label}: ${service.name}`,
+          isCategory: false,
+          price: service.price,
+        },
+      ]);
+    }
+  }
+
+  function handleRemoveService(index: number) {
+    setSelectedServices((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function handleDivisionSwitch(d: Division) {
+    setDivision(d);
+    setSelectedCat(null);
+    setExpandedCat(null);
+    setSelectedServices([]);
+    setOtherSelected(false);
+    setOtherText("");
+    setVinOrHull("");
+    setVehicleYear("");
+    setVehicleMake("");
+    setVehicleModel("");
+  }
+
+  /* ── Computed ── */
+  const totalServices =
+    selectedServices.length + (otherSelected && otherText ? 1 : 0);
+  const hasAnyPriced = selectedServices.some((s) => s.price != null);
+  const totalPrice = selectedServices.reduce(
+    (sum, s) => sum + (s.price || 0),
+    0
+  );
+
+  /* ── Validation ── */
+  function validate(): Record<string, string> {
+    const e: Record<string, string> = {};
+    if (totalServices === 0)
+      e.services = "Please select at least one service";
+    if (!contactName.trim()) e.name = "Name is required";
+    return e;
   }
 
   /* ── Submit ── */
@@ -401,36 +537,40 @@ export default function BookingForm() {
     const errs = validate();
     if (Object.keys(errs).length) {
       setErrors(errs);
-      if (errs.services) window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
     setSubmitting(true);
     try {
-      const names = selected.map((s) => s.name);
+      const serviceNames = selectedServices.map((s) => s.label);
+      if (otherSelected && otherText) {
+        serviceNames.push(`Other: ${otherText}`);
+      }
+
       await addDoc(collection(db, "bookings"), {
-        services: names,
-        service: names.join(", "),
-        selectedServices: selected.map((s) => ({
-          id: s.id,
-          name: s.name,
+        division: DIVISION_KEYS[division],
+        services: serviceNames,
+        service: serviceNames.join(", "),
+        selectedServices: selectedServices.map((s) => ({
+          catId: s.catId,
+          label: s.label,
+          isCategory: s.isCategory,
           price: s.price,
         })),
-        subtotalEstimate: subtotal,
-        preferredDate: form.preferredDate,
-        timeWindow: form.timeWindow,
-        name: form.name.trim(),
-        phone: strip(form.phone),
-        email: form.email.trim().toLowerCase(),
-        contactPreference: form.contactPreference,
-        datesFlexible: form.datesFlexible,
-        address: form.address.trim(),
-        vehicleYear: form.vehicleYear.trim(),
-        vehicleMake: form.vehicleMake.trim(),
-        vehicleModel: form.vehicleModel.trim(),
-        notes: form.notes.trim() || "",
+        otherDescription: otherText || "",
+        subtotalEstimate: totalPrice,
+        vinOrHull: vinOrHull.trim(),
+        vehicleYear: vehicleYear.trim(),
+        vehicleMake: vehicleMake.trim(),
+        vehicleModel: vehicleModel.trim(),
+        name: contactName.trim(),
+        zipCode: zipCode.trim(),
+        phone: strip(phone),
+        email: email.trim().toLowerCase(),
+        contactPreference: contactMethod.toLowerCase(),
+        preferredDate,
+        notes: notes.trim() || "",
         status: "pending",
-        source: "booking-page",
-        returningCustomer: returning,
+        source: "booking-page-v3",
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -444,719 +584,527 @@ export default function BookingForm() {
   }
 
   function reset() {
-    setSelected([]);
-    setForm({
-      preferredDate: "",
-      timeWindow: "",
-      name: "",
-      phone: "",
-      email: "",
-      contactPreference: "call",
-      datesFlexible: false,
-      address: "",
-      vehicleYear: "",
-      vehicleMake: "",
-      vehicleModel: "",
-      notes: "",
-    });
-    setErrors({});
+    setDivision("Automotive");
+    setSelectedCat(null);
+    setExpandedCat(null);
+    setSelectedServices([]);
+    setOtherSelected(false);
+    setOtherText("");
+    setVinOrHull("");
+    setVehicleYear("");
+    setVehicleMake("");
+    setVehicleModel("");
+    setContactName("");
+    setZipCode("");
+    setPhone("");
+    setEmail("");
+    setContactMethod("Call");
+    setPreferredDate("");
+    setNotes("");
     setSubmitted(false);
-    setReturning(false);
-    setLookupMsg(null);
-    setLookupPhone("");
-    setShowLookup(false);
-    setCartOpen(false);
-    setBrowseOpen(false);
-    setSearchQuery("");
+    setErrors({});
   }
 
-  /* ─── Styles ─── */
+  /* ── Reusable classes ── */
   const inp =
-    "w-full text-[15px] rounded-[10px] px-3.5 py-3 outline-none border border-[#0B2040]/10 bg-white focus:border-[#E07B2D] transition-all placeholder:text-[#888]/60";
+    "w-full px-4 py-3 rounded-lg border border-white/15 bg-white/[.06] text-white text-sm outline-none placeholder:text-white/30 focus:border-[#E8913A] transition-colors font-[family-name:inherit]";
   const lbl =
-    "block text-[12px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5";
-
-  /* ── Spinner ── */
-  const Spinner = () => (
-    <span className="inline-flex items-center gap-2">
-      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
-        <circle
-          className="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          strokeWidth="4"
-        />
-        <path
-          className="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-        />
-      </svg>
-      Submitting...
-    </span>
-  );
+    "text-white/70 text-xs font-semibold uppercase tracking-[1px] block mb-1.5";
 
   /* ═══ RENDER ══════════════════════════════════════════════════ */
+
+  /* ── Sidebar content (shared between desktop & mobile) ── */
+  function renderSidebar() {
+    return (
+      <div className="bg-white/5 rounded-2xl border border-white/10 p-6">
+        <h3 className="text-[#E8913A] text-lg font-bold mb-4 mt-0">
+          Your services
+        </h3>
+
+        {totalServices === 0 ? (
+          <p className="text-white/40 text-sm">No services selected yet</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {selectedServices.map((s, i) => (
+              <div
+                key={i}
+                className="flex justify-between items-center px-3 py-2.5 rounded-lg bg-white/[.04] border border-white/[.08]"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="text-white text-[13px] font-medium">
+                    {s.label}
+                  </div>
+                  {s.price != null && (
+                    <div className="text-[#E8913A] text-xs font-medium mt-0.5">
+                      ${s.price.toFixed(2)}
+                    </div>
+                  )}
+                  {s.isCategory && (
+                    <div className="text-white/35 text-[11px] mt-0.5">
+                      Price confirmed at booking
+                    </div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveService(i)}
+                  className="text-white/30 hover:text-white/60 text-base px-1 flex-shrink-0 transition-colors cursor-pointer"
+                >
+                  x
+                </button>
+              </div>
+            ))}
+            {otherSelected && otherText && (
+              <div className="px-3 py-2.5 rounded-lg bg-white/[.04] border border-white/[.08]">
+                <div className="text-white/50 text-[11px] font-semibold uppercase">
+                  Other
+                </div>
+                <div className="text-white text-[13px] font-medium mt-0.5">
+                  {otherText}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {totalServices > 0 && (
+          <div className="border-t border-white/10 mt-4 pt-4">
+            {hasAnyPriced ? (
+              <>
+                <div className="flex justify-between text-white font-bold text-[15px]">
+                  <span>Estimated total</span>
+                  <span className="text-[#E8913A]">
+                    ${totalPrice.toFixed(2)}
+                  </span>
+                </div>
+                <div className="text-white/35 text-[11px] mt-1">
+                  Starting at pricing. Final quote confirmed by our team.
+                </div>
+              </>
+            ) : (
+              <div className="text-white/40 text-[13px]">
+                We will confirm pricing when we reach out
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   /* ── Confirmation screen ── */
   if (submitted) {
     return (
-      <>
-        <section className="relative bg-gradient-to-b from-[#07192F] via-[#0B2040] to-[#0F2A52] overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_50%,rgba(107,163,224,0.08),transparent_60%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_20%,rgba(224,123,45,0.05),transparent_50%)]" />
-          <div className="relative section-inner px-4 lg:px-6 pt-12 pb-6 md:pt-16 md:pb-8">
-            <h1 className="text-[28px] md:text-[34px] font-[800] leading-[1.1] text-white tracking-[-1px]">
-              You&apos;re all set!
-            </h1>
-          </div>
-        </section>
-
-        <section className="bg-[#F5F7FA]">
-          <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
-            <div className="max-w-[600px] mx-auto">
-              <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 md:p-8 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-12 h-12 rounded-full bg-[#22c55e] flex items-center justify-center mb-5">
-                    <Check size={24} />
-                  </div>
-
-                  {/* Services breakdown */}
-                  <div className="w-full mb-6 text-left">
-                    <div className="divide-y divide-[#0B2040]/8">
-                      {selected.map((s) => (
-                        <div
-                          key={s.id}
-                          className="flex justify-between py-2.5 text-[14px]"
-                        >
-                          <span className="text-[#0B2040] font-medium">
-                            {s.name}
-                          </span>
-                          <span className="text-[#E07B2D] font-semibold">
-                            {fmtPrice(s.price)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="flex justify-between py-3 mt-1 border-t-2 border-[#0B2040]/15">
-                      <span className="text-[15px] font-bold text-[#0B2040]">
-                        Estimated total
-                      </span>
-                      <span className="text-[15px] font-bold text-[#E07B2D]">
-                        {fmtPrice(subtotal)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <p className="text-[15px] text-[#444] mb-2 leading-relaxed">
-                    Preferred date:{" "}
-                    <span className="font-semibold text-[#0B2040]">
-                      {fmtDate(form.preferredDate)}
-                    </span>
-                  </p>
-                  <p className="text-[15px] text-[#444] mb-6 leading-relaxed">
-                    {form.contactPreference === "email" ? (
-                      <>
-                        We will email you at{" "}
-                        <span className="font-semibold text-[#0B2040]">
-                          {form.email}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        We will {form.contactPreference} you at{" "}
-                        <span className="font-semibold text-[#0B2040]">
-                          {fmtPhone(form.phone)}
-                        </span>
-                      </>
-                    )}{" "}
-                    within 2 hours to confirm your appointment.
-                  </p>
-
-                  <p className="text-[14px] text-[#888] mb-8">
-                    Need to make changes? Call us at{" "}
-                    <a
-                      href="tel:8137225823"
-                      className="font-semibold text-[#0B2040] hover:underline"
-                    >
-                      813-722-LUBE
-                    </a>
-                  </p>
-
-                  <div className="flex flex-col w-full max-w-[340px] gap-3">
-                    <button
-                      onClick={reset}
-                      className="w-full py-4 rounded-[10px] bg-[#E07B2D] text-white font-bold text-[16px] hover:bg-[#cc6a1f] transition-colors"
-                    >
-                      Book Another Service
-                    </button>
-                    <Link
-                      href="/"
-                      className="w-full py-4 rounded-[10px] border-2 border-[#0B2040] text-[#0B2040] font-bold text-[16px] text-center hover:bg-[#0B2040] hover:text-white transition-colors"
-                    >
-                      Back to Home
-                    </Link>
-                  </div>
-                </div>
+      <div className="bg-[#0B1929]">
+        <div className="section-inner px-4 lg:px-6 py-16">
+          <div className="max-w-[600px] mx-auto">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 text-center">
+              <div className="w-12 h-12 rounded-full bg-[#22c55e] flex items-center justify-center mx-auto mb-5">
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </div>
+              <h1 className="text-2xl font-extrabold text-white mb-3">
+                You&apos;re all set!
+              </h1>
+              <p className="text-white/60 text-[15px] mb-8 leading-relaxed">
+                We will reach out within 2 hours to confirm your appointment.
+                Need to make changes? Call{" "}
+                <a
+                  href="tel:8137225823"
+                  className="text-[#E8913A] font-semibold hover:underline"
+                >
+                  813-722-LUBE
+                </a>
+                .
+              </p>
+              <div className="flex flex-col gap-3 max-w-[340px] mx-auto">
+                <button
+                  type="button"
+                  onClick={reset}
+                  className="w-full py-4 rounded-[10px] bg-[#E8913A] text-white font-bold text-[16px] hover:bg-[#d07e2f] transition-colors cursor-pointer"
+                >
+                  Book Another Service
+                </button>
+                <Link
+                  href="/"
+                  className="w-full py-4 rounded-[10px] border-2 border-white/20 text-white font-bold text-[16px] text-center hover:bg-white/10 transition-colors"
+                >
+                  Back to Home
+                </Link>
               </div>
             </div>
           </div>
-        </section>
-      </>
+        </div>
+      </div>
     );
   }
 
   /* ── Main booking flow ── */
   return (
     <>
-      {/* ═══ 1. Hero ═══ */}
-      <section className="relative bg-gradient-to-b from-[#07192F] via-[#0B2040] to-[#0F2A52] overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_50%,rgba(107,163,224,0.08),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_20%,rgba(224,123,45,0.05),transparent_50%)]" />
-        <div className="relative section-inner px-4 lg:px-6 pt-12 pb-6 md:pt-16 md:pb-8">
-          <div className="max-w-[700px]">
-            {/* Division tabs */}
-            <div className="flex gap-2 mb-4">
-              {divisionTabs.map((tab) => (
-                <button
-                  key={tab.key}
-                  type="button"
-                  onClick={() => {
-                    setDivision(tab.key);
-                    setBrowseOpen(false);
-                    setActiveCat("all");
-                    setSearchQuery("");
-                  }}
-                  className={`px-5 py-2.5 rounded-full text-[13px] font-semibold transition-all ${
-                    division === tab.key
-                      ? "bg-[#0B2040] text-white shadow-[0_2px_8px_rgba(11,32,64,0.2)]"
-                      : "bg-white/10 text-white/70 hover:bg-white/20 hover:text-white"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-            <h1 className="text-[28px] md:text-[34px] font-[800] leading-[1.1] text-white tracking-[-1px] mb-4">
-              Book your service
-            </h1>
-            <p className="text-[16px] leading-[1.7] text-white/60 max-w-[700px]">
-              {divisionSubtitles[division]} Or call{" "}
-              <a
-                href="tel:8137225823"
-                className="text-[#E07B2D] font-semibold hover:underline"
+      {/* ═══ Hero Banner ═══ */}
+      <section className="bg-gradient-to-br from-[#0d2640] via-[#132f4f] to-[#0B1929]">
+        <div className="section-inner px-4 lg:px-6 pt-8 pb-6">
+          <div className="flex flex-wrap gap-2 mb-5">
+            {DIVISIONS.map((d) => (
+              <button
+                key={d}
+                type="button"
+                onClick={() => handleDivisionSwitch(d)}
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all cursor-pointer ${
+                  division === d
+                    ? "bg-[#E8913A] text-white"
+                    : "bg-transparent border border-white/20 text-white hover:bg-white/10"
+                }`}
               >
-                813-722-LUBE
-              </a>
-              .
-            </p>
+                {d}
+              </button>
+            ))}
           </div>
+          <h1 className="text-[28px] font-extrabold text-white tracking-tight">
+            Book your service
+          </h1>
+          <p className="text-white/60 text-[15px] mt-1.5">
+            Pick a service, choose a date, and we will confirm your appointment
+            within 2 hours. Or call{" "}
+            <a
+              href="tel:8137225823"
+              className="text-[#E8913A] font-semibold hover:underline"
+            >
+              813-722-LUBE
+            </a>
+            .
+          </p>
         </div>
       </section>
 
-      {/* ═══ Content ═══ */}
-      <section className="bg-[#F5F7FA]">
-        <div className="section-inner px-4 lg:px-6 py-8 md:py-12">
-          {errors.services && (
-            <div className="max-w-[900px] mx-auto mb-4">
-              <p className="text-center text-[13px] text-red-500 font-medium bg-red-50 rounded-[10px] py-2 px-4">
-                {errors.services}
-              </p>
-            </div>
-          )}
-
-          {/* Two-column layout: services+form | cart sidebar */}
-          <div className="max-w-[1100px] mx-auto lg:grid lg:grid-cols-[1fr_320px] lg:gap-8">
-            {/* ─── Left column ─── */}
+      {/* ═══ Main Content ═══ */}
+      <section className="bg-[#0B1929]">
+        <div className="section-inner px-4 lg:px-6 py-6">
+          <div className="max-w-[1100px] mx-auto lg:grid lg:grid-cols-[1fr_300px] lg:gap-6">
+            {/* ─── Left Column ─── */}
             <div>
-              {/* ═══ Search Bar ═══ */}
-              <div className="mb-6 relative">
-                <div className="relative">
-                  <svg
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#888]"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <circle cx="11" cy="11" r="8" />
-                    <path d="M21 21l-4.35-4.35" />
-                  </svg>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search services..."
-                    className="w-full rounded-lg border border-gray-300 pl-11 pr-10 py-3 text-[15px] outline-none focus:ring-2 focus:ring-[#0F2A44] focus:border-[#0F2A44] transition-all placeholder:text-[#888]/60"
-                  />
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery("")}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#0B2040]/10 flex items-center justify-center hover:bg-[#0B2040]/20 transition-colors"
-                    >
-                      <svg
-                        width="10"
-                        height="10"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#666"
-                        strokeWidth="3"
-                        strokeLinecap="round"
+              {/* ── What do you need? ── */}
+              <div className="mb-8">
+                <h2 className="text-white text-xl font-bold mb-1">
+                  What do you need?
+                </h2>
+                <p className="text-white/50 text-[13px] mb-4">
+                  Select a category. Tap again to choose a specific service.
+                </p>
+
+                {errors.services && (
+                  <p className="text-red-400 text-sm font-medium mb-3">
+                    {errors.services}
+                  </p>
+                )}
+
+                {/* Category cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                  {categories.map((cat) => {
+                    const hasSidebarItems = selectedServices.some(
+                      (s) => s.catId === cat.id
+                    );
+                    const isActive = selectedCat?.id === cat.id;
+                    const isHighlighted =
+                      isActive ||
+                      hasSidebarItems ||
+                      (cat.id === "other" && otherSelected);
+                    const lowestPrice = getStartingPrice(cat);
+
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => handleCatClick(cat)}
+                        className={`w-full py-[18px] px-3 rounded-xl text-center transition-all cursor-pointer ${
+                          isHighlighted
+                            ? "border-2 border-[#E8913A] bg-[#E8913A]/10"
+                            : "border border-white/[.12] bg-white/[0.06] hover:bg-white/[.10]"
+                        }`}
                       >
-                        <path d="M18 6L6 18M6 6l12 12" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* ═══ No search results ═══ */}
-              {noSearchResults && (
-                <div className="mb-8 text-center py-8">
-                  <p className="text-[15px] text-[#666]">
-                    No services found for &ldquo;{searchQuery}&rdquo;. Try a
-                    different search or call{" "}
-                    <a
-                      href="tel:8137225823"
-                      className="text-[#E07B2D] font-semibold hover:underline"
-                    >
-                      813-722-LUBE
-                    </a>
-                    .
-                  </p>
-                </div>
-              )}
-
-              {/* ═══ 2. Most Booked ═══ */}
-              {filteredMostBooked.length > 0 && (
-                <div className="mb-8">
-                  <h2 className="text-[20px] font-[800] text-[#0B2040] mb-1">
-                    Most booked
-                  </h2>
-                  <p className="text-[14px] text-[#666] mb-5">
-                    Tap to add to your service list
-                  </p>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {filteredMostBooked.map((item) => {
-                      const on = has(item.id);
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => toggle(item)}
-                          className={`relative text-left rounded-[12px] p-4 border-2 transition-all duration-150 cursor-pointer ${
-                            on
-                              ? "border-[#E07B2D] bg-[#E07B2D]/5 shadow-[0_0_0_1px_rgba(224,123,45,0.2)]"
-                              : "border-[#0B2040]/8 bg-white hover:border-[#E07B2D]/40 hover:shadow-[0_4px_16px_rgba(11,32,64,0.08)] hover:-translate-y-[1px]"
-                          }`}
-                        >
-                          {on && (
-                            <span className="absolute top-3 right-3 w-5 h-5 rounded-full bg-[#E07B2D] flex items-center justify-center">
-                              <Check size={12} />
-                            </span>
-                          )}
-                          <span className="block text-[14px] font-semibold text-[#0B2040] mb-1 pr-6">
-                            {item.name}
-                          </span>
-                          <span className="block text-[14px] font-bold text-[#E07B2D] mb-1.5">
-                            {item.startingAt ? "starting at " : ""}
-                            {fmtPrice(item.price)}
-                          </span>
-                          <span className="block text-[12px] text-[#888] leading-[1.4]">
-                            {item.desc}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* ═══ 3. Bundle Upsell (auto & rv only, hidden when searching) ═══ */}
-              {(division === "auto" || division === "rv") && !isSearching && (
-                <div className="mb-8">
-                  <h2 className="text-[20px] font-[800] text-[#0B2040] mb-1">
-                    Save with a package
-                  </h2>
-                  <p className="text-[14px] text-[#666] mb-5">
-                    Synthetic blend bundles. Also available in Full Synthetic and
-                    Diesel in the full catalog below.
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {bundleItems.map((b) => {
-                      const on = has(b.id);
-                      return (
-                        <button
-                          key={b.id}
-                          type="button"
-                          onClick={() =>
-                            toggle({
-                              id: b.id,
-                              name: `${b.tier} Bundle`,
-                              price: b.price,
-                            })
-                          }
-                          className={`relative text-left rounded-[12px] p-5 border-2 transition-all duration-150 cursor-pointer ${
-                            on
-                              ? "border-[#E07B2D] bg-[#E07B2D]/5 shadow-[0_0_0_1px_rgba(224,123,45,0.2)]"
-                              : "border-[#0B2040]/8 bg-white hover:border-[#E07B2D]/40 hover:shadow-[0_4px_16px_rgba(11,32,64,0.08)] hover:-translate-y-[1px]"
-                          }`}
-                        >
-                          {on && (
-                            <span className="absolute top-3 right-3 w-5 h-5 rounded-full bg-[#E07B2D] flex items-center justify-center">
-                              <Check size={12} />
-                            </span>
-                          )}
-                          <span className="text-[12px] uppercase font-bold text-[#0B2040]/40 tracking-[1px]">
-                            {b.tier}
-                          </span>
-                          <span className="block text-[22px] font-[800] text-[#E07B2D] mt-1">
-                            {fmtPrice(b.price)}
-                          </span>
-                          <span className="block text-[14px] font-semibold text-[#0B2040] mt-1">
-                            {b.tagline}
-                          </span>
-                          <span className="block text-[12px] text-[#888] mt-1">
-                            {b.detail}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* ═══ 4. Browse All Services ═══ */}
-              {!noSearchResults && (
-                <div className="mb-8">
-                  {!isSearching ? (
-                    <button
-                      type="button"
-                      onClick={() => setBrowseOpen(!browseOpen)}
-                      className="flex items-center gap-2 text-[16px] font-bold text-[#0B2040] hover:text-[#E07B2D] transition-colors"
-                    >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className={`transition-transform duration-200 ${browseOpen ? "rotate-90" : ""}`}
-                      >
-                        <polyline points="9 18 15 12 9 6" />
-                      </svg>
-                      Browse all services
-                    </button>
-                  ) : (
-                    <h2 className="text-[16px] font-bold text-[#0B2040] mb-1">
-                      Search results
-                    </h2>
-                  )}
-
-                  {(isSearching || browseOpen) && (
-                    <div className="mt-4">
-                      {/* Category pills (hidden when searching) */}
-                      {!isSearching && (
-                        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-3 mb-4">
-                          <button
-                            type="button"
-                            onClick={() => setActiveCat("all")}
-                            className={`whitespace-nowrap px-4 py-2 rounded-full text-[13px] font-semibold transition-all ${
-                              activeCat === "all"
-                                ? "bg-[#0B2040] text-white shadow-[0_2px_8px_rgba(11,32,64,0.2)]"
-                                : "bg-[#FAFBFC] text-[#666] hover:bg-[#f0ede6] hover:text-[#0B2040]"
-                            }`}
-                          >
-                            All
-                          </button>
-                          {catalog.map((cat) => (
-                            <button
-                              key={cat.id}
-                              type="button"
-                              onClick={() => setActiveCat(cat.id)}
-                              className={`whitespace-nowrap px-4 py-2 rounded-full text-[13px] font-semibold transition-all ${
-                                activeCat === cat.id
-                                  ? "bg-[#0B2040] text-white shadow-[0_2px_8px_rgba(11,32,64,0.2)]"
-                                  : "bg-[#FAFBFC] text-[#666] hover:bg-[#f0ede6] hover:text-[#0B2040]"
-                              }`}
-                            >
-                              {cat.name}
-                            </button>
-                          ))}
+                        <div className="text-white text-sm font-bold">
+                          {cat.label}
                         </div>
-                      )}
+                        {lowestPrice != null && (
+                          <div className="text-white/40 text-[11px] mt-1">
+                            Starting at ${lowestPrice.toFixed(2)}
+                          </div>
+                        )}
+                        {cat.id === "other" && (
+                          <div className="text-white/40 text-[11px] mt-1">
+                            Describe what you need
+                          </div>
+                        )}
+                        {cat.services.length > 0 && isActive && (
+                          <div className="text-[#E8913A] text-[11px] mt-1.5 font-medium">
+                            {expandedCat === cat.id
+                              ? "Hide options"
+                              : "See specific services"}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
 
-                      {/* Category items */}
-                      <div className="flex flex-col gap-6">
-                        {(isSearching ? filteredCatalog : catalog)
-                          .filter(
-                            (c) =>
-                              isSearching ||
-                              activeCat === "all" ||
-                              c.id === activeCat
-                          )
-                          .map((cat) => {
-                            // Group items by subcategory
-                            const groups = new Map<
-                              string,
-                              typeof cat.items
-                            >();
-                            for (const item of cat.items) {
-                              const key = item.subcategory || "";
-                              if (!groups.has(key)) groups.set(key, []);
-                              groups.get(key)!.push(item);
-                            }
+                {/* Drill-down panel */}
+                {expandedCat &&
+                  (() => {
+                    const cat = categories.find((c) => c.id === expandedCat);
+                    if (!cat || cat.services.length === 0) return null;
+                    const services = getServicesForCategory(cat);
+                    if (services.length === 0) return null;
 
+                    return (
+                      <div className="mt-3 bg-white/[0.06] rounded-xl border border-white/10 p-4">
+                        <div className="text-white/50 text-xs font-semibold uppercase tracking-[1px] mb-2.5">
+                          {cat.label}: choose specific service (optional)
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          {services.map((s) => {
+                            const isChecked = selectedServices.some(
+                              (ss) => ss.key === `${cat.id}-${s.name}`
+                            );
                             return (
-                              <div key={cat.id}>
-                                <p className="text-[11px] uppercase font-bold text-[#0B2040]/40 tracking-[1.5px] mb-3">
-                                  {cat.name}
-                                </p>
-                                {Array.from(groups.entries()).map(
-                                  ([sub, items]) => (
-                                    <div
-                                      key={sub || "default"}
-                                      className={sub ? "mb-3" : ""}
-                                    >
-                                      {sub && (
-                                        <p className="text-[10px] uppercase font-semibold text-[#0B2040]/25 tracking-[1px] mb-2 ml-1">
-                                          {sub}
-                                        </p>
-                                      )}
-                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                        {items.map((item) => {
-                                          const on = has(item.id);
-                                          return (
-                                            <button
-                                              key={item.id}
-                                              type="button"
-                                              onClick={() =>
-                                                toggle({
-                                                  id: item.id,
-                                                  name: item.name,
-                                                  price: item.price,
-                                                })
-                                              }
-                                              className={`relative text-left rounded-[10px] p-3 border-2 transition-all duration-150 cursor-pointer ${
-                                                on
-                                                  ? "border-[#E07B2D] bg-[#E07B2D]/5"
-                                                  : "border-[#0B2040]/8 bg-white hover:border-[#E07B2D]/40"
-                                              }`}
-                                            >
-                                              {on && (
-                                                <span className="absolute top-2 right-2 w-4 h-4 rounded-full bg-[#E07B2D] flex items-center justify-center">
-                                                  <Check size={10} />
-                                                </span>
-                                              )}
-                                              <span className="block text-[14px] font-semibold text-[#0B2040]">
-                                                {item.name}
-                                              </span>
-                                              <div className="flex items-center gap-2">
-                                                <span className="text-[13px] font-semibold text-[#E07B2D]">
-                                                  {fmtPrice(item.price)}
-                                                </span>
-                                                {item.note && (
-                                                  <span className="text-[11px] text-[#888]">
-                                                    {item.note}
-                                                  </span>
-                                                )}
-                                              </div>
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-                                    </div>
-                                  )
+                              <button
+                                key={s.name}
+                                type="button"
+                                onClick={() => handleServiceToggle(cat, s)}
+                                className={`flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-lg w-full text-left transition-all cursor-pointer ${
+                                  isChecked
+                                    ? "border border-[#E8913A] bg-[#E8913A]/[.08]"
+                                    : "border border-white/[.08] hover:border-white/20"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5">
+                                  <div
+                                    className={`w-5 h-5 rounded flex-shrink-0 flex items-center justify-center ${
+                                      isChecked
+                                        ? "bg-[#E8913A] border-2 border-[#E8913A]"
+                                        : "border-2 border-white/25"
+                                    }`}
+                                  >
+                                    {isChecked && (
+                                      <svg
+                                        width="12"
+                                        height="12"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="white"
+                                        strokeWidth="3"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                      >
+                                        <polyline points="20 6 9 17 4 12" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                  <span className="text-white text-sm font-medium">
+                                    {s.name}
+                                  </span>
+                                </div>
+                                {s.price != null && (
+                                  <span className="text-white/50 text-[13px] font-medium">
+                                    ${s.price.toFixed(2)}
+                                  </span>
                                 )}
-                              </div>
+                              </button>
                             );
                           })}
+                        </div>
+                        <div className="text-white/35 text-[11px] mt-2.5 italic">
+                          Not sure? Just leave the broad category and describe
+                          it below.
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              )}
+                    );
+                  })()}
 
-              {/* ═══ 6. Booking Form ═══ */}
-              <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-6 md:p-8 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-                <h2 className="text-[20px] font-[800] text-[#0B2040] mb-6">
+                {/* Other text input */}
+                {otherSelected && (
+                  <div className="mt-3">
+                    <label className={lbl}>What do you need?</label>
+                    <input
+                      type="text"
+                      value={otherText}
+                      onChange={(e) => setOtherText(e.target.value)}
+                      placeholder="Briefly describe the service you need"
+                      className={inp}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* ── Your Details ── */}
+              <div className="bg-white/[0.05] rounded-2xl border border-white/[.12] p-6">
+                <h2 className="text-white text-xl font-bold mb-5">
                   Your details
                 </h2>
 
-                <div className="flex flex-col gap-5">
-                  {/* Returning customer lookup */}
-                  <div>
-                    {!showLookup ? (
-                      <p className="text-[14px] text-[#444]">
-                        Been here before?{" "}
-                        <button
-                          type="button"
-                          onClick={() => setShowLookup(true)}
-                          className="text-[#E07B2D] font-semibold hover:underline"
-                        >
-                          Look up your info
-                        </button>
-                      </p>
-                    ) : (
-                      <div className="bg-white border border-[#0B2040]/8 rounded-[10px] p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-[13px] font-semibold text-[#444]">
-                            Find your info
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowLookup(false);
-                              setLookupMsg(null);
-                            }}
-                            className="text-[12px] text-[#888] hover:text-[#444]"
-                          >
-                            Dismiss
-                          </button>
-                        </div>
-                        <div className="flex gap-2">
-                          <input
-                            type="tel"
-                            placeholder="(555) 555-5555"
-                            value={lookupPhone}
-                            onChange={(e) => setLookupPhone(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") handleLookup();
-                            }}
-                            className={`${inp} flex-1`}
-                          />
-                          <button
-                            type="button"
-                            onClick={handleLookup}
-                            disabled={lookupLoading}
-                            className="px-5 py-3 bg-[#0B2040] text-white text-[14px] font-semibold rounded-[10px] hover:bg-[#132E54] transition-colors disabled:opacity-50 whitespace-nowrap"
-                          >
-                            {lookupLoading ? "..." : "Find me"}
-                          </button>
-                        </div>
-                        {lookupMsg && (
-                          <p
-                            className={`mt-2 text-[13px] font-medium ${
-                              lookupMsg.type === "success"
-                                ? "text-[#22c55e]"
-                                : "text-[#444]"
-                            }`}
-                          >
-                            {lookupMsg.text}
-                          </p>
-                        )}
-                      </div>
-                    )}
+                {/* Vehicle Information */}
+                <div className="mb-5 pb-5 border-b border-white/[.08]">
+                  <div className="text-white/50 text-xs font-semibold uppercase tracking-[1px] mb-3">
+                    Vehicle Information
                   </div>
 
-                  {/* Preferred Date */}
-                  <div>
-                    <label className={lbl}>Preferred Date</label>
-                    <input
-                      type="date"
-                      value={form.preferredDate}
-                      min={tomorrow()}
-                      max={maxDate()}
-                      onChange={(e) => set("preferredDate", e.target.value)}
-                      className={`${inp} ${errors.preferredDate ? "border-red-500" : ""}`}
-                    />
-                    {errors.preferredDate && (
-                      <p className="text-[12px] text-red-500 mt-1">
-                        {errors.preferredDate}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Dates flexible */}
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <span
-                      className={`w-[18px] h-[18px] rounded border-2 flex items-center justify-center transition-colors ${
-                        form.datesFlexible
-                          ? "bg-[#E07B2D] border-[#E07B2D]"
-                          : "border-[#ddd]"
-                      }`}
-                    >
-                      {form.datesFlexible && <Check size={10} />}
-                    </span>
-                    <span className="text-[14px] text-[#888]">
-                      My dates are flexible
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={form.datesFlexible}
-                      onChange={(e) => set("datesFlexible", e.target.checked)}
-                      className="sr-only"
-                    />
-                  </label>
-
-                  {/* Time Window */}
-                  <div>
-                    <label className={lbl}>Preferred Time</label>
-                    <div className="flex flex-wrap gap-2">
-                      {timeWindows.map((tw) => (
+                  {/* VIN or Hull */}
+                  <div className="mb-3">
+                    <label className={lbl}>
+                      {vehicleId.label} (optional)
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={vinOrHull}
+                        onChange={(e) => setVinOrHull(e.target.value)}
+                        placeholder={vehicleId.placeholder}
+                        className={`${inp} flex-1 !w-auto`}
+                      />
+                      {division !== "Marine" && (
                         <button
-                          key={tw.value}
                           type="button"
-                          onClick={() => set("timeWindow", tw.value)}
-                          className={`px-4 py-3 rounded-[10px] text-[13px] font-semibold border transition-all cursor-pointer whitespace-nowrap ${
-                            form.timeWindow === tw.value
-                              ? "bg-[#E07B2D] text-white border-[#E07B2D] shadow-[0_2px_8px_rgba(224,123,45,0.3)]"
-                              : "border-[#0B2040]/10 bg-white text-[#444] hover:border-[#E07B2D]/40"
-                          }`}
+                          onClick={() => { setScannerError(""); setScannerOpen(true); }}
+                          className="px-4 py-3 rounded-lg border border-white/15 bg-white/[.06] text-white/50 text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap hover:bg-white/10 transition-colors cursor-pointer"
                         >
-                          {tw.label}
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                            <circle cx="12" cy="13" r="4" />
+                          </svg>
+                          Scan
                         </button>
-                      ))}
+                      )}
                     </div>
-                    {errors.timeWindow && (
-                      <p className="text-[12px] text-red-500 mt-1">
-                        {errors.timeWindow}
-                      </p>
-                    )}
+                    <div className="text-white/35 text-[11px] mt-1">
+                      {vehicleId.hint}
+                    </div>
                   </div>
 
+                  {/* YMM fields (hidden for Marine) */}
+                  {vehicleId.showYMM && (
+                    <>
+                      <div className="text-white/40 text-xs text-center my-2">
+                        or enter vehicle details
+                      </div>
+                      <div className="grid grid-cols-3 gap-2.5">
+                        <div>
+                          <label className={lbl}>Year</label>
+                          <select
+                            value={vehicleYear}
+                            onChange={(e) => setVehicleYear(e.target.value)}
+                            disabled={vinDecoding}
+                            className={`${inp} !pr-9 appearance-none cursor-pointer ${vinDecoding ? "opacity-50" : ""}`}
+                            style={{
+                              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff80' d='M2 4l4 4 4-4'/%3E%3C/svg%3E")`,
+                              backgroundRepeat: "no-repeat",
+                              backgroundPosition: "right 14px center",
+                            }}
+                          >
+                            <option value="" className="bg-[#0d2640]">
+                              {vinDecoding ? "Decoding..." : "Year"}
+                            </option>
+                            {YEARS.map((y) => (
+                              <option
+                                key={y}
+                                value={y}
+                                className="bg-[#0d2640]"
+                              >
+                                {y}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className={lbl}>Make</label>
+                          <input
+                            type="text"
+                            value={vehicleMake}
+                            onChange={(e) => setVehicleMake(e.target.value)}
+                            placeholder={vinDecoding ? "Decoding VIN..." : "e.g. Toyota"}
+                            disabled={vinDecoding}
+                            className={`${inp} ${vinDecoding ? "opacity-50" : ""}`}
+                          />
+                        </div>
+                        <div>
+                          <label className={lbl}>Model</label>
+                          <input
+                            type="text"
+                            value={vehicleModel}
+                            onChange={(e) => setVehicleModel(e.target.value)}
+                            placeholder={vinDecoding ? "Decoding VIN..." : "e.g. Camry"}
+                            disabled={vinDecoding}
+                            className={`${inp} ${vinDecoding ? "opacity-50" : ""}`}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Contact fields */}
+                <div className="flex flex-col gap-4">
                   {/* Name */}
                   <div>
                     <label className={lbl}>Your Name</label>
                     <input
                       type="text"
-                      placeholder="First and last name"
-                      value={form.name}
-                      onChange={(e) => set("name", e.target.value)}
-                      className={`${inp} ${errors.name ? "border-red-500" : ""}`}
+                      value={contactName}
+                      onChange={(e) => {
+                        setContactName(e.target.value);
+                        if (errors.name)
+                          setErrors((p) => ({ ...p, name: "" }));
+                      }}
+                      placeholder="Your name"
+                      className={`${inp} ${errors.name ? "!border-red-500" : ""}`}
                     />
                     {errors.name && (
-                      <p className="text-[12px] text-red-500 mt-1">
+                      <p className="text-red-400 text-xs mt-1">
                         {errors.name}
                       </p>
                     )}
                   </div>
 
-                  {/* Phone */}
-                  <div>
-                    <label className={lbl}>Phone</label>
-                    <input
-                      type="tel"
-                      placeholder="(555) 555-5555"
-                      value={form.phone}
-                      onChange={(e) => set("phone", e.target.value)}
-                      className={`${inp} ${errors.phone ? "border-red-500" : ""}`}
-                    />
-                    {errors.phone && (
-                      <p className="text-[12px] text-red-500 mt-1">
-                        {errors.phone}
-                      </p>
-                    )}
+                  {/* Zip + Phone */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={lbl}>Zip Code</label>
+                      <input
+                        type="text"
+                        value={zipCode}
+                        onChange={(e) => setZipCode(e.target.value)}
+                        placeholder="e.g. 33601"
+                        className={inp}
+                      />
+                    </div>
+                    <div>
+                      <label className={lbl}>Phone</label>
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="(555) 555-5555"
+                        className={inp}
+                      />
+                    </div>
                   </div>
 
                   {/* Email */}
@@ -1164,77 +1112,43 @@ export default function BookingForm() {
                     <label className={lbl}>Email</label>
                     <input
                       type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@email.com"
-                      value={form.email}
-                      onChange={(e) => set("email", e.target.value)}
                       className={inp}
                     />
                   </div>
 
-                  {/* Contact Preference */}
+                  {/* Contact Method */}
                   <div>
-                    <label className={lbl}>Best way to reach you</label>
-                    <div className="flex gap-2">
-                      {(["call", "text", "email"] as const).map((m) => (
+                    <label className={lbl}>Best Way to Reach You</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {["Call", "Text", "Email"].map((m) => (
                         <button
                           key={m}
                           type="button"
-                          onClick={() => set("contactPreference", m)}
-                          className={`flex-1 py-3 rounded-[10px] text-[14px] font-semibold border transition-all cursor-pointer ${
-                            form.contactPreference === m
-                              ? "bg-[#E07B2D] text-white border-[#E07B2D] shadow-[0_2px_8px_rgba(224,123,45,0.3)]"
-                              : "border-[#0B2040]/10 bg-white text-[#444] hover:border-[#E07B2D]/40"
+                          onClick={() => setContactMethod(m)}
+                          className={`py-2.5 rounded-lg font-semibold text-sm transition-all cursor-pointer ${
+                            contactMethod === m
+                              ? "border-2 border-[#E8913A] bg-[#E8913A]/[.12] text-[#E8913A]"
+                              : "border border-white/15 bg-white/[.04] text-white/60 hover:border-white/30"
                           }`}
                         >
-                          {m.charAt(0).toUpperCase() + m.slice(1)}
+                          {m}
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  {/* Address */}
+                  {/* Preferred Date */}
                   <div>
-                    <label className={lbl}>Service Address</label>
+                    <label className={lbl}>Preferred Date</label>
                     <input
-                      type="text"
-                      placeholder="Street address, city, ZIP"
-                      value={form.address}
-                      onChange={(e) => set("address", e.target.value)}
-                      className={`${inp} ${errors.address ? "border-red-500" : ""}`}
+                      type="date"
+                      value={preferredDate}
+                      onChange={(e) => setPreferredDate(e.target.value)}
+                      className={`${inp} text-white/50`}
                     />
-                    {errors.address && (
-                      <p className="text-[12px] text-red-500 mt-1">
-                        {errors.address}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Vehicle Info (optional) */}
-                  <div>
-                    <label className={lbl}>Vehicle (optional)</label>
-                    <div className="grid grid-cols-3 gap-2">
-                      <input
-                        type="text"
-                        placeholder="Year"
-                        value={form.vehicleYear}
-                        onChange={(e) => set("vehicleYear", e.target.value)}
-                        className={inp}
-                      />
-                      <input
-                        type="text"
-                        placeholder="Make"
-                        value={form.vehicleMake}
-                        onChange={(e) => set("vehicleMake", e.target.value)}
-                        className={inp}
-                      />
-                      <input
-                        type="text"
-                        placeholder="Model"
-                        value={form.vehicleModel}
-                        onChange={(e) => set("vehicleModel", e.target.value)}
-                        className={inp}
-                      />
-                    </div>
                   </div>
 
                   {/* Notes */}
@@ -1243,10 +1157,10 @@ export default function BookingForm() {
                       Anything else we should know?
                     </label>
                     <textarea
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="Tire size, special requests, access instructions, etc."
                       rows={3}
-                      placeholder="Gate codes, special requests, vehicle details..."
-                      value={form.notes}
-                      onChange={(e) => set("notes", e.target.value)}
                       className={`${inp} resize-y`}
                     />
                   </div>
@@ -1256,180 +1170,89 @@ export default function BookingForm() {
                     type="button"
                     onClick={handleSubmit}
                     disabled={submitting}
-                    className="w-full py-4 rounded-[10px] bg-[#E07B2D] text-white font-bold text-[16px] hover:bg-[#cc6a1f] hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(224,123,45,0.35)] transition-all disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+                    className="w-full py-4 rounded-[10px] bg-[#E8913A] text-white font-bold text-[16px] hover:bg-[#d07e2f] transition-all disabled:opacity-60 mt-2 cursor-pointer"
                   >
-                    {submitting ? <Spinner /> : "Get My Quote"}
+                    {submitting ? (
+                      <span className="inline-flex items-center gap-2">
+                        <svg
+                          className="animate-spin h-5 w-5"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                          />
+                        </svg>
+                        Submitting...
+                      </span>
+                    ) : division === "Fleet" ? (
+                      "Request a Quote"
+                    ) : (
+                      "Book Now"
+                    )}
                   </button>
+                  <p className="text-white/40 text-xs text-center mt-2.5">
+                    or call{" "}
+                    <a
+                      href="tel:8137225823"
+                      className="text-[#E8913A] font-semibold hover:underline"
+                    >
+                      813-722-LUBE
+                    </a>{" "}
+                    for immediate help
+                  </p>
                 </div>
               </div>
             </div>
 
-            {/* ─── Right column: Desktop sidebar ─── */}
+            {/* ─── Right Column: Desktop Sticky Sidebar ─── */}
             <div className="hidden lg:block">
-              <div className="sticky top-6">
-                <div className="bg-white border border-[#E8E8E8] rounded-[12px] p-5 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-                  <h3 className="text-[15px] font-bold text-[#0B2040] mb-4">
-                    Your services
-                  </h3>
-
-                  {selected.length === 0 ? (
-                    <p className="text-[13px] text-[#888] py-4">
-                      No services selected yet
-                    </p>
-                  ) : (
-                    <>
-                      <div className="flex flex-col gap-2 mb-4">
-                        {selected.map((s) => (
-                          <div
-                            key={s.id}
-                            className="flex items-start justify-between gap-2"
-                          >
-                            <div className="flex-1 min-w-0">
-                              <span className="block text-[13px] font-medium text-[#0B2040] truncate">
-                                {s.name}
-                              </span>
-                              <span className="block text-[12px] font-semibold text-[#E07B2D]">
-                                {fmtPrice(s.price)}
-                              </span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setSelected((p) =>
-                                  p.filter((x) => x.id !== s.id)
-                                )
-                              }
-                              className="flex-shrink-0 w-5 h-5 rounded-full bg-[#0B2040]/8 flex items-center justify-center hover:bg-red-100 transition-colors mt-0.5"
-                            >
-                              <svg
-                                width="8"
-                                height="8"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="#888"
-                                strokeWidth="3"
-                                strokeLinecap="round"
-                              >
-                                <path d="M18 6L6 18M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="border-t border-[#0B2040]/10 pt-3 mb-4">
-                        <div className="flex justify-between">
-                          <span className="text-[14px] font-bold text-[#0B2040]">
-                            Estimated total
-                          </span>
-                          <span className="text-[14px] font-bold text-[#E07B2D]">
-                            {fmtPrice(subtotal)}
-                          </span>
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={handleSubmit}
-                    disabled={submitting || !selected.length}
-                    className="w-full py-3.5 rounded-[10px] bg-[#E07B2D] text-white font-bold text-[15px] hover:bg-[#cc6a1f] hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(224,123,45,0.35)] transition-all disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none"
-                  >
-                    {submitting ? "Submitting..." : "Get My Quote"}
-                  </button>
-                </div>
-              </div>
+              <div className="sticky top-[100px]">{renderSidebar()}</div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ═══ 5. Mobile sticky bottom bar ═══ */}
-      {selected.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
-          {/* Expandable panel */}
-          {cartOpen && (
-            <div className="bg-white border-t border-[#0B2040]/10 shadow-[0_-4px_24px_rgba(11,32,64,0.12)] rounded-t-[16px] max-h-[60vh] overflow-y-auto px-5 pt-5 pb-2">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-[15px] font-bold text-[#0B2040]">
-                  Your services
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => setCartOpen(false)}
-                  className="text-[12px] text-[#888] hover:text-[#444]"
-                >
-                  Close
-                </button>
-              </div>
-              <div className="flex flex-col gap-2.5">
-                {selected.map((s) => (
-                  <div
-                    key={s.id}
-                    className="flex items-center justify-between"
-                  >
-                    <div>
-                      <span className="block text-[13px] font-medium text-[#0B2040]">
-                        {s.name}
-                      </span>
-                      <span className="block text-[12px] font-semibold text-[#E07B2D]">
-                        {fmtPrice(s.price)}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSelected((p) => p.filter((x) => x.id !== s.id))
-                      }
-                      className="w-6 h-6 rounded-full bg-[#0B2040]/8 flex items-center justify-center hover:bg-red-100 transition-colors"
-                    >
-                      <svg
-                        width="10"
-                        height="10"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#888"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                      >
-                        <path d="M18 6L6 18M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <div className="border-t border-[#0B2040]/10 mt-3 pt-3 mb-2">
-                <div className="flex justify-between">
-                  <span className="text-[14px] font-bold text-[#0B2040]">
-                    Estimated total
-                  </span>
-                  <span className="text-[14px] font-bold text-[#E07B2D]">
-                    {fmtPrice(subtotal)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Bottom bar */}
-          <button
-            type="button"
-            onClick={() => setCartOpen(!cartOpen)}
-            className="w-full bg-[#0B2040] text-white px-5 py-4 flex items-center justify-between shadow-[0_-2px_16px_rgba(11,32,64,0.15)]"
-          >
-            <span className="text-[14px] font-semibold">
-              {selected.length} service{selected.length > 1 ? "s" : ""}{" "}
-              selected
-            </span>
-            <span className="text-[15px] font-bold text-[#E07B2D]">
-              {fmtPrice(subtotal)}
-            </span>
-          </button>
-        </div>
+      {/* ═══ Mobile: Services summary below form ═══ */}
+      {totalServices > 0 && (
+        <section className="lg:hidden bg-[#0B1929]">
+          <div className="section-inner px-4 pb-8">{renderSidebar()}</div>
+        </section>
       )}
 
-      {/* Bottom padding for mobile sticky bar */}
-      {selected.length > 0 && <div className="h-16 lg:hidden" />}
+      {/* ═══ VIN Barcode Scanner Overlay ═══ */}
+      {scannerOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="relative w-full max-w-[400px] mx-4 rounded-2xl overflow-hidden bg-[#0d2640] border border-white/20">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+              <span className="text-white font-semibold text-sm">Scan VIN Barcode</span>
+              <button
+                type="button"
+                onClick={closeScanner}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white/60 hover:text-white cursor-pointer"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <div id="vin-barcode-reader" className="w-full" />
+            {scannerError ? (
+              <p className="text-red-400 text-sm text-center py-4">{scannerError}</p>
+            ) : (
+              <p className="text-white/40 text-xs text-center py-3">Point camera at the VIN barcode on the door jamb</p>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }

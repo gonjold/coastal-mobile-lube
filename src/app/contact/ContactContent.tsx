@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import { useBooking } from "@/contexts/BookingContext";
 import { Phone, Mail, MapPin, Clock, CheckCircle } from "lucide-react";
 
 const inputClasses =
@@ -17,6 +18,7 @@ const interestOptions = [
 ];
 
 export default function ContactContent() {
+  const { openBooking } = useBooking();
   const [submitted, setSubmitted] = useState(false);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -51,7 +53,7 @@ export default function ContactContent() {
             </h1>
             <p className="text-[16px] leading-[1.7] text-white/70 max-w-[700px]">
               Have a question or want to learn more about our services? We respond within one business day. For service bookings, use our{" "}
-              <Link href="/book" className="text-[#E07B2D] font-semibold hover:underline">Book Service</Link> page. For fleet or marine quotes, visit{" "}
+              <button onClick={openBooking} className="text-[#E07B2D] font-semibold hover:underline">Book Service</button> page. For fleet or marine quotes, visit{" "}
               <Link href="/fleet" className="text-[#E07B2D] font-semibold hover:underline">Fleet</Link> or{" "}
               <Link href="/marine" className="text-[#E07B2D] font-semibold hover:underline">Marine</Link>.
             </p>
@@ -286,12 +288,12 @@ export default function ContactContent() {
             Skip the form and schedule your service now.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link
-              href="/book"
+            <button
+              onClick={openBooking}
               className="inline-flex items-center justify-center px-[30px] py-[14px] font-semibold text-white rounded-[var(--radius-button)] bg-[#E07B2D] hover:bg-[#CC6A1F] transition-colors"
             >
               Book Service
-            </Link>
+            </button>
             <a
               href="tel:8137225823"
               className="inline-flex items-center justify-center gap-2 px-[30px] py-[14px] font-semibold text-white bg-transparent border-2 border-white/40 rounded-[var(--radius-button)] hover:border-white/70 transition-all"

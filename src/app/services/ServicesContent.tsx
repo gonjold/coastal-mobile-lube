@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Phone, ArrowRight } from "lucide-react";
 import Button from "@/components/Button";
+import { useBooking } from "@/contexts/BookingContext";
 import { cloudinaryUrl, images } from "@/lib/cloudinary";
 import { useServices, type Service } from "@/hooks/useServices";
 import { groupByCategory } from "@/lib/serviceHelpers";
@@ -92,9 +93,17 @@ function CategorySection({
    ================================================================ */
 export default function ServicesContent() {
   const { services, categories: firestoreCategories, loading } = useServices({ division: "auto", activeOnly: true });
-  const grouped = groupByCategory(services).filter(
-    (g) => !/labor\s*rate/i.test(g.category)
-  );
+  const autoPriority = ["oil", "tire", "wheel", "brake", "basic maintenance", "hvac"];
+  const grouped = groupByCategory(services)
+    .filter((g) => !/labor\s*rate/i.test(g.category))
+    .sort((a, b) => {
+      const aIdx = autoPriority.findIndex((p) => a.category.toLowerCase().includes(p));
+      const bIdx = autoPriority.findIndex((p) => b.category.toLowerCase().includes(p));
+      if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+      if (aIdx !== -1) return -1;
+      if (bIdx !== -1) return 1;
+      return 0;
+    });
 
   // Derive category nav from Firestore data
   const categories = grouped.map((g) => ({
@@ -103,6 +112,7 @@ export default function ServicesContent() {
     startingAt: `$${Math.min(...g.services.map((s) => s.price)).toFixed(2)}`,
   }));
 
+  const { openBooking } = useBooking();
   const [activeCategory, setActiveCategory] = useState("");
   const pillBarRef = useRef<HTMLDivElement>(null);
 
@@ -155,10 +165,10 @@ export default function ServicesContent() {
           </p>
           <div className="flex flex-col sm:flex-row gap-3">
             <Button
-              href="/book"
               variant="primary"
               size="lg"
               className="shadow-[0_4px_24px_rgba(224,123,45,0.35)]"
+              onClick={openBooking}
             >
               Book Service
             </Button>
@@ -246,10 +256,10 @@ export default function ServicesContent() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button
-              href="/book"
               variant="primary"
               size="lg"
               className="shadow-[0_4px_24px_rgba(224,123,45,0.35)]"
+              onClick={openBooking}
             >
               Book Service
             </Button>

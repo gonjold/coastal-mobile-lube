@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { Phone, Check, Clock, MapPin, Wrench, Shield, Award, Tag } from "lucide-react";
+import { Phone, Check, Clock, MapPin, Wrench, Shield, Award, Tag, Camera } from "lucide-react";
+import { useBooking } from "@/contexts/BookingContext";
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import Button from "@/components/Button";
 import { cloudinaryUrl, images } from "@/lib/cloudinary";
 import { db } from "@/lib/firebase";
@@ -11,10 +13,10 @@ import { useServices, type Service } from "@/hooks/useServices";
 
 /* Fallback service names shown while Firestore loads */
 const fallbackBookingServices: Record<string, string[]> = {
-  automotive: ["Synthetic Oil Change", "Tire Rotation & Balance", "Brake Inspection", "Other (describe below)"],
-  fleet: ["Scheduled Fleet Maintenance", "Emergency Mobile Service", "Other (describe below)"],
-  marine: ["Outboard Oil Change", "Lower Unit Service", "Other (describe below)"],
-  rv: ["Generator Service & Inspection", "RV Oil & Filter Change", "Slide-Out Lubrication & Maintenance", "Other (describe below)"],
+  automotive: ["Oil Change", "Tire Replacement", "Tire Service", "Battery", "Brakes", "Wipers", "Other (describe below)"],
+  fleet: ["Oil Change", "Tire Service", "Battery", "Brakes", "Preventive Maintenance", "Other (describe below)"],
+  marine: ["Oil Change Service", "Engine Service", "Winterization / De-Winterization", "Other (describe below)"],
+  rv: ["Oil Change", "Tire Service", "Generator Service", "Roof / Exterior Maintenance", "Other (describe below)"],
 };
 
 const fallbackServicesData: Record<string, { title: string; description: string; pricing: string; pricingLabel: string; items: string[]; image: string }> = {
@@ -72,6 +74,7 @@ const inputClasses =
   "w-full text-sm rounded-[10px] px-3 py-2.5 outline-none border border-white/20 bg-white/20 text-white placeholder:text-white/60 focus:border-white/40 transition-colors";
 
 export default function Home() {
+  const { openBooking } = useBooking();
   const [bookingTab, setBookingTab] = useState<TabKey>("automotive");
   const [servicesTab, setServicesTab] = useState<TabKey>("automotive");
   const [selectedService, setSelectedService] = useState("");
@@ -83,34 +86,24 @@ export default function Home() {
   const [preferredDate, setPreferredDate] = useState("");
   const [datesFlexible, setDatesFlexible] = useState(false);
   const [notesValue, setNotesValue] = useState("");
+  const [otherDescription, setOtherDescription] = useState("");
+  const [vinValue, setVinValue] = useState("");
+  const [yearValue, setYearValue] = useState("");
+  const [makeValue, setMakeValue] = useState("");
+  const [modelValue, setModelValue] = useState("");
+  const [vinDecoding, setVinDecoding] = useState(false);
+  const vinAbortRef = useRef<AbortController | null>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scannerError, setScannerError] = useState("");
+  const scannerRef = useRef<Html5Qrcode | null>(null);
   const [quoteSubmitting, setQuoteSubmitting] = useState(false);
   const [quoteSubmitted, setQuoteSubmitted] = useState(false);
   const [quoteError, setQuoteError] = useState("");
 
   const { services: allServices } = useServices({ activeOnly: true });
 
-  // Derive booking service names per division from Firestore
-  const bookingServices = useMemo(() => {
-    if (allServices.length === 0) return fallbackBookingServices;
-    const auto = allServices
-      .filter((s) => s.division === "auto" && s.showOnBooking)
-      .map((s) => s.name);
-    const fleet = allServices
-      .filter((s) => s.division === "fleet" && s.showOnBooking)
-      .map((s) => s.name);
-    const marine = allServices
-      .filter((s) => s.division === "marine" && s.showOnBooking)
-      .map((s) => s.name);
-    const rv = allServices
-      .filter((s) => s.division === "rv" && s.showOnBooking)
-      .map((s) => s.name);
-    return {
-      automotive: auto.length > 0 ? [...auto, "Other (describe below)"] : fallbackBookingServices.automotive,
-      fleet: fleet.length > 0 ? [...fleet, "Other (describe below)"] : fallbackBookingServices.fleet,
-      marine: marine.length > 0 ? [...marine, "Other (describe below)"] : fallbackBookingServices.marine,
-      rv: rv.length > 0 ? [...rv, "Other (describe below)"] : fallbackBookingServices.rv,
-    };
-  }, [allServices]);
+  // Hardcoded broad service categories per division
+  const bookingServices = fallbackBookingServices;
 
   // Derive services tab data from Firestore
   const servicesData = useMemo(() => {
@@ -141,6 +134,85 @@ export default function Home() {
 
   const currentService = servicesData[servicesTab];
 
+  /* VIN auto-decode via NHTSA (free, no key) */
+  useEffect(() => {
+    vinAbortRef.current?.abort();
+    const cleaned = vinValue.replace(/\s/g, "");
+    if (bookingTab === "marine" || cleaned.length !== 17) {
+      setVinDecoding(false);
+      return;
+    }
+    const ac = new AbortController();
+    vinAbortRef.current = ac;
+    setVinDecoding(true);
+    fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVin/${cleaned}?format=json`, { signal: ac.signal })
+      .then((r) => r.json())
+      .then((data: { Results?: { VariableId: number; Value: string | null }[] }) => {
+        if (ac.signal.aborted) return;
+        const results = data.Results ?? [];
+        const get = (id: number) => results.find((r) => r.VariableId === id)?.Value?.trim() || "";
+        const y = get(29);
+        const m = get(26);
+        const mo = get(28);
+        if (y) setYearValue(y);
+        if (m) setMakeValue(m);
+        if (mo) setModelValue(mo);
+      })
+      .catch(() => {/* leave fields editable on failure */})
+      .finally(() => { if (!ac.signal.aborted) setVinDecoding(false); });
+    return () => ac.abort();
+  }, [vinValue, bookingTab]);
+
+  /* VIN barcode scanner */
+  const stopScanner = useCallback(async () => {
+    try {
+      if (scannerRef.current) {
+        const state = scannerRef.current.getState();
+        if (state === 2 || state === 3) await scannerRef.current.stop();
+        scannerRef.current.clear();
+      }
+    } catch { /* already stopped */ }
+    scannerRef.current = null;
+  }, []);
+
+  const closeScanner = useCallback(() => {
+    stopScanner();
+    setScannerOpen(false);
+    setScannerError("");
+  }, [stopScanner]);
+
+  useEffect(() => {
+    if (!scannerOpen) return;
+    const divId = "homepage-vin-scanner";
+    const el = document.getElementById(divId);
+    if (!el) return;
+
+    const scanner = new Html5Qrcode(divId, {
+      formatsToSupport: [Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39],
+      verbose: false,
+    });
+    scannerRef.current = scanner;
+
+    scanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 280, height: 100 } },
+      (decoded) => {
+        setVinValue(decoded.replace(/\s/g, "").toUpperCase());
+        closeScanner();
+      },
+      () => {},
+    ).catch(() => {
+      setScannerError("Camera not available");
+      setTimeout(() => closeScanner(), 1500);
+    });
+
+    return () => { stopScanner(); };
+  }, [scannerOpen, closeScanner, stopScanner]);
+
+  useEffect(() => {
+    return () => { stopScanner(); };
+  }, [stopScanner]);
+
   async function handleQuoteSubmit() {
     setQuoteError("");
     if (!selectedService) {
@@ -156,7 +228,7 @@ export default function Home() {
     try {
       await addDoc(collection(db, "bookings"), {
         name: nameValue.trim(),
-        service: selectedService,
+        service: selectedService.toLowerCase().startsWith("other") && otherDescription.trim() ? `Other: ${otherDescription.trim()}` : selectedService,
         serviceCategory: bookingTab,
         zip: zipValue,
         phone: strippedPhone,
@@ -164,6 +236,10 @@ export default function Home() {
         contactPreference,
         preferredDate: preferredDate || "",
         datesFlexible,
+        vin: vinValue.trim(),
+        year: yearValue,
+        make: makeValue.trim(),
+        model: modelValue.trim(),
         notes: notesValue,
         status: "pending",
         source: "homepage-widget",
@@ -188,8 +264,7 @@ export default function Home() {
           src={cloudinaryUrl(images.logo, { width: 900, quality: "auto" })}
           alt=""
           aria-hidden="true"
-          className="absolute right-[-5%] bottom-[-10%] w-[55vw] min-w-[500px] max-w-[700px] h-auto pointer-events-none select-none opacity-[0.05]"
-          style={{ zIndex: 1 }}
+          className="absolute left-[15%] top-[55%] -translate-y-1/2 w-[800px] h-auto opacity-[0.04] z-0 pointer-events-none select-none"
         />
 
 
@@ -214,7 +289,7 @@ export default function Home() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 mb-0 sm:mb-8">
-                <Button href="/book" variant="primary" size="lg" className="whitespace-nowrap shadow-[0_4px_24px_rgba(224,123,45,0.35)]">
+                <Button variant="primary" size="lg" className="whitespace-nowrap shadow-[0_4px_24px_rgba(224,123,45,0.35)]" onClick={openBooking}>
                   Book Service
                 </Button>
                 <a
@@ -278,7 +353,7 @@ export default function Home() {
                     {bookingTabs.map((tab) => (
                       <button
                         key={tab.key}
-                        onClick={() => { setBookingTab(tab.key); setSelectedService(""); }}
+                        onClick={() => { setBookingTab(tab.key); setSelectedService(""); setOtherDescription(""); }}
                         className={`flex-1 text-[13px] font-semibold py-2 rounded-[8px] transition-all ${
                           bookingTab === tab.key
                             ? "bg-white/20 text-white shadow-[0_2px_8px_rgba(0,0,0,0.15)]"
@@ -295,17 +370,122 @@ export default function Home() {
                       <label className="block text-[11px] uppercase font-semibold text-white tracking-[0.5px] mb-1.5">
                         Service Needed
                       </label>
-                      <select
-                        className={inputClasses}
-                        value={selectedService}
-                        onChange={(e) => setSelectedService(e.target.value)}
-                      >
-                        <option value="">Select a service</option>
-                        {bookingServices[bookingTab].map((s) => (
-                          <option key={s} value={s}>{s}</option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          className={`${inputClasses} pr-10 appearance-none`}
+                          value={selectedService}
+                          onChange={(e) => { setSelectedService(e.target.value); if (!e.target.value.toLowerCase().startsWith("other")) setOtherDescription(""); }}
+                        >
+                          <option value="">Select a service</option>
+                          {bookingServices[bookingTab].map((s) => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
+                        <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/60" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                      </div>
                     </div>
+
+                    {selectedService.toLowerCase().startsWith("other") && (
+                      <div>
+                        <label className="block text-[11px] uppercase font-semibold text-white tracking-[0.5px] mb-1.5">
+                          What do you need?
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Briefly describe the service you need"
+                          className={inputClasses}
+                          value={otherDescription}
+                          onChange={(e) => setOtherDescription(e.target.value)}
+                        />
+                      </div>
+                    )}
+
+                    {/* ── Vehicle Information ── */}
+                    <div>
+                      <label className="block text-[11px] uppercase font-semibold text-white tracking-[0.5px] mb-1.5">
+                        {bookingTab === "marine" ? "Hull #" : "VIN"} <span className="normal-case font-normal text-white/40">(optional)</span>
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder={bookingTab === "marine" ? "e.g. USM1234A505" : "e.g. 1HGBH41JXMN109186"}
+                          className={`${inputClasses} flex-1`}
+                          value={vinValue}
+                          onChange={(e) => setVinValue(e.target.value)}
+                        />
+                        {bookingTab !== "marine" && (
+                          <button
+                            type="button"
+                            onClick={() => { setScannerError(""); setScannerOpen(true); }}
+                            className="flex items-center justify-center shrink-0 w-[42px] rounded-[10px] border border-white/20 bg-white/20 text-white/60 hover:bg-white/30 hover:text-white transition-colors"
+                            title="Scan"
+                          >
+                            <Camera size={16} />
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-white/40 mt-1">
+                        {bookingTab === "marine" ? "Stamped on boat transom" : "Found on driver's door jamb sticker"}
+                      </p>
+                    </div>
+
+                    {bookingTab !== "marine" && (
+                      <>
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 h-px bg-white/10" />
+                          <span className="text-[11px] text-white/30 whitespace-nowrap">or enter vehicle details</span>
+                          <div className="flex-1 h-px bg-white/10" />
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <label className="block text-[11px] uppercase font-semibold text-white tracking-[0.5px] mb-1.5">
+                              Year
+                            </label>
+                            <div className="relative">
+                              <select
+                                className={`${inputClasses} pr-8 appearance-none ${vinDecoding ? "opacity-50" : ""}`}
+                                value={yearValue}
+                                onChange={(e) => setYearValue(e.target.value)}
+                                disabled={vinDecoding}
+                              >
+                                <option value="">{vinDecoding ? "Decoding..." : "Year"}</option>
+                                {Array.from({ length: 2027 - 1988 + 1 }, (_, i) => 2027 - i).map((y) => (
+                                  <option key={y} value={y}>{y}</option>
+                                ))}
+                              </select>
+                              <svg className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-white/60" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-[11px] uppercase font-semibold text-white tracking-[0.5px] mb-1.5">
+                              Make
+                            </label>
+                            <input
+                              type="text"
+                              placeholder={vinDecoding ? "Decoding VIN..." : "e.g. Toyota"}
+                              className={`${inputClasses} ${vinDecoding ? "opacity-50" : ""}`}
+                              value={makeValue}
+                              onChange={(e) => setMakeValue(e.target.value)}
+                              disabled={vinDecoding}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] uppercase font-semibold text-white tracking-[0.5px] mb-1.5">
+                              Model
+                            </label>
+                            <input
+                              type="text"
+                              placeholder={vinDecoding ? "Decoding VIN..." : "e.g. Camry"}
+                              className={`${inputClasses} ${vinDecoding ? "opacity-50" : ""}`}
+                              value={modelValue}
+                              onChange={(e) => setModelValue(e.target.value)}
+                              disabled={vinDecoding}
+                            />
+                          </div>
+                        </div>
+                      </>
+                    )}
 
                     <div>
                       <label className="block text-[11px] uppercase font-semibold text-white tracking-[0.5px] mb-1.5">
@@ -539,12 +719,12 @@ export default function Home() {
                 <span className="text-[14px] font-semibold text-[#0B2040]">
                   Ready to book?
                 </span>
-                <Link
-                  href="/book"
+                <button
+                  onClick={openBooking}
                   className="text-[13px] font-semibold text-white px-5 py-2.5 rounded-[8px] bg-[#E07B2D] hover:bg-[#CC6A1F] transition-colors shadow-[0_2px_8px_rgba(224,123,45,0.3)]"
                 >
                   Get Quote
-                </Link>
+                </button>
               </div>
             </div>
           </div>
@@ -777,7 +957,7 @@ export default function Home() {
             the week.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Button href="/book" variant="primary" size="lg" className="shadow-[0_4px_24px_rgba(224,123,45,0.35)]">
+            <Button variant="primary" size="lg" className="shadow-[0_4px_24px_rgba(224,123,45,0.35)]" onClick={openBooking}>
               Book Service
             </Button>
             <a
@@ -790,6 +970,30 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ═══ VIN Barcode Scanner Overlay ═══ */}
+      {scannerOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="relative w-full max-w-[400px] mx-4 rounded-2xl overflow-hidden bg-[#0d2640] border border-white/20">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+              <span className="text-white font-semibold text-sm">Scan VIN Barcode</span>
+              <button
+                type="button"
+                onClick={closeScanner}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white/60 hover:text-white cursor-pointer"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <div id="homepage-vin-scanner" className="w-full" />
+            {scannerError ? (
+              <p className="text-red-400 text-sm text-center py-4">{scannerError}</p>
+            ) : (
+              <p className="text-white/40 text-xs text-center py-3">Point camera at the VIN barcode on the door jamb</p>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }
