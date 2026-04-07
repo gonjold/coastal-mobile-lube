@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Phone, ChevronDown } from "lucide-react";
 import Button from "@/components/Button";
 import TrustBar from "@/components/TrustBar";
+import { useBooking } from "@/contexts/BookingContext";
 import { cloudinaryUrl, images } from "@/lib/cloudinary";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
@@ -145,6 +146,7 @@ const faqItems = [
 ];
 
 export default function FleetContent() {
+  const { openBooking } = useBooking();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   return (
@@ -335,9 +337,11 @@ export default function FleetContent() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {fleetServices.map((service) => (
-              <div
+              <button
+                type="button"
                 key={service.name}
-                className="flex items-start gap-2.5 bg-white border border-[#f0ede6] rounded-[10px] px-[14px] py-[14px] shadow-[0_1px_8px_rgba(11,32,64,0.04)] hover:border-[#E07B2D]/30 hover:bg-[#FFF9F4] transition-colors"
+                onClick={() => openBooking({ division: "Fleet" })}
+                className="flex items-start gap-2.5 bg-white border border-[#f0ede6] rounded-[10px] px-[14px] py-[14px] shadow-[0_1px_8px_rgba(11,32,64,0.04)] hover:border-[#E07B2D]/30 hover:bg-[#FFF9F4] hover:shadow-[0_4px_16px_rgba(224,123,45,0.12)] hover:-translate-y-[1px] transition-all cursor-pointer text-left"
               >
                 <span className="inline-block shrink-0 w-1.5 h-1.5 rounded-full bg-[#E07B2D] mt-[7px]" />
                 <div>
@@ -349,7 +353,7 @@ export default function FleetContent() {
                     - {service.note}
                   </span>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </div>

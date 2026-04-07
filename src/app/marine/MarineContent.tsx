@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Phone } from "lucide-react";
 import Button from "@/components/Button";
 import TrustBar from "@/components/TrustBar";
+import { useBooking } from "@/contexts/BookingContext";
 import { cloudinaryUrl, images } from "@/lib/cloudinary";
 import { useServices } from "@/hooks/useServices";
 import { groupByCategory } from "@/lib/serviceHelpers";
@@ -31,17 +32,19 @@ function getCategoryImage(category: string): string | null {
 }
 
 /* ─── Reusable: 2-col service grid ─── */
-function ServiceGrid({ items }: { items: { name: string; price: string }[] }) {
+function ServiceGrid({ items, onItemClick }: { items: { name: string; price: string }[]; onItemClick?: (item: { name: string; price: string }) => void }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       {items.map((item) => (
-        <div
+        <button
+          type="button"
           key={item.name}
-          className="flex items-center justify-between bg-white border border-[#f0ede6] rounded-[10px] px-5 py-4 shadow-[0_1px_6px_rgba(11,32,64,0.04)]"
+          onClick={() => onItemClick?.(item)}
+          className="flex items-center justify-between bg-white border border-[#f0ede6] rounded-[10px] px-5 py-4 shadow-[0_1px_6px_rgba(11,32,64,0.04)] cursor-pointer transition-all duration-200 hover:shadow-[0_4px_16px_rgba(224,123,45,0.12)] hover:border-[#E07B2D]/30 hover:-translate-y-[1px] text-left"
         >
           <span className="text-[15px] font-medium text-[#0B2040]">{item.name}</span>
           <span className="text-[15px] font-bold text-[#E07B2D] whitespace-nowrap ml-4">{item.price}</span>
-        </div>
+        </button>
       ))}
     </div>
   );
@@ -100,10 +103,12 @@ function CategorySection({
    Main component
    ================================================================ */
 export default function MarineContent() {
+  const { openBooking } = useBooking();
   const { services, categories: firestoreCategories, loading } = useServices({ division: "marine", activeOnly: true });
   const marinePriority = ["oil"];
   const grouped = groupByCategory(services)
     .filter((g) => !/labor\s*rate/i.test(g.category))
+    .filter((g) => !/marine\s*brakes?/i.test(g.category))
     .sort((a, b) => {
       const aIdx = marinePriority.findIndex((p) => a.category.toLowerCase().includes(p));
       const bIdx = marinePriority.findIndex((p) => b.category.toLowerCase().includes(p));
@@ -232,6 +237,14 @@ export default function MarineContent() {
                   ? (/^\$/.test(s.priceLabel) || /\d/.test(s.priceLabel) ? s.priceLabel : "Call for price")
                   : `$${s.price % 1 === 0 ? `${s.price}` : s.price.toFixed(2)}`,
               }))}
+              onItemClick={(item) => {
+                const svc = group.services.find((s) => s.name === item.name);
+                openBooking({
+                  division: "Marine",
+                  categoryId: group.category,
+                  serviceId: svc?.id,
+                });
+              }}
             />
           </CategorySection>
         );

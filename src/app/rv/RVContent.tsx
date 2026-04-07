@@ -72,17 +72,19 @@ const rvFaqItems = [
 ];
 
 /* ─── Reusable: 2-col service grid ─── */
-function ServiceGrid({ items }: { items: { name: string; price: string }[] }) {
+function ServiceGrid({ items, onItemClick }: { items: { name: string; price: string }[]; onItemClick?: (item: { name: string; price: string }) => void }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       {items.map((item) => (
-        <div
+        <button
+          type="button"
           key={item.name}
-          className="flex items-center justify-between bg-white border border-[#f0ede6] rounded-[10px] px-5 py-4 shadow-[0_1px_6px_rgba(11,32,64,0.04)]"
+          onClick={() => onItemClick?.(item)}
+          className="flex items-center justify-between bg-white border border-[#f0ede6] rounded-[10px] px-5 py-4 shadow-[0_1px_6px_rgba(11,32,64,0.04)] cursor-pointer transition-all duration-200 hover:shadow-[0_4px_16px_rgba(224,123,45,0.12)] hover:border-[#E07B2D]/30 hover:-translate-y-[1px] text-left"
         >
           <span className="text-[15px] font-medium text-[#0B2040]">{item.name}</span>
           <span className="text-[15px] font-bold text-[#E07B2D] whitespace-nowrap ml-4">{item.price}</span>
-        </div>
+        </button>
       ))}
     </div>
   );
@@ -128,9 +130,17 @@ function CategorySection({
 export default function RVContent() {
   const { openBooking } = useBooking();
   const { services, categories: firestoreCategories, loading } = useServices({ division: "rv", activeOnly: true });
-  const grouped = groupByCategory(services).filter(
-    (g) => !/labor\s*rate/i.test(g.category)
-  );
+  const rvPriority = ["oil", "tire", "wheel"];
+  const grouped = groupByCategory(services)
+    .filter((g) => !/labor\s*rate/i.test(g.category))
+    .sort((a, b) => {
+      const aIdx = rvPriority.findIndex((p) => a.category.toLowerCase().includes(p));
+      const bIdx = rvPriority.findIndex((p) => b.category.toLowerCase().includes(p));
+      if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+      if (aIdx !== -1) return -1;
+      if (bIdx !== -1) return 1;
+      return 0;
+    });
 
   const categories = grouped.map((g) => ({
     id: g.category.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
@@ -274,6 +284,14 @@ export default function RVContent() {
                   ? s.priceLabel
                   : `$${s.price % 1 === 0 ? `${s.price}` : s.price.toFixed(2)}`,
               }))}
+              onItemClick={(item) => {
+                const svc = group.services.find((s) => s.name === item.name);
+                openBooking({
+                  division: "RV",
+                  categoryId: group.category,
+                  serviceId: svc?.id,
+                });
+              }}
             />
           </CategorySection>
         );

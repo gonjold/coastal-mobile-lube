@@ -9,7 +9,7 @@ import { useServices } from "@/hooks/useServices";
 
 /* ─── Types ────────────────────────────────────────────────── */
 
-type Division = "Automotive" | "Fleet" | "Marine" | "RV & Trailer";
+type Division = "Automotive" | "Fleet" | "Marine" | "RV";
 type DivisionKey = "auto" | "fleet" | "marine" | "rv";
 
 interface ServiceItem {
@@ -37,7 +37,7 @@ interface SelectedItem {
 const DIVISIONS: Division[] = [
   "Automotive",
   "Marine",
-  "RV & Trailer",
+  "RV",
   "Fleet",
 ];
 
@@ -45,7 +45,7 @@ const DIVISION_KEYS: Record<Division, DivisionKey> = {
   Automotive: "auto",
   Fleet: "fleet",
   Marine: "marine",
-  "RV & Trailer": "rv",
+  "RV": "rv",
 };
 
 const currentYear = 2026;
@@ -185,7 +185,7 @@ const FALLBACK_CATEGORIES: Record<Division, CategoryDef[]> = {
     },
     { id: "other", label: "Other", services: [] },
   ],
-  "RV & Trailer": [
+  "RV": [
     {
       id: "oil",
       label: "Oil Change",
@@ -244,7 +244,7 @@ const VEHICLE_ID_LABELS: Record<
     hint: "Stamped on boat transom",
     showYMM: false,
   },
-  "RV & Trailer": {
+  "RV": {
     label: "VIN",
     placeholder: "Enter VIN",
     hint: "Found on driver's door jamb sticker",

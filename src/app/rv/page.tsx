@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import RVContent from "./RVContent";
 
 export const metadata: Metadata = {
-  title: "RV & Trailer Services",
+  title: "RV Services",
   description:
     "Mobile RV oil changes, generator service, roof inspection, brake and tire service for all RV classes. We come to your RV park or storage facility.",
   openGraph: {
-    title: "RV & Trailer Services | Coastal Mobile Lube & Tire",
+    title: "RV Services | Coastal Mobile Lube & Tire",
     description:
       "Mobile RV oil changes, generator service, roof inspection, brake and tire service for all RV classes. We come to your RV park or storage facility.",
     url: "https://coastalmobilelube.com/rv",

@@ -4,11 +4,11 @@ import MarineContent from "./MarineContent";
 export const metadata: Metadata = {
   title: "Marine Services",
   description:
-    "Dockside boat engine service, marine brakes, diesel maintenance, and trailer tire service. We come to your marina or boat ramp.",
+    "Dockside boat engine service, diesel maintenance, and trailer tire service. We come to your marina or boat ramp.",
   openGraph: {
     title: "Marine Services | Coastal Mobile Lube & Tire",
     description:
-      "Dockside boat engine service, marine brakes, diesel maintenance, and trailer tire service. We come to your marina or boat ramp.",
+      "Dockside boat engine service, diesel maintenance, and trailer tire service. We come to your marina or boat ramp.",
     url: "https://coastalmobilelube.com/marine",
     type: "website",
   },

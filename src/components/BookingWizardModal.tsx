@@ -10,7 +10,7 @@ import SearchableSelect from "./SearchableSelect";
 
 /* ─── Types ───────────────────────────────────────────────── */
 
-type Division = "Automotive" | "Marine" | "RV & Trailer" | "Fleet";
+type Division = "Automotive" | "Marine" | "RV" | "Fleet";
 type DivisionKey = "auto" | "marine" | "rv" | "fleet";
 
 interface SubService {
@@ -26,9 +26,16 @@ interface CategoryGroup {
   hasSubServices: boolean;
 }
 
+interface PreselectionData {
+  division?: string;
+  categoryId?: string;
+  serviceId?: string;
+}
+
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  preselect?: PreselectionData;
 }
 
 interface LookupBooking {
@@ -46,12 +53,12 @@ interface LookupBooking {
 
 /* ─── Constants ───────────────────────────────────────────── */
 
-const DIVISIONS: Division[] = ["Automotive", "Marine", "RV & Trailer", "Fleet"];
+const DIVISIONS: Division[] = ["Automotive", "Marine", "RV", "Fleet"];
 
 const DIVISION_KEY_MAP: Record<Division, DivisionKey> = {
   Automotive: "auto",
   Marine: "marine",
-  "RV & Trailer": "rv",
+  "RV": "rv",
   Fleet: "fleet",
 };
 
@@ -198,7 +205,7 @@ function getCategoryIcon(category: string) {
    COMPONENT
    ═══════════════════════════════════════════════════════════════ */
 
-export default function BookingWizardModal({ isOpen, onClose }: Props) {
+export default function BookingWizardModal({ isOpen, onClose, preselect }: Props) {
   /* ── Wizard state ── */
   const [step, setStep] = useState(1);
   const [division, setDivision] = useState<Division>("Automotive");
@@ -310,6 +317,38 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
   const selectedTotal = selectedServices.reduce((sum, s) => sum + (s.price ?? 0), 0);
   const hasNullPriced = selectedServices.some((s) => s.price == null) || (otherSelected && otherText.trim().length > 0);
   const isMarine = division === "Marine";
+
+  /* ── Apply preselection when modal opens ── */
+  const preselectAppliedRef = useRef(false);
+  useEffect(() => {
+    if (!isOpen || !preselect || preselectAppliedRef.current) return;
+    preselectAppliedRef.current = true;
+
+    // Set division
+    if (preselect.division) {
+      const match = DIVISIONS.find(
+        (d) => d.toLowerCase() === preselect.division!.toLowerCase()
+      );
+      if (match) setDivision(match);
+    }
+
+    // Expand category (will be matched once categoryGroups render)
+    if (preselect.categoryId) {
+      setExpandedCategory(preselect.categoryId);
+    }
+
+    // Pre-select a specific service
+    if (preselect.serviceId) {
+      const svc = allFlat.find((s) => s.id === preselect.serviceId);
+      if (svc && !isServiceSelected(svc.id)) {
+        setSelectedServices((prev) => [...prev, svc]);
+      }
+    }
+  }, [isOpen, preselect, allFlat]);
+
+  useEffect(() => {
+    if (!isOpen) preselectAppliedRef.current = false;
+  }, [isOpen]);
 
   /* ── Reset on division change ── */
   function handleDivisionChange(d: Division) {

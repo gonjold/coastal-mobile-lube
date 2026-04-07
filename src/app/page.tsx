@@ -34,7 +34,7 @@ const fallbackServicesData: Record<string, { title: string; description: string;
     image: images.marinaBoatsAlt,
   },
   rv: {
-    title: "RV & Trailer Services",
+    title: "RV Services",
     description: "On-site maintenance for motorhomes, travel trailers, and fifth wheels. Generator service, roof inspections, and slide-out care wherever you're parked.",
     pricing: "$129.95",
     pricingLabel: "Starting at",
@@ -45,11 +45,18 @@ const fallbackServicesData: Record<string, { title: string; description: string;
 
 type TabKey = "automotive" | "fleet" | "marine" | "rv";
 
+const TAB_TO_DIVISION: Record<TabKey, string> = {
+  automotive: "Automotive",
+  fleet: "Fleet",
+  marine: "Marine",
+  rv: "RV",
+};
+
 const serviceTabs: { key: TabKey; label: string }[] = [
   { key: "automotive", label: "Automotive" },
   { key: "fleet", label: "Fleet & Commercial" },
   { key: "marine", label: "Marine" },
-  { key: "rv", label: "RV & Trailer" },
+  { key: "rv", label: "RV" },
 ];
 
 export default function Home() {
@@ -115,7 +122,7 @@ export default function Home() {
                 Mobile Service
               </p>
               <p className="text-[13px] md:text-[14px] font-normal text-white/70">
-                Cars. Trucks. RVs. Trailers. Boats. Your entire fleet.
+                Cars. Trucks. RVs. Boats. Your entire fleet.
               </p>
             </div>
             <h1 className="text-[30px] md:text-[52px] font-extrabold leading-[1.06] text-white tracking-[-1.5px] mb-3 md:mb-5" style={{ textShadow: "0 2px 20px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2)" }}>
@@ -288,7 +295,7 @@ export default function Home() {
                         </p>
                       )}
                       <button
-                        onClick={openBooking}
+                        onClick={() => openBooking({ division: TAB_TO_DIVISION[servicesTab] })}
                         className="w-full text-[13px] font-semibold text-white py-2.5 rounded-[8px] bg-[#E07B2D] hover:bg-[#CC6A1F] transition-colors mt-1"
                       >
                         Book This Service
@@ -303,7 +310,7 @@ export default function Home() {
                 href="/rv"
                 className="inline-block mt-2 text-[14px] font-semibold text-[#E07B2D] hover:underline text-center"
               >
-                View All RV &amp; Trailer Services &rarr;
+                View All RV Services &rarr;
               </Link>
             )}
           </div>
@@ -327,13 +334,15 @@ export default function Home() {
               </div>
               <div className="grid grid-cols-2 gap-2.5">
                 {currentService.items.map((item) => (
-                  <div
+                  <button
+                    type="button"
                     key={item}
-                    className="flex items-center gap-2.5 text-[13px] text-[#444] bg-[#FAFBFC] border border-[#f0ede6] rounded-[10px] px-3.5 py-[10px] hover:border-[#E07B2D]/30 hover:bg-[#FFF9F4] transition-colors"
+                    onClick={() => openBooking({ division: TAB_TO_DIVISION[servicesTab] })}
+                    className="flex items-center gap-2.5 text-[13px] text-[#444] bg-[#FAFBFC] border border-[#f0ede6] rounded-[10px] px-3.5 py-[10px] hover:border-[#E07B2D]/30 hover:bg-[#FFF9F4] hover:shadow-[0_2px_8px_rgba(224,123,45,0.1)] transition-all cursor-pointer text-left"
                   >
                     <span className="inline-block shrink-0 w-1.5 h-1.5 rounded-full bg-[#E07B2D]" />
                     {item}
-                  </div>
+                  </button>
                 ))}
               </div>
               {servicesTab === "rv" && (
@@ -341,7 +350,7 @@ export default function Home() {
                   href="/rv"
                   className="inline-block mt-5 text-[14px] font-semibold text-[#E07B2D] hover:underline"
                 >
-                  View All RV &amp; Trailer Services &rarr;
+                  View All RV Services &rarr;
                 </Link>
               )}
             </div>
@@ -364,7 +373,7 @@ export default function Home() {
                   Ready to book?
                 </span>
                 <button
-                  onClick={openBooking}
+                  onClick={() => openBooking({ division: TAB_TO_DIVISION[servicesTab] })}
                   className="text-[13px] font-semibold text-white px-5 py-2.5 rounded-[8px] bg-[#E07B2D] hover:bg-[#CC6A1F] transition-colors shadow-[0_2px_8px_rgba(224,123,45,0.3)]"
                 >
                   Get Quote
