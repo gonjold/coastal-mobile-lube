@@ -774,7 +774,7 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
         style={{
           position: "relative",
           width: "100%",
-          maxWidth: 860,
+          maxWidth: 960,
           maxHeight: "94vh",
           borderRadius: 20,
           background: "#FFFFFF",
@@ -786,13 +786,13 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
         }}
       >
         {/* ── Header ── */}
-        <div style={{ background: "#0B2447", padding: "18px 24px 14px", flexShrink: 0 }}>
+        <div style={{ background: "#FFFFFF", borderBottom: "1px solid #E2E8F0", padding: "18px 24px 14px", flexShrink: 0 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
-              <h2 style={{ color: "#fff", fontSize: 19, fontWeight: 800, margin: 0, lineHeight: 1.2 }}>
+              <h2 style={{ color: "#0B2447", fontSize: 19, fontWeight: 800, margin: 0, lineHeight: 1.2 }}>
                 Book Your Service
               </h2>
-              <p style={{ color: "#94A3B8", fontSize: 11, margin: "4px 0 0", lineHeight: 1.4 }}>
+              <p style={{ color: "#64748B", fontSize: 11, margin: "4px 0 0", lineHeight: 1.4 }}>
                 We come to you. You never leave your day.
               </p>
             </div>
@@ -801,9 +801,12 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
               onClick={onClose}
               style={{
                 width: 32, height: 32, borderRadius: "50%", border: "none",
-                background: "rgba(255,255,255,0.1)", color: "#fff", cursor: "pointer",
+                background: "transparent", color: "#94A3B8", cursor: "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0,
+                transition: "color 0.15s",
               }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "#475569"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "#94A3B8"; }}
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <line x1="1" y1="1" x2="13" y2="13" /><line x1="13" y1="1" x2="1" y2="13" />
@@ -848,7 +851,9 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
         </div>
 
         {/* ── Scrollable Content ── */}
-        <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "20px 24px" }}>
+        <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", ...(!isMobile ? { display: "flex" } : {}) }}>
+          {/* Left column (step content) */}
+          <div style={{ padding: "20px 24px", ...(!isMobile ? { flex: "0 0 65%", minWidth: 0 } : {}) }}>
 
           {/* ═══ STEP 1: Services ═══ */}
           {step === 1 && (
@@ -1038,8 +1043,8 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
                     </button>
                   </div>
 
-                  {/* Selection Summary */}
-                  {(selectedServices.length > 0 || (otherSelected && otherText.trim())) && (
+                  {/* Selection Summary (mobile only — sidebar replaces this on desktop) */}
+                  {isMobile && (selectedServices.length > 0 || (otherSelected && otherText.trim())) && (
                     <div style={{
                       marginTop: 16, background: "#FFF7ED", border: "1px solid #FDBA74", borderRadius: 10,
                       padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -1641,6 +1646,100 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
               </p>
             </div>
           )}
+          </div>{/* end left column */}
+
+          {/* ── Desktop Sidebar ── */}
+          {!isMobile && (
+            <div style={{
+              flex: "0 0 35%", borderLeft: "1px solid #E2E8F0", background: "#F8FAFC",
+              padding: 20, position: "sticky", top: 0, alignSelf: "flex-start",
+            }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#0B2447", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 16 }}>
+                Your Selection
+              </div>
+
+              {selectedServices.length === 0 && !(otherSelected && otherText.trim()) ? (
+                <div style={{ fontSize: 13, color: "#94A3B8" }}>Pick services to get started</div>
+              ) : (
+                <>
+                  {/* Grouped services */}
+                  {Object.entries(
+                    selectedServices.reduce<Record<string, SubService[]>>((acc, svc) => {
+                      if (!acc[svc.category]) acc[svc.category] = [];
+                      acc[svc.category].push(svc);
+                      return acc;
+                    }, {})
+                  ).map(([category, svcs]) => (
+                    <div key={category} style={{ marginBottom: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.03em", marginBottom: 6 }}>
+                        {category}
+                      </div>
+                      {svcs.map((svc) => (
+                        <div key={svc.id} style={{ display: "flex", alignItems: "center", padding: "4px 0" }}>
+                          <span style={{ fontSize: 13, color: "#1E293B", flex: 1 }}>{svc.name}</span>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: "#F97316", marginRight: 8, whiteSpace: "nowrap" }}>
+                            {svc.price != null ? (svc.price % 1 === 0 ? `$${svc.price}` : `$${svc.price.toFixed(2)}`) : "Quote"}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => toggleService(svc)}
+                            style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", fontSize: 14, padding: "0 2px", lineHeight: 1 }}
+                          >
+                            &#x2715;
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+
+                  {/* "Something Else" in sidebar */}
+                  {otherSelected && otherText.trim() && (
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.03em", marginBottom: 6 }}>
+                        Other
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", padding: "4px 0" }}>
+                        <span style={{ fontSize: 13, color: "#1E293B", flex: 1 }}>{otherText}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: "#F97316", marginRight: 8 }}>Quote</span>
+                        <button
+                          type="button"
+                          onClick={() => { setOtherSelected(false); setOtherText(""); }}
+                          style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", fontSize: 14, padding: "0 2px", lineHeight: 1 }}
+                        >
+                          &#x2715;
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Divider */}
+                  <div style={{ height: 1, background: "#E2E8F0", margin: "12px 0" }} />
+
+                  {/* Estimated Total */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: "#0B2447" }}>Estimated Total</span>
+                    <span style={{ fontSize: 18, fontWeight: 700, color: "#F97316" }}>
+                      {selectedTotal > 0 ? `$${selectedTotal.toFixed(2)}${hasNullPriced ? "+" : ""}` : "Quote"}
+                    </span>
+                  </div>
+
+                  {/* Vehicle info (steps 2-4) */}
+                  {step >= 2 && (vehicleYear || vehicleMake || vehicleModel) && (
+                    <div style={{ marginTop: 16, fontSize: 13, color: "#475569" }}>
+                      {[vehicleYear, vehicleMake, vehicleModel].filter(Boolean).join(" ")}
+                    </div>
+                  )}
+
+                  {/* Contact name (steps 3-4) */}
+                  {step >= 3 && customerName && (
+                    <div style={{ marginTop: 4, fontSize: 13, color: "#475569" }}>
+                      {customerName}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* ── Bottom Navigation ── */}
@@ -1777,7 +1876,7 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
         .wizard-modal-card input::placeholder,
         .wizard-modal-card textarea::placeholder { color: #94A3B8 !important; }
         .wizard-modal-card select { color-scheme: light; }
-        @media (max-width: 859px) {
+        @media (max-width: 959px) {
           .wizard-modal-card {
             margin: 0 12px !important;
           }
