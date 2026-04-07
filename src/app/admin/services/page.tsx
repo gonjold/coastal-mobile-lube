@@ -197,6 +197,10 @@ export default function ServicesPage() {
     id: string;
     name: string;
   } | null>(null);
+  const [dupCatModal, setDupCatModal] = useState<{
+    category: ServiceCategory;
+    targetDivision: "auto" | "marine" | "fleet" | "rv";
+  } | null>(null);
 
   /* ── Toast helper ── */
 
@@ -456,6 +460,85 @@ export default function ServicesPage() {
     setDeleteConfirm(null);
   }
 
+  async function duplicateService(svc: Service) {
+    try {
+      const catServices = services.filter(
+        (s) => s.category === svc.category && s.division === svc.division
+      );
+      const maxOrder = catServices.reduce(
+        (max, s) => Math.max(max, s.sortOrder),
+        0
+      );
+      const { id, createdAt, updatedAt, ...data } = svc;
+      await addDoc(collection(db, "services"), {
+        ...data,
+        name: `Copy of ${svc.name}`,
+        isActive: false,
+        sortOrder: maxOrder + 1,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+      addToast("Service duplicated");
+    } catch {
+      addToast("Failed to duplicate service", "info");
+    }
+  }
+
+  async function duplicateCategory() {
+    if (!dupCatModal) return;
+    const { category: srcCat, targetDivision } = dupCatModal;
+    setSaving(true);
+    try {
+      const divCats = categories.filter((c) => c.division === targetDivision);
+      const maxCatOrder = divCats.reduce(
+        (max, c) => Math.max(max, c.sortOrder),
+        0
+      );
+      const newCatName = `Copy of ${srcCat.name}`;
+
+      await addDoc(collection(db, "serviceCategories"), {
+        name: newCatName,
+        division: targetDivision,
+        description: srcCat.description || "",
+        startingAt: srcCat.startingAt || 0,
+        sortOrder: maxCatOrder + 1,
+        isActive: true,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      const srcServices = services.filter(
+        (s) => s.category === srcCat.name && s.division === srcCat.division
+      );
+
+      if (srcServices.length > 0) {
+        const batch = writeBatch(db);
+        srcServices.forEach((svc, idx) => {
+          const { id, createdAt, updatedAt, ...data } = svc;
+          const ref = doc(collection(db, "services"));
+          batch.set(ref, {
+            ...data,
+            category: newCatName,
+            division: targetDivision,
+            isActive: false,
+            sortOrder: idx + 1,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
+        });
+        await batch.commit();
+      }
+
+      addToast(
+        `Category duplicated with ${srcServices.length} service${srcServices.length === 1 ? "" : "s"}`
+      );
+      setDupCatModal(null);
+    } catch {
+      addToast("Failed to duplicate category", "info");
+    }
+    setSaving(false);
+  }
+
   /* ── CRUD: Categories ── */
 
   function openNewCategory() {
@@ -504,6 +587,9 @@ export default function ServicesPage() {
         });
         addToast("Category added");
       } else {
+        const originalCat = categories.find((c) => c.id === id);
+        const nameChanged = originalCat && originalCat.name !== data.name;
+
         await updateDoc(doc(db, "serviceCategories", id), {
           name: data.name,
           division: data.division,
@@ -512,7 +598,31 @@ export default function ServicesPage() {
           isActive: data.isActive,
           updatedAt: serverTimestamp(),
         });
-        addToast("Category updated");
+
+        if (nameChanged) {
+          const matchingServices = services.filter(
+            (s) =>
+              s.category === originalCat.name &&
+              s.division === originalCat.division
+          );
+          if (matchingServices.length > 0) {
+            const batch = writeBatch(db);
+            matchingServices.forEach((s) => {
+              batch.update(doc(db, "services", s.id), {
+                category: data.name,
+                updatedAt: serverTimestamp(),
+              });
+            });
+            await batch.commit();
+            addToast(
+              `Updated ${matchingServices.length} service${matchingServices.length === 1 ? "" : "s"} to new category name`
+            );
+          } else {
+            addToast("Category updated");
+          }
+        } else {
+          addToast("Category updated");
+        }
       }
       setCategoryModal(null);
     } catch {
@@ -709,6 +819,30 @@ export default function ServicesPage() {
                 {/* Actions */}
                 <div className="flex items-center gap-3 shrink-0">
                   <button
+                    onClick={() =>
+                      setDupCatModal({
+                        category: cat,
+                        targetDivision: cat.division as "auto" | "marine" | "fleet" | "rv",
+                      })
+                    }
+                    className="p-1.5 rounded hover:bg-gray-200 transition-colors"
+                    title="Duplicate category"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#888"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                    </svg>
+                  </button>
+                  <button
                     onClick={() => openEditCategory(cat)}
                     className="p-1.5 rounded hover:bg-gray-200 transition-colors"
                     title="Edit category"
@@ -740,7 +874,7 @@ export default function ServicesPage() {
               {!isCollapsed && (
                 <div className="border-t border-gray-100">
                   {/* Table header */}
-                  <div className="hidden lg:grid lg:grid-cols-[32px_1fr_90px_64px_64px_64px_72px] gap-2 px-4 py-2 bg-gray-50 text-[11px] uppercase tracking-wide text-gray-400 font-semibold items-center">
+                  <div className="hidden lg:grid lg:grid-cols-[32px_1fr_90px_64px_64px_64px_104px] gap-2 px-4 py-2 bg-gray-50 text-[11px] uppercase tracking-wide text-gray-400 font-semibold items-center">
                     <div />
                     <div>Service</div>
                     <div>Price</div>
@@ -759,7 +893,7 @@ export default function ServicesPage() {
                   {catServices.map((svc, svcIdx) => (
                     <div
                       key={svc.id}
-                      className={`grid grid-cols-1 lg:grid-cols-[32px_1fr_90px_64px_64px_64px_72px] gap-2 px-4 py-2.5 items-center ${
+                      className={`grid grid-cols-1 lg:grid-cols-[32px_1fr_90px_64px_64px_64px_104px] gap-2 px-4 py-2.5 items-center ${
                         svcIdx > 0
                           ? "border-t border-gray-50"
                           : ""
@@ -903,8 +1037,27 @@ export default function ServicesPage() {
                         />
                       </div>
 
-                      {/* Edit + Delete */}
+                      {/* Duplicate + Edit + Delete */}
                       <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => duplicateService(svc)}
+                          className="p-1.5 rounded hover:bg-gray-100 transition-colors"
+                          title="Duplicate service"
+                        >
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#888"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                          </svg>
+                        </button>
                         <button
                           onClick={() => openEditService(svc)}
                           className="p-1.5 rounded hover:bg-gray-100 transition-colors"
@@ -1345,6 +1498,68 @@ export default function ServicesPage() {
             >
               Delete
             </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* ═══ Duplicate Category Modal ═══ */}
+      {dupCatModal && (
+        <Modal
+          title={`Duplicate category: ${dupCatModal.category.name}`}
+          onClose={() => setDupCatModal(null)}
+        >
+          <div className="flex flex-col gap-4">
+            <div>
+              <label className="block text-[12px] font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                Target Division
+              </label>
+              <select
+                value={dupCatModal.targetDivision}
+                onChange={(e) =>
+                  setDupCatModal((p) =>
+                    p
+                      ? {
+                          ...p,
+                          targetDivision: e.target.value as "auto" | "marine" | "fleet" | "rv",
+                        }
+                      : p
+                  )
+                }
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#0F2A44] bg-white"
+              >
+                <option value="auto">Automotive</option>
+                <option value="marine">Marine</option>
+                <option value="fleet">Fleet</option>
+                <option value="rv">RV</option>
+              </select>
+            </div>
+            <p className="text-[13px] text-gray-500">
+              This will create &ldquo;Copy of {dupCatModal.category.name}&rdquo;{" "}
+              and duplicate all{" "}
+              {
+                services.filter(
+                  (s) =>
+                    s.category === dupCatModal.category.name &&
+                    s.division === dupCatModal.category.division
+                ).length
+              }{" "}
+              services into it. Duplicated services will be inactive by default.
+            </p>
+            <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
+              <button
+                onClick={() => setDupCatModal(null)}
+                className="px-4 py-2 text-[13px] font-semibold border border-gray-200 rounded-lg text-gray-500 hover:text-[#0B2040] hover:border-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={duplicateCategory}
+                disabled={saving}
+                className="px-4 py-2 text-[13px] font-semibold bg-[#E97F2F] text-white rounded-lg hover:bg-[#d06f25] transition-colors disabled:opacity-50"
+              >
+                {saving ? "Duplicating..." : "Duplicate"}
+              </button>
+            </div>
           </div>
         </Modal>
       )}
