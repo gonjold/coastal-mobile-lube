@@ -22,12 +22,13 @@ import ServicePreviewPanel from "./ServicePreviewPanel";
 
 /* ── Constants ── */
 
-type Division = "auto" | "marine" | "fleet";
+type Division = "auto" | "marine" | "fleet" | "rv";
 
 const DIVISIONS: { key: Division; label: string }[] = [
   { key: "auto", label: "Automotive" },
   { key: "marine", label: "Marine" },
   { key: "fleet", label: "Fleet" },
+  { key: "rv", label: "RV" },
 ];
 
 const EMPTY_SERVICE = {

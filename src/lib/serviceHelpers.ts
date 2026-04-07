@@ -32,7 +32,7 @@ export function groupByCategory(
  */
 export function getActiveServices(
   services: Service[],
-  division: "auto" | "marine" | "fleet"
+  division: "auto" | "marine" | "fleet" | "rv"
 ): Service[] {
   return services
     .filter((s) => s.isActive && s.division === division)
@@ -53,7 +53,7 @@ export function getBookingServices(services: Service[]): Service[] {
  */
 export function getPricingServices(
   services: Service[],
-  division: "auto" | "marine" | "fleet"
+  division: "auto" | "marine" | "fleet" | "rv"
 ): Service[] {
   return services
     .filter((s) => s.isActive && s.showOnPricing && s.division === division)

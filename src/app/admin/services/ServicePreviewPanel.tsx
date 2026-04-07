@@ -15,10 +15,11 @@ const DIVISION_LABELS: Record<string, string> = {
   auto: "Automotive Services",
   marine: "Marine Services",
   fleet: "Fleet Services",
+  rv: "RV Services",
 };
 
 /* ── Main Preview Panel ── */
-export default function ServicePreviewPanel({ division = "auto", onClose }: { division?: "auto" | "marine" | "fleet"; onClose: () => void }) {
+export default function ServicePreviewPanel({ division = "auto", onClose }: { division?: "auto" | "marine" | "fleet" | "rv"; onClose: () => void }) {
   const { services, categories: firestoreCategories, loading } = useServices({ division, activeOnly: true });
 
   const isAuto = division === "auto";
