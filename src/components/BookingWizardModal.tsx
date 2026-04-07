@@ -6,6 +6,7 @@ import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useServices, type Service } from "@/hooks/useServices";
 import { groupByCategory } from "@/lib/serviceHelpers";
+import SearchableSelect from "./SearchableSelect";
 
 /* ─── Types ───────────────────────────────────────────────── */
 
@@ -42,6 +43,7 @@ const DIVISION_KEY_MAP: Record<Division, DivisionKey> = {
 };
 
 const YEARS = Array.from({ length: 40 }, (_, i) => 2027 - i);
+const YEAR_OPTIONS = YEARS.map(String);
 
 const TIME_SLOTS = [
   { value: "morning", label: "Morning (7-10am)" },
@@ -201,6 +203,14 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
   const [scannerError, setScannerError] = useState("");
   const scannerRef = useRef<Html5Qrcode | null>(null);
 
+  /* ── YMM API state ── */
+  const [allMakes, setAllMakes] = useState<string[]>([]);
+  const [makesLoading, setMakesLoading] = useState(false);
+  const makesFetchedRef = useRef(false);
+  const modelsCacheRef = useRef<Record<string, string[]>>({});
+  const [currentModels, setCurrentModels] = useState<string[]>([]);
+  const [modelsLoading, setModelsLoading] = useState(false);
+
   /* ── Step 3: Details ── */
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -326,6 +336,18 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
     return min % 1 === 0 ? `$${min}` : `$${min.toFixed(2)}`;
   }
 
+  /* ── YMM handlers ── */
+  function handleYearChange(val: string) {
+    setVehicleYear(val);
+    setVehicleMake("");
+    setVehicleModel("");
+  }
+
+  function handleMakeChange(val: string) {
+    setVehicleMake(val);
+    setVehicleModel("");
+  }
+
   /* ── VIN auto-decode ── */
   useEffect(() => {
     vinAbortRef.current?.abort();
@@ -356,6 +378,51 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
       .finally(() => { if (!ac.signal.aborted) setVinDecoding(false); });
     return () => ac.abort();
   }, [vinOrHull, isMarine]);
+
+  /* ── Fetch all makes from NHTSA ── */
+  useEffect(() => {
+    if (!isOpen || makesFetchedRef.current) return;
+    makesFetchedRef.current = true;
+    setMakesLoading(true);
+    fetch("https://vpic.nhtsa.dot.gov/api/vehicles/GetAllMakes?format=json")
+      .then((r) => r.json())
+      .then((data: { Results?: { Make_Name?: string }[] }) => {
+        const makes = [...new Set(
+          (data.Results || [])
+            .map((r) => r.Make_Name || "")
+            .filter((s) => s.length > 0)
+        )].sort((a, b) => a.localeCompare(b));
+        setAllMakes(makes);
+      })
+      .catch(() => {})
+      .finally(() => setMakesLoading(false));
+  }, [isOpen]);
+
+  /* ── Fetch models for selected make ── */
+  useEffect(() => {
+    if (!vehicleMake) {
+      setCurrentModels([]);
+      return;
+    }
+    if (modelsCacheRef.current[vehicleMake]) {
+      setCurrentModels(modelsCacheRef.current[vehicleMake]);
+      return;
+    }
+    setModelsLoading(true);
+    fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/GetModelsForMake/${encodeURIComponent(vehicleMake)}?format=json`)
+      .then((r) => r.json())
+      .then((data: { Results?: { Model_Name?: string }[] }) => {
+        const models = [...new Set(
+          (data.Results || [])
+            .map((r) => r.Model_Name || "")
+            .filter((s) => s.length > 0)
+        )].sort((a, b) => a.localeCompare(b));
+        modelsCacheRef.current[vehicleMake] = models;
+        setCurrentModels(models);
+      })
+      .catch(() => {})
+      .finally(() => setModelsLoading(false));
+  }, [vehicleMake]);
 
   /* ── VIN barcode scanner ── */
   const stopScanner = useCallback(async () => {
@@ -907,44 +974,35 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
                     <div>
                       <label style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.7)", display: "block", marginBottom: 6 }}>Year</label>
-                      <select
+                      <SearchableSelect
+                        options={YEAR_OPTIONS}
                         value={vehicleYear}
-                        onChange={(e) => setVehicleYear(e.target.value)}
-                        style={{
-                          width: "100%", padding: "12px 10px", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10,
-                          fontSize: 14, outline: "none", background: "rgba(255,255,255,0.08)", color: "#fff", fontFamily: "inherit",
-                        }}
-                      >
-                        <option value="" style={{ background: "#0f172a", color: "#fff" }}>Year</option>
-                        {YEARS.map((y) => <option key={y} value={String(y)} style={{ background: "#0f172a", color: "#fff" }}>{y}</option>)}
-                      </select>
+                        onChange={handleYearChange}
+                        placeholder="Year"
+                        maxVisible={6}
+                      />
                     </div>
                     <div>
                       <label style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.7)", display: "block", marginBottom: 6 }}>Make</label>
-                      <input
-                        type="text"
+                      <SearchableSelect
+                        options={allMakes}
                         value={vehicleMake}
-                        onChange={(e) => setVehicleMake(e.target.value)}
+                        onChange={handleMakeChange}
                         placeholder="Make"
-                        style={{
-                          width: "100%", padding: "12px 10px", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10,
-                          fontSize: 14, outline: "none", fontFamily: "inherit",
-                          background: "rgba(255,255,255,0.08)", color: "#fff",
-                        }}
+                        maxVisible={8}
+                        loading={makesLoading}
                       />
                     </div>
                     <div>
                       <label style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.7)", display: "block", marginBottom: 6 }}>Model</label>
-                      <input
-                        type="text"
+                      <SearchableSelect
+                        options={currentModels}
                         value={vehicleModel}
-                        onChange={(e) => setVehicleModel(e.target.value)}
-                        placeholder="Model"
-                        style={{
-                          width: "100%", padding: "12px 10px", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10,
-                          fontSize: 14, outline: "none", fontFamily: "inherit",
-                          background: "rgba(255,255,255,0.08)", color: "#fff",
-                        }}
+                        onChange={(val) => setVehicleModel(val)}
+                        placeholder={vehicleMake ? "Model" : "Select make first"}
+                        disabled={!vehicleMake}
+                        maxVisible={8}
+                        loading={modelsLoading}
                       />
                     </div>
                   </div>

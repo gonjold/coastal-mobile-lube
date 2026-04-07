@@ -17,7 +17,7 @@ type ContactPref = "call" | "text" | "email";
 
 export default function FloatingQuoteBar() {
   const { bookingOpen } = useBooking();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -66,7 +66,7 @@ export default function FloatingQuoteBar() {
     return (
       <button
         onClick={() => setCollapsed(false)}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-5 py-3 rounded-full bg-[#E07B2D] text-white font-semibold text-[14px] shadow-[0_4px_20px_rgba(224,123,45,0.4)] hover:bg-[#CC6A1F] transition-colors"
+        className="fixed bottom-[80px] lg:bottom-6 right-4 lg:right-6 z-50 flex items-center gap-2 px-5 py-3 rounded-full bg-[#E07B2D] text-white font-semibold text-[14px] shadow-[0_4px_20px_rgba(224,123,45,0.4)] hover:bg-[#CC6A1F] transition-colors"
       >
         <ChevronUp size={16} />
         Get a Quote
@@ -79,7 +79,7 @@ export default function FloatingQuoteBar() {
     "w-full bg-white text-[#1e293b] text-[14px] placeholder:text-[#94a3b8] border border-[#E2E8F0] focus:border-[#E07B2D] outline-none px-3 py-[10px] rounded-lg transition-colors";
 
   return (
-    <div className="fixed z-50 bottom-6 right-6 w-[380px] max-[480px]:bottom-4 max-[480px]:right-4 max-[480px]:left-4 max-[480px]:w-auto">
+    <div className="fixed z-50 bottom-[80px] lg:bottom-6 right-4 lg:right-6 w-[380px] max-[480px]:left-4 max-[480px]:w-auto">
       <div
         className="relative rounded-[16px] p-5"
         style={{
