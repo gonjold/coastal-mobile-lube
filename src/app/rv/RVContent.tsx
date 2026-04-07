@@ -193,8 +193,8 @@ export default function RVContent() {
               class of RV. No shop visits, no towing, no hassle.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button href="#rv-quote" variant="primary" size="lg" className="whitespace-nowrap shadow-[0_4px_24px_rgba(224,123,45,0.35)]">
-                Get RV Quote
+              <Button variant="primary" size="lg" className="whitespace-nowrap shadow-[0_4px_24px_rgba(224,123,45,0.35)]" onClick={openBooking}>
+                Book Service
               </Button>
               <a
                 href="tel:8137225823"

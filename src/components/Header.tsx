@@ -9,9 +9,9 @@ import { useBooking } from "@/contexts/BookingContext";
 
 const navLinks = [
   { label: "Automotive", href: "/services" },
-  { label: "Fleet", href: "/fleet" },
-  { label: "Marine", href: "/marine" },
   { label: "RV", href: "/rv" },
+  { label: "Marine", href: "/marine" },
+  { label: "Fleet", href: "/fleet" },
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
 ];

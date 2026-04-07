@@ -173,8 +173,8 @@ export default function MarineContent() {
               technicians, and a 12-month service warranty on every job.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button href="#marine-quote" variant="primary" size="lg" className="whitespace-nowrap shadow-[0_4px_24px_rgba(224,123,45,0.35)]">
-                Get Marine Quote
+              <Button variant="primary" size="lg" className="whitespace-nowrap shadow-[0_4px_24px_rgba(224,123,45,0.35)]" onClick={openBooking}>
+                Book Service
               </Button>
               <a
                 href="tel:8137225823"
