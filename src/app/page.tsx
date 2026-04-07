@@ -6,8 +6,6 @@ import { Phone, Check, Clock, MapPin, Wrench, Shield, Award, Tag } from "lucide-
 import { useBooking } from "@/contexts/BookingContext";
 import Button from "@/components/Button";
 import { cloudinaryUrl, images } from "@/lib/cloudinary";
-import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useServices, type Service } from "@/hooks/useServices";
 
 const fallbackServicesData: Record<string, { title: string; description: string; pricing: string; pricingLabel: string; items: string[]; image: string }> = {
@@ -54,29 +52,9 @@ const serviceTabs: { key: TabKey; label: string }[] = [
   { key: "rv", label: "RV & Trailer" },
 ];
 
-const quickQuoteServices = [
-  "Oil Change",
-  "Tires",
-  "Brakes",
-  "Maintenance",
-  "A/C & Heating",
-  "Marine Service",
-  "RV Service",
-  "Fleet Service",
-  "Something Else",
-];
-
 export default function Home() {
   const { openBooking } = useBooking();
   const [servicesTab, setServicesTab] = useState<TabKey>("automotive");
-
-  /* Quick Quote state */
-  const [qqName, setQqName] = useState("");
-  const [qqPhone, setQqPhone] = useState("");
-  const [qqService, setQqService] = useState("");
-  const [qqSubmitting, setQqSubmitting] = useState(false);
-  const [qqSubmitted, setQqSubmitted] = useState(false);
-  const [qqError, setQqError] = useState("");
 
   const { services: allServices } = useServices({ activeOnly: true });
 
@@ -109,36 +87,6 @@ export default function Home() {
 
   const currentService = servicesData[servicesTab];
 
-  async function handleQuickQuote() {
-    setQqError("");
-    if (!qqService) {
-      setQqError("Please select a service.");
-      return;
-    }
-    const strippedPhone = qqPhone.replace(/\D/g, "");
-    if (strippedPhone.length < 10) {
-      setQqError("Please enter a valid phone number.");
-      return;
-    }
-    setQqSubmitting(true);
-    try {
-      await addDoc(collection(db, "bookings"), {
-        customerName: qqName.trim(),
-        customerPhone: strippedPhone,
-        serviceCategory: qqService,
-        source: "quick-quote",
-        status: "new",
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-      setQqSubmitted(true);
-    } catch {
-      setQqError("Something went wrong. Please call us instead.");
-    } finally {
-      setQqSubmitting(false);
-    }
-  }
-
   return (
     <>
       {/* ── Hero ── */}
@@ -149,11 +97,11 @@ export default function Home() {
           src={cloudinaryUrl(images.logo, { width: 900, quality: "auto" })}
           alt=""
           aria-hidden="true"
-          className="absolute left-[15%] top-[55%] -translate-y-1/2 w-[800px] h-auto opacity-[0.04] z-0 pointer-events-none select-none"
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-auto opacity-[0.04] z-0 pointer-events-none select-none"
         />
 
         <div className="section-inner px-4 lg:px-6 pt-16 pb-16 md:pt-24 md:pb-20 relative z-10">
-          <div className="max-w-[660px] mx-auto text-center">
+          <div className="max-w-3xl mx-auto text-center">
             <p className="text-[12px] uppercase font-bold text-[#D9A441] tracking-[2.5px] mb-4">
               Mobile automotive. Fleet. Marine. RV & Trailer.
             </p>
@@ -164,7 +112,7 @@ export default function Home() {
                 <span className="absolute -bottom-1 left-0 right-0 h-[3px] rounded-full bg-[#E07B2D]/40" />
               </span>
             </h1>
-            <p className="text-[17px] leading-[1.7] text-white/60 max-w-[540px] mx-auto mb-8">
+            <p className="text-[17px] leading-[1.7] text-white/60 max-w-[620px] mx-auto mb-8">
               Mobile oil changes, tire service, fleet maintenance, marine engine care, and RV service. We come to your driveway, your parking lot, or your dock.
             </p>
 
@@ -194,70 +142,6 @@ export default function Home() {
           </div>
         </div>
 
-      </section>
-
-      {/* ── Quick Quote Strip ── */}
-      <section className="bg-[#F8FAFC]">
-        <div className="section-inner px-4 lg:px-6 py-12 md:py-14">
-          <div className="text-center mb-8">
-            <h2 className="text-[24px] font-bold text-[#0B2040] mb-2">
-              Get a Quick Quote
-            </h2>
-            <p className="text-[15px] text-[#555]">
-              Not sure what you need? Tell us and we&apos;ll call you back within the hour.
-            </p>
-          </div>
-
-          {qqSubmitted ? (
-            <p className="text-center text-[17px] font-semibold text-[#22c55e]">
-              Got it! We&apos;ll call you shortly.
-            </p>
-          ) : (
-            <div className="max-w-[800px] mx-auto">
-              <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-3">
-                <input
-                  type="text"
-                  placeholder="Name"
-                  className="w-full text-sm rounded-[10px] px-4 py-3 outline-none border border-[#ddd] bg-white text-[#333] placeholder:text-[#999] focus:border-[#E07B2D] transition-colors"
-                  value={qqName}
-                  onChange={(e) => setQqName(e.target.value)}
-                />
-                <input
-                  type="tel"
-                  placeholder="Phone"
-                  className="w-full text-sm rounded-[10px] px-4 py-3 outline-none border border-[#ddd] bg-white text-[#333] placeholder:text-[#999] focus:border-[#E07B2D] transition-colors"
-                  value={qqPhone}
-                  onChange={(e) => setQqPhone(e.target.value)}
-                />
-                <div className="relative">
-                  <select
-                    className="w-full text-sm rounded-[10px] px-4 py-3 outline-none border border-[#ddd] bg-white text-[#333] appearance-none pr-10 focus:border-[#E07B2D] transition-colors"
-                    value={qqService}
-                    onChange={(e) => setQqService(e.target.value)}
-                  >
-                    <option value="">What do you need?</option>
-                    {quickQuoteServices.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                  <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#999]" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
-                </div>
-                <button
-                  onClick={handleQuickQuote}
-                  disabled={qqSubmitting}
-                  className="whitespace-nowrap font-semibold text-white rounded-[10px] px-6 py-3 bg-[#E07B2D] hover:bg-[#CC6A1F] transition-colors disabled:opacity-60 shadow-[0_4px_16px_rgba(224,123,45,0.3)]"
-                >
-                  {qqSubmitting ? "Sending..." : "Get My Quote"}
-                </button>
-              </div>
-              {qqError && (
-                <p className="text-center text-[13px] text-red-500 font-medium mt-3">
-                  {qqError}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
       </section>
 
       {/* ── How It Works ── */}
@@ -294,8 +178,8 @@ export default function Home() {
                 },
                 {
                   num: "3",
-                  title: "You never left your day.",
-                  desc: "No waiting rooms. No ride to the shop. No disruption.",
+                  title: "Done. Go.",
+                  desc: "No waiting rooms. No ride to the shop. You never left your day.",
                   icon: <Wrench size={22} className="text-white" />,
                   gradient: "linear-gradient(135deg, #E07B2D, #CC6A1F)",
                 },
@@ -305,10 +189,10 @@ export default function Home() {
                     className="relative flex items-center justify-center w-[72px] h-[72px] rounded-[18px] text-white text-xl font-bold mb-6 shadow-[0_4px_20px_rgba(0,0,0,0.2)]"
                     style={{ background: step.gradient }}
                   >
-                    {step.icon}
-                    <span className="absolute -top-2 -right-2 w-[26px] h-[26px] rounded-full bg-white text-[#0B2040] text-[12px] font-bold flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.12)]">
+                    <span className="absolute top-2 left-2.5 text-[20px] font-extrabold text-white/30 leading-none">
                       {step.num}
                     </span>
+                    {step.icon}
                   </div>
                   <h3 className="text-[18px] font-bold text-[#0B2040] mb-2">
                     {step.title}
