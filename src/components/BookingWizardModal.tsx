@@ -1506,7 +1506,7 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
                                   position: "absolute", top: "100%", left: 0, right: 0, zIndex: 100,
                                   background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 12,
                                   boxShadow: "0 8px 24px rgba(0,0,0,0.12)", marginTop: 4,
-                                  maxHeight: 320, overflowY: "auto",
+                                  maxHeight: 280, overflowY: "auto",
                                 }}
                               >
                                 {suggestions.map((s, i) => {
