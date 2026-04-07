@@ -329,16 +329,12 @@ export default function Home() {
             </Link>
           </div>
 
-          {/* ── Desktop: category cards + optional image ── */}
-          <div className={`hidden md:grid items-start gap-8 ${servicesTab === "automotive" ? "grid-cols-1 lg:grid-cols-5" : ""}`}>
-            {/* Category cards grid */}
-            <div className={`grid gap-4 ${
-              servicesTab === "automotive"
-                ? "lg:col-span-3 grid-cols-1 xl:grid-cols-2"
-                : servicesTab === "fleet"
-                  ? "grid-cols-1 max-w-xl mx-auto"
-                  : "grid-cols-2 lg:grid-cols-3"
-            }`}>
+          {/* ── Desktop: category cards grid ── */}
+          <div className="hidden md:block">
+            <div
+              className={`grid gap-4 ${servicesTab === "fleet" ? "max-w-xl mx-auto" : ""}`}
+              style={servicesTab !== "fleet" ? { gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" } : undefined}
+            >
               {currentCategories.map((cat) => {
                 const price = currentPrices[cat.displayName];
                 return (
@@ -375,37 +371,8 @@ export default function Home() {
               })}
             </div>
 
-            {/* Service image — Automotive only */}
-            {servicesTab === "automotive" && (
-              <div className="hidden lg:block lg:col-span-2 relative rounded-[14px] overflow-hidden shadow-[0_4px_24px_rgba(11,32,64,0.1)]">
-                <img
-                  src={cloudinaryUrl(images.drivewayService, { width: 800, height: 600 })}
-                  alt="Mobile automotive service"
-                  className="w-full h-auto"
-                />
-                <div
-                  className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-5 py-4"
-                  style={{
-                    background: "linear-gradient(to right, rgba(255,255,255,0.92), rgba(255,255,255,0.88))",
-                    backdropFilter: "blur(12px)",
-                    WebkitBackdropFilter: "blur(12px)",
-                  }}
-                >
-                  <span className="text-[14px] font-semibold text-[#0B2040]">
-                    Ready to book?
-                  </span>
-                  <button
-                    onClick={() => openBooking({ division: TAB_TO_DIVISION[servicesTab] })}
-                    className="text-[13px] font-semibold text-white px-5 py-2.5 rounded-[8px] bg-[#E07B2D] hover:bg-[#CC6A1F] transition-colors shadow-[0_2px_8px_rgba(224,123,45,0.3)]"
-                  >
-                    Get Quote
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* "View All" link below cards — desktop */}
-            <div className={`${servicesTab === "automotive" ? "lg:col-span-5" : ""} text-center mt-2`}>
+            {/* "View All" link below cards */}
+            <div className="text-center mt-6">
               <Link
                 href={currentLink.href}
                 className="text-[14px] font-semibold text-[#E07B2D] hover:underline"
