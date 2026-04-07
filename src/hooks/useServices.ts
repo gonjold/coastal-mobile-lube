@@ -43,6 +43,8 @@ export interface ServiceCategory {
   startingAt: number;
   sortOrder: number;
   isActive: boolean;
+  tabLabel?: string;
+  showOnHomepage?: boolean;
   createdAt: unknown;
   updatedAt: unknown;
 }

@@ -26,7 +26,6 @@ import {
   getBookingCalendarDate,
   getSourceLabel,
   getStatusStyle,
-  getCalendarDays,
   formatTimeWindow,
   isNewBooking,
   generateGCalUrl,
@@ -53,10 +52,6 @@ export default function SchedulePage() {
 
   /* Set Appointment */
   const [settingAppointmentId, setSettingAppointmentId] = useState<string | null>(null);
-
-  /* Calendar */
-  const [calendarDate, setCalendarDate] = useState(new Date());
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
   /* Cancel / Delete confirmation */
   const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
@@ -139,12 +134,6 @@ export default function SchedulePage() {
         endOfMonth.setHours(23, 59, 59, 999);
         if (bd < startOfMonth || bd > endOfMonth) return false;
       }
-    }
-
-    // If a calendar day is selected, further filter to that day
-    if (selectedDay) {
-      const bookingDate = getBookingCalendarDate(b);
-      if (bookingDate !== selectedDay) return false;
     }
 
     return true;
@@ -357,25 +346,6 @@ export default function SchedulePage() {
     }
   }
 
-  /* ── Calendar data ── */
-  const calYear = calendarDate.getFullYear();
-  const calMonth = calendarDate.getMonth();
-  const calDays = getCalendarDays(calYear, calMonth);
-  const monthLabel = calendarDate.toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
-  });
-
-  // Build calendar dots from all bookings (not filtered by time/status)
-  const bookingsByDate: Record<string, Booking[]> = {};
-  bookings.forEach((b) => {
-    const d = getBookingCalendarDate(b);
-    if (d) {
-      if (!bookingsByDate[d]) bookingsByDate[d] = [];
-      bookingsByDate[d].push(b);
-    }
-  });
-
   /* ── Loading state ── */
   if (loading) {
     return (
@@ -440,7 +410,7 @@ export default function SchedulePage() {
           ] as const).map((v) => (
             <button
               key={v.key}
-              onClick={() => { setTimeFilter(v.key); setSelectedDay(null); }}
+              onClick={() => setTimeFilter(v.key)}
               className={`px-4 py-2 text-[13px] font-semibold transition-colors ${
                 timeFilter === v.key
                   ? "bg-[#0B2040] text-white"
@@ -487,23 +457,6 @@ export default function SchedulePage() {
           ))}
         </div>
 
-        {/* Selected day indicator */}
-        {selectedDay && (
-          <button
-            onClick={() => setSelectedDay(null)}
-            className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-semibold text-[#1A5FAC] bg-[#EBF4FF] border border-[#1A5FAC]/20 rounded-lg hover:bg-[#dbeafe] transition-colors"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-            {new Date(selectedDay + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-            <span className="text-[#888]">&times;</span>
-          </button>
-        )}
-
         {/* Count */}
         <p className="text-[14px] text-[#888] ml-auto">
           Showing{" "}
@@ -536,10 +489,9 @@ export default function SchedulePage() {
         </div>
       </div>
 
-      {/* ═══ RESPONSIVE LAYOUT: sidebar calendar on xl when collapsed, stacked when expanded ═══ */}
-      <div className={`flex flex-col ${expandedId ? '' : 'xl:flex-row'} gap-6`}>
-        {/* Bookings List - full width when expanded, flex-1 on xl when collapsed */}
-        <div className={`w-full ${expandedId ? '' : 'xl:flex-1 xl:min-w-0'}`}>
+      {/* ═══ Bookings List ═══ */}
+      <div>
+        <div className="w-full">
           {filtered.length === 0 ? (
             <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-12 text-center">
               <div className="w-16 h-16 rounded-full bg-[#f5f5f5] flex items-center justify-center mx-auto mb-4">
@@ -554,7 +506,7 @@ export default function SchedulePage() {
                 No bookings found
               </h3>
               <p className="text-[14px] text-[#888]">
-                {selectedDay ? "No bookings for this day. Click a different date or clear the filter." : "Try changing your filters or check back later."}
+                Try changing your filters or check back later.
               </p>
             </div>
           ) : (
@@ -692,118 +644,6 @@ export default function SchedulePage() {
           )}
         </div>
 
-        {/* Calendar - sidebar on xl when no expansion, full width otherwise */}
-        <div className={`w-full ${expandedId ? '' : 'xl:w-[340px] xl:shrink-0'}`}>
-          <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-5 xl:sticky xl:top-6">
-            {/* Month navigation */}
-            <div className="flex items-center justify-between mb-4">
-              <button
-                onClick={() => {
-                  setCalendarDate(new Date(calYear, calMonth - 1, 1));
-                }}
-                className="p-1.5 text-[#444] hover:text-[#0B2040] transition-colors rounded hover:bg-[#f5f5f5]"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
-              </button>
-              <h3 className="text-[15px] font-bold text-[#0B2040]">{monthLabel}</h3>
-              <button
-                onClick={() => {
-                  setCalendarDate(new Date(calYear, calMonth + 1, 1));
-                }}
-                className="p-1.5 text-[#444] hover:text-[#0B2040] transition-colors rounded hover:bg-[#f5f5f5]"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Day headers */}
-            <div className="grid grid-cols-7 gap-px mb-1">
-              {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-                <div
-                  key={`${d}-${i}`}
-                  className="text-center text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] py-1"
-                >
-                  {d}
-                </div>
-              ))}
-            </div>
-
-            {/* Calendar grid (compact) */}
-            <div className="grid grid-cols-7 gap-px">
-              {calDays.map((day, i) => {
-                if (day === null) {
-                  return <div key={`empty-${i}`} className="h-[52px] bg-[#fafafa] rounded" />;
-                }
-                const dateKey = `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-                const dayBookings = bookingsByDate[dateKey] || [];
-                const isSelected = selectedDay === dateKey;
-                const isToday = dateKey === todayISO;
-                return (
-                  <div
-                    key={dateKey}
-                    onClick={() => setSelectedDay(isSelected ? null : dateKey)}
-                    className={`h-[52px] p-1.5 rounded cursor-pointer transition-colors border flex flex-col items-center ${
-                      isSelected
-                        ? "border-[#0B2040] bg-[#EBF4FF]"
-                        : isToday
-                          ? "border-[#E07B2D] bg-[#FFF8F0]"
-                          : "border-transparent bg-white hover:bg-[#FAFBFC]"
-                    }`}
-                  >
-                    <p className={`text-[12px] font-semibold leading-none ${
-                      isToday ? "text-[#E07B2D]" : isSelected ? "text-[#0B2040]" : "text-[#444]"
-                    }`}>
-                      {day}
-                    </p>
-                    {dayBookings.length > 0 && (
-                      <div className="flex flex-wrap justify-center gap-0.5 mt-1">
-                        {dayBookings.slice(0, 4).map((b) => (
-                          <span
-                            key={b.id}
-                            className={`w-[5px] h-[5px] rounded-full ${
-                              b.type === "lead"
-                                ? "bg-[#7c3aed]"
-                                : b.status === "pending"
-                                  ? "bg-[#E07B2D]"
-                                  : b.status === "confirmed"
-                                    ? "bg-[#1A5FAC]"
-                                    : b.status === "cancelled"
-                                      ? "bg-[#999]"
-                                      : "bg-[#16a34a]"
-                            }`}
-                          />
-                        ))}
-                        {dayBookings.length > 4 && (
-                          <span className="text-[8px] text-[#888] leading-none">+{dayBookings.length - 4}</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Legend */}
-            <div className="mt-4 pt-3 border-t border-[#eee] flex flex-wrap gap-3 justify-center">
-              {[
-                { color: "bg-[#E07B2D]", label: "Pending" },
-                { color: "bg-[#1A5FAC]", label: "Confirmed" },
-                { color: "bg-[#16a34a]", label: "Completed" },
-                { color: "bg-[#7c3aed]", label: "Lead" },
-                { color: "bg-[#999]", label: "Cancelled" },
-              ].map((l) => (
-                <div key={l.label} className="flex items-center gap-1.5">
-                  <span className={`w-[7px] h-[7px] rounded-full ${l.color}`} />
-                  <span className="text-[11px] text-[#888] font-medium">{l.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* ═══ Cancel Confirmation Dialog ═══ */}

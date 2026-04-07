@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, useCallback, Suspense } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, Suspense, Fragment } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { db, auth } from "@/lib/firebase";
@@ -336,6 +336,7 @@ function InvoicingPageInner() {
 
   /* Filter */
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [expandedInvoiceId, setExpandedInvoiceId] = useState<string | null>(null);
 
   /* Toasts */
   const [toasts, setToasts] = useState<ToastItem[]>([]);
@@ -754,10 +755,12 @@ function InvoicingPageInner() {
 
           {filtered.map((inv) => {
             const badge = statusBadge(inv.status);
+            const isExpanded = expandedInvoiceId === inv.id;
             return (
+              <Fragment key={inv.id}>
               <div
-                key={inv.id}
-                className="md:grid md:grid-cols-[1fr_1.2fr_100px_100px_90px_140px] gap-4 px-5 py-4 border-b border-[#f0f0f0] last:border-b-0 items-center hover:bg-[#fafbfc] transition-colors"
+                onClick={() => setExpandedInvoiceId(isExpanded ? null : inv.id)}
+                className={`md:grid md:grid-cols-[1fr_1.2fr_100px_100px_90px_140px] gap-4 px-5 py-4 border-b border-[#f0f0f0] last:border-b-0 items-center cursor-pointer transition-colors ${isExpanded ? "bg-[#FAFBFC]" : "hover:bg-[#fafbfc]"}`}
               >
                 {/* Mobile: stacked layout */}
                 <div>
@@ -773,7 +776,7 @@ function InvoicingPageInner() {
                     {badge.label}
                   </span>
                 </div>
-                <div className="flex items-center justify-end gap-1 mt-2 md:mt-0">
+                <div className="flex items-center justify-end gap-1 mt-2 md:mt-0" onClick={(e) => e.stopPropagation()}>
                   {inv.status === "draft" && (
                     <button
                       onClick={() => openEdit(inv)}
@@ -819,6 +822,114 @@ function InvoicingPageInner() {
                   )}
                 </div>
               </div>
+
+              {/* Expanded invoice detail */}
+              {isExpanded && (
+                <div className="bg-[#FAFBFC] border-b border-[#e8e8e8] px-6 py-5">
+                  <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr] gap-6">
+                    {/* Customer Info */}
+                    <div className="bg-white border border-[#e8e8e8] rounded-[10px] p-4">
+                      <h4 className="text-[14px] font-bold text-[#0B2040] mb-3 pb-2 border-b border-[#eee]">Customer Info</h4>
+                      {[
+                        { label: "Name", value: inv.customerName },
+                        { label: "Phone", value: inv.customerPhone ? formatPhone(inv.customerPhone) : "-" },
+                        { label: "Email", value: inv.customerEmail || "-" },
+                        { label: "Invoice #", value: inv.invoiceNumber },
+                        { label: "Date", value: inv.invoiceDate },
+                        { label: "Due", value: inv.dueDate },
+                        { label: "Status", value: badge.label },
+                      ].map((r) => (
+                        <div key={r.label} className="flex justify-between items-start py-1.5 border-b border-[#f5f5f5] last:border-0">
+                          <span className="text-[12px] text-[#888] font-medium">{r.label}</span>
+                          <span className="text-[13px] text-[#0B2040] font-medium text-right">{r.value}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Line Items + Totals */}
+                    <div className="bg-white border border-[#e8e8e8] rounded-[10px] p-4">
+                      <h4 className="text-[14px] font-bold text-[#0B2040] mb-3 pb-2 border-b border-[#eee]">Line Items</h4>
+                      <div className="space-y-2 mb-4">
+                        {inv.lineItems.map((li, idx) => (
+                          <div key={idx} className="flex items-center justify-between text-[13px]">
+                            <div>
+                              <span className="text-[#0B2040] font-medium">{li.serviceName}</span>
+                              {li.quantity > 1 && <span className="text-[#888] ml-1">x{li.quantity}</span>}
+                            </div>
+                            <span className="font-semibold text-[#0B2040]">{formatCurrency(li.lineTotal)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="border-t border-[#eee] pt-3 space-y-1">
+                        <div className="flex justify-between text-[13px]">
+                          <span className="text-[#888]">Subtotal</span>
+                          <span className="font-medium">{formatCurrency(inv.subtotal)}</span>
+                        </div>
+                        {inv.taxRate > 0 && (
+                          <div className="flex justify-between text-[13px]">
+                            <span className="text-[#888]">Tax ({inv.taxRate}%)</span>
+                            <span className="font-medium">{formatCurrency(inv.taxAmount)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-[16px] font-bold text-[#0B2040] pt-2 border-t border-[#0B2040]">
+                          <span>Total</span>
+                          <span>{formatCurrency(inv.total)}</span>
+                        </div>
+                      </div>
+
+                      {inv.notes && (
+                        <div className="mt-4 pt-3 border-t border-[#eee]">
+                          <p className="text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1">Notes</p>
+                          <p className="text-[13px] text-[#444] whitespace-pre-wrap">{inv.notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex items-center gap-2 mt-4">
+                    {inv.status === "draft" && (
+                      <button
+                        onClick={() => openEdit(inv)}
+                        className="px-4 py-2 text-[13px] font-semibold text-white bg-[#1A5FAC] rounded-[8px] hover:bg-[#174f94] transition-colors"
+                      >
+                        Edit Invoice
+                      </button>
+                    )}
+                    {inv.status === "draft" && (
+                      <button
+                        onClick={() => markStatus(inv.id, "sent")}
+                        className="px-4 py-2 text-[13px] font-semibold text-white bg-[#E07B2D] rounded-[8px] hover:bg-[#c96a24] transition-colors"
+                      >
+                        Mark as Sent
+                      </button>
+                    )}
+                    {inv.status === "sent" && (
+                      <button
+                        onClick={() => markStatus(inv.id, "paid")}
+                        className="px-4 py-2 text-[13px] font-semibold text-white bg-[#16a34a] rounded-[8px] hover:bg-[#15803d] transition-colors"
+                      >
+                        Mark as Paid
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handlePrint(inv)}
+                      className="px-4 py-2 text-[13px] font-semibold text-[#0B2040] border border-[#e8e8e8] rounded-[8px] hover:bg-[#f5f5f5] transition-colors"
+                    >
+                      Print / PDF
+                    </button>
+                    {inv.status === "draft" && (
+                      <button
+                        onClick={() => setDeleteConfirm(inv.id)}
+                        className="px-4 py-2 text-[13px] font-semibold text-[#dc2626] border border-[#dc2626]/30 rounded-[8px] hover:bg-[#fef2f2] transition-colors"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+              </Fragment>
             );
           })}
         </div>

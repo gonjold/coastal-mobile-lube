@@ -16,6 +16,14 @@ const serviceOptions = [
 
 type ContactPref = "call" | "text" | "email";
 
+function formatPhoneDisplay(value: string): string {
+  const d = value.replace(/\D/g, "").slice(0, 10);
+  if (d.length === 0) return "";
+  if (d.length <= 3) return `(${d}`;
+  if (d.length <= 6) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
+  return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+}
+
 export default function FloatingQuoteBar() {
   const pathname = usePathname();
   const { bookingOpen } = useBooking();
@@ -125,7 +133,7 @@ export default function FloatingQuoteBar() {
             </div>
             <div>
               <label className={labelClass}>Phone</label>
-              <input type="tel" placeholder="Phone number" className={inputClass} value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <input type="tel" placeholder="(555) 555-5555" className={inputClass} value={phone} onChange={(e) => setPhone(formatPhoneDisplay(e.target.value))} />
             </div>
             <div>
               <label className={labelClass}>Email</label>

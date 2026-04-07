@@ -158,7 +158,8 @@ function CustomersView({
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
-  const [editingCustomer, setEditingCustomer] = useState<Record<string, { name: string; phone: string; email: string; address: string }>>({});
+  const [editingCustomer, setEditingCustomer] = useState<Record<string, { firstName: string; lastName: string; phone: string; email: string; address: string }>>({});
+  const [nameSortAsc, setNameSortAsc] = useState<boolean | null>(null);
   const [savingCustomer, setSavingCustomer] = useState<string | null>(null);
 
   /* New Customer modal */
@@ -190,27 +191,53 @@ function CustomersView({
     }
   }
 
-  const filtered = search.trim()
-    ? customers.filter((c) => {
-        const q = search.toLowerCase();
-        return (
-          c.name.toLowerCase().includes(q) ||
-          (c.phone && formatPhone(c.phone).includes(q)) ||
-          (c.phone && c.phone.includes(q)) ||
-          (c.email && c.email.toLowerCase().includes(q))
-        );
-      })
-    : customers;
+  function splitName(name: string): { first: string; last: string } {
+    if (!name || name === "-") return { first: "", last: "" };
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return { first: parts[0], last: "" };
+    return { first: parts[0], last: parts.slice(1).join(" ") };
+  }
+
+  function displayName(name: string): string {
+    const { first, last } = splitName(name);
+    if (!last) return first || "-";
+    return `${last}, ${first}`;
+  }
+
+  const filtered = (() => {
+    let list = search.trim()
+      ? customers.filter((c) => {
+          const q = search.toLowerCase();
+          return (
+            c.name.toLowerCase().includes(q) ||
+            (c.phone && formatPhone(c.phone).includes(q)) ||
+            (c.phone && c.phone.includes(q)) ||
+            (c.email && c.email.toLowerCase().includes(q))
+          );
+        })
+      : [...customers];
+    if (nameSortAsc !== null) {
+      list = [...list].sort((a, b) => {
+        const aLast = splitName(a.name).last.toLowerCase() || splitName(a.name).first.toLowerCase();
+        const bLast = splitName(b.name).last.toLowerCase() || splitName(b.name).first.toLowerCase();
+        return nameSortAsc ? aLast.localeCompare(bLast) : bLast.localeCompare(aLast);
+      });
+    }
+    return list;
+  })();
 
   async function handleSaveCustomer(customer: Customer) {
     const edit = editingCustomer[customer.key];
     if (!edit) return;
     setSavingCustomer(customer.key);
+    const fullName = `${edit.firstName.trim()} ${edit.lastName.trim()}`.trim();
     try {
       await Promise.all(
         customer.bookings.map((b) =>
           updateDoc(doc(db, "bookings", b.id), {
-            name: edit.name.trim() || undefined,
+            name: fullName || undefined,
+            firstName: edit.firstName.trim() || undefined,
+            lastName: edit.lastName.trim() || undefined,
             phone: edit.phone.replace(/\D/g, "") || undefined,
             email: edit.email.trim().toLowerCase() || undefined,
             address: edit.address.trim() || undefined,
@@ -218,7 +245,7 @@ function CustomersView({
           })
         )
       );
-      addToast(`Updated ${customer.bookings.length} booking(s) for ${edit.name || customer.name}`);
+      addToast(`Updated ${customer.bookings.length} booking(s) for ${fullName || customer.name}`);
     } catch {
       addToast("Failed to update customer info", "info");
     } finally {
@@ -265,7 +292,16 @@ function CustomersView({
         <table className="w-full text-left">
           <thead>
             <tr className="border-b border-[#eee]">
-              {["Name", "Phone", "Email", "Bookings", "Last Booking", "Status"].map((h) => (
+              <th
+                className="px-4 py-3 text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] whitespace-nowrap cursor-pointer hover:text-[#0B2040] transition-colors select-none"
+                onClick={() => setNameSortAsc(nameSortAsc === null ? true : nameSortAsc ? false : null)}
+              >
+                Name
+                {nameSortAsc !== null && (
+                  <span className="ml-1 text-[10px]">{nameSortAsc ? "\u25B2" : "\u25BC"}</span>
+                )}
+              </th>
+              {["Phone", "Email", "Bookings", "Last Booking", "Status"].map((h) => (
                 <th key={h} className="px-4 py-3 text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] whitespace-nowrap">
                   {h}
                 </th>
@@ -289,7 +325,7 @@ function CustomersView({
                       onClick={() => setExpandedCustomer(isExpanded ? null : c.key)}
                       className={`border-b border-[#f0f0f0] cursor-pointer transition-colors ${isExpanded ? "bg-[#FAFBFC]" : "hover:bg-[#FAFBFC]"}`}
                     >
-                      <td className="px-4 py-3 text-[14px] font-semibold text-[#0B2040] whitespace-nowrap">{c.name}</td>
+                      <td className="px-4 py-3 text-[14px] font-semibold text-[#0B2040] whitespace-nowrap">{displayName(c.name)}</td>
                       <td className="px-4 py-3 text-[13px] whitespace-nowrap">
                         {c.phone ? (
                           <a href={`tel:${c.phone}`} className="text-[#1A5FAC] hover:underline" onClick={(e) => e.stopPropagation()}>
@@ -428,15 +464,24 @@ function CustomerExpanded({
   onCreateInvoice,
 }: {
   customer: Customer;
-  editingCustomer: Record<string, { name: string; phone: string; email: string; address: string }>;
+  editingCustomer: Record<string, { firstName: string; lastName: string; phone: string; email: string; address: string }>;
   savingCustomer: string | null;
-  onEditChange: (val: { name: string; phone: string; email: string; address: string }) => void;
+  onEditChange: (val: { firstName: string; lastName: string; phone: string; email: string; address: string }) => void;
   onSave: () => void;
   commsLog: Array<{ id: string; type: string; direction: string; summary: string; createdAt: string; bookingService?: string }>;
   onCreateInvoice: () => void;
 }) {
+  function autoSplitName(name: string): { first: string; last: string } {
+    if (!name || name === "-") return { first: "", last: "" };
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return { first: parts[0], last: "" };
+    return { first: parts[0], last: parts.slice(1).join(" ") };
+  }
+
+  const { first: defaultFirst, last: defaultLast } = autoSplitName(customer.name === "-" ? "" : customer.name);
   const edit = editingCustomer[customer.key] || {
-    name: customer.name === "-" ? "" : customer.name,
+    firstName: defaultFirst,
+    lastName: defaultLast,
     phone: customer.phone ? formatPhone(customer.phone) : "",
     email: customer.email || "",
     address: customer.address || "",
@@ -452,7 +497,31 @@ function CustomerExpanded({
         <div className="w-full md:w-1/3 shrink-0">
           <div className="bg-white border border-[#e8e8e8] rounded-[10px] p-4">
             <h4 className="text-[14px] font-bold text-[#0B2040] mb-3 pb-2 border-b border-[#eee]">Edit Customer</h4>
-            {(["name", "phone", "email", "address"] as const).map((field) => (
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1">
+                  First Name
+                </label>
+                <input
+                  type="text"
+                  value={edit.firstName}
+                  onChange={(e) => onEditChange({ ...edit, firstName: e.target.value })}
+                  className="w-full text-[13px] rounded-[6px] px-3 py-1.5 border border-[#ddd] outline-none focus:border-[#1A5FAC] transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1">
+                  Last Name
+                </label>
+                <input
+                  type="text"
+                  value={edit.lastName}
+                  onChange={(e) => onEditChange({ ...edit, lastName: e.target.value })}
+                  className="w-full text-[13px] rounded-[6px] px-3 py-1.5 border border-[#ddd] outline-none focus:border-[#1A5FAC] transition-colors"
+                />
+              </div>
+            </div>
+            {(["phone", "email", "address"] as const).map((field) => (
               <div key={field} className="mb-3">
                 <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1">
                   {field}

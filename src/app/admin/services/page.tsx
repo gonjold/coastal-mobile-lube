@@ -583,6 +583,8 @@ export default function ServicesPage() {
           startingAt: data.startingAt || 0,
           sortOrder: maxOrder + 1,
           isActive: data.isActive ?? true,
+          tabLabel: (data as Record<string, unknown>).tabLabel || "",
+          showOnHomepage: (data as Record<string, unknown>).showOnHomepage ?? true,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         });
@@ -597,6 +599,8 @@ export default function ServicesPage() {
           description: data.description,
           startingAt: data.startingAt,
           isActive: data.isActive,
+          tabLabel: (data as Record<string, unknown>).tabLabel || "",
+          showOnHomepage: (data as Record<string, unknown>).showOnHomepage ?? true,
           updatedAt: serverTimestamp(),
         });
 
@@ -1440,8 +1444,26 @@ export default function ServicesPage() {
               </select>
             </div>
 
-            {/* Active toggle */}
-            <div className="pt-2">
+            {/* Tab Label */}
+            <div>
+              <label className="block text-[12px] font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                Tab Label <span className="text-gray-300 font-normal normal-case">(optional — overrides category name on public pages)</span>
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Oil & Lube"
+                value={(categoryModal as Record<string, unknown>).tabLabel as string || ""}
+                onChange={(e) =>
+                  setCategoryModal((p) =>
+                    p ? { ...p, tabLabel: e.target.value } : p
+                  )
+                }
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[14px] focus:outline-none focus:border-[#0F2A44]"
+              />
+            </div>
+
+            {/* Toggles */}
+            <div className="flex flex-wrap gap-6 pt-2">
               <Toggle
                 on={categoryModal.isActive ?? true}
                 onToggle={() =>
@@ -1450,6 +1472,15 @@ export default function ServicesPage() {
                   )
                 }
                 label="Active"
+              />
+              <Toggle
+                on={(categoryModal as Record<string, unknown>).showOnHomepage as boolean ?? true}
+                onToggle={() =>
+                  setCategoryModal((p) =>
+                    p ? { ...p, showOnHomepage: !(p as Record<string, unknown>).showOnHomepage } : p
+                  )
+                }
+                label="Show on Homepage"
               />
             </div>
 

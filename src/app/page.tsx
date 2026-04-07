@@ -87,7 +87,7 @@ export default function Home() {
     for (const tabKey of Object.keys(DIVISION_KEY_MAP) as TabKey[]) {
       const divKey = DIVISION_KEY_MAP[tabKey];
       const cats = allFirestoreCategories
-        .filter((c) => c.division === divKey && !/labor\s*rate/i.test(c.name))
+        .filter((c) => c.division === divKey && !/labor\s*rate/i.test(c.name) && (c.showOnHomepage !== false))
         .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
       if (cats.length === 0) {
@@ -98,7 +98,7 @@ export default function Home() {
       result[tabKey] = cats.map((c) => {
         const hardcoded = DIVISION_CATEGORIES[tabKey]?.find((d) => d.firestoreCategories.includes(c.name));
         return {
-          displayName: c.name,
+          displayName: c.tabLabel || c.name,
           description: c.description || hardcoded?.description || `${c.name} services.`,
           firestoreCategories: [c.name],
           ...(hardcoded?.ctaAction ? { ctaAction: hardcoded.ctaAction, ctaLabel: hardcoded.ctaLabel } : {}),
