@@ -80,26 +80,39 @@ export default function Home() {
 
   const { services: allServices, categories: allFirestoreCategories } = useServices({ activeOnly: true });
 
-  /* Build RV categories dynamically from Firestore serviceCategories */
-  const effectiveRvCategories = useMemo((): CategoryConfig[] => {
-    const rvCats = allFirestoreCategories
-      .filter((c) => c.division === "rv" && !/labor\s*rate/i.test(c.name))
-      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  /* Build categories dynamically from Firestore serviceCategories for ALL divisions */
+  const effectiveCategories = useMemo((): Record<TabKey, CategoryConfig[]> => {
+    const result = {} as Record<TabKey, CategoryConfig[]>;
 
-    if (rvCats.length === 0) return DIVISION_CATEGORIES.rv;
+    for (const tabKey of Object.keys(DIVISION_KEY_MAP) as TabKey[]) {
+      const divKey = DIVISION_KEY_MAP[tabKey];
+      const cats = allFirestoreCategories
+        .filter((c) => c.division === divKey && !/labor\s*rate/i.test(c.name))
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
-    return rvCats.map((c) => ({
-      displayName: c.name,
-      description: c.description || `${c.name} services for your RV.`,
-      firestoreCategories: [c.name],
-    }));
+      if (cats.length === 0) {
+        result[tabKey] = DIVISION_CATEGORIES[tabKey];
+        continue;
+      }
+
+      result[tabKey] = cats.map((c) => {
+        const hardcoded = DIVISION_CATEGORIES[tabKey]?.find((d) => d.firestoreCategories.includes(c.name));
+        return {
+          displayName: c.name,
+          description: c.description || hardcoded?.description || `${c.name} services.`,
+          firestoreCategories: [c.name],
+          ...(hardcoded?.ctaAction ? { ctaAction: hardcoded.ctaAction, ctaLabel: hardcoded.ctaLabel } : {}),
+        };
+      });
+    }
+
+    return result;
   }, [allFirestoreCategories]);
 
   /* Compute per-category min prices from Firestore services */
   const categoryPrices = useMemo(() => {
-    const effective = { ...DIVISION_CATEGORIES, rv: effectiveRvCategories };
     const prices: Record<string, Record<string, number | null>> = {};
-    for (const [tabKey, categories] of Object.entries(effective) as [TabKey, CategoryConfig[]][]) {
+    for (const [tabKey, categories] of Object.entries(effectiveCategories) as [TabKey, CategoryConfig[]][]) {
       prices[tabKey] = {};
       const divKey = DIVISION_KEY_MAP[tabKey];
       const divServices = allServices.filter((s) => s.division === divKey);
@@ -111,9 +124,9 @@ export default function Home() {
       }
     }
     return prices;
-  }, [allServices, effectiveRvCategories]);
+  }, [allServices, effectiveCategories]);
 
-  const currentCategories = servicesTab === "rv" ? effectiveRvCategories : DIVISION_CATEGORIES[servicesTab];
+  const currentCategories = effectiveCategories[servicesTab] ?? DIVISION_CATEGORIES[servicesTab];
   const currentPrices = categoryPrices[servicesTab] ?? {};
   const currentLink = DIVISION_LINKS[servicesTab];
 
