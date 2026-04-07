@@ -245,6 +245,12 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
   const ymmDropdownRef = useRef<HTMLDivElement>(null);
   const [prefetchLoading, setPrefetchLoading] = useState(false);
   const prefetchStartedRef = useRef(false);
+  const allMakesRef = useRef<string[]>([]);
+
+  /* ── Marine vessel description ── */
+  const [vesselYear, setVesselYear] = useState("");
+  const [vesselMake, setVesselMake] = useState("");
+  const [vesselModel, setVesselModel] = useState("");
 
   /* ── Step 3: Details ── */
   const [customerName, setCustomerName] = useState("");
@@ -362,6 +368,9 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
     setVehicleMake("");
     setVehicleModel("");
     setVinDecoded(false);
+    setVesselYear("");
+    setVesselMake("");
+    setVesselModel("");
     setYmmSearch("");
     setYmmDropdownOpen(false);
     setShowManualFields(false);
@@ -457,23 +466,30 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
     return () => ac.abort();
   }, [vinOrHull, isMarine]);
 
-  /* ── Pre-fetch models for top 25 popular makes (triggered on first focus) ── */
+  /* ── Pre-fetch models for top 25 popular makes + all NHTSA makes (triggered on first focus) ── */
   function handleSearchFocus() {
     if (!prefetchStartedRef.current) {
       prefetchStartedRef.current = true;
       setPrefetchLoading(true);
-      Promise.allSettled(
-        POPULAR_MAKES.map((make) =>
-          fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/GetModelsForMake/${encodeURIComponent(make)}?format=json`)
-            .then((r) => r.json())
-            .then((data: { Results?: { Model_Name?: string }[] }) => {
-              const models = [...new Set(
-                (data.Results || []).map((r) => r.Model_Name || "").filter((s) => s.length > 0)
-              )].sort((a, b) => a.localeCompare(b));
-              modelsCacheRef.current[make] = models;
-            })
-        )
-      ).then(() => {
+      const popularFetches = POPULAR_MAKES.map((make) =>
+        fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/GetModelsForMake/${encodeURIComponent(make)}?format=json`)
+          .then((r) => r.json())
+          .then((data: { Results?: { Model_Name?: string }[] }) => {
+            const models = [...new Set(
+              (data.Results || []).map((r) => r.Model_Name || "").filter((s) => s.length > 0)
+            )].sort((a, b) => a.localeCompare(b));
+            modelsCacheRef.current[make] = models;
+          })
+      );
+      const allMakesFetch = fetch("https://vpic.nhtsa.dot.gov/api/vehicles/GetAllMakes?format=json")
+        .then((r) => r.json())
+        .then((data: { Results?: { Make_Name?: string }[] }) => {
+          allMakesRef.current = [...new Set(
+            (data.Results || []).map((r) => r.Make_Name || "").filter((s) => s.length > 0)
+          )].sort((a, b) => a.localeCompare(b));
+        })
+        .catch(() => {});
+      Promise.allSettled([...popularFetches, allMakesFetch]).then(() => {
         setPrefetchLoading(false);
         setModelsFetchKey((k) => k + 1);
       });
@@ -525,8 +541,8 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
 
     const lowerRest = rest.toLowerCase();
 
-    // Check popular makes first (longest match)
-    const allKnown = [...POPULAR_MAKES, ...Object.keys(modelsCacheRef.current)];
+    // Check all known makes (longest match, popular first)
+    const allKnown = [...POPULAR_MAKES, ...Object.keys(modelsCacheRef.current), ...allMakesRef.current];
     const sortedMakes = [...new Set(allKnown)].sort((a, b) => b.length - a.length);
     const foundMake = sortedMakes.find(
       (m) => lowerRest.startsWith(m.toLowerCase()) && (lowerRest.length === m.length || lowerRest[m.length] === " ")
@@ -670,7 +686,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
 
     if (lowerRest) {
       // Try exact make match at start of input (longest first)
-      const allKnownMakes = [...new Set([...POPULAR_MAKES, ...Object.keys(modelsCacheRef.current)])];
+      const allKnownMakes = [...new Set([...POPULAR_MAKES, ...Object.keys(modelsCacheRef.current), ...allMakesRef.current])];
       const sortedMakes = allKnownMakes.sort((a, b) => b.length - a.length);
       const foundMake = sortedMakes.find(
         (m) => lowerRest.startsWith(m.toLowerCase()) && (lowerRest.length === m.length || lowerRest[m.length] === " ")
@@ -715,9 +731,9 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
         });
       }
 
-      // Make-name substring search against popular + cached makes (fallback)
+      // Make-name substring search against popular + cached + ALL NHTSA makes (fallback)
       if (scored.length === 0) {
-        const knownMakes = [...new Set([...POPULAR_MAKES, ...Object.keys(modelsCacheRef.current)])];
+        const knownMakes = [...new Set([...POPULAR_MAKES, ...Object.keys(modelsCacheRef.current), ...allMakesRef.current])];
         const makeMatches = knownMakes.filter((m) => m.toLowerCase().includes(lowerRest));
         makeMatches.forEach((make) => {
           const ml = make.toLowerCase();
@@ -794,6 +810,9 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
         vehicleYear: vehicleYear.trim(),
         vehicleMake: vehicleMake.trim(),
         vehicleModel: vehicleModel.trim(),
+        vesselYear: vesselYear.trim(),
+        vesselMake: vesselMake.trim(),
+        vesselModel: vesselModel.trim(),
         customerName: customerName.trim(),
         customerPhone: customerPhone.replace(/\D/g, ""),
         customerEmail: customerEmail.trim().toLowerCase(),
@@ -828,6 +847,9 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
     setVehicleMake("");
     setVehicleModel("");
     setVinDecoded(false);
+    setVesselYear("");
+    setVesselMake("");
+    setVesselModel("");
     setCustomerName("");
     setCustomerPhone("");
     setCustomerEmail("");
@@ -1327,6 +1349,61 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                       background: "#FFFFFF", color: "#1E293B",
                     }}
                   />
+
+                  {/* Vessel description fields */}
+                  <div style={{ marginTop: 20 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                      <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
+                      <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 500, whiteSpace: "nowrap" }}>Don&apos;t know your HIN? Describe your vessel.</span>
+                      <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Vessel Year</label>
+                        <input
+                          type="number"
+                          value={vesselYear}
+                          onChange={(e) => setVesselYear(e.target.value)}
+                          placeholder="e.g. 2020"
+                          min="1950"
+                          max="2027"
+                          style={{
+                            width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
+                            fontSize: 14, outline: "none", fontFamily: "inherit",
+                            background: "#FFFFFF", color: "#1E293B",
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Vessel Make</label>
+                        <input
+                          type="text"
+                          value={vesselMake}
+                          onChange={(e) => setVesselMake(e.target.value)}
+                          placeholder="e.g. Boston Whaler"
+                          style={{
+                            width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
+                            fontSize: 14, outline: "none", fontFamily: "inherit",
+                            background: "#FFFFFF", color: "#1E293B",
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Vessel Model</label>
+                        <input
+                          type="text"
+                          value={vesselModel}
+                          onChange={(e) => setVesselModel(e.target.value)}
+                          placeholder="e.g. Montauk 170"
+                          style={{
+                            width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
+                            fontSize: 14, outline: "none", fontFamily: "inherit",
+                            background: "#FFFFFF", color: "#1E293B",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <>
@@ -1408,10 +1485,10 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                         <div ref={ymmDropdownRef} style={{ position: "relative" }}>
                           <div style={{ position: "relative" }}>
                             <svg
-                              width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round"
-                              style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
+                              width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round"
+                              style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
                             >
-                              <circle cx="8" cy="8" r="5.5" /><line x1="12" y1="12" x2="16" y2="16" />
+                              <circle cx="7" cy="7" r="5" /><line x1="10.5" y1="10.5" x2="14" y2="14" />
                             </svg>
                             <input
                               type="text"
@@ -1421,14 +1498,28 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                                 setYmmDropdownOpen(true);
                               }}
                               onFocus={handleSearchFocus}
-                              placeholder={prefetchLoading ? "Loading vehicle database..." : "Search your vehicle... e.g. 2020 Toyota Tundra"}
+                              placeholder={prefetchLoading ? "Loading vehicle database..." : (
+                                division === "RV" ? "Search your vehicle... e.g. 2022 Thor Four Winds" :
+                                division === "Fleet" ? "Search your vehicle... e.g. 2023 Ford Transit" :
+                                "Search your vehicle... e.g. 2024 Ford F-150"
+                              )}
                               style={{
-                                width: "100%", padding: "14px 20px 14px 44px", border: "1px solid #E2E8F0",
-                                borderRadius: 16, fontSize: 18, outline: "none", fontFamily: "inherit",
+                                width: "100%", padding: "12px 14px 12px 38px", border: "1px solid #E2E8F0",
+                                borderRadius: 10, fontSize: 14, outline: "none", fontFamily: "inherit",
                                 background: "#FFFFFF", color: "#1E293B",
                               }}
                             />
                           </div>
+                          {/* Manual entry link */}
+                          {!ymmDropdownOpen && (
+                            <button
+                              type="button"
+                              onClick={() => { setShowManualFields(true); }}
+                              style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", fontSize: 12, fontWeight: 500, marginTop: 6, padding: 0 }}
+                            >
+                              or enter details manually
+                            </button>
+                          )}
                           {/* Dropdown suggestions (opens downward) */}
                           {ymmDropdownOpen && (() => {
                             const suggestions = computeYmmSuggestions();
@@ -1781,7 +1872,12 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                 {vinOrHull && (
                   <div style={{ fontSize: 13, color: "#475569" }}>{isMarine ? "HIN" : "VIN"}: {vinOrHull}</div>
                 )}
-                {!vehicleYear && !vehicleMake && !vehicleModel && !vinOrHull && (
+                {isMarine && (vesselYear || vesselMake || vesselModel) && (
+                  <div style={{ fontSize: 13, color: "#1E293B", marginTop: 4 }}>
+                    {[vesselYear, vesselMake, vesselModel].filter(Boolean).join(" ")}
+                  </div>
+                )}
+                {!vehicleYear && !vehicleMake && !vehicleModel && !vinOrHull && !(isMarine && (vesselYear || vesselMake || vesselModel)) && (
                   <div style={{ fontSize: 13, color: "#94A3B8" }}>Not provided</div>
                 )}
               </div>
