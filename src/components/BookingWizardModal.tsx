@@ -69,8 +69,7 @@ const POPULAR_MAKES = [
   "Toyota", "Honda", "Ford", "Chevrolet", "Nissan", "Hyundai", "Kia",
   "BMW", "Mercedes-Benz", "Volkswagen", "Subaru", "Mazda", "Jeep", "Ram",
   "GMC", "Dodge", "Lexus", "Audi", "Acura", "Infiniti", "Buick", "Cadillac",
-  "Chrysler", "Lincoln", "Volvo", "Tesla", "Porsche", "Land Rover",
-  "Mitsubishi", "Genesis",
+  "Chrysler", "Lincoln", "Tesla",
 ];
 
 /* ─── Fallback service data ───────────────────────────────── */
@@ -225,9 +224,6 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
   const scannerRef = useRef<Html5Qrcode | null>(null);
 
   /* ── YMM API state ── */
-  const [allMakes, setAllMakes] = useState<string[]>([]);
-  const [makesLoading, setMakesLoading] = useState(false);
-  const makesFetchedRef = useRef(false);
   const modelsCacheRef = useRef<Record<string, string[]>>({});
   const [currentModels, setCurrentModels] = useState<string[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
@@ -422,46 +418,29 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
     return () => ac.abort();
   }, [vinOrHull, isMarine]);
 
-  /* ── Fetch all makes from NHTSA ── */
-  useEffect(() => {
-    if (!isOpen || makesFetchedRef.current) return;
-    makesFetchedRef.current = true;
-    setMakesLoading(true);
-    fetch("https://vpic.nhtsa.dot.gov/api/vehicles/GetAllMakes?format=json")
-      .then((r) => r.json())
-      .then((data: { Results?: { Make_Name?: string }[] }) => {
-        const makes = [...new Set(
-          (data.Results || [])
-            .map((r) => r.Make_Name || "")
-            .filter((s) => s.length > 0)
-        )].sort((a, b) => a.localeCompare(b));
-        setAllMakes(makes);
-      })
-      .catch(() => { setYmmFallback(true); })
-      .finally(() => setMakesLoading(false));
-  }, [isOpen]);
-
-  /* ── Pre-fetch models for top 30 popular makes (desktop search) ── */
-  useEffect(() => {
-    if (!isOpen || prefetchStartedRef.current) return;
-    prefetchStartedRef.current = true;
-    setPrefetchLoading(true);
-    Promise.allSettled(
-      POPULAR_MAKES.map((make) =>
-        fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/GetModelsForMake/${encodeURIComponent(make)}?format=json`)
-          .then((r) => r.json())
-          .then((data: { Results?: { Model_Name?: string }[] }) => {
-            const models = [...new Set(
-              (data.Results || []).map((r) => r.Model_Name || "").filter((s) => s.length > 0)
-            )].sort((a, b) => a.localeCompare(b));
-            modelsCacheRef.current[make] = models;
-          })
-      )
-    ).then(() => {
-      setPrefetchLoading(false);
-      setModelsFetchKey((k) => k + 1);
-    });
-  }, [isOpen]);
+  /* ── Pre-fetch models for top 25 popular makes (triggered on first focus) ── */
+  function handleSearchFocus() {
+    if (!prefetchStartedRef.current) {
+      prefetchStartedRef.current = true;
+      setPrefetchLoading(true);
+      Promise.allSettled(
+        POPULAR_MAKES.map((make) =>
+          fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/GetModelsForMake/${encodeURIComponent(make)}?format=json`)
+            .then((r) => r.json())
+            .then((data: { Results?: { Model_Name?: string }[] }) => {
+              const models = [...new Set(
+                (data.Results || []).map((r) => r.Model_Name || "").filter((s) => s.length > 0)
+              )].sort((a, b) => a.localeCompare(b));
+              modelsCacheRef.current[make] = models;
+            })
+        )
+      ).then(() => {
+        setPrefetchLoading(false);
+        setModelsFetchKey((k) => k + 1);
+      });
+    }
+    if (ymmSearch.trim()) setYmmDropdownOpen(true);
+  }
 
   /* ── Fetch models for selected make ── */
   useEffect(() => {
@@ -499,14 +478,17 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
 
   /* ── Fetch models for make detected in unified search ── */
   useEffect(() => {
-    if (isMobile || !ymmSearch.trim() || allMakes.length === 0) return;
+    if (isMobile || !ymmSearch.trim()) return;
     const trimmed = ymmSearch.trim();
     const yearMatch = trimmed.match(/^(198[89]|199\d|20[01]\d|202[0-7])(\s+|$)/);
     const rest = yearMatch ? trimmed.slice(yearMatch[0].length) : trimmed;
     if (!rest) return;
 
     const lowerRest = rest.toLowerCase();
-    const sortedMakes = [...allMakes].sort((a, b) => b.length - a.length);
+
+    // Check popular makes first (longest match)
+    const allKnown = [...POPULAR_MAKES, ...Object.keys(modelsCacheRef.current)];
+    const sortedMakes = [...new Set(allKnown)].sort((a, b) => b.length - a.length);
     const foundMake = sortedMakes.find(
       (m) => lowerRest.startsWith(m.toLowerCase()) && (lowerRest.length === m.length || lowerRest[m.length] === " ")
     );
@@ -522,8 +504,28 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
           setModelsFetchKey((k) => k + 1);
         })
         .catch(() => {});
+      return;
     }
-  }, [ymmSearch, allMakes, isMobile]);
+
+    // Non-popular make: debounce and try fetching from NHTSA
+    if (!foundMake && lowerRest.length >= 2) {
+      const timer = setTimeout(() => {
+        fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/GetModelsForMake/${encodeURIComponent(rest)}?format=json`)
+          .then((r) => r.json())
+          .then((data: { Results?: { Make_Name?: string; Model_Name?: string }[] }) => {
+            const results = data.Results || [];
+            const models = [...new Set(results.map((r) => r.Model_Name || "").filter((s) => s.length > 0))].sort((a, b) => a.localeCompare(b));
+            if (models.length > 0) {
+              const makeName = results[0]?.Make_Name || rest;
+              modelsCacheRef.current[makeName] = models;
+              setModelsFetchKey((k) => k + 1);
+            }
+          })
+          .catch(() => {});
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [ymmSearch, isMobile]);
 
   /* ── Close YMM dropdown on click outside ── */
   useEffect(() => {
@@ -629,8 +631,7 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
 
     if (lowerRest) {
       // Try exact make match at start of input (longest first)
-      const cachedMakeNames = [...new Set(allCachedModels.map((c) => c.make))];
-      const allKnownMakes = [...new Set([...cachedMakeNames, ...allMakes])];
+      const allKnownMakes = [...new Set([...POPULAR_MAKES, ...Object.keys(modelsCacheRef.current)])];
       const sortedMakes = allKnownMakes.sort((a, b) => b.length - a.length);
       const foundMake = sortedMakes.find(
         (m) => lowerRest.startsWith(m.toLowerCase()) && (lowerRest.length === m.length || lowerRest[m.length] === " ")
@@ -661,22 +662,24 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
         }
       }
 
-      // Model-first search across all cached models
+      // Model-first search across all cached models (only popular makes)
       if (!foundMake || scored.length === 0) {
         allCachedModels.forEach(({ make, model }) => {
+          if (!popularSet.has(make.toLowerCase())) return;
           const ml = model.toLowerCase();
           if (!ml.includes(lowerRest)) return;
           let score = 60;
           if (ml === lowerRest) score = 40;
           else if (ml.startsWith(lowerRest)) score = 50;
-          if (popularSet.has(make.toLowerCase())) score -= 5;
+          score -= 5; // popular make bonus
           add(year, make, model, score);
         });
       }
 
-      // Make-name substring search (fallback if no results yet)
+      // Make-name substring search against popular + cached makes (fallback)
       if (scored.length === 0) {
-        const makeMatches = allMakes.filter((m) => m.toLowerCase().includes(lowerRest));
+        const knownMakes = [...new Set([...POPULAR_MAKES, ...Object.keys(modelsCacheRef.current)])];
+        const makeMatches = knownMakes.filter((m) => m.toLowerCase().includes(lowerRest));
         makeMatches.forEach((make) => {
           const ml = make.toLowerCase();
           let base = 70;
@@ -694,15 +697,10 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
         });
       }
     } else if (year) {
-      // Year-only — show popular makes for drill-down
+      // Year-only — show popular makes sorted by popularity order
       POPULAR_MAKES.forEach((pm, idx) => {
         const ck = Object.keys(modelsCacheRef.current).find((k) => k.toLowerCase() === pm.toLowerCase());
-        if (ck) {
-          add(year, ck, "", idx);
-        } else {
-          const actual = allMakes.find((m) => m.toLowerCase() === pm.toLowerCase());
-          if (actual) add(year, actual, "", idx);
-        }
+        add(year, ck || pm, "", idx);
       });
     }
 
@@ -1293,6 +1291,241 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
                 </div>
               ) : (
                 <>
+                  {/* Year / Make / Model — desktop: unified search, mobile: cascading selects */}
+                  {!isMobile ? (
+                    <>
+                      {/* Desktop: Unified YMM Search */}
+                      {hasVehicleSelected && !showManualFields && !ymmFallback ? (
+                        /* Selected vehicle chip */
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <div
+                            style={{
+                              display: "inline-flex", alignItems: "center", gap: 8,
+                              background: "#F0FDF4", border: "1px solid #86EFAC", borderRadius: 9999,
+                              padding: "10px 16px", fontSize: 15, fontWeight: 600, color: "#166534",
+                            }}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="13 4 6 12 3 9" />
+                            </svg>
+                            {[vehicleYear, vehicleMake, vehicleModel].filter(Boolean).join(" ")}
+                            <button
+                              type="button"
+                              onClick={clearYmmSelection}
+                              style={{
+                                background: "none", border: "none", cursor: "pointer", color: "#166534",
+                                fontSize: 16, fontWeight: 700, padding: "0 0 0 4px", lineHeight: 1,
+                              }}
+                            >
+                              &times;
+                            </button>
+                          </div>
+                        </div>
+                      ) : ymmFallback || showManualFields ? (
+                        /* Fallback / manual entry fields */
+                        <div>
+                          {ymmFallback && (
+                            <div style={{ fontSize: 13, color: "#94A3B8", marginBottom: 12 }}>
+                              Can&apos;t load vehicle database. Enter your vehicle details below.
+                            </div>
+                          )}
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                            <div>
+                              <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Year</label>
+                              <SearchableSelect
+                                options={YEAR_OPTIONS}
+                                value={vehicleYear}
+                                onChange={handleYearChange}
+                                placeholder="Year"
+                                maxVisible={6}
+                              />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Make</label>
+                              <SearchableSelect
+                                options={POPULAR_MAKES}
+                                value={vehicleMake}
+                                onChange={handleMakeChange}
+                                placeholder="Make"
+                                maxVisible={8}
+                              />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Model</label>
+                              <SearchableSelect
+                                options={currentModels}
+                                value={vehicleModel}
+                                onChange={(val) => setVehicleModel(val)}
+                                placeholder={vehicleMake ? "Model" : "Select make first"}
+                                disabled={!vehicleMake}
+                                maxVisible={8}
+                                loading={modelsLoading}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Unified search bar */
+                        <div ref={ymmDropdownRef} style={{ position: "relative" }}>
+                          <div style={{ position: "relative" }}>
+                            <svg
+                              width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round"
+                              style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
+                            >
+                              <circle cx="8" cy="8" r="5.5" /><line x1="12" y1="12" x2="16" y2="16" />
+                            </svg>
+                            <input
+                              type="text"
+                              value={ymmSearch}
+                              onChange={(e) => {
+                                setYmmSearch(e.target.value);
+                                setYmmDropdownOpen(true);
+                              }}
+                              onFocus={handleSearchFocus}
+                              placeholder={prefetchLoading ? "Loading vehicle database..." : "Search your vehicle... e.g. 2020 Toyota Tundra"}
+                              style={{
+                                width: "100%", padding: "14px 20px 14px 44px", border: "1px solid #E2E8F0",
+                                borderRadius: 16, fontSize: 18, outline: "none", fontFamily: "inherit",
+                                background: "#FFFFFF", color: "#1E293B",
+                              }}
+                            />
+                          </div>
+                          {/* Dropdown suggestions (opens downward) */}
+                          {ymmDropdownOpen && (() => {
+                            const suggestions = computeYmmSuggestions();
+                            if (suggestions.length === 0 && ymmSearch.trim().length > 1) {
+                              return (
+                                <div
+                                  style={{
+                                    position: "absolute", top: "100%", left: 0, right: 0, zIndex: 100,
+                                    background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 12,
+                                    boxShadow: "0 8px 24px rgba(0,0,0,0.12)", marginTop: 4, padding: "16px 20px",
+                                  }}
+                                >
+                                  <div style={{ fontSize: 14, color: "#64748B", marginBottom: 8 }}>
+                                    No matches for &ldquo;{ymmSearch.trim()}&rdquo;. Try searching by make or model name.
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => { setShowManualFields(true); setYmmDropdownOpen(false); }}
+                                    style={{ background: "none", border: "none", cursor: "pointer", color: "#F97316", fontWeight: 600, fontSize: 14, padding: 0 }}
+                                  >
+                                    or enter details manually
+                                  </button>
+                                </div>
+                              );
+                            }
+                            if (suggestions.length === 0) return null;
+                            const query = ymmSearch.trim();
+                            return (
+                              <div
+                                style={{
+                                  position: "absolute", top: "100%", left: 0, right: 0, zIndex: 100,
+                                  background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 12,
+                                  boxShadow: "0 8px 24px rgba(0,0,0,0.12)", marginTop: 4,
+                                  maxHeight: 280, overflowY: "auto",
+                                }}
+                              >
+                                {suggestions.map((s, i) => {
+                                  const idx = s.display.toLowerCase().indexOf(query.toLowerCase());
+                                  return (
+                                    <button
+                                      key={`${s.display}-${i}`}
+                                      type="button"
+                                      onClick={() => selectYmmSuggestion(s)}
+                                      style={{
+                                        display: "block", width: "100%", textAlign: "left", padding: "12px 20px",
+                                        border: "none", background: "transparent", cursor: "pointer",
+                                        fontSize: 15, color: "#1E293B", fontFamily: "inherit",
+                                        borderBottom: i < suggestions.length - 1 ? "1px solid #F1F5F9" : "none",
+                                      }}
+                                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#FFF7ED"; }}
+                                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                                    >
+                                      {idx >= 0 && query ? (
+                                        <>
+                                          {s.display.slice(0, idx)}
+                                          <span style={{ color: "#F97316", fontWeight: 700 }}>{s.display.slice(idx, idx + query.length)}</span>
+                                          {s.display.slice(idx + query.length)}
+                                        </>
+                                      ) : s.display}
+                                    </button>
+                                  );
+                                })}
+                                {suggestions.length > 8 && (
+                                  <div style={{ padding: "8px 20px 10px", fontSize: 12, color: "#94A3B8", textAlign: "center", borderTop: "1px solid #F1F5F9" }}>
+                                    Showing 8 of {suggestions.length} results
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {/* Mobile: Cascading native selects */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                        <div>
+                          <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Year</label>
+                          <select
+                            value={vehicleYear}
+                            onChange={(e) => handleYearChange(e.target.value)}
+                            style={{
+                              width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
+                              fontSize: 14, outline: "none", background: "#FFFFFF", color: "#1E293B", fontFamily: "inherit",
+                            }}
+                          >
+                            <option value="">Select Year</option>
+                            {YEARS.map((y) => <option key={y} value={String(y)}>{y}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Make</label>
+                          <select
+                            value={vehicleMake}
+                            onChange={(e) => handleMakeChange(e.target.value)}
+                            style={{
+                              width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
+                              fontSize: 14, outline: "none", background: "#FFFFFF", color: "#1E293B", fontFamily: "inherit",
+                            }}
+                          >
+                            <option value="">Select Make</option>
+                            {POPULAR_MAKES.map((pm) => (
+                              <option key={pm} value={pm}>{pm}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Model</label>
+                          <select
+                            value={vehicleModel}
+                            onChange={(e) => setVehicleModel(e.target.value)}
+                            disabled={!vehicleMake || modelsLoading}
+                            style={{
+                              width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
+                              fontSize: 14, outline: "none", background: "#FFFFFF", color: "#1E293B", fontFamily: "inherit",
+                              opacity: !vehicleMake || modelsLoading ? 0.5 : 1,
+                            }}
+                          >
+                            <option value="">
+                              {modelsLoading ? "Loading models..." : !vehicleMake ? "Select make first" : "Select Model"}
+                            </option>
+                            {currentModels.map((m) => <option key={m} value={m}>{m}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Divider */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "16px 0" }}>
+                    <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
+                    <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 500 }}>or enter your VIN</span>
+                    <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
+                  </div>
+
                   {/* VIN input + scan */}
                   <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>VIN</label>
                   <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
@@ -1364,252 +1597,6 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
                       </svg>
                       VIN decoded successfully
                     </div>
-                  )}
-
-                  {/* Divider */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "16px 0" }}>
-                    <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
-                    <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 500 }}>or enter manually</span>
-                    <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
-                  </div>
-
-                  {/* Year / Make / Model — desktop: unified search, mobile: cascading selects */}
-                  {!isMobile ? (
-                    <>
-                      {/* Desktop: Unified YMM Search */}
-                      {hasVehicleSelected && !showManualFields && !ymmFallback ? (
-                        /* Selected vehicle chip */
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <div
-                            style={{
-                              display: "inline-flex", alignItems: "center", gap: 8,
-                              background: "#F0FDF4", border: "1px solid #86EFAC", borderRadius: 9999,
-                              padding: "10px 16px", fontSize: 15, fontWeight: 600, color: "#166534",
-                            }}
-                          >
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="13 4 6 12 3 9" />
-                            </svg>
-                            {[vehicleYear, vehicleMake, vehicleModel].filter(Boolean).join(" ")}
-                            <button
-                              type="button"
-                              onClick={clearYmmSelection}
-                              style={{
-                                background: "none", border: "none", cursor: "pointer", color: "#166534",
-                                fontSize: 16, fontWeight: 700, padding: "0 0 0 4px", lineHeight: 1,
-                              }}
-                            >
-                              &times;
-                            </button>
-                          </div>
-                        </div>
-                      ) : ymmFallback || showManualFields ? (
-                        /* Fallback / manual entry fields */
-                        <div>
-                          {ymmFallback && (
-                            <div style={{ fontSize: 13, color: "#94A3B8", marginBottom: 12 }}>
-                              Can&apos;t load vehicle database. Enter your vehicle details below.
-                            </div>
-                          )}
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-                            <div>
-                              <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Year</label>
-                              <SearchableSelect
-                                options={YEAR_OPTIONS}
-                                value={vehicleYear}
-                                onChange={handleYearChange}
-                                placeholder="Year"
-                                maxVisible={6}
-                              />
-                            </div>
-                            <div>
-                              <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Make</label>
-                              <SearchableSelect
-                                options={allMakes}
-                                value={vehicleMake}
-                                onChange={handleMakeChange}
-                                placeholder="Make"
-                                maxVisible={8}
-                                loading={makesLoading}
-                              />
-                            </div>
-                            <div>
-                              <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Model</label>
-                              <SearchableSelect
-                                options={currentModels}
-                                value={vehicleModel}
-                                onChange={(val) => setVehicleModel(val)}
-                                placeholder={vehicleMake ? "Model" : "Select make first"}
-                                disabled={!vehicleMake}
-                                maxVisible={8}
-                                loading={modelsLoading}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        /* Unified search bar */
-                        <div ref={ymmDropdownRef} style={{ position: "relative" }}>
-                          <div style={{ position: "relative" }}>
-                            <svg
-                              width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round"
-                              style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
-                            >
-                              <circle cx="8" cy="8" r="5.5" /><line x1="12" y1="12" x2="16" y2="16" />
-                            </svg>
-                            <input
-                              type="text"
-                              value={ymmSearch}
-                              onChange={(e) => {
-                                setYmmSearch(e.target.value);
-                                setYmmDropdownOpen(true);
-                              }}
-                              onFocus={() => { if (ymmSearch.trim()) setYmmDropdownOpen(true); }}
-                              placeholder={prefetchLoading ? "Loading vehicle database..." : "Search your vehicle... e.g. 2020 Toyota Tundra"}
-                              style={{
-                                width: "100%", padding: "14px 20px 14px 44px", border: "1px solid #E2E8F0",
-                                borderRadius: 16, fontSize: 18, outline: "none", fontFamily: "inherit",
-                                background: "#FFFFFF", color: "#1E293B",
-                              }}
-                            />
-                          </div>
-                          {/* Dropdown suggestions */}
-                          {ymmDropdownOpen && (() => {
-                            const suggestions = computeYmmSuggestions();
-                            if (suggestions.length === 0 && ymmSearch.trim().length > 1) {
-                              return (
-                                <div
-                                  style={{
-                                    position: "absolute", bottom: "100%", left: 0, right: 0, zIndex: 100,
-                                    background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 12,
-                                    boxShadow: "0 8px 24px rgba(0,0,0,0.12)", marginBottom: 4, padding: "16px 20px",
-                                  }}
-                                >
-                                  <div style={{ fontSize: 14, color: "#64748B", marginBottom: 8 }}>
-                                    No matches for &ldquo;{ymmSearch.trim()}&rdquo;. Try searching by make or model name.
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => { setShowManualFields(true); setYmmDropdownOpen(false); }}
-                                    style={{ background: "none", border: "none", cursor: "pointer", color: "#F97316", fontWeight: 600, fontSize: 14, padding: 0 }}
-                                  >
-                                    or enter details manually
-                                  </button>
-                                </div>
-                              );
-                            }
-                            if (suggestions.length === 0) return null;
-                            const query = ymmSearch.trim();
-                            return (
-                              <div
-                                style={{
-                                  position: "absolute", bottom: "100%", left: 0, right: 0, zIndex: 100,
-                                  background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 12,
-                                  boxShadow: "0 8px 24px rgba(0,0,0,0.12)", marginBottom: 4,
-                                  maxHeight: 280, overflowY: "auto",
-                                }}
-                              >
-                                {suggestions.map((s, i) => {
-                                  const idx = s.display.toLowerCase().indexOf(query.toLowerCase());
-                                  return (
-                                    <button
-                                      key={`${s.display}-${i}`}
-                                      type="button"
-                                      onClick={() => selectYmmSuggestion(s)}
-                                      style={{
-                                        display: "block", width: "100%", textAlign: "left", padding: "12px 20px",
-                                        border: "none", background: "transparent", cursor: "pointer",
-                                        fontSize: 15, color: "#1E293B", fontFamily: "inherit",
-                                        borderBottom: i < suggestions.length - 1 ? "1px solid #F1F5F9" : "none",
-                                      }}
-                                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#FFF7ED"; }}
-                                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
-                                    >
-                                      {idx >= 0 && query ? (
-                                        <>
-                                          {s.display.slice(0, idx)}
-                                          <span style={{ color: "#F97316", fontWeight: 700 }}>{s.display.slice(idx, idx + query.length)}</span>
-                                          {s.display.slice(idx + query.length)}
-                                        </>
-                                      ) : s.display}
-                                    </button>
-                                  );
-                                })}
-                                {suggestions.length > 8 && (
-                                  <div style={{ padding: "8px 20px 10px", fontSize: 12, color: "#94A3B8", textAlign: "center", borderTop: "1px solid #F1F5F9" }}>
-                                    Showing 8 of {suggestions.length} results
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      {/* Mobile: Cascading native selects */}
-                      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                        <div>
-                          <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Year</label>
-                          <select
-                            value={vehicleYear}
-                            onChange={(e) => handleYearChange(e.target.value)}
-                            style={{
-                              width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
-                              fontSize: 14, outline: "none", background: "#FFFFFF", color: "#1E293B", fontFamily: "inherit",
-                            }}
-                          >
-                            <option value="">Select Year</option>
-                            {YEARS.map((y) => <option key={y} value={String(y)}>{y}</option>)}
-                          </select>
-                        </div>
-                        <div>
-                          <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Make</label>
-                          <select
-                            value={vehicleMake}
-                            onChange={(e) => handleMakeChange(e.target.value)}
-                            disabled={makesLoading}
-                            style={{
-                              width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
-                              fontSize: 14, outline: "none", background: "#FFFFFF", color: "#1E293B", fontFamily: "inherit",
-                              opacity: makesLoading ? 0.5 : 1,
-                            }}
-                          >
-                            <option value="">{makesLoading ? "Loading makes..." : "Select Make"}</option>
-                            <optgroup label="Popular Makes">
-                              {POPULAR_MAKES.map((pm) => {
-                                const actual = allMakes.find((m) => m.toLowerCase() === pm.toLowerCase());
-                                return actual ? <option key={actual} value={actual}>{actual}</option> : null;
-                              })}
-                            </optgroup>
-                            <optgroup label="All Makes">
-                              {allMakes
-                                .filter((m) => !POPULAR_MAKES.some((pm) => pm.toLowerCase() === m.toLowerCase()))
-                                .map((m) => <option key={m} value={m}>{m}</option>)}
-                            </optgroup>
-                          </select>
-                        </div>
-                        <div>
-                          <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Model</label>
-                          <select
-                            value={vehicleModel}
-                            onChange={(e) => setVehicleModel(e.target.value)}
-                            disabled={!vehicleMake || modelsLoading}
-                            style={{
-                              width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
-                              fontSize: 14, outline: "none", background: "#FFFFFF", color: "#1E293B", fontFamily: "inherit",
-                              opacity: !vehicleMake || modelsLoading ? 0.5 : 1,
-                            }}
-                          >
-                            <option value="">
-                              {modelsLoading ? "Loading models..." : !vehicleMake ? "Select make first" : "Select Model"}
-                            </option>
-                            {currentModels.map((m) => <option key={m} value={m}>{m}</option>)}
-                          </select>
-                        </div>
-                      </div>
-                    </>
                   )}
                 </>
               )}
