@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import { BookingProvider } from "@/contexts/BookingContext";
 import StickyBottomBar from "@/components/StickyBottomBar";
 import FloatingQuoteBar from "@/components/FloatingQuoteBar";
+import MobileQuickQuote from "@/components/MobileQuickQuote";
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -13,6 +14,10 @@ const plusJakarta = Plus_Jakarta_Sans({
   display: "swap",
   variable: "--font-jakarta",
 });
+
+export const viewport: Viewport = {
+  viewportFit: "cover",
+};
 
 const BASE_URL = "https://coastalmobilelube.com";
 const OG_IMAGE =
@@ -170,6 +175,7 @@ export default function RootLayout({
           <Footer />
           <StickyBottomBar />
           <FloatingQuoteBar />
+          <MobileQuickQuote />
         </BookingProvider>
       </body>
     </html>

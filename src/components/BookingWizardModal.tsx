@@ -989,7 +989,7 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
         }}
       >
         {/* ── Header ── */}
-        <div style={{ background: "#FFFFFF", borderBottom: "1px solid #E2E8F0", padding: "18px 24px 14px", flexShrink: 0 }}>
+        <div className="wizard-modal-header" style={{ background: "#FFFFFF", borderBottom: "1px solid #E2E8F0", padding: "18px 24px 14px", flexShrink: 0 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
               <h2 style={{ color: "#0B2447", fontSize: 19, fontWeight: 800, margin: 0, lineHeight: 1.2 }}>
@@ -1062,7 +1062,7 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
           {step === 1 && (
             <div>
               {/* Division Pills */}
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
+              <div className="wizard-division-pills" style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
                 {DIVISIONS.map((d) => (
                   <button
                     key={d}
@@ -1070,7 +1070,7 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
                     onClick={() => handleDivisionChange(d)}
                     style={{
                       padding: "7px 18px", borderRadius: 9999, border: "none", cursor: "pointer",
-                      fontSize: 13, fontWeight: 600,
+                      fontSize: 13, fontWeight: 600, flexShrink: 0,
                       background: division === d ? "#0B2447" : "#F1F5F9",
                       color: division === d ? "#fff" : "#64748B",
                       transition: "all 0.15s",
@@ -1912,7 +1912,7 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
 
         {/* ── Bottom Navigation ── */}
         {!submitted && (
-          <div style={{
+          <div className="wizard-modal-nav" style={{
             borderTop: "1px solid #E2E8F0", padding: "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0,
             background: "#FFFFFF",
           }}>
@@ -2052,11 +2052,34 @@ export default function BookingWizardModal({ isOpen, onClose }: Props) {
         @media (max-width: 639px) {
           .wizard-modal-card {
             max-width: 100% !important;
-            max-height: 100vh !important;
+            max-height: 100dvh !important;
             border-radius: 0 !important;
-            height: 100vh;
+            height: 100dvh;
+            height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
             margin: 0 !important;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
           }
+          @supports (height: 100dvh) {
+            .wizard-modal-card {
+              height: 100dvh !important;
+              max-height: 100dvh !important;
+            }
+          }
+          .wizard-modal-header {
+            padding-top: max(18px, env(safe-area-inset-top)) !important;
+          }
+          .wizard-modal-nav {
+            padding-bottom: max(14px, env(safe-area-inset-bottom)) !important;
+          }
+          .wizard-division-pills {
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+          }
+          .wizard-division-pills::-webkit-scrollbar { display: none; }
         }
         @media (max-width: 479px) {
           .wizard-card-grid {
