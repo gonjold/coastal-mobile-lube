@@ -51,6 +51,20 @@ interface LookupBooking {
   sortKey: number;
 }
 
+/* ─── Phone helpers ──────────────────────────────────────── */
+
+function formatPhoneDisplay(value: string): string {
+  const d = value.replace(/\D/g, "").slice(0, 10);
+  if (d.length === 0) return "";
+  if (d.length <= 3) return `(${d}`;
+  if (d.length <= 6) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
+  return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+}
+
+function phoneDigits(value: string): string {
+  return value.replace(/\D/g, "").slice(0, 10);
+}
+
 /* ─── Constants ───────────────────────────────────────────── */
 
 const DIVISIONS: Division[] = ["Automotive", "Marine", "RV", "Fleet"];
@@ -893,36 +907,64 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
 
   /* ── "Been here before?" lookup ── */
   async function handleLookup() {
-    const digits = lookupPhone.replace(/\D/g, "");
+    const digits = phoneDigits(lookupPhone);
     if (digits.length < 7) return;
     setLookupLoading(true);
     setLookupMsg("");
     setLookupResults([]);
+
+    function mapDoc(doc: import("firebase/firestore").QueryDocumentSnapshot): LookupBooking {
+      const d = doc.data();
+      const svcs = (d.selectedServices || []).map((s: { name?: string }) => s.name || "").filter(Boolean).join(", ");
+      const ts = d.createdAt?.toDate?.();
+      return {
+        id: doc.id,
+        customerName: d.name || d.customerName || "",
+        customerPhone: d.phone || d.customerPhone || "",
+        customerEmail: d.email || d.customerEmail || "",
+        vehicleYear: d.vehicleYear || "",
+        vehicleMake: d.vehicleMake || "",
+        vehicleModel: d.vehicleModel || "",
+        services: svcs,
+        date: ts ? ts.toLocaleDateString() : "",
+        sortKey: ts ? ts.getTime() : 0,
+      };
+    }
+
     try {
-      const q = query(
-        collection(db, "bookings"),
-        where("customerPhone", "==", digits),
-        firestoreLimit(10),
-      );
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        const results: LookupBooking[] = snap.docs.map((doc) => {
-          const d = doc.data();
-          const svcs = (d.selectedServices || []).map((s: { name?: string }) => s.name || "").filter(Boolean).join(", ");
-          const ts = d.createdAt?.toDate?.();
-          return {
-            id: doc.id,
-            customerName: d.customerName || "",
-            customerPhone: d.customerPhone || "",
-            customerEmail: d.customerEmail || "",
-            vehicleYear: d.vehicleYear || "",
-            vehicleMake: d.vehicleMake || "",
-            vehicleModel: d.vehicleModel || "",
-            services: svcs,
-            date: ts ? ts.toLocaleDateString() : "",
-            sortKey: ts ? ts.getTime() : 0,
-          };
-        });
+      // Try "phone" field first (current schema), then "customerPhone" (legacy)
+      let results: LookupBooking[] = [];
+
+      for (const field of ["phone", "customerPhone"] as const) {
+        if (results.length > 0) break;
+        const q = query(
+          collection(db, "bookings"),
+          where(field, "==", digits),
+          firestoreLimit(10),
+        );
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          results = snap.docs.map(mapDoc);
+        }
+      }
+
+      // Client-side normalized match: if exact query found nothing,
+      // the stored phone might have formatting chars — fetch recent bookings and compare digits
+      if (results.length === 0) {
+        const recentQ = query(
+          collection(db, "bookings"),
+          where("status", "==", "pending"),
+          firestoreLimit(10),
+        );
+        const recentSnap = await getDocs(recentQ);
+        if (!recentSnap.empty) {
+          results = recentSnap.docs
+            .map(mapDoc)
+            .filter((b) => phoneDigits(b.customerPhone) === digits);
+        }
+      }
+
+      if (results.length > 0) {
         results.sort((a, b) => b.sortKey - a.sortKey);
         setLookupResults(results);
       } else {
@@ -940,7 +982,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
     if (b.vehicleMake) setVehicleMake(b.vehicleMake);
     if (b.vehicleModel) setVehicleModel(b.vehicleModel);
     if (b.customerName) setCustomerName(b.customerName);
-    if (b.customerPhone) setCustomerPhone(b.customerPhone);
+    if (b.customerPhone) setCustomerPhone(formatPhoneDisplay(b.customerPhone));
     if (b.customerEmail) setCustomerEmail(b.customerEmail);
     setLookupDone(true);
     setLookupResults([]);
@@ -965,8 +1007,8 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
               <input
                 type="tel"
                 value={lookupPhone}
-                onChange={(e) => setLookupPhone(e.target.value)}
-                placeholder="Enter the phone number you used last time"
+                onChange={(e) => setLookupPhone(formatPhoneDisplay(e.target.value))}
+                placeholder="(555) 555-5555"
                 style={{
                   flex: 1, padding: "8px 12px", border: "1px solid #E2E8F0", borderRadius: 8,
                   fontSize: 13, outline: "none", fontFamily: "inherit", background: "#FFFFFF", color: "#1E293B",
@@ -1887,7 +1929,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                   <input
                     type="tel"
                     value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    onChange={(e) => setCustomerPhone(formatPhoneDisplay(e.target.value))}
                     placeholder="(555) 555-5555"
                     style={{
                       width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
@@ -2054,7 +2096,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                 </div>
                 <div style={{ fontSize: 13, color: "#1E293B", lineHeight: 1.8 }}>
                   <div>{customerName}</div>
-                  <div>{customerPhone}</div>
+                  <div>{formatPhoneDisplay(customerPhone)}</div>
                   {customerEmail && <div>{customerEmail}</div>}
                   <div>Contact: {contactPreference}</div>
                   {address && <div>Address: {address}</div>}
