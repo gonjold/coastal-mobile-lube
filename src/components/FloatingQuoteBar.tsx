@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { X, ChevronUp } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
@@ -16,6 +17,7 @@ const serviceOptions = [
 type ContactPref = "call" | "text" | "email";
 
 export default function FloatingQuoteBar() {
+  const pathname = usePathname();
   const { bookingOpen } = useBooking();
   const [collapsed, setCollapsed] = useState(true);
   const [name, setName] = useState("");
@@ -26,7 +28,7 @@ export default function FloatingQuoteBar() {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  if (bookingOpen) return null;
+  if (bookingOpen || pathname.startsWith("/admin")) return null;
 
   /* Hide entirely on mobile — the sticky bottom bar handles CTAs below 768px */
   const hiddenOnMobile = "hidden lg:block";

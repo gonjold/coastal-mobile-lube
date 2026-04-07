@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
@@ -16,6 +17,7 @@ const serviceOptions = [
 type ContactPref = "call" | "text" | "email";
 
 export default function MobileQuickQuote() {
+  const pathname = usePathname();
   const { bookingOpen } = useBooking();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -26,7 +28,7 @@ export default function MobileQuickQuote() {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  if (bookingOpen) return null;
+  if (bookingOpen || pathname.startsWith("/admin")) return null;
 
   const canSubmit = name.trim().length > 0 && phone.trim().length > 0 && !submitting;
 

@@ -133,8 +133,22 @@ export default function AdminLayout({
           })}
         </nav>
 
-        {/* Logout */}
-        <div className="border-t border-white/10 p-2">
+        {/* View Site + Logout */}
+        <div className="border-t border-white/10 p-2 flex flex-col gap-0.5">
+          <a
+            href="/"
+            target="_blank"
+            rel="noopener noreferrer"
+            title={iconsOnly ? "View Site" : undefined}
+            className={`w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-white/50 hover:text-white hover:bg-white/5 transition-colors ${
+              iconsOnly ? "justify-center" : ""
+            }`}
+          >
+            <IconExternalLink className="w-[20px] h-[20px] shrink-0" />
+            {!iconsOnly && (
+              <span className="text-[13px] font-semibold">View Site</span>
+            )}
+          </a>
           <button
             onClick={handleSignOut}
             title={iconsOnly ? "Sign Out" : undefined}
@@ -346,6 +360,24 @@ function IconWrench({ className }: { className?: string }) {
       strokeLinejoin="round"
     >
       <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+    </svg>
+  );
+}
+
+function IconExternalLink({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      <polyline points="15 3 21 3 21 9" />
+      <line x1="10" y1="14" x2="21" y2="3" />
     </svg>
   );
 }

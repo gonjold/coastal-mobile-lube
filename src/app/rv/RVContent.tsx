@@ -254,9 +254,11 @@ export default function RVContent() {
             <ServiceGrid
               items={group.services.map((s) => ({
                 name: s.displayName || s.name,
-                price: s.priceLabel
+                price: s.priceLabel && s.priceLabel.startsWith("$")
                   ? s.priceLabel
-                  : `$${s.price % 1 === 0 ? `${s.price}` : s.price.toFixed(2)}`,
+                  : s.price > 0
+                    ? `$${s.price.toFixed(2)}`
+                    : "Call for price",
               }))}
               onItemClick={(item) => {
                 const svc = group.services.find((s) => (s.displayName || s.name) === item.name);

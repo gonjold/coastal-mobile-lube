@@ -217,6 +217,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
   const [otherText, setOtherText] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [packagesExpanded, setPackagesExpanded] = useState(false);
 
   /* ── Step 2: Vehicle ── */
   const [vinOrHull, setVinOrHull] = useState("");
@@ -1147,75 +1148,110 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                 ))}
               </div>
 
-              {/* Coastal Packages (auto only) */}
+              {/* Coastal Packages (auto only) -- collapsible */}
               {coastalPackages.length > 0 && !servicesLoading && (
                 <div style={{ marginBottom: 20 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "#0B2447", marginBottom: 2 }}>Coastal Packages</div>
-                  <div style={{ fontSize: 12, color: "#94A3B8", marginBottom: 12 }}>Bundle and save</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {coastalPackages.map((pkg) => {
-                      const isSelected = isServiceSelected(pkg.id);
-                      return (
-                        <button
-                          key={pkg.id}
-                          type="button"
-                          onClick={() => toggleService({ id: pkg.id, name: pkg.displayName || pkg.name, price: pkg.price, category: "Coastal Packages" })}
-                          style={{
-                            position: "relative",
-                            background: isSelected ? "#FFF7ED" : "#FFFFFF",
-                            border: `1px solid ${isSelected ? "#F97316" : "#E2E8F0"}`,
-                            borderRadius: 12,
-                            padding: "12px 14px",
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "flex-start",
-                            gap: 10,
-                            textAlign: "left",
-                            transition: "all 0.15s",
-                          }}
-                        >
-                          <span
-                            style={{
-                              width: 18, height: 18, borderRadius: 4, flexShrink: 0, marginTop: 2,
-                              border: isSelected ? "none" : "2px solid #CBD5E1",
-                              background: isSelected ? "#F97316" : "#FFFFFF",
-                              display: "flex", alignItems: "center", justifyContent: "center",
-                            }}
-                          >
-                            {isSelected && (
-                              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="9 3 5 9 3 7" />
-                              </svg>
-                            )}
-                          </span>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                              <span style={{ fontSize: 14, fontWeight: 700, color: "#0B2447" }}>{pkg.displayName || pkg.name}</span>
-                              <span style={{ fontSize: 14, fontWeight: 700, color: "#F97316", whiteSpace: "nowrap", marginLeft: 8 }}>${pkg.price.toFixed(2)}</span>
-                            </div>
-                            {pkg.featured && (
-                              <span style={{ display: "inline-block", fontSize: 10, fontWeight: 700, color: "#fff", background: "#F97316", borderRadius: 4, padding: "1px 6px", marginTop: 3, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                                Most Popular
+                  <button
+                    type="button"
+                    onClick={() => setPackagesExpanded((p) => !p)}
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      background: "#FFF7ED",
+                      border: "1px solid #FDBA74",
+                      borderRadius: 12,
+                      padding: "12px 14px",
+                      cursor: "pointer",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: "#0B2447" }}>Bundle and save with Coastal Packages</span>
+                    </div>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="#F97316"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      style={{ transition: "transform 0.2s", transform: packagesExpanded ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}
+                    >
+                      <polyline points="4 6 8 10 12 6" />
+                    </svg>
+                  </button>
+                  {packagesExpanded && (
+                    <>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
+                        {coastalPackages.map((pkg) => {
+                          const isSelected = isServiceSelected(pkg.id);
+                          return (
+                            <button
+                              key={pkg.id}
+                              type="button"
+                              onClick={() => toggleService({ id: pkg.id, name: pkg.displayName || pkg.name, price: pkg.price, category: "Coastal Packages" })}
+                              style={{
+                                position: "relative",
+                                background: isSelected ? "#FFF7ED" : "#FFFFFF",
+                                border: `1px solid ${isSelected ? "#F97316" : "#E2E8F0"}`,
+                                borderRadius: 12,
+                                padding: "12px 14px",
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "flex-start",
+                                gap: 10,
+                                textAlign: "left",
+                                transition: "all 0.15s",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  width: 18, height: 18, borderRadius: 4, flexShrink: 0, marginTop: 2,
+                                  border: isSelected ? "none" : "2px solid #CBD5E1",
+                                  background: isSelected ? "#F97316" : "#FFFFFF",
+                                  display: "flex", alignItems: "center", justifyContent: "center",
+                                }}
+                              >
+                                {isSelected && (
+                                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="9 3 5 9 3 7" />
+                                  </svg>
+                                )}
                               </span>
-                            )}
-                            <ul style={{ margin: "6px 0 0", padding: 0, listStyle: "none" }}>
-                              {pkg.bundleItems.map((item: string, i: number) => (
-                                <li key={i} style={{ fontSize: 11, color: "#64748B", lineHeight: 1.5, display: "flex", alignItems: "baseline", gap: 5 }}>
-                                  <span style={{ width: 3, height: 3, borderRadius: "50%", background: "#94A3B8", flexShrink: 0, marginTop: 5, display: "inline-block" }} />
-                                  {item}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "16px 0" }}>
-                    <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
-                    <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 500, whiteSpace: "nowrap" }}>Or choose individual services</span>
-                    <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
-                  </div>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                                  <span style={{ fontSize: 14, fontWeight: 700, color: "#0B2447" }}>{pkg.displayName || pkg.name}</span>
+                                  <span style={{ fontSize: 14, fontWeight: 700, color: "#F97316", whiteSpace: "nowrap", marginLeft: 8 }}>${pkg.price.toFixed(2)}</span>
+                                </div>
+                                {pkg.featured && (
+                                  <span style={{ display: "inline-block", fontSize: 10, fontWeight: 700, color: "#fff", background: "#F97316", borderRadius: 4, padding: "1px 6px", marginTop: 3, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                                    Most Popular
+                                  </span>
+                                )}
+                                <ul style={{ margin: "6px 0 0", padding: 0, listStyle: "none" }}>
+                                  {pkg.bundleItems.map((item: string, i: number) => (
+                                    <li key={i} style={{ fontSize: 11, color: "#64748B", lineHeight: 1.5, display: "flex", alignItems: "baseline", gap: 5 }}>
+                                      <span style={{ width: 3, height: 3, borderRadius: "50%", background: "#94A3B8", flexShrink: 0, marginTop: 5, display: "inline-block" }} />
+                                      {item}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "16px 0" }}>
+                        <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
+                        <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 500, whiteSpace: "nowrap" }}>Or choose individual services</span>
+                        <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 

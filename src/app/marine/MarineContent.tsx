@@ -121,6 +121,9 @@ export default function MarineContent() {
   const categories = grouped.map((g) => ({
     id: g.category.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
     label: g.category,
+    shortLabel: g.category
+      .replace(/^Marine\s+/i, "")
+      .replace(/\s*Services?$/i, ""),
     startingAt: `$${Math.min(...g.services.map((s) => s.price)).toFixed(2)}`,
   }));
 
@@ -199,13 +202,13 @@ export default function MarineContent() {
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
-                className={`whitespace-nowrap px-5 py-2 rounded-full text-[13px] font-semibold transition-all ${
+                className={`whitespace-nowrap px-4 py-2 rounded-full text-[13px] font-semibold transition-all ${
                   activeCategory === cat.id
                     ? "bg-[#0B2040] text-white shadow-[0_2px_8px_rgba(11,32,64,0.2)]"
                     : "bg-[#FAFBFC] text-[#666] hover:bg-[#f0ede6] hover:text-[#0B2040]"
                 }`}
               >
-                {cat.label}
+                {cat.shortLabel}
               </button>
             ))}
           </div>
@@ -233,9 +236,11 @@ export default function MarineContent() {
             <ServiceGrid
               items={group.services.map((s) => ({
                 name: s.displayName || s.name,
-                price: s.priceLabel
-                  ? (/^\$/.test(s.priceLabel) || /\d/.test(s.priceLabel) ? s.priceLabel : "Call for price")
-                  : `$${s.price % 1 === 0 ? `${s.price}` : s.price.toFixed(2)}`,
+                price: s.priceLabel && s.priceLabel.startsWith("$")
+                  ? s.priceLabel
+                  : s.price > 0
+                    ? `$${s.price.toFixed(2)}`
+                    : "Call for price",
               }))}
               onItemClick={(item) => {
                 const svc = group.services.find((s) => (s.displayName || s.name) === item.name);

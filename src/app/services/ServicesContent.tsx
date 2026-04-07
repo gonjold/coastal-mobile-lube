@@ -113,12 +113,17 @@ export default function ServicesContent() {
       return 0;
     });
 
-  // Derive category nav from Firestore data
-  const categories = grouped.map((g) => ({
+  // Derive category nav from Firestore data, with Coastal Packages first
+  const PACKAGES_TAB_ID = "coastal-packages";
+  const serviceCategories = grouped.map((g) => ({
     id: g.category.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
     label: g.category,
     startingAt: `$${Math.min(...g.services.map((s) => s.price)).toFixed(2)}`,
   }));
+  const categories = [
+    ...(packages.length > 0 ? [{ id: PACKAGES_TAB_ID, label: "Coastal Packages", startingAt: `$${Math.min(...packages.map((p) => p.price)).toFixed(2)}` }] : []),
+    ...serviceCategories,
+  ];
 
   const { openBooking } = useBooking();
   const [activeCategory, setActiveCategory] = useState("");
@@ -192,13 +197,37 @@ export default function ServicesContent() {
 
       </section>
 
-      {/* ─── Coastal Packages ─── */}
-      {packages.length > 0 && (
+      {/* ─── Sticky Category Pill Navigation ─── */}
+      <div
+        ref={pillBarRef}
+        className="sticky top-[64px] z-30 bg-white border-b border-[#e8e4dc]/60 shadow-[0_2px_12px_rgba(11,32,64,0.06)]"
+      >
+        <div className="section-inner px-4 lg:px-6">
+          <div className="flex gap-2 py-3 overflow-x-auto no-scrollbar">
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                className={`whitespace-nowrap px-5 py-2 rounded-full text-[13px] font-semibold transition-all ${
+                  activeCategory === cat.id
+                    ? "bg-[#0B2040] text-white shadow-[0_2px_8px_rgba(11,32,64,0.2)]"
+                    : "bg-[#FAFBFC] text-[#666] hover:bg-[#f0ede6] hover:text-[#0B2040]"
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Coastal Packages tab content ── */}
+      {activeCategory === PACKAGES_TAB_ID && packages.length > 0 && (
         <section className="relative bg-[#FAFBFC]">
           <div className="section-inner px-4 lg:px-6 py-10 md:py-14">
-            <div className="text-center mb-8">
-              <h2 className="text-[28px] font-extrabold text-[#0B2040]">Coastal Packages</h2>
-              <p className="text-[15px] text-[#555] mt-2">Bundle and save on routine maintenance</p>
+            <div className="mb-8">
+              <h2 className="text-[26px] font-extrabold text-[#0B2040]">Coastal Packages</h2>
+              <p className="text-[15px] text-[#555] mt-2 max-w-[600px]">Bundle and save on routine maintenance</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {packages.map((pkg) => {
@@ -242,30 +271,6 @@ export default function ServicesContent() {
         </section>
       )}
 
-      {/* ─── Sticky Category Pill Navigation ─── */}
-      <div
-        ref={pillBarRef}
-        className="sticky top-[64px] z-30 bg-white border-b border-[#e8e4dc]/60 shadow-[0_2px_12px_rgba(11,32,64,0.06)]"
-      >
-        <div className="section-inner px-4 lg:px-6">
-          <div className="flex gap-2 py-3 overflow-x-auto no-scrollbar">
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                className={`whitespace-nowrap px-5 py-2 rounded-full text-[13px] font-semibold transition-all ${
-                  activeCategory === cat.id
-                    ? "bg-[#0B2040] text-white shadow-[0_2px_8px_rgba(11,32,64,0.2)]"
-                    : "bg-[#FAFBFC] text-[#666] hover:bg-[#f0ede6] hover:text-[#0B2040]"
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* ── Dynamic Service Sections (tab content swap) ── */}
       {grouped.filter((g) => g.category.toLowerCase().replace(/[^a-z0-9]+/g, "-") === activeCategory).map((group, idx) => {
         const catId = group.category.toLowerCase().replace(/[^a-z0-9]+/g, "-");
@@ -287,9 +292,11 @@ export default function ServicesContent() {
             <ServiceGrid
               items={group.services.map((s) => ({
                 name: s.displayName || s.name,
-                price: s.priceLabel
-                  ? (/^\$/.test(s.priceLabel) || /\d/.test(s.priceLabel) ? s.priceLabel : "Call for price")
-                  : `$${s.price % 1 === 0 ? `${s.price}` : s.price.toFixed(2)}`,
+                price: s.priceLabel && s.priceLabel.startsWith("$")
+                  ? s.priceLabel
+                  : s.price > 0
+                    ? `$${s.price.toFixed(2)}`
+                    : "Call for price",
               }))}
               onItemClick={(item) => {
                 const svc = group.services.find((s) => (s.displayName || s.name) === item.name);
