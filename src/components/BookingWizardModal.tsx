@@ -286,6 +286,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
       const grouped = groupByCategory(divServices);
       const groups: CategoryGroup[] = grouped
         .filter((g) => !/labor\s*rate/i.test(g.category))
+        .filter((g) => !(divKey === "marine" && /marine\s*brakes/i.test(g.category)))
         .map((g) => ({
           category: g.category,
           services: g.services.map((s) => ({
