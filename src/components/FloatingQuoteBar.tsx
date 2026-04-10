@@ -95,7 +95,7 @@ export default function FloatingQuoteBar() {
     "w-full bg-white text-[#1e293b] text-[14px] placeholder:text-[#94a3b8] border border-[#E2E8F0] focus:border-[#E07B2D] outline-none px-3 py-[10px] rounded-lg transition-colors";
 
   return (
-    <div className={`fixed z-50 bottom-[80px] lg:bottom-6 right-4 lg:right-6 w-[380px] max-[480px]:left-4 max-[480px]:w-auto ${hiddenOnMobile}`}>
+    <div className={`hidden fixed z-50 bottom-[80px] lg:bottom-6 right-4 lg:right-6 w-[380px] max-[480px]:left-4 max-[480px]:w-auto ${hiddenOnMobile}`}>
       <div
         className="relative rounded-[16px] p-5"
         style={{

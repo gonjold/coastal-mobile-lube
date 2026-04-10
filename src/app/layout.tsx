@@ -5,8 +5,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { BookingProvider } from "@/contexts/BookingContext";
 import StickyBottomBar from "@/components/StickyBottomBar";
-import FloatingQuoteBar from "@/components/FloatingQuoteBar";
-import MobileQuickQuote from "@/components/MobileQuickQuote";
+import QuoteFAB from "@/components/QuoteFAB";
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -204,8 +203,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           <main className="flex-1 pb-20 lg:pb-0">{children}</main>
           <Footer />
           <StickyBottomBar />
-          <FloatingQuoteBar />
-          <MobileQuickQuote />
+          <QuoteFAB />
         </BookingProvider>
       </body>
     </html>

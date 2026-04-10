@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { Phone, Check, Clock, MapPin, Wrench, Shield, Award, Tag, ChevronRight, ChevronDown } from "lucide-react";
+import { Phone, Clock, MapPin, Wrench, Shield, Award, Tag, ChevronRight, ChevronDown } from "lucide-react";
 import { useBooking } from "@/contexts/BookingContext";
 import Button from "@/components/Button";
 import { cloudinaryUrl, images } from "@/lib/cloudinary";
 import { useServices } from "@/hooks/useServices";
+import { db } from "@/lib/firebase";
+import { doc, getDoc, collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 /* ── Homepage category configs per division ── */
 
@@ -73,10 +75,81 @@ const serviceTabs: { key: TabKey; label: string }[] = [
   { key: "rv", label: "RV" },
 ];
 
+const HERO_DEFAULTS = {
+  eyebrowLine1: "Mobile Service",
+  eyebrowLine2: "Oil, Brakes, Tires & More",
+  headline: "We bring the shop.",
+  subheadline: "Oil changes, tires, and brakes wherever you are. A master tech with 30 years of experience. Apollo Beach and the South Shore.",
+};
+
+function formatHeroPhone(value: string): string {
+  const d = value.replace(/\D/g, "").slice(0, 10);
+  if (d.length === 0) return "";
+  if (d.length <= 3) return `(${d}`;
+  if (d.length <= 6) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
+  return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+}
+
 export default function Home() {
   const { openBooking } = useBooking();
   const [servicesTab, setServicesTab] = useState<TabKey>("automotive");
   const [expandedService, setExpandedService] = useState<string | null>(null);
+
+  /* ── Hero copy from Firestore ── */
+  const [heroCopy, setHeroCopy] = useState(HERO_DEFAULTS);
+  useEffect(() => {
+    getDoc(doc(db, "siteConfig", "heroCopy"))
+      .then((snap) => {
+        if (snap.exists()) {
+          const d = snap.data();
+          setHeroCopy({
+            eyebrowLine1: d.eyebrowLine1 || HERO_DEFAULTS.eyebrowLine1,
+            eyebrowLine2: d.eyebrowLine2 || HERO_DEFAULTS.eyebrowLine2,
+            headline: d.headline || HERO_DEFAULTS.headline,
+            subheadline: d.subheadline || HERO_DEFAULTS.subheadline,
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  /* ── Hero quote form state ── */
+  const [hqFirst, setHqFirst] = useState("");
+  const [hqLast, setHqLast] = useState("");
+  const [hqPhone, setHqPhone] = useState("");
+  const [hqEmail, setHqEmail] = useState("");
+  const [hqCity, setHqCity] = useState("");
+  const [hqService, setHqService] = useState("");
+  const [hqSubmitting, setHqSubmitting] = useState(false);
+  const [hqMsg, setHqMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  async function handleHeroQuote(e: React.FormEvent) {
+    e.preventDefault();
+    if (!hqFirst.trim() || !hqPhone.trim() || hqSubmitting) return;
+    setHqSubmitting(true);
+    try {
+      await addDoc(collection(db, "quickQuotes"), {
+        firstName: hqFirst.trim(),
+        lastName: hqLast.trim(),
+        phone: hqPhone.replace(/\D/g, ""),
+        email: hqEmail.trim(),
+        city: hqCity.trim(),
+        service: hqService,
+        source: "hero-quote-form",
+        createdAt: serverTimestamp(),
+      });
+      setHqMsg({ type: "success", text: "Got it! We'll be in touch soon." });
+      setTimeout(() => {
+        setHqMsg(null);
+        setHqFirst(""); setHqLast(""); setHqPhone(""); setHqEmail(""); setHqCity(""); setHqService("");
+      }, 3000);
+    } catch {
+      setHqMsg({ type: "error", text: "Something went wrong. Call 813-722-LUBE." });
+      setTimeout(() => setHqMsg(null), 3000);
+    } finally {
+      setHqSubmitting(false);
+    }
+  }
 
   const { services: allServices, categories: allFirestoreCategories } = useServices({ activeOnly: true });
 
@@ -149,130 +222,221 @@ export default function Home() {
   return (
     <>
       {/* ── Hero ── */}
-      <section className="relative overflow-clip md:min-h-[600px]" style={{ background: "linear-gradient(180deg, #0A1628 0%, #0B2040 50%, #0F2847 100%)" }}>
+      <section
+        id="hero-section"
+        className="relative overflow-clip lg:bg-fixed lg:min-h-[calc(100vh-56px)]"
+        style={{ background: "linear-gradient(135deg, #0F2847 0%, #0B2040 100%)" }}
+      >
+        {/* Logo watermark */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none" style={{ opacity: 0.06 }}>
+          <div
+            className="w-full h-full bg-no-repeat bg-center"
+            style={{
+              backgroundImage: `url('https://res.cloudinary.com/dgcdcqjrz/image/upload/v1774315498/Coastal_Lube_logo_v1_zbx9qs.png')`,
+              backgroundSize: "280px",
+            }}
+          />
+        </div>
 
-        {/* Oval badge watermark - massive brand stamp */}
-        <img
-          src={cloudinaryUrl(images.logo, { width: 900, quality: "auto" })}
-          alt=""
-          aria-hidden="true"
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-auto opacity-[0.04] z-0 pointer-events-none select-none"
-        />
+        <div className="section-inner px-4 lg:px-6 relative z-10">
 
-        <div className="section-inner px-4 lg:px-6 pt-10 pb-10 md:pt-24 md:pb-20 relative z-10">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="mb-3 md:mb-4 flex flex-col items-center gap-[5px]">
-              <p className="text-[11px] md:text-[12px] uppercase font-bold text-[#F97316] tracking-[3px]">
-                Mobile Service
-              </p>
-              <p className="text-[13px] md:text-[14px] font-normal text-white/70">
-                Cars. Trucks. RVs. Boats. Your entire fleet.
-              </p>
+          {/* ══ MOBILE HERO ══ */}
+          <div className="lg:hidden text-center px-4 pt-6 pb-7">
+            <div className="flex flex-col items-center gap-[5px] mb-3">
+              <p className="text-[11px] uppercase font-extrabold text-white tracking-[4px]">{heroCopy.eyebrowLine1}</p>
+              <p className="text-[11px] uppercase font-semibold text-[#D9A441] tracking-[2px] opacity-90">{heroCopy.eyebrowLine2}</p>
             </div>
-            <h1 className="text-[30px] md:text-[52px] font-extrabold leading-[1.06] text-white tracking-[-1.5px] mb-3 md:mb-5" style={{ textShadow: "0 2px 20px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2)" }}>
-              The shop that comes to{" "}
-              <span className="relative">
-                <span className="text-[#E07B2D]">you.</span>
-                <span className="absolute -bottom-1 left-0 right-0 h-[3px] rounded-full bg-[#E07B2D]/40" />
-              </span>
-            </h1>
-            {/* Mobile subtext — short */}
-            <p className="md:hidden text-[15px] leading-[1.6] text-white/60 max-w-[620px] mx-auto mb-6">
-              We come to your driveway, parking lot, or dock. No shop visit needed.
-            </p>
-            {/* Desktop subtext — full */}
-            <p className="hidden md:block text-[17px] leading-[1.7] text-white/60 max-w-[620px] mx-auto mb-8">
-              Mobile oil changes, tire service, fleet maintenance, marine engine care, and RV service. We come to your driveway, your parking lot, or your dock.
-            </p>
-
-            {/* Hero CTA buttons — desktop only, mobile uses sticky bottom bar */}
-            <div className="hidden md:flex flex-col sm:flex-row justify-center gap-3 mb-8">
-              <Button variant="primary" size="lg" className="whitespace-nowrap shadow-[0_4px_24px_rgba(224,123,45,0.35)]" onClick={openBooking}>
-                Book Service
-              </Button>
-              <a
-                href="tel:8137225823"
-                className="inline-flex items-center justify-center gap-2 px-[24px] py-[14px] font-semibold text-white bg-white/[0.06] border border-white/20 rounded-[var(--radius-button)] hover:bg-white/[0.12] hover:border-white/35 transition-all whitespace-nowrap backdrop-blur-sm"
-              >
+            <h1 className="text-[34px] font-extrabold leading-[1.06] text-white tracking-[-0.8px] mb-3">{heroCopy.headline}</h1>
+            <p className="text-[15px] leading-[1.55] text-white/[0.68] max-w-[320px] mx-auto mb-5">{heroCopy.subheadline}</p>
+            {/* CTAs stacked */}
+            <div className="flex flex-col gap-[10px] max-w-[300px] mx-auto">
+              <button onClick={openBooking} className="w-full min-h-[48px] bg-[#E07B2D] text-white px-7 py-3.5 rounded-[8px] font-semibold shadow-[0_2px_12px_rgba(224,123,45,0.35)]">Book Service</button>
+              <a href="tel:8137225823" className="w-full min-h-[48px] flex items-center justify-center gap-2 bg-white/[0.08] backdrop-blur-[12px] border border-white/[0.18] text-white px-7 py-3.5 rounded-[8px] font-semibold">
                 <Phone size={16} />
                 Call 813-722-LUBE
               </a>
             </div>
+            {/* Trust cards */}
+            <div className="flex gap-2 mt-5">
+              <div className="flex-1 flex flex-col items-center justify-center gap-[5px] p-[12px_6px_10px] rounded-[12px] bg-white/[0.04] border border-white/[0.1]">
+                <span className="text-[#10B4B9] text-[16px] font-extrabold">30+</span>
+                <span className="text-white/60 text-[10.5px]">Years Experience</span>
+              </div>
+              <div className="flex-1 flex flex-col items-center justify-center gap-[5px] p-[12px_6px_10px] rounded-[12px] bg-white/[0.04] border border-white/[0.1]">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B4B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+                <span className="text-white/60 text-[10.5px]">Licensed &amp; Insured</span>
+              </div>
+              <div className="flex-1 flex flex-col items-center justify-center gap-[5px] p-[12px_6px_10px] rounded-[12px] bg-white/[0.04] border border-white/[0.1]">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D9A441" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span className="text-white/60 text-[10.5px]">Same-Day Available</span>
+              </div>
+            </div>
+          </div>
 
-            <div className="hidden md:flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 pt-7 border-t border-white/[0.08]">
-              {["Factory-trained techs", "Licensed & insured", "Same-day availability"].map((item) => (
-                <div key={item} className="flex items-center gap-2.5">
-                  <div className="flex items-center justify-center shrink-0 w-[22px] h-[22px] rounded-full bg-[#0D8A8F]/15 shadow-[0_0_8px_rgba(13,138,143,0.15)]" style={{ border: "1px solid rgba(13,138,143,0.2)" }}>
-                    <Check size={12} className="text-[#0D8A8F] drop-shadow-[0_0_2px_rgba(13,138,143,0.4)]" />
+          {/* ══ DESKTOP HERO ══ */}
+          <div className="hidden lg:flex items-center gap-10 pt-20 pb-20">
+            {/* Left column — copy */}
+            <div className="flex-1 text-center">
+              <div className="flex flex-col items-center gap-[5px] mb-4">
+                <p className="text-[13px] uppercase font-extrabold text-white tracking-[4px]">{heroCopy.eyebrowLine1}</p>
+                <p className="text-[12px] uppercase font-semibold text-[#D9A441] tracking-[2.5px] opacity-90">{heroCopy.eyebrowLine2}</p>
+              </div>
+              <h1 className="text-[52px] font-extrabold leading-[1.04] text-white tracking-[-1px] mb-5">{heroCopy.headline}</h1>
+              <p className="text-[18px] leading-[1.55] text-white/[0.68] max-w-[460px] mx-auto mb-6">{heroCopy.subheadline}</p>
+              {/* CTA row */}
+              <div className="flex justify-center gap-3 mb-7">
+                <button onClick={openBooking} className="bg-[#E07B2D] text-white px-7 py-3.5 rounded-[8px] font-semibold shadow-[0_2px_12px_rgba(224,123,45,0.35)]">Book Service</button>
+                <a href="tel:8137225823" className="flex items-center gap-2 bg-white/[0.08] backdrop-blur-[12px] border border-white/[0.18] text-white px-7 py-3.5 rounded-[8px] font-semibold">
+                  <Phone size={16} />
+                  Call 813-722-LUBE
+                </a>
+              </div>
+              {/* Trust capsule */}
+              <div className="flex justify-center mt-7">
+                <div className="inline-flex items-center rounded-full bg-white/[0.05] border border-white/[0.08] py-2 px-1.5">
+                  <div className="flex items-center gap-[5px] px-[14px] py-1">
+                    <span className="text-[#10B4B9] font-extrabold text-[13px]">30+</span>
+                    <span className="text-white/55 text-[12.5px] font-semibold">yrs exp</span>
                   </div>
-                  <span className="text-sm text-white/50 font-medium">{item}</span>
+                  <div className="w-px h-4 bg-white/10" />
+                  <div className="flex items-center gap-[5px] px-[14px] py-1">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B4B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+                    <span className="text-white/55 text-[12.5px] font-semibold">Licensed</span>
+                  </div>
+                  <div className="w-px h-4 bg-white/10" />
+                  <div className="flex items-center gap-[5px] px-[14px] py-1">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D9A441" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span className="text-white/55 text-[12.5px] font-semibold">Same-day</span>
+                  </div>
                 </div>
-              ))}
+              </div>
+            </div>
+
+            {/* Right column — frosted glass quote form */}
+            <div
+              className="w-[370px] shrink-0 rounded-[16px] border border-white/[0.1] p-[26px_22px]"
+              style={{
+                background: "rgba(255,255,255,0.06)",
+                backdropFilter: "blur(24px) saturate(1.6)",
+                WebkitBackdropFilter: "blur(24px) saturate(1.6)",
+                boxShadow: "0 8px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)",
+              }}
+            >
+              <div className="text-center mb-5">
+                <h3 className="text-white text-[18px] font-bold">Connect with us</h3>
+                <p className="text-white/45 text-[13px] mt-1">Tell us what you need. We get back to you fast.</p>
+              </div>
+              {hqMsg ? (
+                <p className={`text-center text-[15px] font-semibold py-6 ${hqMsg.type === "success" ? "text-emerald-400" : "text-red-400"}`}>{hqMsg.text}</p>
+              ) : (
+                <form onSubmit={handleHeroQuote} className="flex flex-col gap-[10px]">
+                  <div className="flex gap-2">
+                    <input type="text" placeholder="First name" value={hqFirst} onChange={(e) => setHqFirst(e.target.value)} className="flex-1 bg-white/[0.08] border border-white/[0.15] rounded-[8px] text-white text-[14px] p-[10px_12px] placeholder-white/40 outline-none" />
+                    <input type="text" placeholder="Last name" value={hqLast} onChange={(e) => setHqLast(e.target.value)} className="flex-1 bg-white/[0.08] border border-white/[0.15] rounded-[8px] text-white text-[14px] p-[10px_12px] placeholder-white/40 outline-none" />
+                  </div>
+                  <input type="tel" placeholder="Phone" value={hqPhone} onChange={(e) => setHqPhone(formatHeroPhone(e.target.value))} className="bg-white/[0.08] border border-white/[0.15] rounded-[8px] text-white text-[14px] p-[10px_12px] placeholder-white/40 outline-none" />
+                  <input type="email" placeholder="Email" value={hqEmail} onChange={(e) => setHqEmail(e.target.value)} className="bg-white/[0.08] border border-white/[0.15] rounded-[8px] text-white text-[14px] p-[10px_12px] placeholder-white/40 outline-none" />
+                  <input type="text" placeholder="City" value={hqCity} onChange={(e) => setHqCity(e.target.value)} className="bg-white/[0.08] border border-white/[0.15] rounded-[8px] text-white text-[14px] p-[10px_12px] placeholder-white/40 outline-none" />
+                  <div className="relative">
+                    <select value={hqService} onChange={(e) => setHqService(e.target.value)} className="w-full bg-white/[0.08] border border-white/[0.15] rounded-[8px] text-white text-[14px] p-[10px_12px] appearance-none pr-8 outline-none">
+                      <option value="" className="text-black">Service needed</option>
+                      {["Oil change", "Tires", "Brakes", "Marine service", "RV service", "Fleet service", "Other"].map((s) => (
+                        <option key={s} value={s} className="text-black">{s}</option>
+                      ))}
+                    </select>
+                    <svg className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/40" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                  </div>
+                  <button type="submit" disabled={hqSubmitting} className="w-full bg-[#E07B2D] text-white rounded-[8px] py-[13px] font-semibold mt-1 disabled:opacity-50">
+                    {hqSubmitting ? "Sending..." : "Send Quote Request"}
+                  </button>
+                </form>
+              )}
             </div>
           </div>
         </div>
 
+        {/* Desktop watermark bg-size override */}
+        <style>{`
+          @media (min-width: 1024px) {
+            #hero-section > div:first-child > div { background-size: 400px !important; }
+          }
+        `}</style>
       </section>
 
       {/* ── How It Works ── */}
-      <section className="relative overflow-hidden bg-white">
-        <div className="section-inner px-4 lg:px-6 py-8 md:py-20">
-          <div className="text-center mb-6 md:mb-12">
-            <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-2 md:mb-3">
-              How It Works
+      <section className="relative z-10 bg-[#F7F8FA] py-8 md:py-14">
+        <div className="section-inner px-4 lg:px-6">
+          <div className="text-center mb-6 md:mb-10">
+            <p className="text-[11px] md:text-[12px] uppercase font-bold text-[#1A5FAC] tracking-[2.5px] mb-2">
+              HOW IT WORKS
             </p>
-            <h2 className="text-[24px] md:text-[34px] font-extrabold text-[#0B2040]">
-              Three steps. That&apos;s it.
+            <h2 className="text-[22px] md:text-[30px] font-extrabold text-[#0B2040]">
+              Three steps. Done.
             </h2>
           </div>
 
-          <div className="relative max-w-[900px] mx-auto">
-            {/* Connecting line — desktop only */}
-            <div className="hidden md:block absolute top-[60px] h-[2px]" style={{ left: "calc(16.67% + 40px)", right: "calc(16.67% + 40px)", background: "linear-gradient(to right, #E07B2D, #D9A441, #0D8A8F)" }} />
+          {/* ── Desktop cards ── */}
+          <div className="hidden md:flex gap-5 max-w-[900px] mx-auto">
+            {[
+              {
+                num: "1", title: "You book a time",
+                desc: "Pick your service and a time that works. Takes about a minute.",
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B4B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>,
+              },
+              {
+                num: "2", title: "We roll up ready",
+                desc: "A fully equipped van arrives at your location. Your driveway, your office, the marina, the RV park.",
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B4B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>,
+              },
+              {
+                num: "3", title: "You never left your day",
+                desc: "We handle everything on-site. No waiting rooms, no second trips, no disruptions.",
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B4B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12l2 2 4-4"/></svg>,
+              },
+            ].map((step) => (
+              <div key={step.num} className="flex-1 bg-white rounded-[16px] border border-[#E8E8E8] p-[32px_22px_28px] text-center">
+                <span className="block text-[#10B4B9] text-[20px] font-extrabold mb-3">{step.num}</span>
+                <div className="w-[52px] h-[52px] rounded-[14px] mx-auto mb-4 flex items-center justify-center" style={{ background: "linear-gradient(to bottom right, #0F2847, #0B2040)" }}>
+                  {step.icon}
+                </div>
+                <h3 className="text-[#0B2040] text-[17px] font-bold mb-2">{step.title}</h3>
+                <p className="text-[#555555] text-[14px] leading-[1.55]">{step.desc}</p>
+              </div>
+            ))}
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-              {[
-                {
-                  num: "1",
-                  title: "Book in 60 seconds",
-                  desc: "Pick your service, choose a time. Or just call us.",
-                  icon: <Clock size={22} className="text-[#E07B2D]" />,
-                  gradient: "linear-gradient(135deg, #0B2040, #132E54)",
-                },
-                {
-                  num: "2",
-                  title: "We show up",
-                  desc: "Our fully equipped van arrives at your location, on time, ready to work.",
-                  icon: <MapPin size={22} className="text-[#D9A441]" />,
-                  gradient: "linear-gradient(135deg, #0F2847, #1A3A5E)",
-                },
-                {
-                  num: "3",
-                  title: "Done. Go.",
-                  desc: "No waiting rooms. No ride to the shop. You never left your day.",
-                  icon: <Wrench size={22} className="text-white" />,
-                  gradient: "linear-gradient(135deg, #E07B2D, #CC6A1F)",
-                },
-              ].map((step) => (
-                <div key={step.num} className="flex flex-col items-center text-center relative z-10">
-                  <div
-                    className="relative flex items-center justify-center w-[56px] h-[56px] md:w-[72px] md:h-[72px] rounded-[14px] md:rounded-[18px] text-white text-xl font-bold mb-3 md:mb-6 shadow-[0_4px_20px_rgba(0,0,0,0.2)]"
-                    style={{ background: step.gradient }}
-                  >
-                    <span className="absolute top-1.5 left-2 md:top-2 md:left-2.5 text-[16px] md:text-[20px] font-extrabold text-white/30 leading-none">
-                      {step.num}
-                    </span>
+          {/* ── Mobile cards ── */}
+          <div className="md:hidden flex flex-col gap-[10px] max-w-[500px] mx-auto">
+            {[
+              {
+                num: "1", title: "You book a time",
+                desc: "Pick your service and a time that works. Takes about a minute.",
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B4B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>,
+              },
+              {
+                num: "2", title: "We roll up ready",
+                desc: "A fully equipped van arrives at your location. Your driveway, your office, the marina, the RV park.",
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B4B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>,
+              },
+              {
+                num: "3", title: "You never left your day",
+                desc: "We handle everything on-site. No waiting rooms, no second trips, no disruptions.",
+                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B4B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12l2 2 4-4"/></svg>,
+              },
+            ].map((step) => (
+              <div key={step.num} className="bg-white rounded-[14px] border border-[#E8E8E8] p-[16px] flex items-start gap-[14px]">
+                <div className="flex flex-col items-center gap-[4px] shrink-0 w-[48px]">
+                  <span className="text-[#10B4B9] text-[15px] font-extrabold">{step.num}</span>
+                  <div className="w-[44px] h-[44px] rounded-[12px] flex items-center justify-center" style={{ background: "linear-gradient(to bottom right, #0F2847, #0B2040)" }}>
                     {step.icon}
                   </div>
-                  <h3 className="text-[16px] md:text-[18px] font-bold text-[#0B2040] mb-1 md:mb-2">
-                    {step.title}
-                  </h3>
-                  <p className="text-[13px] md:text-[14px] leading-[1.6] md:leading-[1.7] text-[#555] max-w-[260px]">
-                    {step.desc}
-                  </p>
                 </div>
-              ))}
-            </div>
+                <div className="flex-1">
+                  <h3 className="text-[#0B2040] text-[15px] font-bold mb-[3px]">{step.title}</h3>
+                  <p className="text-[#555555] text-[13.5px] leading-[1.5]">{step.desc}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
