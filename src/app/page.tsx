@@ -233,7 +233,7 @@ export default function Home() {
             className="w-full h-full bg-no-repeat bg-center"
             style={{
               backgroundImage: `url('https://res.cloudinary.com/dgcdcqjrz/image/upload/v1774315498/Coastal_Lube_logo_v1_zbx9qs.png')`,
-              backgroundSize: "280px",
+              backgroundSize: "360px",
             }}
           />
         </div>
@@ -276,13 +276,13 @@ export default function Home() {
           {/* ══ DESKTOP HERO ══ */}
           <div className="hidden lg:flex items-center gap-10 pt-20 pb-20">
             {/* Left column — copy */}
-            <div className="flex-1 text-center">
-              <div className="flex flex-col items-center gap-[5px] mb-4">
+            <div className="flex-1 pt-4">
+              <div className="flex flex-col items-center gap-[5px] mb-6 text-center">
                 <p className="text-[13px] uppercase font-extrabold text-white tracking-[4px]">{heroCopy.eyebrowLine1}</p>
                 <p className="text-[12px] uppercase font-semibold text-[#D9A441] tracking-[2.5px] opacity-90">{heroCopy.eyebrowLine2}</p>
               </div>
-              <h1 className="text-[52px] font-extrabold leading-[1.04] text-white tracking-[-1px] mb-5">{heroCopy.headline}</h1>
-              <p className="text-[18px] leading-[1.55] text-white/[0.68] max-w-[460px] mx-auto mb-6">{heroCopy.subheadline}</p>
+              <h1 className="text-[52px] font-extrabold leading-[1.04] text-white tracking-[-1px] mb-5 text-left">{heroCopy.headline}</h1>
+              <p className="text-[18px] leading-[1.55] text-white/[0.68] max-w-[460px] mb-8 text-left">{heroCopy.subheadline}</p>
               {/* CTA row */}
               <div className="flex justify-center gap-3 mb-7">
                 <button onClick={openBooking} className="bg-[#E07B2D] text-white px-7 py-3.5 rounded-[8px] font-semibold shadow-[0_2px_12px_rgba(224,123,45,0.35)]">Book Service</button>
@@ -314,7 +314,7 @@ export default function Home() {
 
             {/* Right column — frosted glass quote form */}
             <div
-              className="w-[370px] shrink-0 rounded-[16px] border border-white/[0.1] p-[26px_22px]"
+              className="w-[400px] shrink-0 rounded-[16px] border border-white/[0.1] p-[30px_26px]"
               style={{
                 background: "rgba(255,255,255,0.06)",
                 backdropFilter: "blur(24px) saturate(1.6)",
@@ -331,8 +331,8 @@ export default function Home() {
               ) : (
                 <form onSubmit={handleHeroQuote} className="flex flex-col gap-[10px]">
                   <div className="flex gap-2">
-                    <input type="text" placeholder="First name" value={hqFirst} onChange={(e) => setHqFirst(e.target.value)} className="flex-1 bg-white/[0.08] border border-white/[0.15] rounded-[8px] text-white text-[14px] p-[10px_12px] placeholder-white/40 outline-none" />
-                    <input type="text" placeholder="Last name" value={hqLast} onChange={(e) => setHqLast(e.target.value)} className="flex-1 bg-white/[0.08] border border-white/[0.15] rounded-[8px] text-white text-[14px] p-[10px_12px] placeholder-white/40 outline-none" />
+                    <input type="text" placeholder="First name" value={hqFirst} onChange={(e) => setHqFirst(e.target.value)} className="flex-1 min-w-0 bg-white/[0.08] border border-white/[0.15] rounded-[8px] text-white text-[14px] p-[10px_12px] placeholder-white/40 outline-none" />
+                    <input type="text" placeholder="Last name" value={hqLast} onChange={(e) => setHqLast(e.target.value)} className="flex-1 min-w-0 bg-white/[0.08] border border-white/[0.15] rounded-[8px] text-white text-[14px] p-[10px_12px] placeholder-white/40 outline-none" />
                   </div>
                   <input type="tel" placeholder="Phone" value={hqPhone} onChange={(e) => setHqPhone(formatHeroPhone(e.target.value))} className="bg-white/[0.08] border border-white/[0.15] rounded-[8px] text-white text-[14px] p-[10px_12px] placeholder-white/40 outline-none" />
                   <input type="email" placeholder="Email" value={hqEmail} onChange={(e) => setHqEmail(e.target.value)} className="bg-white/[0.08] border border-white/[0.15] rounded-[8px] text-white text-[14px] p-[10px_12px] placeholder-white/40 outline-none" />
@@ -358,7 +358,7 @@ export default function Home() {
         {/* Desktop watermark bg-size override */}
         <style>{`
           @media (min-width: 1024px) {
-            #hero-section > div:first-child > div { background-size: 400px !important; }
+            #hero-section > div:first-child > div { background-size: 600px !important; }
           }
         `}</style>
       </section>
@@ -405,38 +405,29 @@ export default function Home() {
             ))}
           </div>
 
-          {/* ── Mobile cards ── */}
-          <div className="md:hidden flex flex-col gap-[10px] max-w-[500px] mx-auto">
-            {[
-              {
-                num: "1", title: "You book a time",
-                desc: "Pick your service and a time that works. Takes about a minute.",
-                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B4B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>,
-              },
-              {
-                num: "2", title: "We roll up ready",
-                desc: "A fully equipped van arrives at your location. Your driveway, your office, the marina, the RV park.",
-                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B4B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>,
-              },
-              {
-                num: "3", title: "You never left your day",
-                desc: "We handle everything on-site. No waiting rooms, no second trips, no disruptions.",
-                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B4B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12l2 2 4-4"/></svg>,
-              },
-            ].map((step) => (
-              <div key={step.num} className="bg-white rounded-[14px] border border-[#E8E8E8] p-[16px] flex items-start gap-[14px]">
-                <div className="flex flex-col items-center gap-[4px] shrink-0 w-[48px]">
-                  <span className="text-[#10B4B9] text-[15px] font-extrabold">{step.num}</span>
-                  <div className="w-[44px] h-[44px] rounded-[12px] flex items-center justify-center" style={{ background: "linear-gradient(to bottom right, #0F2847, #0B2040)" }}>
-                    {step.icon}
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-[#0B2040] text-[15px] font-bold mb-[3px]">{step.title}</h3>
-                  <p className="text-[#555555] text-[13.5px] leading-[1.5]">{step.desc}</p>
-                </div>
+          {/* ── Mobile steps (simple numbered list) ── */}
+          <div className="md:hidden max-w-[500px] mx-auto">
+            <div className="flex items-start gap-3 mb-4">
+              <span className="text-[#10B4B9] text-[15px] font-extrabold mt-[2px] shrink-0">1.</span>
+              <div>
+                <span className="text-[#0B2040] text-[15px] font-bold">You book a time</span>
+                <span className="text-[#555] text-[13.5px] ml-1">Pick your service and a time that works. Takes about a minute.</span>
               </div>
-            ))}
+            </div>
+            <div className="flex items-start gap-3 mb-4">
+              <span className="text-[#10B4B9] text-[15px] font-extrabold mt-[2px] shrink-0">2.</span>
+              <div>
+                <span className="text-[#0B2040] text-[15px] font-bold">We roll up ready</span>
+                <span className="text-[#555] text-[13.5px] ml-1">A fully equipped van arrives at your location. Your driveway, your office, the marina, the RV park.</span>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-[#10B4B9] text-[15px] font-extrabold mt-[2px] shrink-0">3.</span>
+              <div>
+                <span className="text-[#0B2040] text-[15px] font-bold">You never left your day</span>
+                <span className="text-[#555] text-[13.5px] ml-1">We handle everything on-site. No waiting rooms, no second trips, no disruptions.</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>

@@ -81,7 +81,7 @@ export default function Header() {
         <div className="hidden lg:flex items-center gap-3">
           <a
             href="tel:8137225823"
-            className="inline-flex items-center gap-2 text-sm font-medium text-white/90 border-2 border-white/20 rounded-[10px] px-4 py-2"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-white bg-white/[0.08] backdrop-blur-[12px] border border-white/[0.18] rounded-[8px] px-5 py-2.5"
           >
             <Phone size={14} />
             813-722-LUBE

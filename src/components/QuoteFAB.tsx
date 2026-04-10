@@ -21,7 +21,7 @@ export default function QuoteFAB() {
 
     const observer = new IntersectionObserver(
       ([entry]) => setPastHero(!entry.isIntersecting),
-      { threshold: 0 }
+      { threshold: 0.5 }
     );
     observer.observe(hero);
     return () => observer.disconnect();
@@ -38,16 +38,16 @@ export default function QuoteFAB() {
       {/* Mobile FAB — always visible */}
       <button
         onClick={() => setQuoteOpen(true)}
-        className="lg:hidden fixed z-40 h-[48px] rounded-full flex items-center gap-2 px-[18px] pl-[14px] text-white text-[14px] font-semibold whitespace-nowrap"
+        className="lg:hidden fixed z-40 h-[54px] rounded-[27px] flex items-center gap-2 px-[20px] pl-[16px] text-white text-[15px] font-semibold whitespace-nowrap"
         style={{
           bottom: 72,
           right: 16,
           background: "linear-gradient(135deg, #0D8A8F, #10B4B9)",
-          boxShadow: "0 4px 16px rgba(13,138,143,0.5), 0 0 0 3px rgba(16,180,185,0.15)",
+          boxShadow: "0 4px 16px rgba(13,138,143,0.5), 0 0 0 3px rgba(16,180,185,0.2)",
           animation: "fabPulse 3s infinite",
         }}
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>
         Get a Quote
@@ -56,19 +56,19 @@ export default function QuoteFAB() {
       {/* Desktop FAB — visible after scrolling past hero */}
       <button
         onClick={() => setQuoteOpen(true)}
-        className="hidden lg:flex fixed z-40 h-[48px] rounded-full items-center gap-2 px-[18px] pl-[14px] text-white text-[14px] font-semibold whitespace-nowrap transition-all duration-300"
+        className="hidden lg:flex fixed z-40 h-[54px] rounded-[27px] items-center gap-2 px-[20px] pl-[16px] text-white text-[15px] font-semibold whitespace-nowrap transition-all duration-300"
         style={{
           bottom: 24,
           right: 24,
           background: "linear-gradient(135deg, #0D8A8F, #10B4B9)",
-          boxShadow: "0 4px 16px rgba(13,138,143,0.5), 0 0 0 3px rgba(16,180,185,0.15)",
+          boxShadow: "0 4px 16px rgba(13,138,143,0.5), 0 0 0 3px rgba(16,180,185,0.2)",
           animation: "fabPulse 3s infinite",
           opacity: desktopVisible ? 1 : 0,
-          transform: desktopVisible ? "translateY(0)" : "translateY(20px)",
+          transform: desktopVisible ? "translateY(0) scale(1)" : "translateY(20px) scale(1)",
           pointerEvents: desktopVisible ? "auto" : "none",
         }}
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>
         Get a Quote
