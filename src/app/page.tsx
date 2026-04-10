@@ -224,7 +224,7 @@ export default function Home() {
       {/* ── Hero ── */}
       <section
         id="hero-section"
-        className="relative overflow-clip lg:bg-fixed lg:min-h-[calc(100vh-56px)]"
+        className="relative overflow-clip lg:bg-fixed lg:min-h-[calc(100vh+4rem)] -mt-14 pt-14 lg:-mt-16 lg:pt-16"
         style={{ background: "linear-gradient(135deg, #0F2847 0%, #0B2040 100%)" }}
       >
         {/* Logo watermark */}
@@ -238,7 +238,7 @@ export default function Home() {
           />
         </div>
 
-        <div className="section-inner px-4 lg:px-6 relative z-10">
+        <div className="section-inner px-4 lg:px-12 relative z-10">
 
           {/* ══ MOBILE HERO ══ */}
           <div className="lg:hidden text-center px-4 pt-6 pb-7">
@@ -274,17 +274,17 @@ export default function Home() {
           </div>
 
           {/* ══ DESKTOP HERO ══ */}
-          <div className="hidden lg:flex items-center gap-10 pt-20 pb-20">
+          <div className="hidden lg:flex items-center gap-12 pt-10 pb-10">
             {/* Left column — copy */}
             <div className="flex-1 pt-4">
-              <div className="flex flex-col items-center gap-[5px] mb-6 text-center">
+              <div className="flex flex-col items-start gap-[5px] mb-6 text-left">
                 <p className="text-[13px] uppercase font-extrabold text-white tracking-[4px]">{heroCopy.eyebrowLine1}</p>
                 <p className="text-[12px] uppercase font-semibold text-[#D9A441] tracking-[2.5px] opacity-90">{heroCopy.eyebrowLine2}</p>
               </div>
-              <h1 className="text-[52px] font-extrabold leading-[1.04] text-white tracking-[-1px] mb-5 text-left">{heroCopy.headline}</h1>
-              <p className="text-[18px] leading-[1.55] text-white/[0.68] max-w-[460px] mb-8 text-left">{heroCopy.subheadline}</p>
+              <h1 className="text-[58px] font-extrabold leading-[1.04] text-white tracking-[-1px] mb-5 text-left">{heroCopy.headline}</h1>
+              <p className="text-[19px] leading-[1.55] text-white/[0.68] max-w-[520px] mb-8 text-left">{heroCopy.subheadline}</p>
               {/* CTA row */}
-              <div className="flex justify-center gap-3 mb-7">
+              <div className="flex justify-start gap-3 mb-7">
                 <button onClick={openBooking} className="bg-[#E07B2D] text-white px-7 py-3.5 rounded-[8px] font-semibold shadow-[0_2px_12px_rgba(224,123,45,0.35)]">Book Service</button>
                 <a href="tel:8137225823" className="flex items-center gap-2 bg-white/[0.08] backdrop-blur-[12px] border border-white/[0.18] text-white px-7 py-3.5 rounded-[8px] font-semibold">
                   <Phone size={16} />
@@ -292,7 +292,7 @@ export default function Home() {
                 </a>
               </div>
               {/* Trust capsule */}
-              <div className="flex justify-center mt-7">
+              <div className="flex justify-start mt-7">
                 <div className="inline-flex items-center rounded-full bg-white/[0.05] border border-white/[0.08] py-2 px-1.5">
                   <div className="flex items-center gap-[5px] px-[14px] py-1">
                     <span className="text-[#10B4B9] font-extrabold text-[13px]">30+</span>
@@ -314,7 +314,7 @@ export default function Home() {
 
             {/* Right column — frosted glass quote form */}
             <div
-              className="w-[400px] shrink-0 rounded-[16px] border border-white/[0.1] p-[30px_26px]"
+              className="w-[420px] shrink-0 rounded-[16px] border border-white/[0.1] p-[30px_26px]"
               style={{
                 background: "rgba(255,255,255,0.06)",
                 backdropFilter: "blur(24px) saturate(1.6)",

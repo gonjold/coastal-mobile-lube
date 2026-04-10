@@ -18,17 +18,24 @@ const navLinks = [
 
 export default function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [scrolledPastHero, setScrolledPastHero] = useState(true);
   const pathname = usePathname();
   const { openBooking } = useBooking();
 
   useEffect(() => {
-    function handleScroll() {
-      setScrolled(window.scrollY > 10);
+    const hero = document.getElementById("hero-section");
+    if (!hero) {
+      setScrolledPastHero(true);
+      return;
     }
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+    setScrolledPastHero(false);
+    const observer = new IntersectionObserver(
+      ([entry]) => setScrolledPastHero(!entry.isIntersecting),
+      { threshold: 0, rootMargin: "-80px 0px 0px 0px" }
+    );
+    observer.observe(hero);
+    return () => observer.disconnect();
+  }, [pathname]);
 
   useEffect(() => {
     if (drawerOpen) {
@@ -43,8 +50,15 @@ export default function Header() {
 
   return (
     <header
-      className="sticky top-0 z-50"
-      style={{ background: "linear-gradient(135deg, #0F2847 0%, #0B2040 100%)" }}
+      className={`sticky top-0 z-50 border-b transition-all duration-300 ease-in-out ${
+        scrolledPastHero
+          ? "bg-[#0B2040]/[0.88] border-white/[0.06]"
+          : "bg-white/[0.12] border-white/[0.08]"
+      }`}
+      style={{
+        backdropFilter: "blur(16px) saturate(1.4)",
+        WebkitBackdropFilter: "blur(16px) saturate(1.4)",
+      }}
     >
       <div className="section-inner flex items-center justify-between px-4 py-3 lg:px-6">
         {/* Logo */}
