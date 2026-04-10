@@ -376,7 +376,7 @@ export default function Home() {
           </div>
 
           {/* ── Desktop cards ── */}
-          <div className="hidden md:flex gap-5 max-w-[900px] mx-auto">
+          <div className="hidden lg:flex gap-5 max-w-[900px] mx-auto">
             {[
               {
                 num: "1", title: "You book a time",
@@ -406,7 +406,7 @@ export default function Home() {
           </div>
 
           {/* ── Mobile steps (simple numbered list) ── */}
-          <div className="md:hidden max-w-[500px] mx-auto">
+          <div className="lg:hidden max-w-[500px] mx-auto">
             <div className="flex items-start gap-3 mb-4">
               <span className="text-[#10B4B9] text-[15px] font-extrabold mt-[2px] shrink-0">1.</span>
               <div>
