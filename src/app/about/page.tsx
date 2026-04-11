@@ -79,7 +79,7 @@ export default function AboutPage() {
       <section className="relative overflow-hidden bg-[#0B2040]">
         {/* Oval badge watermark */}
         <img
-          src={cloudinaryUrl(images.logo, { width: 500, quality: "auto" })}
+          src="https://res.cloudinary.com/dgcdcqjrz/image/upload/v1775916096/Coastal_logo_bh3biu.svg"
           alt=""
           aria-hidden="true"
           className="absolute right-[5%] top-1/2 -translate-y-1/2 w-[350px] h-auto pointer-events-none select-none opacity-[0.04] hidden lg:block"

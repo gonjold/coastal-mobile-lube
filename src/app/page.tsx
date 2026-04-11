@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Phone, Clock, MapPin, Wrench, Shield, Award, Tag, ChevronRight, ChevronDown } from "lucide-react";
 import { useBooking } from "@/contexts/BookingContext";
 import Button from "@/components/Button";
-import { cloudinaryUrl, images } from "@/lib/cloudinary";
 import { useServices } from "@/hooks/useServices";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, addDoc, serverTimestamp } from "firebase/firestore";
@@ -232,7 +231,7 @@ export default function Home() {
           <div
             className="w-full h-full bg-no-repeat bg-center"
             style={{
-              backgroundImage: `url('https://res.cloudinary.com/dgcdcqjrz/image/upload/v1774315498/Coastal_Lube_logo_v1_zbx9qs.png')`,
+              backgroundImage: `url('https://res.cloudinary.com/dgcdcqjrz/image/upload/v1775916096/Coastal_logo_bh3biu.svg')`,
               backgroundSize: "360px",
             }}
           />
@@ -726,7 +725,7 @@ export default function Home() {
 
         {/* Badge watermark echo */}
         <img
-          src={cloudinaryUrl(images.logo, { width: 300, quality: "auto" })}
+          src="https://res.cloudinary.com/dgcdcqjrz/image/upload/v1775916096/Coastal_logo_bh3biu.svg"
           alt=""
           aria-hidden="true"
           className="absolute right-[10%] top-1/2 -translate-y-1/2 w-[200px] h-auto pointer-events-none select-none opacity-[0.04]"

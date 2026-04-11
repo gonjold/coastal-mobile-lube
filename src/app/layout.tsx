@@ -82,7 +82,7 @@ export default function RootLayout({
         "@id": `${BASE_URL}/#organization`,
         name: "Coastal Mobile Lube & Tire LLC",
         url: BASE_URL,
-        logo: "https://res.cloudinary.com/dgcdcqjrz/image/upload/w_400,q_auto:good,f_png/v1774315498/Coastal_Lube_logo_v1_zbx9qs.png",
+        logo: "https://res.cloudinary.com/dgcdcqjrz/image/upload/v1775916096/Coastal_logo_bh3biu.svg",
         telephone: "+1-813-722-5823",
         email: "Coastalmobilelube@gmail.com",
         sameAs: [],

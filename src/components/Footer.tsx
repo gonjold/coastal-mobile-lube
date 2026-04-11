@@ -30,7 +30,7 @@ export default function Footer() {
           {/* Column 1 - Brand */}
           <div className="flex flex-col gap-3">
             <img
-              src="https://res.cloudinary.com/dgcdcqjrz/image/upload/w_200,q_auto:good,f_auto/v1774315498/Coastal_Lube_logo_v1_zbx9qs.png"
+              src="https://res.cloudinary.com/dgcdcqjrz/image/upload/v1775916096/Coastal_logo_bh3biu.svg"
               alt="Coastal Mobile Lube & Tire"
               width={180}
               height={50}

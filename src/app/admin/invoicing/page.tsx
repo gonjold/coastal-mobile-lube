@@ -123,7 +123,7 @@ function formatCurrency(n: number): string {
 
 /* ─── Print HTML ──────────────────────────────────────────── */
 
-const LOGO_URL = "https://res.cloudinary.com/dgcdcqjrz/image/upload/w_200,q_auto:good,f_png/v1774315498/Coastal_Lube_logo_v1_zbx9qs.png";
+const LOGO_URL = "https://res.cloudinary.com/dgcdcqjrz/image/upload/v1775916096/Coastal_logo_bh3biu.svg";
 
 function generatePrintHtml(inv: Invoice): string {
   const rows = inv.lineItems
