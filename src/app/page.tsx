@@ -224,7 +224,7 @@ export default function Home() {
       {/* ── Hero ── */}
       <section
         id="hero-section"
-        className="relative overflow-clip lg:bg-fixed lg:min-h-[calc(100vh+4rem)] -mt-14 pt-14 lg:-mt-16 lg:pt-16"
+        className="relative overflow-clip -mt-14 pt-14 lg:-mt-16 lg:pt-16"
         style={{ background: "linear-gradient(135deg, #0F2847 0%, #0B2040 100%)" }}
       >
         {/* Logo watermark */}
@@ -371,79 +371,71 @@ export default function Home() {
               HOW IT WORKS
             </p>
             <h2 className="text-[22px] md:text-[30px] font-extrabold text-[#0B2040]">
-              Three steps. Done.
+              Three steps. That&apos;s it.
             </h2>
           </div>
 
-          {/* ── Desktop cards ── */}
-          <div className="hidden lg:flex gap-5 max-w-[900px] mx-auto">
-            {[
+          {(() => {
+            const steps = [
               {
-                num: "1", title: "You book a time",
-                desc: "Pick your service and a time that works. Takes about a minute.",
-                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B4B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>,
+                num: "1",
+                title: "Book in 60 seconds",
+                desc: "Pick your service, choose a time. Or just call us.",
+                iconPath: <><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></>,
               },
               {
-                num: "2", title: "We roll up ready",
-                desc: "A fully equipped van arrives at your location. Your driveway, your office, the marina, the RV park.",
-                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B4B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>,
+                num: "2",
+                title: "We show up",
+                desc: "Our fully equipped van arrives at your location, on time, ready to work.",
+                iconPath: <><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></>,
               },
               {
-                num: "3", title: "You never left your day",
-                desc: "We handle everything on-site. No waiting rooms, no second trips, no disruptions.",
-                icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B4B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12l2 2 4-4"/></svg>,
+                num: "3",
+                title: "Done. Go.",
+                desc: "No waiting rooms. No ride to the shop. You never left your day.",
+                iconPath: <><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></>,
               },
-            ].map((step) => (
-              <div key={step.num} className="flex-1 bg-white rounded-[16px] border border-[#E8E8E8] p-[32px_22px_28px] text-center">
-                <span className="block text-[#10B4B9] text-[20px] font-extrabold mb-3">{step.num}</span>
-                <div className="w-[52px] h-[52px] rounded-[14px] mx-auto mb-4 flex items-center justify-center" style={{ background: "linear-gradient(to bottom right, #0F2847, #0B2040)" }}>
-                  {step.icon}
+            ];
+            return (
+              <>
+                {/* ── Desktop cards ── */}
+                <div className="hidden lg:flex gap-5 max-w-[900px] mx-auto">
+                  {steps.map((step) => (
+                    <div key={step.num} className="flex-1 bg-white rounded-[16px] border border-[#E8E8E8] p-[32px_22px_28px] text-center">
+                      <span className="block text-[#10B4B9] text-[20px] font-extrabold mb-3">{step.num}</span>
+                      <div className="w-[52px] h-[52px] rounded-[14px] mx-auto mb-4 flex items-center justify-center" style={{ background: "linear-gradient(to bottom right, #0F2847, #0B2040)" }}>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B4B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          {step.iconPath}
+                        </svg>
+                      </div>
+                      <h3 className="text-[#0B2040] text-[17px] font-bold mb-2">{step.title}</h3>
+                      <p className="text-[#555555] text-[14px] leading-[1.55]">{step.desc}</p>
+                    </div>
+                  ))}
                 </div>
-                <h3 className="text-[#0B2040] text-[17px] font-bold mb-2">{step.title}</h3>
-                <p className="text-[#555555] text-[14px] leading-[1.55]">{step.desc}</p>
-              </div>
-            ))}
-          </div>
 
-          {/* ── Mobile steps (icon + numbered text) ── */}
-          <div className="lg:hidden max-w-[500px] mx-auto flex flex-col gap-6">
-            <div className="flex items-start gap-4">
-              <div className="w-[52px] h-[52px] rounded-xl bg-gradient-to-br from-[#0A1628] to-[#1a3a5c] flex items-center justify-center shrink-0">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>
-              </div>
-              <div className="flex flex-col flex-1">
-                <p className="text-[16px] mb-1 leading-snug">
-                  <span className="text-[#0891B2] font-bold mr-1.5">1.</span>
-                  <span className="text-[#0A1628] font-bold">Book in 60 seconds</span>
-                </p>
-                <p className="text-gray-500 text-sm leading-[1.5] m-0">Pick your service, choose a time. Or just call us.</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-4">
-              <div className="w-[52px] h-[52px] rounded-xl bg-gradient-to-br from-[#0A1628] to-[#1a3a5c] flex items-center justify-center shrink-0">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-              </div>
-              <div className="flex flex-col flex-1">
-                <p className="text-[16px] mb-1 leading-snug">
-                  <span className="text-[#0891B2] font-bold mr-1.5">2.</span>
-                  <span className="text-[#0A1628] font-bold">We show up</span>
-                </p>
-                <p className="text-gray-500 text-sm leading-[1.5] m-0">Our fully equipped van arrives at your location, on time, ready to work.</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-4">
-              <div className="w-[52px] h-[52px] rounded-xl bg-gradient-to-br from-[#0A1628] to-[#1a3a5c] flex items-center justify-center shrink-0">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
-              </div>
-              <div className="flex flex-col flex-1">
-                <p className="text-[16px] mb-1 leading-snug">
-                  <span className="text-[#0891B2] font-bold mr-1.5">3.</span>
-                  <span className="text-[#0A1628] font-bold">Done. Go.</span>
-                </p>
-                <p className="text-gray-500 text-sm leading-[1.5] m-0">No waiting rooms. No ride to the shop. You never left your day.</p>
-              </div>
-            </div>
-          </div>
+                {/* ── Mobile steps (icon + numbered text) ── */}
+                <div className="lg:hidden max-w-[500px] mx-auto flex flex-col gap-6">
+                  {steps.map((step) => (
+                    <div key={step.num} className="flex items-start gap-4">
+                      <div className="w-[52px] h-[52px] rounded-xl bg-gradient-to-br from-[#0A1628] to-[#1a3a5c] flex items-center justify-center shrink-0">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          {step.iconPath}
+                        </svg>
+                      </div>
+                      <div className="flex flex-col flex-1">
+                        <p className="text-[16px] mb-1 leading-snug">
+                          <span className="text-[#0891B2] font-bold mr-1.5">{step.num}.</span>
+                          <span className="text-[#0A1628] font-bold">{step.title}</span>
+                        </p>
+                        <p className="text-gray-500 text-sm leading-[1.5] m-0">{step.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            );
+          })()}
         </div>
       </section>
 

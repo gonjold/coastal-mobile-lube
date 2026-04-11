@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useBooking } from "@/contexts/BookingContext";
-import QuoteModal from "./QuoteModal";
 
 export default function QuoteFAB() {
-  const { bookingOpen } = useBooking();
-  const [quoteOpen, setQuoteOpen] = useState(false);
+  const { bookingOpen, quoteOpen, openQuote } = useBooking();
   const [pastHero, setPastHero] = useState(false);
   const [hasHero, setHasHero] = useState(false);
 
@@ -27,7 +25,7 @@ export default function QuoteFAB() {
     return () => observer.disconnect();
   }, []);
 
-  if (bookingOpen || quoteOpen) return <QuoteModal isOpen={quoteOpen} onClose={() => setQuoteOpen(false)} />;
+  if (bookingOpen || quoteOpen) return null;
 
   // Desktop: only show after scrolling past hero (or if no hero exists)
   // Mobile: always show
@@ -37,7 +35,7 @@ export default function QuoteFAB() {
     <>
       {/* Mobile FAB — always visible */}
       <button
-        onClick={() => setQuoteOpen(true)}
+        onClick={openQuote}
         className="lg:hidden fixed z-40 h-[54px] rounded-[27px] flex items-center gap-2 px-[20px] pl-[16px] text-white text-[15px] font-semibold whitespace-nowrap"
         style={{
           bottom: 72,
@@ -55,7 +53,7 @@ export default function QuoteFAB() {
 
       {/* Desktop FAB — visible after scrolling past hero */}
       <button
-        onClick={() => setQuoteOpen(true)}
+        onClick={openQuote}
         className="hidden lg:flex fixed z-40 h-[54px] rounded-[27px] items-center gap-2 px-[20px] pl-[16px] text-white text-[15px] font-semibold whitespace-nowrap transition-all duration-300"
         style={{
           bottom: 24,
@@ -73,8 +71,6 @@ export default function QuoteFAB() {
         </svg>
         Get a Quote
       </button>
-
-      <QuoteModal isOpen={quoteOpen} onClose={() => setQuoteOpen(false)} />
     </>
   );
 }

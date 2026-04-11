@@ -20,7 +20,7 @@ export default function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [scrolledPastHero, setScrolledPastHero] = useState(true);
   const pathname = usePathname();
-  const { openBooking } = useBooking();
+  const { openBooking, openQuote } = useBooking();
 
   useEffect(() => {
     const hero = document.getElementById("hero-section");
@@ -134,7 +134,7 @@ export default function Header() {
         style={{ animation: "drawerFadeIn 250ms ease-out" }}
       >
         <div
-          className="absolute inset-0 bg-black/50"
+          className="absolute inset-0 bg-black/80"
           onClick={() => setDrawerOpen(false)}
         />
         <div
@@ -166,6 +166,13 @@ export default function Header() {
             ))}
           </nav>
           <div className="mt-6 px-6 flex flex-col gap-3">
+            <button
+              type="button"
+              onClick={() => { setDrawerOpen(false); openQuote(); }}
+              className="inline-flex items-center justify-center gap-2 min-h-[48px] font-semibold text-[15px] text-[#10B4B9] border-2 border-[#10B4B9]/60 rounded-[10px] py-3 px-4"
+            >
+              Get a Quote
+            </button>
             <a
               href="tel:8137225823"
               className="inline-flex items-center justify-center gap-2 min-h-[48px] font-semibold text-[15px] text-white border-2 border-white/25 rounded-[10px] py-3 px-4"
