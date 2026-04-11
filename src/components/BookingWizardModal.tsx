@@ -40,7 +40,8 @@ interface Props {
 
 interface LookupBooking {
   id: string;
-  customerName: string;
+  customerFirstName: string;
+  customerLastName: string;
   customerPhone: string;
   customerEmail: string;
   vehicleYear: string;
@@ -268,7 +269,8 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
   const [vesselModel, setVesselModel] = useState("");
 
   /* ── Step 3: Details ── */
-  const [customerName, setCustomerName] = useState("");
+  const [customerFirstName, setCustomerFirstName] = useState("");
+  const [customerLastName, setCustomerLastName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [preferredDate, setPreferredDate] = useState("");
@@ -817,7 +819,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
   function canNext(): boolean {
     if (step === 1) return selectedServices.length > 0 || (otherSelected && otherText.trim().length > 0);
     if (step === 2) return true; // Vehicle info is optional
-    if (step === 3) return customerName.trim().length > 0 && customerPhone.trim().length > 0;
+    if (step === 3) return customerFirstName.trim().length > 0 && customerLastName.trim().length > 0 && customerPhone.trim().length > 0;
     return true;
   }
 
@@ -840,7 +842,9 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
         vesselYear: vesselYear.trim(),
         vesselMake: vesselMake.trim(),
         vesselModel: vesselModel.trim(),
-        name: customerName.trim(),
+        firstName: customerFirstName.trim(),
+        lastName: customerLastName.trim(),
+        name: `${customerFirstName.trim()} ${customerLastName.trim()}`,
         phone: customerPhone.replace(/\D/g, ""),
         email: customerEmail.trim().toLowerCase(),
         contactPreference,
@@ -880,7 +884,8 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
     setVesselYear("");
     setVesselMake("");
     setVesselModel("");
-    setCustomerName("");
+    setCustomerFirstName("");
+    setCustomerLastName("");
     setCustomerPhone("");
     setCustomerEmail("");
     setPreferredDate("");
@@ -917,9 +922,21 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
       const d = doc.data();
       const svcs = (d.selectedServices || []).map((s: { name?: string }) => s.name || "").filter(Boolean).join(", ");
       const ts = d.createdAt?.toDate?.();
+      // Prefer split firstName/lastName; fall back to splitting legacy combined name on first space
+      let firstName = d.firstName || "";
+      let lastName = d.lastName || "";
+      if (!firstName && !lastName) {
+        const combined = (d.name || d.customerName || "").trim();
+        if (combined) {
+          const parts = combined.split(/\s+/);
+          firstName = parts[0] || "";
+          lastName = parts.slice(1).join(" ");
+        }
+      }
       return {
         id: doc.id,
-        customerName: d.name || d.customerName || "",
+        customerFirstName: firstName,
+        customerLastName: lastName,
         customerPhone: d.phone || d.customerPhone || "",
         customerEmail: d.email || d.customerEmail || "",
         vehicleYear: d.vehicleYear || "",
@@ -981,7 +998,8 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
     if (b.vehicleYear) setVehicleYear(b.vehicleYear);
     if (b.vehicleMake) setVehicleMake(b.vehicleMake);
     if (b.vehicleModel) setVehicleModel(b.vehicleModel);
-    if (b.customerName) setCustomerName(b.customerName);
+    if (b.customerFirstName) setCustomerFirstName(b.customerFirstName);
+    if (b.customerLastName) setCustomerLastName(b.customerLastName);
     if (b.customerPhone) setCustomerPhone(formatPhoneDisplay(b.customerPhone));
     if (b.customerEmail) setCustomerEmail(b.customerEmail);
     setLookupDone(true);
@@ -1908,19 +1926,35 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
               {/* "Been here before?" sign-in link */}
               {renderLookupUI("Been here before? Sign in to auto-fill your details.")}
 
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Full Name *</label>
-                <input
-                  type="text"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="Your full name"
-                  style={{
-                    width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
-                    fontSize: 14, outline: "none", fontFamily: "inherit",
-                    background: "#FFFFFF", color: "#1E293B",
-                  }}
-                />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>First name *</label>
+                  <input
+                    type="text"
+                    value={customerFirstName}
+                    onChange={(e) => setCustomerFirstName(e.target.value)}
+                    placeholder="First name"
+                    style={{
+                      width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
+                      fontSize: 14, outline: "none", fontFamily: "inherit",
+                      background: "#FFFFFF", color: "#1E293B",
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Last name *</label>
+                  <input
+                    type="text"
+                    value={customerLastName}
+                    onChange={(e) => setCustomerLastName(e.target.value)}
+                    placeholder="Last name"
+                    style={{
+                      width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
+                      fontSize: 14, outline: "none", fontFamily: "inherit",
+                      background: "#FFFFFF", color: "#1E293B",
+                    }}
+                  />
+                </div>
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
@@ -2095,7 +2129,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                   <button type="button" onClick={() => setStep(3)} style={{ fontSize: 12, fontWeight: 600, color: "#F97316", background: "none", border: "none", cursor: "pointer" }}>Edit</button>
                 </div>
                 <div style={{ fontSize: 13, color: "#1E293B", lineHeight: 1.8 }}>
-                  <div>{customerName}</div>
+                  <div>{`${customerFirstName} ${customerLastName}`.trim()}</div>
                   <div>{formatPhoneDisplay(customerPhone)}</div>
                   {customerEmail && <div>{customerEmail}</div>}
                   <div>Contact: {contactPreference}</div>
@@ -2229,9 +2263,9 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                   )}
 
                   {/* Contact name (steps 3-4) */}
-                  {step >= 3 && customerName && (
+                  {step >= 3 && (customerFirstName || customerLastName) && (
                     <div style={{ marginTop: 4, fontSize: 13, color: "#475569" }}>
-                      {customerName}
+                      {`${customerFirstName} ${customerLastName}`.trim()}
                     </div>
                   )}
                 </>

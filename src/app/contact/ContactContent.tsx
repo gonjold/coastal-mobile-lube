@@ -105,19 +105,33 @@ export default function ContactContent() {
                   />
 
                   <div className="flex flex-col gap-5">
-                    {/* Row 1: Name + Phone */}
+                    {/* Row 1: Name (first + last) + Phone */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
-                          Name
-                        </label>
-                        <input
-                          type="text"
-                          name="name"
-                          placeholder="Your name"
-                          required
-                          className={inputClasses}
-                        />
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
+                            First name
+                          </label>
+                          <input
+                            type="text"
+                            name="firstName"
+                            placeholder="First"
+                            required
+                            className={inputClasses}
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">
+                            Last name
+                          </label>
+                          <input
+                            type="text"
+                            name="lastName"
+                            placeholder="Last"
+                            required
+                            className={inputClasses}
+                          />
+                        </div>
                       </div>
                       <div>
                         <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1.5">

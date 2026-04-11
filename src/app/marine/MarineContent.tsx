@@ -291,7 +291,8 @@ const marineLabelClass =
   "block text-[12px] uppercase font-semibold text-white/50 tracking-[0.5px] mb-1.5";
 
 function MarineQuoteForm() {
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [contactPreference, setContactPreference] = useState<"call" | "text" | "email">("call");
@@ -302,11 +303,12 @@ function MarineQuoteForm() {
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [errors, setErrors] = useState<{ name?: boolean; phone?: boolean }>({});
+  const [errors, setErrors] = useState<{ firstName?: boolean; lastName?: boolean; phone?: boolean }>({});
 
   async function handleSubmit() {
-    const newErrors: { name?: boolean; phone?: boolean } = {};
-    if (!name.trim()) newErrors.name = true;
+    const newErrors: { firstName?: boolean; lastName?: boolean; phone?: boolean } = {};
+    if (!firstName.trim()) newErrors.firstName = true;
+    if (!lastName.trim()) newErrors.lastName = true;
     const digits = phone.replace(/\D/g, "");
     if (digits.length < 10) newErrors.phone = true;
     if (Object.keys(newErrors).length > 0) {
@@ -317,7 +319,9 @@ function MarineQuoteForm() {
     setSubmitting(true);
     try {
       await addDoc(collection(db, "bookings"), {
-        name: name.trim(),
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        name: `${firstName.trim()} ${lastName.trim()}`,
         phone: digits,
         email: email.trim().toLowerCase(),
         contactPreference,
@@ -378,15 +382,27 @@ function MarineQuoteForm() {
             </div>
           ) : (
             <div className="flex flex-col gap-5">
-              <div>
-                <label className={marineLabelClass}>Your Name</label>
-                <input
-                  type="text"
-                  placeholder="First and last name"
-                  value={name}
-                  onChange={(e) => { setName(e.target.value); setErrors((p) => ({ ...p, name: false })); }}
-                  className={`${marineInputBase} ${errors.name ? "border-red-500" : ""}`}
-                />
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className={marineLabelClass}>First name</label>
+                  <input
+                    type="text"
+                    placeholder="First name"
+                    value={firstName}
+                    onChange={(e) => { setFirstName(e.target.value); setErrors((p) => ({ ...p, firstName: false })); }}
+                    className={`${marineInputBase} ${errors.firstName ? "border-red-500" : ""}`}
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className={marineLabelClass}>Last name</label>
+                  <input
+                    type="text"
+                    placeholder="Last name"
+                    value={lastName}
+                    onChange={(e) => { setLastName(e.target.value); setErrors((p) => ({ ...p, lastName: false })); }}
+                    className={`${marineInputBase} ${errors.lastName ? "border-red-500" : ""}`}
+                  />
+                </div>
               </div>
               <div>
                 <label className={marineLabelClass}>Phone</label>
