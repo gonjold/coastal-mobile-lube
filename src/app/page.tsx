@@ -406,41 +406,41 @@ export default function Home() {
           </div>
 
           {/* ── Mobile steps (icon + numbered text) ── */}
-          <div className="lg:hidden max-w-[500px] mx-auto">
-            <div className="flex items-start gap-4 mb-5">
-              <div className="w-[44px] h-[44px] rounded-[12px] bg-gradient-to-br from-[#0F2847] to-[#0B2040] flex items-center justify-center shrink-0 mt-1">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B4B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>
+          <div className="lg:hidden max-w-[500px] mx-auto flex flex-col gap-6">
+            <div className="flex items-start gap-4">
+              <div className="w-[52px] h-[52px] rounded-xl bg-gradient-to-br from-[#0A1628] to-[#1a3a5c] flex items-center justify-center shrink-0">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>
               </div>
-              <div className="flex-1">
-                <p className="text-[15px] mb-1">
-                  <span className="text-[#10B4B9] font-extrabold mr-1.5">1.</span>
-                  <span className="text-[#0B2040] font-bold">You book a time</span>
+              <div className="flex flex-col flex-1">
+                <p className="text-[16px] mb-1 leading-snug">
+                  <span className="text-[#0891B2] font-bold mr-1.5">1.</span>
+                  <span className="text-[#0A1628] font-bold">Book in 60 seconds</span>
                 </p>
-                <p className="text-[#555] text-[13.5px] leading-[1.5] m-0">Pick your service and a time that works. Takes about a minute.</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-4 mb-5">
-              <div className="w-[44px] h-[44px] rounded-[12px] bg-gradient-to-br from-[#0F2847] to-[#0B2040] flex items-center justify-center shrink-0 mt-1">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B4B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-              </div>
-              <div className="flex-1">
-                <p className="text-[15px] mb-1">
-                  <span className="text-[#10B4B9] font-extrabold mr-1.5">2.</span>
-                  <span className="text-[#0B2040] font-bold">We roll up ready</span>
-                </p>
-                <p className="text-[#555] text-[13.5px] leading-[1.5] m-0">A fully equipped van arrives at your location. Your driveway, your office, the marina, the RV park.</p>
+                <p className="text-gray-500 text-sm leading-[1.5] m-0">Pick your service, choose a time. Or just call us.</p>
               </div>
             </div>
             <div className="flex items-start gap-4">
-              <div className="w-[44px] h-[44px] rounded-[12px] bg-gradient-to-br from-[#0F2847] to-[#0B2040] flex items-center justify-center shrink-0 mt-1">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B4B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12l2 2 4-4"/></svg>
+              <div className="w-[52px] h-[52px] rounded-xl bg-gradient-to-br from-[#0A1628] to-[#1a3a5c] flex items-center justify-center shrink-0">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
               </div>
-              <div className="flex-1">
-                <p className="text-[15px] mb-1">
-                  <span className="text-[#10B4B9] font-extrabold mr-1.5">3.</span>
-                  <span className="text-[#0B2040] font-bold">You never left your day</span>
+              <div className="flex flex-col flex-1">
+                <p className="text-[16px] mb-1 leading-snug">
+                  <span className="text-[#0891B2] font-bold mr-1.5">2.</span>
+                  <span className="text-[#0A1628] font-bold">We show up</span>
                 </p>
-                <p className="text-[#555] text-[13.5px] leading-[1.5] m-0">We handle everything on-site. No waiting rooms, no second trips, no disruptions.</p>
+                <p className="text-gray-500 text-sm leading-[1.5] m-0">Our fully equipped van arrives at your location, on time, ready to work.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-4">
+              <div className="w-[52px] h-[52px] rounded-xl bg-gradient-to-br from-[#0A1628] to-[#1a3a5c] flex items-center justify-center shrink-0">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
+              </div>
+              <div className="flex flex-col flex-1">
+                <p className="text-[16px] mb-1 leading-snug">
+                  <span className="text-[#0891B2] font-bold mr-1.5">3.</span>
+                  <span className="text-[#0A1628] font-bold">Done. Go.</span>
+                </p>
+                <p className="text-gray-500 text-sm leading-[1.5] m-0">No waiting rooms. No ride to the shop. You never left your day.</p>
               </div>
             </div>
           </div>
@@ -481,7 +481,7 @@ export default function Home() {
           </div>
 
           {/* ── Mobile: category accordion ── */}
-          <div className="md:hidden flex flex-col gap-2">
+          <div className="lg:hidden flex flex-col gap-2">
             {currentCategories.map((cat) => {
               const key = `${servicesTab}-${cat.displayName}`;
               const isExpanded = expandedService === key;
@@ -538,7 +538,7 @@ export default function Home() {
           </div>
 
           {/* ── Desktop: category cards grid ── */}
-          <div className="hidden md:block">
+          <div className="hidden lg:block">
             <div
               className={`grid gap-4 ${servicesTab === "fleet" ? "max-w-xl mx-auto" : ""}`}
               style={servicesTab !== "fleet" ? { gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))" } : undefined}
@@ -729,8 +729,8 @@ export default function Home() {
       </section>
 
 
-      {/* ── CTA — hidden on mobile, sticky bottom bar handles it ── */}
-      <section className="hidden md:block relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0A1C38 0%, #0F2847 40%, #132E54 100%)" }}>
+      {/* ── CTA — hidden on mobile and tablet, sticky bottom bar handles it ── */}
+      <section className="hidden lg:block relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0A1C38 0%, #0F2847 40%, #132E54 100%)" }}>
 
         {/* Badge watermark echo */}
         <img

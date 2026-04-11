@@ -49,6 +49,7 @@ export default function Header() {
   }, [drawerOpen]);
 
   return (
+    <>
     <header
       className={`sticky top-0 z-50 border-b transition-all duration-300 ease-in-out ${
         scrolledPastHero
@@ -124,59 +125,72 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile Drawer */}
-      {drawerOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setDrawerOpen(false)}
-          />
-          <div className="absolute top-0 right-0 w-72 h-full bg-[#0F2847] shadow-xl flex flex-col">
-            <div className="flex items-center justify-end p-4">
-              <button
+    </header>
+
+    {/* Mobile Drawer — rendered outside <header> to escape backdrop-filter containing block */}
+    {drawerOpen && (
+      <div
+        className="fixed inset-0 z-[100] lg:hidden transition-all duration-300"
+        style={{ animation: "drawerFadeIn 250ms ease-out" }}
+      >
+        <div
+          className="absolute inset-0 bg-black/50"
+          onClick={() => setDrawerOpen(false)}
+        />
+        <div
+          className="absolute top-0 right-0 w-80 max-w-[85vw] h-full bg-[#0A1628]/95 backdrop-blur-md shadow-2xl flex flex-col"
+        >
+          <div className="flex items-center justify-end p-4">
+            <button
+              onClick={() => setDrawerOpen(false)}
+              className="inline-flex items-center justify-center w-12 h-12 text-white"
+              aria-label="Close menu"
+            >
+              <X size={26} />
+            </button>
+          </div>
+          <nav className="flex flex-col px-6 gap-1">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
                 onClick={() => setDrawerOpen(false)}
-                className="inline-flex items-center justify-center w-10 h-10 text-white"
-                aria-label="Close menu"
+                className={`min-h-[48px] py-4 font-semibold text-[17px] border-b border-white/10 transition-colors ${
+                  pathname === link.href
+                    ? "text-white"
+                    : "text-white/85 hover:text-white"
+                }`}
               >
-                <X size={24} />
-              </button>
-            </div>
-            <nav className="flex flex-col px-6 gap-1">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setDrawerOpen(false)}
-                  className={`py-3 font-medium text-base border-b border-white/10 transition-colors ${
-                    pathname === link.href
-                      ? "text-white"
-                      : "text-white/85 hover:text-white"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-            <div className="mt-6 px-6 flex flex-col gap-3">
-              <a
-                href="tel:8137225823"
-                className="inline-flex items-center justify-center gap-2 font-medium text-sm text-white/90 border-2 border-white/20 rounded-[10px] py-2.5 px-4"
-              >
-                <Phone size={16} />
-                813-722-LUBE
-              </a>
-              <Button
-                variant="primary"
-                size="md"
-                className="w-full justify-center"
-                onClick={() => { openBooking(); setDrawerOpen(false); }}
-              >
-                Book Service
-              </Button>
-            </div>
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+          <div className="mt-6 px-6 flex flex-col gap-3">
+            <a
+              href="tel:8137225823"
+              className="inline-flex items-center justify-center gap-2 min-h-[48px] font-semibold text-[15px] text-white border-2 border-white/25 rounded-[10px] py-3 px-4"
+            >
+              <Phone size={18} />
+              813-722-LUBE
+            </a>
+            <Button
+              variant="primary"
+              size="md"
+              className="w-full justify-center min-h-[48px]"
+              onClick={() => { openBooking(); setDrawerOpen(false); }}
+            >
+              Book Service
+            </Button>
           </div>
         </div>
-      )}
-    </header>
+        <style>{`
+          @keyframes drawerFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+        `}</style>
+      </div>
+    )}
+    </>
   );
 }
