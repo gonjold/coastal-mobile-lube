@@ -876,10 +876,16 @@ function InvoicingPageInner() {
             body: JSON.stringify({
               customerEmail: form.customerEmail,
               customerName: form.customerName,
+              customerPhone: form.customerPhone || "",
               invoiceNumber: form.invoiceNumber,
               lineItems: form.lineItems.filter((li) => li.serviceName.trim()),
+              subtotal: form.subtotal,
+              taxAmount: form.taxAmount,
               total: form.total,
               notes: form.notes,
+              vehicle: "",
+              invoiceDate: form.invoiceDate || "",
+              dueDate: form.dueDate || "",
             }),
           });
           addToast(`Invoice email sent to ${form.customerEmail}`, "success");
@@ -951,10 +957,16 @@ function InvoicingPageInner() {
         body: JSON.stringify({
           customerEmail: inv.customerEmail,
           customerName: inv.customerName,
+          customerPhone: inv.customerPhone || "",
           invoiceNumber: inv.invoiceNumber,
           lineItems: inv.lineItems,
+          subtotal: inv.subtotal,
+          taxAmount: inv.taxAmount,
           total: inv.total,
           notes: inv.notes,
+          vehicle: inv.vehicle || "",
+          invoiceDate: inv.invoiceDate || "",
+          dueDate: inv.dueDate || "",
         }),
       });
       addToast(`Invoice email sent to ${inv.customerEmail}`, "success");

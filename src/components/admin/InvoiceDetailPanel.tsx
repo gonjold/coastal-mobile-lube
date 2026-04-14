@@ -87,6 +87,132 @@ export default function InvoiceDetailPanel({
 
   if (!invoice) return null;
 
+  const handleDownloadPDF = () => {
+    const inv = invoice;
+    const lineItemsHTML = (inv.lineItems || []).map((item: LineItem) => {
+      const qty = item.quantity || 1;
+      const price = item.unitPrice || 0;
+      const total = qty * price;
+      return `
+        <tr>
+          <td style="padding:10px 12px;border-bottom:1px solid #eee;font-size:14px;">${item.serviceName || 'Service'}</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #eee;text-align:center;font-size:14px;">${qty}</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #eee;text-align:right;font-size:14px;">$${price.toFixed(2)}</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #eee;text-align:right;font-size:14px;font-weight:700;">$${total.toFixed(2)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const customerName = inv.customerName || '';
+    const total = (inv.total || 0).toFixed(2);
+    const subtotal = inv.subtotal != null ? inv.subtotal.toFixed(2) : null;
+    const taxAmount = inv.taxAmount != null && inv.taxAmount > 0 ? inv.taxAmount.toFixed(2) : null;
+
+    const printHTML = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Invoice ${inv.invoiceNumber}</title>
+  <style>
+    @media print {
+      body { margin: 0; }
+      .no-print { display: none; }
+    }
+    body { font-family: Arial, Helvetica, sans-serif; color: #1a1a1a; max-width: 800px; margin: 0 auto; padding: 40px; }
+    .header { background: #0B2040; padding: 28px 32px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: flex-start; }
+    .header h1 { color: white; font-size: 20px; margin: 0; }
+    .header .subtitle { color: #6BA3E0; font-size: 12px; margin-top: 4px; }
+    .header .inv-num { color: white; font-size: 16px; font-weight: 700; text-align: right; }
+    .header .inv-date { color: #6BA3E0; font-size: 11px; text-align: right; margin-top: 4px; }
+    .bill-to { padding: 24px 0; }
+    .bill-to .label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .bill-to .name { font-size: 14px; font-weight: 700; color: #0B2040; }
+    .bill-to .detail { font-size: 13px; color: #666; margin-top: 2px; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    th { background: #0B2040; color: white; padding: 10px 12px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    th:first-child { text-align: left; }
+    th:nth-child(2) { text-align: center; }
+    th:nth-child(3), th:nth-child(4) { text-align: right; }
+    .totals { text-align: right; padding: 0 12px; }
+    .totals .row { display: flex; justify-content: flex-end; gap: 24px; padding: 4px 0; font-size: 14px; }
+    .totals .row .label { color: #666; }
+    .totals .total-row { border-top: 2px solid #0B2040; padding-top: 10px; margin-top: 8px; }
+    .totals .total-row .amount { font-size: 22px; font-weight: 700; color: #E07B2D; }
+    .payment-box { background: #FFF8EE; border-left: 3px solid #E07B2D; padding: 16px 20px; margin: 24px 0; border-radius: 0 8px 8px 0; }
+    .payment-box h3 { font-size: 13px; font-weight: 700; color: #0B2040; margin: 0 0 6px 0; }
+    .payment-box p { font-size: 13px; color: #666; margin: 2px 0; }
+    .footer { text-align: center; color: #999; font-size: 11px; margin-top: 40px; padding-top: 16px; border-top: 1px solid #eee; }
+    .print-btn { display: block; margin: 20px auto; padding: 12px 32px; background: #0B2040; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .print-btn:hover { background: #163050; }
+  </style>
+</head>
+<body>
+  <button class="print-btn no-print" onclick="window.print()">Print / Save as PDF</button>
+
+  <div class="header">
+    <div>
+      <h1>Coastal Mobile Lube & Tire</h1>
+      <div class="subtitle">We come to you.</div>
+    </div>
+    <div>
+      <div class="inv-num">${inv.invoiceNumber}</div>
+      <div class="inv-date">Issued: ${inv.invoiceDate ? new Date(inv.invoiceDate + 'T12:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}</div>
+      ${inv.dueDate ? `<div class="inv-date">Due: ${new Date(inv.dueDate + 'T12:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>` : ''}
+    </div>
+  </div>
+
+  <div class="bill-to">
+    <div class="label">Bill To</div>
+    <div class="name">${customerName}</div>
+    ${inv.customerPhone ? `<div class="detail">${inv.customerPhone}</div>` : ''}
+    ${inv.customerEmail ? `<div class="detail">${inv.customerEmail}</div>` : ''}
+  </div>
+
+  ${inv.vehicle ? `<div class="bill-to" style="padding-top:0"><div class="label">Vehicle</div><div class="name" style="font-size:13px">${inv.vehicle}</div></div>` : ''}
+
+  <table>
+    <thead>
+      <tr>
+        <th>Service</th>
+        <th>Qty</th>
+        <th>Price</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${lineItemsHTML}
+    </tbody>
+  </table>
+
+  <div class="totals">
+    ${subtotal ? `<div class="row"><span class="label">Subtotal</span><span>$${subtotal}</span></div>` : ''}
+    ${taxAmount ? `<div class="row"><span class="label">Tax</span><span>$${taxAmount}</span></div>` : ''}
+    <div class="row total-row">
+      <span class="label" style="font-size:14px;font-weight:700;color:#0B2040;">Total Due</span>
+      <span class="amount">$${total}</span>
+    </div>
+  </div>
+
+  <div class="payment-box">
+    <h3>Payment Instructions</h3>
+    <p>We accept cash, check, Venmo, Zelle, and all major credit cards.</p>
+    <p>For questions, call or text us at (813) 277-5500.</p>
+  </div>
+
+  <div class="footer">
+    Coastal Mobile Lube & Tire | Apollo Beach, FL | coastalmobilelube.com<br>
+    Thank you for your business!
+  </div>
+</body>
+</html>`;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printHTML);
+      printWindow.document.close();
+    }
+  };
+
   const inv = invoice;
   const overdue = isOverdue(inv);
   const statusLabel = inv.status.charAt(0).toUpperCase() + inv.status.slice(1);
@@ -297,6 +423,12 @@ export default function InvoiceDetailPanel({
                 Send Invoice
               </button>
               <button
+                onClick={handleDownloadPDF}
+                className="px-5 border border-gray-200 rounded-[10px] py-2.5 text-[#0B2040] font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
+              >
+                Download PDF
+              </button>
+              <button
                 onClick={() => onPrint(inv)}
                 className="px-5 border border-gray-200 rounded-[10px] py-2.5 text-gray-500 font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
               >
@@ -320,6 +452,12 @@ export default function InvoiceDetailPanel({
                 Resend
               </button>
               <button
+                onClick={handleDownloadPDF}
+                className="px-5 border border-gray-200 rounded-[10px] py-2.5 text-[#0B2040] font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
+              >
+                Download PDF
+              </button>
+              <button
                 onClick={() => onPrint(inv)}
                 className="px-5 border border-gray-200 rounded-[10px] py-2.5 text-gray-500 font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
               >
@@ -331,8 +469,14 @@ export default function InvoiceDetailPanel({
           {inv.status === "paid" && (
             <>
               <button
-                onClick={() => onPrint(inv)}
+                onClick={handleDownloadPDF}
                 className="flex-1 border border-gray-200 rounded-[10px] py-2.5 text-[#0B2040] font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
+              >
+                Download PDF
+              </button>
+              <button
+                onClick={() => onPrint(inv)}
+                className="flex-1 border border-gray-200 rounded-[10px] py-2.5 text-gray-500 font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
               >
                 Print / PDF
               </button>

@@ -361,6 +361,7 @@ exports.sendConfirmationEmail = onRequest(
 exports.sendBookingConfirmation = onRequest(
   {
     region: "us-east1",
+    memory: "512MiB",
     secrets: [gmailUser, gmailAppPassword],
     cors: allowedOrigins,
   },
@@ -626,11 +627,187 @@ exports.decodeVIN = onRequest(
   }
 );
 
+// ─── PDF generation helper ─────────────────────────────────────────
+
+function generateInvoicePDF(invoiceData) {
+  return new Promise((resolve, reject) => {
+    const PDFDocument = require('pdfkit');
+    const doc = new PDFDocument({
+      size: 'LETTER',
+      margin: 50,
+      info: {
+        Title: `Invoice ${invoiceData.invoiceNumber}`,
+        Author: 'Coastal Mobile Lube & Tire',
+      },
+    });
+
+    const buffers = [];
+    doc.on('data', (chunk) => buffers.push(chunk));
+    doc.on('end', () => resolve(Buffer.concat(buffers)));
+    doc.on('error', reject);
+
+    const navy = '#0B2040';
+    const blue = '#1A5FAC';
+    const orange = '#E07B2D';
+    const gray = '#666666';
+    const lightGray = '#F7F8FA';
+    const pageWidth = 512; // 612 - 50*2 margins
+
+    // --- HEADER ---
+    // Navy bar across top
+    doc.rect(0, 0, 612, 100).fill(navy);
+
+    // Company name
+    doc.font('Helvetica-Bold').fontSize(20).fillColor('#ffffff')
+      .text('Coastal Mobile Lube & Tire', 50, 30);
+    doc.font('Helvetica').fontSize(10).fillColor('#6BA3E0')
+      .text('We come to you.', 50, 55);
+
+    // Invoice number + date (right side of header)
+    doc.font('Helvetica-Bold').fontSize(14).fillColor('#ffffff')
+      .text(invoiceData.invoiceNumber, 350, 30, { width: 212, align: 'right' });
+    doc.font('Helvetica').fontSize(10).fillColor('#6BA3E0')
+      .text(`Issued: ${invoiceData.issuedDate || 'N/A'}`, 350, 50, { width: 212, align: 'right' });
+    if (invoiceData.dueDate) {
+      doc.text(`Due: ${invoiceData.dueDate}`, 350, 64, { width: 212, align: 'right' });
+    }
+
+    // --- BILL TO ---
+    let y = 120;
+    doc.font('Helvetica-Bold').fontSize(9).fillColor(gray)
+      .text('BILL TO', 50, y);
+    y += 16;
+    doc.font('Helvetica-Bold').fontSize(12).fillColor(navy)
+      .text(invoiceData.customerName || 'Customer', 50, y);
+    y += 16;
+    if (invoiceData.customerEmail) {
+      doc.font('Helvetica').fontSize(10).fillColor(gray)
+        .text(invoiceData.customerEmail, 50, y);
+      y += 14;
+    }
+    if (invoiceData.customerPhone) {
+      doc.font('Helvetica').fontSize(10).fillColor(gray)
+        .text(invoiceData.customerPhone, 50, y);
+      y += 14;
+    }
+    if (invoiceData.customerAddress) {
+      doc.font('Helvetica').fontSize(10).fillColor(gray)
+        .text(invoiceData.customerAddress, 50, y);
+      y += 14;
+    }
+
+    // --- VEHICLE (if available) ---
+    if (invoiceData.vehicle) {
+      y += 6;
+      doc.font('Helvetica-Bold').fontSize(9).fillColor(gray)
+        .text('VEHICLE', 50, y);
+      y += 14;
+      doc.font('Helvetica').fontSize(10).fillColor(navy)
+        .text(invoiceData.vehicle, 50, y);
+      y += 14;
+    }
+
+    // --- LINE ITEMS TABLE ---
+    y += 20;
+
+    // Table header
+    doc.rect(50, y, pageWidth, 28).fill(navy);
+    doc.font('Helvetica-Bold').fontSize(9).fillColor('#ffffff');
+    doc.text('SERVICE', 58, y + 8, { width: 260 });
+    doc.text('QTY', 320, y + 8, { width: 50, align: 'center' });
+    doc.text('PRICE', 375, y + 8, { width: 80, align: 'right' });
+    doc.text('TOTAL', 460, y + 8, { width: 94, align: 'right' });
+    y += 28;
+
+    // Table rows
+    const lineItems = invoiceData.lineItems || [];
+    lineItems.forEach((item, i) => {
+      const rowHeight = 30;
+      // Alternate row background
+      if (i % 2 === 0) {
+        doc.rect(50, y, pageWidth, rowHeight).fill(lightGray);
+      }
+
+      const qty = item.quantity || 1;
+      const price = parseFloat(item.unitPrice || item.price || 0);
+      const total = qty * price;
+
+      doc.font('Helvetica').fontSize(10).fillColor(navy);
+      doc.text(item.serviceName || item.description || item.name || 'Service', 58, y + 9, { width: 260 });
+      doc.fillColor(gray);
+      doc.text(String(qty), 320, y + 9, { width: 50, align: 'center' });
+      doc.text(`$${price.toFixed(2)}`, 375, y + 9, { width: 80, align: 'right' });
+      doc.font('Helvetica-Bold').fillColor(navy);
+      doc.text(`$${total.toFixed(2)}`, 460, y + 9, { width: 94, align: 'right' });
+
+      y += rowHeight;
+    });
+
+    // --- TOTALS ---
+    y += 8;
+    doc.moveTo(350, y).lineTo(562, y).strokeColor('#e4e4e4').lineWidth(1).stroke();
+    y += 12;
+
+    // Subtotal
+    if (invoiceData.subtotal != null) {
+      doc.font('Helvetica').fontSize(10).fillColor(gray)
+        .text('Subtotal', 350, y, { width: 110, align: 'right' });
+      doc.font('Helvetica').fillColor(navy)
+        .text(`$${parseFloat(invoiceData.subtotal).toFixed(2)}`, 460, y, { width: 94, align: 'right' });
+      y += 18;
+    }
+
+    // Tax
+    if (invoiceData.taxAmount != null && parseFloat(invoiceData.taxAmount) > 0) {
+      doc.font('Helvetica').fontSize(10).fillColor(gray)
+        .text('Tax', 350, y, { width: 110, align: 'right' });
+      doc.font('Helvetica').fillColor(navy)
+        .text(`$${parseFloat(invoiceData.taxAmount).toFixed(2)}`, 460, y, { width: 94, align: 'right' });
+      y += 18;
+    }
+
+    // Total Due line
+    y += 4;
+    doc.moveTo(350, y).lineTo(562, y).strokeColor(navy).lineWidth(2).stroke();
+    y += 12;
+    doc.font('Helvetica-Bold').fontSize(11).fillColor(navy)
+      .text('Total Due', 350, y, { width: 110, align: 'right' });
+    doc.font('Helvetica-Bold').fontSize(16).fillColor(orange)
+      .text(`$${parseFloat(invoiceData.total).toFixed(2)}`, 440, y - 2, { width: 114, align: 'right' });
+
+    // --- PAYMENT INSTRUCTIONS ---
+    y += 40;
+    doc.rect(50, y, pageWidth, 70).fill('#FFF8EE');
+    doc.rect(50, y, 3, 70).fill(orange);
+    doc.font('Helvetica-Bold').fontSize(11).fillColor(navy)
+      .text('Payment Instructions', 66, y + 12);
+    doc.font('Helvetica').fontSize(10).fillColor(gray)
+      .text('We accept cash, check, Venmo, Zelle, and all major credit cards.', 66, y + 28);
+    doc.text('For questions about this invoice, call or text us at (813) 277-5500.', 66, y + 42);
+
+    // --- FOOTER ---
+    const footerY = 720;
+    doc.moveTo(50, footerY).lineTo(562, footerY).strokeColor('#e4e4e4').lineWidth(0.5).stroke();
+    doc.font('Helvetica').fontSize(9).fillColor('#999')
+      .text('Coastal Mobile Lube & Tire | Apollo Beach, FL | coastalmobilelube.com', 50, footerY + 10, {
+        width: pageWidth,
+        align: 'center',
+      });
+    doc.text('Thank you for your business!', 50, footerY + 24, {
+      width: pageWidth,
+      align: 'center',
+    });
+
+    doc.end();
+  });
+}
+
 // ─── Invoice email sent to CUSTOMER from admin invoicing page ───────
 
 exports.sendInvoiceEmail = onRequest(
   {
     region: "us-east1",
+    memory: "512MiB",
     secrets: [gmailUser, gmailAppPassword],
     cors: allowedOrigins,
   },
@@ -647,7 +824,11 @@ exports.sendInvoiceEmail = onRequest(
       return res.status(401).json({ error: 'Invalid token' });
     }
 
-    const { customerEmail, customerName, invoiceNumber, lineItems, total, notes } = req.body;
+    const {
+      customerEmail, customerName, customerPhone, customerAddress,
+      invoiceNumber, lineItems, subtotal, taxAmount, total, notes,
+      vehicle, invoiceDate, dueDate,
+    } = req.body;
 
     if (!customerEmail) {
       res.status(400).json({ success: false, error: "customerEmail is required" });
@@ -723,6 +904,11 @@ exports.sendInvoiceEmail = onRequest(
             <p style="color: #333; margin: 0; line-height: 1.5;">${notes}</p>
           </div>` : ""}
 
+          <!-- PDF notice -->
+          <div style="padding: 16px 0 0 0; text-align: center;">
+            <p style="font-size: 13px; color: #666; margin: 0 0 12px 0;">A PDF copy of this invoice is attached to this email.</p>
+          </div>
+
           <!-- Payment Instructions -->
           <div style="margin-top: 24px; padding: 20px; background: #FFF8F0; border: 1px solid #f0dcc4; border-radius: 8px;">
             <p style="font-weight: 700; color: #0B2040; margin: 0 0 8px; font-size: 15px;">Payment Instructions</p>
@@ -747,11 +933,41 @@ exports.sendInvoiceEmail = onRequest(
     `;
 
     try {
+      // Generate PDF attachment
+      const issuedDate = invoiceDate
+        ? new Date(invoiceDate + 'T12:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+        : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      const dueDateFormatted = dueDate
+        ? new Date(dueDate + 'T12:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+        : '';
+
+      const pdfBuffer = await generateInvoicePDF({
+        invoiceNumber,
+        customerName,
+        customerEmail,
+        customerPhone: customerPhone || '',
+        customerAddress: customerAddress || '',
+        vehicle: vehicle || '',
+        lineItems: items,
+        subtotal: subtotal,
+        taxAmount: taxAmount,
+        total: total,
+        issuedDate,
+        dueDate: dueDateFormatted,
+      });
+
       await transporter.sendMail({
         from: `"Coastal Mobile Lube" <${gmailUser.value()}>`,
         to: customerEmail,
         subject: `Invoice ${invoiceNumber} — Coastal Mobile Lube & Tire`,
         html: invoiceHtml,
+        attachments: [
+          {
+            filename: `${invoiceNumber}.pdf`,
+            content: pdfBuffer,
+            contentType: 'application/pdf',
+          },
+        ],
       });
       console.log(`Invoice email sent to ${customerEmail} for ${invoiceNumber}`);
       res.json({ success: true });
