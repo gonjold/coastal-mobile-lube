@@ -624,7 +624,7 @@ function SchedulePageInner() {
                             <>
                               <div className="h-px bg-gray-100 my-1" />
                               <button
-                                onMouseDown={(e) => { e.preventDefault(); handleAdvance(b.id, "cancelled"); setActionMenuId(null); }}
+                                onMouseDown={(e) => { e.preventDefault(); if (!confirm('Cancel this booking? This cannot be undone. The customer will need to rebook.')) return; handleAdvance(b.id, "cancelled"); setActionMenuId(null); }}
                                 className="block w-full text-left px-4 py-2 text-sm text-red-600 cursor-pointer hover:bg-gray-50 transition"
                               >
                                 Cancel

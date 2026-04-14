@@ -427,7 +427,10 @@ export default function ScheduleDetailPanel({
                 )}
                 {showCancel && (
                   <button
-                    onClick={() => onAdvance(b.id, "cancelled")}
+                    onClick={() => {
+                      if (!confirm('Cancel this booking? This cannot be undone. The customer will need to rebook.')) return;
+                      onAdvance(b.id, "cancelled");
+                    }}
                     className="px-5 py-2.5 bg-transparent border border-gray-200 rounded-[10px] text-red-600 text-[13px] font-semibold cursor-pointer hover:bg-red-50 hover:border-red-600 transition"
                   >
                     Cancel
