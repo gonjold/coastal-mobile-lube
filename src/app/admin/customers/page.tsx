@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, Fragment } from "react";
-import Link from "next/link";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
 import {
@@ -9,8 +8,6 @@ import {
   onSnapshot,
   orderBy,
   query,
-  doc,
-  updateDoc,
   addDoc,
   serverTimestamp,
 } from "firebase/firestore";
@@ -19,17 +16,205 @@ import {
   type Booking,
   type Customer,
   formatPhone,
-  formatTimestamp,
-  getStatusStyle,
-  getSourceLabel,
-  getServiceLabel,
   buildCustomerList,
-  exportCustomersCsv,
 } from "../shared";
+import AdminTopBar from "@/components/admin/AdminTopBar";
+import {
+  AdminTable,
+  AdminTableHeader,
+  AdminTableRow,
+  type AdminColumn,
+} from "@/components/admin/AdminTable";
+import AdminCSVExport from "@/components/admin/AdminCSVExport";
+import AdminBadge from "@/components/admin/AdminBadge";
+import CustomerProfilePanel, {
+  type PanelInvoice,
+} from "@/components/admin/CustomerProfilePanel";
+
+/* ── Types ── */
+
+interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  total: number;
+  status: string;
+  invoiceDate: string;
+  createdAt?: { toDate: () => Date };
+}
+
+interface EnrichedCustomer extends Customer {
+  type: string;
+  customerStatus: string;
+  totalSpent: number;
+  jobCount: number;
+  lastVisit: string;
+  customerSince: string;
+  primaryVehicle: string;
+  matchedInvoices: PanelInvoice[];
+}
+
+/* ── Helpers ── */
+
+function getVehicleName(b: Booking): string {
+  return (
+    [b.vehicleYear, b.vehicleMake, b.vehicleModel].filter(Boolean).join(" ") ||
+    [b.vesselYear, b.vesselMake, b.vesselModel].filter(Boolean).join(" ") ||
+    ""
+  );
+}
+
+function getPrimaryVehicle(bookings: Booking[]): string {
+  const counts = new Map<string, number>();
+  bookings.forEach((b) => {
+    const v = getVehicleName(b);
+    if (v) counts.set(v, (counts.get(v) || 0) + 1);
+  });
+  let best = "";
+  let bestCount = 0;
+  counts.forEach((count, name) => {
+    if (count > bestCount) {
+      best = name;
+      bestCount = count;
+    }
+  });
+  return best;
+}
+
+function deriveCustomerStatus(bookings: Booking[]): "Active" | "Lead" | "Inactive" {
+  const latest = bookings[0];
+  if (!latest) return "Inactive";
+  if (latest.status === "pending" || latest.status === "new-lead") return "Lead";
+  if (
+    latest.status === "confirmed" ||
+    latest.status === "in-progress" ||
+    latest.status === "completed" ||
+    latest.status === "invoiced"
+  )
+    return "Active";
+  if (latest.status === "cancelled") {
+    return bookings.some((b) => b.status !== "cancelled") ? "Active" : "Inactive";
+  }
+  return "Inactive";
+}
+
+function getCustomerTotalSpent(invoices: PanelInvoice[], bookings: Booking[]): number {
+  if (invoices.length > 0) {
+    return invoices
+      .filter((i) => i.status === "paid")
+      .reduce((sum, i) => sum + (i.total || 0), 0);
+  }
+  return bookings
+    .filter((b) => b.status === "completed" || b.status === "invoiced")
+    .reduce(
+      (sum, b) =>
+        sum + (b.selectedServices?.reduce((s, svc) => s + (svc.price || 0), 0) || 0),
+      0,
+    );
+}
+
+function getLastVisit(bookings: Booking[]): string {
+  const completed = bookings.find(
+    (b) => b.status === "completed" || b.status === "invoiced",
+  );
+  if (completed?.createdAt?.toDate) {
+    return completed.createdAt
+      .toDate()
+      .toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
+  return "Not yet";
+}
+
+function getCustomerSince(bookings: Booking[]): string {
+  const oldest = bookings[bookings.length - 1];
+  if (oldest?.createdAt?.toDate) {
+    return oldest.createdAt
+      .toDate()
+      .toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  }
+  return "—";
+}
+
+function matchInvoicesToCustomer(
+  customer: Customer,
+  allInvoices: Invoice[],
+): PanelInvoice[] {
+  const phone = customer.phone?.replace(/\D/g, "");
+  const email = customer.email?.toLowerCase();
+  const name = customer.name?.toLowerCase();
+
+  return allInvoices
+    .filter((inv) => {
+      if (phone && inv.customerPhone?.replace(/\D/g, "") === phone) return true;
+      if (email && inv.customerEmail?.toLowerCase() === email) return true;
+      if (name && name !== "-" && name !== "—" && inv.customerName?.toLowerCase() === name)
+        return true;
+      return false;
+    })
+    .map((inv) => ({
+      id: inv.id,
+      invoiceNumber: inv.invoiceNumber,
+      total: inv.total,
+      status: inv.status,
+      invoiceDate: inv.invoiceDate,
+      createdAt: inv.createdAt,
+    }));
+}
+
+function getInitials(name: string): string {
+  const parts = name.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2)
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return (parts[0]?.[0] || "?").toUpperCase();
+}
+
+/* ── Table config ── */
+
+const COLUMNS: AdminColumn[] = [
+  { key: "customer", label: "Customer", align: "left", sortable: true },
+  { key: "contact", label: "Contact", align: "left", sortable: true },
+  { key: "type", label: "Type", align: "center", sortable: true },
+  { key: "totalSpent", label: "Total Spent", align: "center", sortable: true },
+  { key: "jobs", label: "Jobs", align: "center", sortable: true },
+  { key: "status", label: "Status", align: "center", sortable: true },
+];
+
+const GRID = "2fr 1.5fr 1fr 1fr 1fr 100px";
+
+/* ── Page ── */
 
 export default function CustomersPage() {
+  const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
+
+  /* Filters & search */
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<"All" | "Residential" | "Commercial">("All");
+  const [statusFilter, setStatusFilter] = useState<"All" | "Active" | "Lead" | "Inactive">(
+    "All",
+  );
+
+  /* Sort */
+  const [sortKey, setSortKey] = useState("customer");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  /* Panel & modal */
+  const [selectedCustomer, setSelectedCustomer] = useState<EnrichedCustomer | null>(null);
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    address: "",
+    type: "Residential",
+    vehicle: "",
+    notes: "",
+  });
+  const [savingNewCustomer, setSavingNewCustomer] = useState(false);
 
   /* Toasts */
   const [toasts, setToasts] = useState<ToastItem[]>([]);
@@ -42,131 +227,137 @@ export default function CustomersPage() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }
 
-  /* ── Firestore real-time listener ── */
+  /* ── Firestore real-time listeners ── */
   useEffect(() => {
-    const q = query(collection(db, "bookings"), orderBy("createdAt", "desc"));
-    const unsub = onSnapshot(
-      q,
+    const qBookings = query(collection(db, "bookings"), orderBy("createdAt", "desc"));
+    const unsub1 = onSnapshot(
+      qBookings,
       (snap) => {
         setBookings(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Booking));
         setLoading(false);
       },
-      () => setLoading(false)
+      () => setLoading(false),
     );
-    return () => unsub();
+
+    const qInvoices = query(collection(db, "invoices"), orderBy("createdAt", "desc"));
+    const unsub2 = onSnapshot(qInvoices, (snap) => {
+      setInvoices(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Invoice));
+    });
+
+    return () => {
+      unsub1();
+      unsub2();
+    };
   }, []);
 
-  const customers = buildCustomerList(bookings);
+  /* ── Build enriched customers ── */
+  const enrichedCustomers = useMemo(() => {
+    const baseCustomers = buildCustomerList(bookings);
+    return baseCustomers.map((c) => {
+      const matched = matchInvoicesToCustomer(c, invoices);
+      // TODO: Add "type" field (Residential/Commercial) to customer documents
+      const type = "Residential";
+      const customerStatus = deriveCustomerStatus(c.bookings);
+      const totalSpent = getCustomerTotalSpent(matched, c.bookings);
+      const jobCount = c.totalBookings;
+      const lastVisit = getLastVisit(c.bookings);
+      const customerSince = getCustomerSince(c.bookings);
+      const primaryVehicle = getPrimaryVehicle(c.bookings);
 
-  /* ── Stats ── */
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const newThisMonth = customers.filter((c) => {
-    const earliest = c.bookings[c.bookings.length - 1];
-    const t = earliest?.createdAt?.toDate?.()?.getTime();
-    return t && t >= monthStart.getTime();
-  }).length;
-  const repeatCustomers = customers.filter((c) => c.totalBookings > 1).length;
+      return {
+        ...c,
+        type,
+        customerStatus,
+        totalSpent,
+        jobCount,
+        lastVisit,
+        customerSince,
+        primaryVehicle,
+        matchedInvoices: matched,
+      } as EnrichedCustomer;
+    });
+  }, [bookings, invoices]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-32">
-        <div className="animate-spin w-8 h-8 border-4 border-[#E07B2D] border-t-transparent rounded-full" />
-      </div>
-    );
+  /* ── Filter + search + sort ── */
+  const filteredCustomers = useMemo(() => {
+    let list = enrichedCustomers;
+
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (c) =>
+          c.name.toLowerCase().includes(q) ||
+          (c.email && c.email.toLowerCase().includes(q)) ||
+          (c.phone && formatPhone(c.phone).includes(q)) ||
+          (c.phone && c.phone.includes(q)),
+      );
+    }
+
+    if (typeFilter !== "All") {
+      list = list.filter((c) => c.type === typeFilter);
+    }
+    if (statusFilter !== "All") {
+      list = list.filter((c) => c.customerStatus === statusFilter);
+    }
+
+    list = [...list].sort((a, b) => {
+      let cmp = 0;
+      switch (sortKey) {
+        case "customer":
+          cmp = a.name.localeCompare(b.name);
+          break;
+        case "contact":
+          cmp = (a.phone || "").localeCompare(b.phone || "");
+          break;
+        case "type":
+          cmp = a.type.localeCompare(b.type);
+          break;
+        case "totalSpent":
+          cmp = a.totalSpent - b.totalSpent;
+          break;
+        case "jobs":
+          cmp = a.jobCount - b.jobCount;
+          break;
+        case "status":
+          cmp = a.customerStatus.localeCompare(b.customerStatus);
+          break;
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+
+    return list;
+  }, [enrichedCustomers, search, typeFilter, statusFilter, sortKey, sortDir]);
+
+  /* ── Counts for badge pills ── */
+  const typeCounts = useMemo(
+    () => ({
+      All: enrichedCustomers.length,
+      Residential: enrichedCustomers.filter((c) => c.type === "Residential").length,
+      Commercial: enrichedCustomers.filter((c) => c.type === "Commercial").length,
+    }),
+    [enrichedCustomers],
+  );
+
+  const statusCounts = useMemo(
+    () => ({
+      Active: enrichedCustomers.filter((c) => c.customerStatus === "Active").length,
+      Lead: enrichedCustomers.filter((c) => c.customerStatus === "Lead").length,
+      Inactive: enrichedCustomers.filter((c) => c.customerStatus === "Inactive").length,
+    }),
+    [enrichedCustomers],
+  );
+
+  /* ── Sort handler ── */
+  function handleSort(key: string) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
   }
 
-  return (
-    <div className="px-4 lg:px-8 py-6 max-w-[1400px] mx-auto">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-[13px] text-[#888] mb-6">
-        <Link href="/admin" className="hover:text-[#1A5FAC] transition-colors">Dashboard</Link>
-        <span>/</span>
-        <span className="text-[#0B2040] font-semibold">Customers</span>
-      </div>
-
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-[22px] font-bold text-[#0B2040]">Customers</h1>
-        <button
-          onClick={() => exportCustomersCsv(bookings)}
-          className="flex items-center gap-1.5 px-3 py-2 text-[13px] font-semibold border border-[#e8e8e8] rounded-lg text-[#444] bg-white hover:bg-[#f5f5f5] transition-colors"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="7 10 12 15 17 10" />
-            <line x1="12" y1="15" x2="12" y2="3" />
-          </svg>
-          Export CSV
-        </button>
-      </div>
-
-      {/* ═══ Customer Stats ═══ */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        {[
-          { label: "Total Customers", value: customers.length, icon: (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1A5FAC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-          )},
-          { label: "New This Month", value: newThisMonth, icon: (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="8.5" cy="7" r="4" />
-              <line x1="20" y1="8" x2="20" y2="14" />
-              <line x1="23" y1="11" x2="17" y2="11" />
-            </svg>
-          )},
-          { label: "Repeat Customers", value: repeatCustomers, icon: (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E07B2D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="23 4 23 10 17 10" />
-              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-            </svg>
-          )},
-        ].map((s) => (
-          <div key={s.label} className="bg-white border border-[#e8e8e8] rounded-[12px] p-4 flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-[#f5f7fa] flex items-center justify-center shrink-0">
-              {s.icon}
-            </div>
-            <div>
-              <p className="text-[24px] font-bold text-[#0B2040] leading-none">{s.value}</p>
-              <p className="text-[12px] text-[#888] mt-1">{s.label}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <CustomersView customers={customers} bookings={bookings} addToast={addToast} />
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
-    </div>
-  );
-}
-
-/* ─── Customers View ─────────────────────────────────────── */
-
-function CustomersView({
-  customers,
-  bookings,
-  addToast,
-}: {
-  customers: Customer[];
-  bookings: Booking[];
-  addToast: (message: string, type?: "success" | "info") => void;
-}) {
-  const router = useRouter();
-  const [search, setSearch] = useState("");
-  const [expandedCustomer, setExpandedCustomer] = useState<string | null>(null);
-  const [editingCustomer, setEditingCustomer] = useState<Record<string, { firstName: string; lastName: string; phone: string; email: string; address: string }>>({});
-  const [nameSortAsc, setNameSortAsc] = useState<boolean | null>(null);
-  const [savingCustomer, setSavingCustomer] = useState<string | null>(null);
-
-  /* New Customer modal */
-  const [showNewCustomer, setShowNewCustomer] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({ name: "", phone: "", email: "", notes: "" });
-  const [savingNewCustomer, setSavingNewCustomer] = useState(false);
-
+  /* ── Add customer ── */
   async function handleAddCustomer() {
     if (!newCustomer.name.trim()) return;
     setSavingNewCustomer(true);
@@ -175,6 +366,8 @@ function CustomersView({
         name: newCustomer.name.trim(),
         phone: newCustomer.phone.replace(/\D/g, "") || null,
         email: newCustomer.email.trim().toLowerCase() || null,
+        address: newCustomer.address.trim() || null,
+        vehicleMake: newCustomer.vehicle.trim() || null,
         notes: newCustomer.notes.trim() || null,
         source: "admin-manual",
         status: "pending",
@@ -182,7 +375,15 @@ function CustomersView({
         updatedAt: serverTimestamp(),
       });
       addToast(`Customer "${newCustomer.name.trim()}" added`);
-      setNewCustomer({ name: "", phone: "", email: "", notes: "" });
+      setNewCustomer({
+        name: "",
+        phone: "",
+        email: "",
+        address: "",
+        type: "Residential",
+        vehicle: "",
+        notes: "",
+      });
       setShowNewCustomer(false);
     } catch {
       addToast("Failed to add customer", "info");
@@ -191,422 +392,380 @@ function CustomersView({
     }
   }
 
-  function splitName(name: string): { first: string; last: string } {
-    if (!name || name === "-") return { first: "", last: "" };
-    const parts = name.trim().split(/\s+/);
-    if (parts.length === 1) return { first: parts[0], last: "" };
-    return { first: parts[0], last: parts.slice(1).join(" ") };
-  }
+  /* ── CSV data ── */
+  const csvData = useMemo(
+    () =>
+      filteredCustomers.map((c) => ({
+        Name: c.name,
+        Phone: c.phone || "",
+        Email: c.email || "",
+        Type: c.type,
+        "Total Spent": `$${c.totalSpent}`,
+        Jobs: c.jobCount,
+        Status: c.customerStatus,
+      })),
+    [filteredCustomers],
+  );
 
-  function displayName(name: string): string {
-    const { first, last } = splitName(name);
-    if (!last) return first || "-";
-    return `${last}, ${first}`;
-  }
-
-  const filtered = (() => {
-    let list = search.trim()
-      ? customers.filter((c) => {
-          const q = search.toLowerCase();
-          return (
-            c.name.toLowerCase().includes(q) ||
-            (c.phone && formatPhone(c.phone).includes(q)) ||
-            (c.phone && c.phone.includes(q)) ||
-            (c.email && c.email.toLowerCase().includes(q))
-          );
-        })
-      : [...customers];
-    if (nameSortAsc !== null) {
-      list = [...list].sort((a, b) => {
-        const aLast = splitName(a.name).last.toLowerCase() || splitName(a.name).first.toLowerCase();
-        const bLast = splitName(b.name).last.toLowerCase() || splitName(b.name).first.toLowerCase();
-        return nameSortAsc ? aLast.localeCompare(bLast) : bLast.localeCompare(aLast);
-      });
-    }
-    return list;
-  })();
-
-  async function handleSaveCustomer(customer: Customer) {
-    const edit = editingCustomer[customer.key];
-    if (!edit) return;
-    setSavingCustomer(customer.key);
-    const fullName = `${edit.firstName.trim()} ${edit.lastName.trim()}`.trim();
-    try {
-      await Promise.all(
-        customer.bookings.map((b) =>
-          updateDoc(doc(db, "bookings", b.id), {
-            name: fullName || undefined,
-            firstName: edit.firstName.trim() || undefined,
-            lastName: edit.lastName.trim() || undefined,
-            phone: edit.phone.replace(/\D/g, "") || undefined,
-            email: edit.email.trim().toLowerCase() || undefined,
-            address: edit.address.trim() || undefined,
-            updatedAt: serverTimestamp(),
-          })
-        )
-      );
-      addToast(`Updated ${customer.bookings.length} booking(s) for ${fullName || customer.name}`);
-    } catch {
-      addToast("Failed to update customer info", "info");
-    } finally {
-      setSavingCustomer(null);
-    }
-  }
-
-  function getCombinedCommsLog(customer: Customer) {
-    const all: Array<{ id: string; type: string; direction: string; summary: string; createdAt: string; createdBy: string; bookingService?: string }> = [];
-    customer.bookings.forEach((b) => {
-      (b.commsLog || []).forEach((entry) => {
-        all.push({ ...entry, bookingService: getServiceLabel(b) || b.name || b.id });
-      });
-    });
-    return all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  /* ── Loading state ── */
+  if (loading) {
+    return (
+      <>
+        <AdminTopBar title="Customers" />
+        <div className="flex items-center justify-center py-32">
+          <div className="animate-spin w-8 h-8 border-4 border-[#E07B2D] border-t-transparent rounded-full" />
+        </div>
+      </>
+    );
   }
 
   return (
     <>
-    <div className="bg-white border border-[#e8e8e8] rounded-[12px] overflow-hidden">
-      {/* Search + New Customer */}
-      <div className="p-4 border-b border-[#eee] flex items-center gap-3">
-        <input
-          type="text"
-          placeholder="Search by name, phone, or email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 text-[14px] rounded-[8px] px-4 py-2.5 border border-[#ddd] outline-none focus:border-[#1A5FAC] transition-colors"
-        />
-        <button
-          onClick={() => setShowNewCustomer(true)}
-          className="flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-semibold text-white bg-[#E07B2D] rounded-lg hover:bg-[#CC6A1F] transition-colors whitespace-nowrap"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          New Customer
-        </button>
-      </div>
+      {/* Top bar with working search */}
+      <AdminTopBar
+        title="Customers"
+        subtitle={`${filteredCustomers.length} customer${filteredCustomers.length !== 1 ? "s" : ""}`}
+        searchValue={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search by name, phone, or email..."
+      />
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="border-b border-[#eee]">
-              <th
-                className="px-4 py-3 text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] whitespace-nowrap cursor-pointer hover:text-[#0B2040] transition-colors select-none"
-                onClick={() => setNameSortAsc(nameSortAsc === null ? true : nameSortAsc ? false : null)}
+      {/* ═══ Filter bar ═══ */}
+      <div className="bg-white border-b border-gray-200 px-8 py-3 flex items-center gap-4">
+        {/* Type pills */}
+        <div className="flex items-center gap-1">
+          {(["All", "Residential", "Commercial"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTypeFilter(t)}
+              className={`px-3 py-1.5 rounded-md text-[13px] cursor-pointer transition flex items-center gap-1.5 ${
+                typeFilter === t
+                  ? "bg-[#0B2040] text-white font-semibold"
+                  : "bg-transparent text-gray-500"
+              }`}
+            >
+              {t}
+              <span
+                className={`text-[11px] px-1.5 py-px rounded ${
+                  typeFilter === t ? "bg-white/20" : "bg-gray-100"
+                }`}
               >
-                Name
-                {nameSortAsc !== null && (
-                  <span className="ml-1 text-[10px]">{nameSortAsc ? "\u25B2" : "\u25BC"}</span>
-                )}
-              </th>
-              {["Phone", "Email", "Bookings", "Last Booking", "Status"].map((h) => (
-                <th key={h} className="px-4 py-3 text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] whitespace-nowrap">
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-[14px] text-[#888]">
-                  {search ? "No customers match your search" : "No customers yet"}
-                </td>
-              </tr>
-            ) : (
-              filtered.map((c) => {
-                const isExpanded = expandedCustomer === c.key;
-                const status = getStatusStyle(c.lastBookingStatus);
-                return (
-                  <Fragment key={c.key}>
-                    <tr
-                      onClick={() => setExpandedCustomer(isExpanded ? null : c.key)}
-                      className={`border-b border-[#f0f0f0] cursor-pointer transition-colors ${isExpanded ? "bg-[#FAFBFC]" : "hover:bg-[#FAFBFC]"}`}
-                    >
-                      <td className="px-4 py-3 text-[14px] font-semibold text-[#0B2040] whitespace-nowrap">{displayName(c.name)}</td>
-                      <td className="px-4 py-3 text-[13px] whitespace-nowrap">
-                        {c.phone ? (
-                          <a href={`tel:${c.phone}`} className="text-[#1A5FAC] hover:underline" onClick={(e) => e.stopPropagation()}>
-                            {formatPhone(c.phone)}
-                          </a>
-                        ) : "-"}
-                      </td>
-                      <td className="px-4 py-3 text-[13px] text-[#444] whitespace-nowrap">{c.email || "-"}</td>
-                      <td className="px-4 py-3 text-[14px] font-semibold text-[#0B2040]">{c.totalBookings}</td>
-                      <td className="px-4 py-3 text-[13px] text-[#444] whitespace-nowrap">{c.lastBookingDate}</td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className={`inline-block px-3 py-1 rounded-full text-[11px] font-semibold ${status.cls}`}>{status.label}</span>
-                      </td>
-                    </tr>
-
-                    {isExpanded && (
-                      <tr>
-                        <td colSpan={6} className="p-0">
-                          <CustomerExpanded
-                            customer={c}
-                            editingCustomer={editingCustomer}
-                            savingCustomer={savingCustomer}
-                            onEditChange={(val) => setEditingCustomer((p) => ({ ...p, [c.key]: val }))}
-                            onSave={() => handleSaveCustomer(c)}
-                            commsLog={getCombinedCommsLog(c)}
-                            onCreateInvoice={() => {
-                              const params = new URLSearchParams({
-                                from: "customer",
-                                name: c.name === "\u2014" ? "" : c.name,
-                                phone: c.phone || "",
-                                email: c.email || "",
-                              });
-                              router.push(`/admin/invoicing?${params.toString()}`);
-                            }}
-                          />
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    {/* ═══ New Customer Modal ═══ */}
-    {showNewCustomer && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-        <div className="bg-white rounded-[14px] shadow-xl max-w-[440px] w-full mx-4 p-6">
-          <h3 className="text-[18px] font-bold text-[#0B2040] mb-4">New Customer</h3>
-          <div className="flex flex-col gap-3">
-            <div>
-              <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1">
-                Name <span className="text-[#dc2626]">*</span>
-              </label>
-              <input
-                type="text"
-                value={newCustomer.name}
-                onChange={(e) => setNewCustomer((p) => ({ ...p, name: e.target.value }))}
-                placeholder="Full name"
-                className="w-full text-[14px] rounded-[8px] px-3 py-2.5 border border-[#ddd] outline-none focus:border-[#1A5FAC] transition-colors"
-                autoFocus
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1">
-                Phone
-              </label>
-              <input
-                type="tel"
-                value={newCustomer.phone}
-                onChange={(e) => setNewCustomer((p) => ({ ...p, phone: e.target.value }))}
-                placeholder="(813) 555-1234"
-                className="w-full text-[14px] rounded-[8px] px-3 py-2.5 border border-[#ddd] outline-none focus:border-[#1A5FAC] transition-colors"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1">
-                Email
-              </label>
-              <input
-                type="email"
-                value={newCustomer.email}
-                onChange={(e) => setNewCustomer((p) => ({ ...p, email: e.target.value }))}
-                placeholder="customer@email.com"
-                className="w-full text-[14px] rounded-[8px] px-3 py-2.5 border border-[#ddd] outline-none focus:border-[#1A5FAC] transition-colors"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1">
-                Notes
-              </label>
-              <textarea
-                value={newCustomer.notes}
-                onChange={(e) => setNewCustomer((p) => ({ ...p, notes: e.target.value }))}
-                placeholder="Vehicle info, preferences, etc."
-                rows={3}
-                className="w-full text-[14px] rounded-[8px] px-3 py-2.5 border border-[#ddd] outline-none focus:border-[#1A5FAC] transition-colors resize-none"
-              />
-            </div>
-          </div>
-          <div className="flex gap-3 justify-end mt-5">
-            <button
-              onClick={() => {
-                setShowNewCustomer(false);
-                setNewCustomer({ name: "", phone: "", email: "", notes: "" });
-              }}
-              className="px-4 py-2.5 text-[13px] font-semibold text-[#444] border border-[#ddd] rounded-md hover:bg-[#f5f5f5] transition-colors"
-            >
-              Cancel
+                {typeCounts[t]}
+              </span>
             </button>
-            <button
-              onClick={handleAddCustomer}
-              disabled={!newCustomer.name.trim() || savingNewCustomer}
-              className="px-4 py-2.5 text-[13px] font-semibold text-white bg-[#E07B2D] rounded-md hover:bg-[#CC6A1F] transition-colors disabled:opacity-50"
-            >
-              {savingNewCustomer ? "Adding..." : "Add Customer"}
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
-    </>
-  );
-}
-
-function CustomerExpanded({
-  customer,
-  editingCustomer,
-  savingCustomer,
-  onEditChange,
-  onSave,
-  commsLog,
-  onCreateInvoice,
-}: {
-  customer: Customer;
-  editingCustomer: Record<string, { firstName: string; lastName: string; phone: string; email: string; address: string }>;
-  savingCustomer: string | null;
-  onEditChange: (val: { firstName: string; lastName: string; phone: string; email: string; address: string }) => void;
-  onSave: () => void;
-  commsLog: Array<{ id: string; type: string; direction: string; summary: string; createdAt: string; bookingService?: string }>;
-  onCreateInvoice: () => void;
-}) {
-  function autoSplitName(name: string): { first: string; last: string } {
-    if (!name || name === "-") return { first: "", last: "" };
-    const parts = name.trim().split(/\s+/);
-    if (parts.length === 1) return { first: parts[0], last: "" };
-    return { first: parts[0], last: parts.slice(1).join(" ") };
-  }
-
-  const { first: defaultFirst, last: defaultLast } = autoSplitName(customer.name === "-" ? "" : customer.name);
-  const edit = editingCustomer[customer.key] || {
-    firstName: defaultFirst,
-    lastName: defaultLast,
-    phone: customer.phone ? formatPhone(customer.phone) : "",
-    email: customer.email || "",
-    address: customer.address || "",
-  };
-
-  const typeLabels: Record<string, string> = { call: "Call", text: "Text", email: "Email", note: "Note" };
-  const typeColors: Record<string, string> = { call: "bg-[#E07B2D]", text: "bg-[#16a34a]", email: "bg-[#1A5FAC]", note: "bg-[#888]" };
-
-  return (
-    <div className="bg-[#FAFBFC] border-t border-[#eee] px-6 py-5">
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* Editable Customer Info */}
-        <div className="w-full md:w-1/3 shrink-0">
-          <div className="bg-white border border-[#e8e8e8] rounded-[10px] p-4">
-            <h4 className="text-[14px] font-bold text-[#0B2040] mb-3 pb-2 border-b border-[#eee]">Edit Customer</h4>
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div>
-                <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1">
-                  First Name
-                </label>
-                <input
-                  type="text"
-                  value={edit.firstName}
-                  onChange={(e) => onEditChange({ ...edit, firstName: e.target.value })}
-                  className="w-full text-[13px] rounded-[6px] px-3 py-1.5 border border-[#ddd] outline-none focus:border-[#1A5FAC] transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1">
-                  Last Name
-                </label>
-                <input
-                  type="text"
-                  value={edit.lastName}
-                  onChange={(e) => onEditChange({ ...edit, lastName: e.target.value })}
-                  className="w-full text-[13px] rounded-[6px] px-3 py-1.5 border border-[#ddd] outline-none focus:border-[#1A5FAC] transition-colors"
-                />
-              </div>
-            </div>
-            {(["phone", "email", "address"] as const).map((field) => (
-              <div key={field} className="mb-3">
-                <label className="block text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-1">
-                  {field}
-                </label>
-                <input
-                  type={field === "email" ? "email" : field === "phone" ? "tel" : "text"}
-                  value={edit[field]}
-                  onChange={(e) => onEditChange({ ...edit, [field]: e.target.value })}
-                  className="w-full text-[13px] rounded-[6px] px-3 py-1.5 border border-[#ddd] outline-none focus:border-[#1A5FAC] transition-colors"
-                />
-              </div>
-            ))}
-            <button
-              onClick={onSave}
-              disabled={savingCustomer === customer.key}
-              className="w-full mt-1 px-4 py-2 text-[13px] font-semibold text-white bg-[#0B2040] rounded-md hover:bg-[#132E54] transition-colors disabled:opacity-50"
-            >
-              {savingCustomer === customer.key ? "Saving..." : `Save (updates ${customer.totalBookings} booking${customer.totalBookings !== 1 ? "s" : ""})`}
-            </button>
-            <button
-              onClick={onCreateInvoice}
-              className="w-full mt-2 px-4 py-2 text-[13px] font-semibold text-white bg-[#1A5FAC] rounded-md hover:bg-[#174f94] transition-colors inline-flex items-center justify-center gap-2"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="16" y1="13" x2="8" y2="13" />
-                <line x1="16" y1="17" x2="8" y2="17" />
-              </svg>
-              Create Invoice
-            </button>
-          </div>
+          ))}
         </div>
 
-        {/* Bookings + Comms Log */}
-        <div className="w-full md:w-2/3">
-          {/* All Bookings */}
-          <h4 className="text-[14px] font-bold text-[#0B2040] mb-3">All Bookings</h4>
-          <div className="flex flex-col gap-2 mb-6">
-            {customer.bookings.map((b) => {
-              const st = getStatusStyle(b.status);
-              const src = getSourceLabel(b.source);
-              return (
-                <div key={b.id} className="flex items-center justify-between bg-white border border-[#e8e8e8] rounded-[8px] px-4 py-3">
-                  <div>
-                    <p className="text-[13px] font-semibold text-[#0B2040]">{getServiceLabel(b) || "-"}</p>
-                    <p className="text-[12px] text-[#888]">{formatTimestamp(b.createdAt)}</p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0 ml-4">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold text-white ${src.color}`}>{src.label}</span>
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${st.cls}`}>{st.label}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        {/* Divider */}
+        <div className="w-px h-6 bg-gray-200" />
 
-          {/* Combined Communication Log */}
-          <h4 className="text-[14px] font-bold text-[#0B2040] mb-3">Communication History</h4>
-          {commsLog.length === 0 ? (
-            <p className="text-[13px] text-[#888] italic">No communication logged</p>
+        {/* Status pills */}
+        <div className="flex items-center gap-1">
+          {(["Active", "Lead", "Inactive"] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(statusFilter === s ? "All" : s)}
+              className={`px-3 py-1.5 rounded-md text-[13px] cursor-pointer transition ${
+                statusFilter === s
+                  ? "bg-gray-50 text-[#0B2040] font-semibold"
+                  : "bg-transparent text-gray-500"
+              }`}
+            >
+              {s}
+              <span className="ml-1.5 text-[11px] px-1.5 py-px rounded bg-gray-100">
+                {statusCounts[s]}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Right side */}
+        <div className="ml-auto flex items-center gap-3">
+          <AdminCSVExport
+            data={csvData}
+            filename={`customers-${new Date().toISOString().split("T")[0]}`}
+          />
+          <button
+            onClick={() => setShowNewCustomer(true)}
+            className="px-4.5 py-2 rounded-lg bg-[#E07B2D] text-white text-[13px] font-semibold cursor-pointer hover:bg-[#CC6A1F] transition"
+          >
+            + Add Customer
+          </button>
+        </div>
+      </div>
+
+      {/* ═══ Customer table ═══ */}
+      <div className="px-8 py-6">
+        <AdminTable>
+          <AdminTableHeader
+            columns={COLUMNS}
+            sortKey={sortKey}
+            sortDir={sortDir}
+            onSort={handleSort}
+            gridTemplateColumns={GRID}
+          />
+
+          {filteredCustomers.length === 0 ? (
+            <div className="px-5 py-12 text-center text-[14px] text-gray-500">
+              {search || typeFilter !== "All" || statusFilter !== "All"
+                ? "No customers match your filters"
+                : "No customers yet"}
+            </div>
           ) : (
-            <div className="flex flex-col gap-1">
-              {commsLog.map((entry, i) => {
-                const date = new Date(entry.createdAt);
-                return (
-                  <div key={`${entry.id}-${i}`} className="flex items-center gap-3 py-2 border-b border-[#f0f0f0] last:border-0">
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold text-white ${typeColors[entry.type] || "bg-[#888]"}`}>
-                      {typeLabels[entry.type] || entry.type}
-                    </span>
-                    <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold text-[#444] bg-[#f0f0f0]">
-                      {entry.direction.charAt(0).toUpperCase() + entry.direction.slice(1)}
-                    </span>
-                    <span className="text-[13px] text-[#444] flex-1">{entry.summary}</span>
-                    <span className="text-[12px] text-[#888] whitespace-nowrap">
-                      {date.toLocaleDateString("en-US", { month: "short", day: "numeric" })},{" "}
-                      {date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-                    </span>
+            filteredCustomers.map((c) => {
+              const initials = getInitials(c.name);
+              const isCommercial = c.type === "Commercial";
+              const avatarBg = isCommercial ? "bg-[#1A5FAC]" : "bg-[#0B2040]";
+              const statusVariant: "green" | "amber" | "gray" =
+                c.customerStatus === "Active"
+                  ? "green"
+                  : c.customerStatus === "Lead"
+                    ? "amber"
+                    : "gray";
+              const typeVariant: "blue" | "gray" = isCommercial ? "blue" : "gray";
+
+              return (
+                <AdminTableRow
+                  key={c.key}
+                  onClick={() => setSelectedCustomer(c)}
+                  isSelected={selectedCustomer?.key === c.key}
+                  gridTemplateColumns={GRID}
+                >
+                  {/* Customer */}
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0 ${avatarBg}`}
+                    >
+                      {initials}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-[#0B2040] truncate">
+                        {c.name}
+                      </div>
+                      {c.primaryVehicle && (
+                        <div className="text-xs text-gray-500 truncate">
+                          {c.primaryVehicle}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                );
-              })}
-            </div>
+
+                  {/* Contact */}
+                  <div className="min-w-0">
+                    <div className="text-[13px] text-[#0B2040] truncate">
+                      {c.phone ? formatPhone(c.phone) : "—"}
+                    </div>
+                    <div className="text-xs text-gray-500 truncate">{c.email || "—"}</div>
+                  </div>
+
+                  {/* Type */}
+                  <div className="text-center">
+                    <AdminBadge label={c.type} variant={typeVariant} />
+                  </div>
+
+                  {/* Total Spent */}
+                  <div className="text-center text-sm font-semibold text-[#0B2040]">
+                    ${c.totalSpent.toLocaleString()}
+                  </div>
+
+                  {/* Jobs */}
+                  <div className="text-center text-sm text-[#0B2040]">{c.jobCount}</div>
+
+                  {/* Status */}
+                  <div className="text-center">
+                    <AdminBadge label={c.customerStatus} variant={statusVariant} />
+                  </div>
+                </AdminTableRow>
+              );
+            })
           )}
-        </div>
+        </AdminTable>
       </div>
-    </div>
+
+      {/* ═══ Customer Profile Panel ═══ */}
+      {selectedCustomer && (
+        <CustomerProfilePanel
+          customer={{
+            name: selectedCustomer.name,
+            phone: selectedCustomer.phone,
+            email: selectedCustomer.email,
+            address: selectedCustomer.address,
+            type: selectedCustomer.type,
+            status: selectedCustomer.customerStatus,
+            totalSpent: selectedCustomer.totalSpent,
+            jobCount: selectedCustomer.jobCount,
+            lastVisit: selectedCustomer.lastVisit,
+            customerSince: selectedCustomer.customerSince,
+            notes:
+              selectedCustomer.bookings[0]?.notes ||
+              selectedCustomer.bookings[0]?.adminNotes,
+          }}
+          bookings={selectedCustomer.bookings}
+          invoices={selectedCustomer.matchedInvoices}
+          onClose={() => setSelectedCustomer(null)}
+        />
+      )}
+
+      {/* ═══ New Customer Modal ═══ */}
+      {showNewCustomer && (
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-2xl shadow-xl w-[480px] max-h-[90vh] overflow-y-auto mx-4">
+            {/* Header */}
+            <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-[#0B2040]">New Customer</h3>
+              <button
+                onClick={() => {
+                  setShowNewCustomer(false);
+                  setNewCustomer({
+                    name: "",
+                    phone: "",
+                    email: "",
+                    address: "",
+                    type: "Residential",
+                    vehicle: "",
+                    notes: "",
+                  });
+                }}
+                className="text-xl text-gray-500 cursor-pointer hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Form */}
+            <div className="px-6 py-5 flex flex-col gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
+                  Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newCustomer.name}
+                  onChange={(e) => setNewCustomer((p) => ({ ...p, name: e.target.value }))}
+                  placeholder="Full name"
+                  className="w-full border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-[#1A5FAC] transition-colors"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
+                  Phone
+                </label>
+                <input
+                  type="tel"
+                  value={newCustomer.phone}
+                  onChange={(e) =>
+                    setNewCustomer((p) => ({ ...p, phone: e.target.value }))
+                  }
+                  placeholder="(813) 555-1234"
+                  className="w-full border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-[#1A5FAC] transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={newCustomer.email}
+                  onChange={(e) =>
+                    setNewCustomer((p) => ({ ...p, email: e.target.value }))
+                  }
+                  placeholder="customer@email.com"
+                  className="w-full border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-[#1A5FAC] transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
+                  Address
+                </label>
+                <input
+                  type="text"
+                  value={newCustomer.address}
+                  onChange={(e) =>
+                    setNewCustomer((p) => ({ ...p, address: e.target.value }))
+                  }
+                  placeholder="Street address"
+                  className="w-full border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-[#1A5FAC] transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
+                  Type
+                </label>
+                <select
+                  value={newCustomer.type}
+                  onChange={(e) =>
+                    setNewCustomer((p) => ({ ...p, type: e.target.value }))
+                  }
+                  className="w-full border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-[#1A5FAC] transition-colors bg-white"
+                >
+                  <option value="Residential">Residential</option>
+                  <option value="Commercial">Commercial</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
+                  Vehicle
+                </label>
+                <input
+                  type="text"
+                  value={newCustomer.vehicle}
+                  onChange={(e) =>
+                    setNewCustomer((p) => ({ ...p, vehicle: e.target.value }))
+                  }
+                  placeholder="Year Make Model"
+                  className="w-full border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-[#1A5FAC] transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
+                  Notes
+                </label>
+                <textarea
+                  value={newCustomer.notes}
+                  onChange={(e) =>
+                    setNewCustomer((p) => ({ ...p, notes: e.target.value }))
+                  }
+                  placeholder="Any additional notes..."
+                  rows={3}
+                  className="w-full border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-[#1A5FAC] transition-colors resize-none"
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-gray-200 flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowNewCustomer(false);
+                  setNewCustomer({
+                    name: "",
+                    phone: "",
+                    email: "",
+                    address: "",
+                    type: "Residential",
+                    vehicle: "",
+                    notes: "",
+                  });
+                }}
+                className="px-5 py-2.5 border border-gray-200 rounded-lg text-sm font-semibold text-gray-500 cursor-pointer hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddCustomer}
+                disabled={!newCustomer.name.trim() || savingNewCustomer}
+                className="px-5 py-2.5 bg-[#E07B2D] rounded-lg text-sm font-semibold text-white cursor-pointer hover:bg-[#CC6A1F] transition disabled:opacity-50"
+              >
+                {savingNewCustomer ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+    </>
   );
 }

@@ -6,10 +6,16 @@ export default function AdminTopBar({
   title,
   subtitle,
   children,
+  searchValue,
+  onSearchChange,
+  searchPlaceholder,
 }: {
   title: string;
   subtitle?: string;
   children?: ReactNode;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
+  searchPlaceholder?: string;
 }) {
   return (
     <div className="sticky top-0 z-40 bg-white border-b border-gray-200">
@@ -39,9 +45,19 @@ export default function AdminTopBar({
               <circle cx="11" cy="11" r="8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
-            <span className="text-[13px] text-gray-500">
-              Search customers, bookings...
-            </span>
+            {onSearchChange ? (
+              <input
+                type="text"
+                value={searchValue ?? ""}
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder={searchPlaceholder || "Search customers, bookings..."}
+                className="border-none outline-none bg-transparent text-[13px] w-full"
+              />
+            ) : (
+              <span className="text-[13px] text-gray-500">
+                Search customers, bookings...
+              </span>
+            )}
           </div>
 
           {/* User avatar */}
