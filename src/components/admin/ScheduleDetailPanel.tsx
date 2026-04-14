@@ -11,6 +11,8 @@ import {
 } from "@/app/admin/shared";
 import { useAdminModal } from "@/contexts/AdminModalContext";
 import { formatCurrency } from "@/lib/formatCurrency";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 const STATUS_STEPS = ["pending", "confirmed", "in-progress", "completed", "invoiced"];
 const STATUS_LABELS: Record<string, string> = {
@@ -63,6 +65,11 @@ export default function ScheduleDetailPanel({
   const [showDeadReason, setShowDeadReason] = useState(false);
   const [deadReason, setDeadReason] = useState("");
   const [customDeadReason, setCustomDeadReason] = useState("");
+  const [showConfirmForm, setShowConfirmForm] = useState(false);
+  const [confirmDate, setConfirmDate] = useState('');
+  const [confirmTime, setConfirmTime] = useState('');
+  const [confirmDuration, setConfirmDuration] = useState('60');
+  const [confirmSending, setConfirmSending] = useState(false);
 
   /* Escape key handler */
   useEffect(() => {
@@ -72,6 +79,82 @@ export default function ScheduleDetailPanel({
     document.addEventListener('keydown', handleEsc);
     return () => document.removeEventListener('keydown', handleEsc);
   }, [onClose]);
+
+  /* Reset confirm form when booking changes */
+  useEffect(() => {
+    setShowConfirmForm(false);
+  }, [booking?.id]);
+
+  /* Pre-fill confirm form from booking data */
+  useEffect(() => {
+    if (showConfirmForm && booking) {
+      const preferred = booking.preferredDate || '';
+      if (preferred) setConfirmDate(preferred);
+      const preferredTime = booking.confirmedArrivalWindow || booking.timeWindow || '';
+      if (preferredTime) setConfirmTime(preferredTime);
+    }
+  }, [showConfirmForm, booking]);
+
+  const handleConfirmBooking = async () => {
+    if (!booking?.id || !confirmDate || !confirmTime) return;
+    setConfirmSending(true);
+
+    try {
+      // 1. Update booking in Firestore
+      await updateDoc(doc(db, 'bookings', booking.id), {
+        status: 'confirmed',
+        confirmedDate: confirmDate,
+        confirmedArrivalWindow: confirmTime,
+        estimatedDuration: confirmDuration,
+        confirmedAt: new Date().toISOString(),
+      });
+
+      // 2. Get customer info
+      const customerEmail = booking.email || booking.customerEmail || '';
+      const customerName = booking.name || booking.customerName || '';
+      const customerPhone = booking.phone || booking.customerPhone || '';
+
+      // 3. Call Cloud Function to send confirmation email with .ics
+      if (customerEmail) {
+        try {
+          const response = await fetch(
+            'https://us-east1-coastal-mobile-lube.cloudfunctions.net/sendBookingConfirmation',
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                customerName,
+                customerEmail,
+                customerPhone,
+                services: getServiceLabel(booking),
+                vehicle: [booking.vehicleYear, booking.vehicleMake, booking.vehicleModel].filter(Boolean).join(' ') || '',
+                address: booking.address || '',
+                confirmedDate: confirmDate,
+                confirmedTime: confirmTime,
+                estimatedDuration: confirmDuration,
+                division: booking.division || 'automotive',
+                notes: booking.notes || '',
+                bookingId: booking.id,
+              }),
+            }
+          );
+          if (!response.ok) {
+            console.error('Confirmation email failed:', await response.text());
+          }
+        } catch (emailErr) {
+          console.error('Failed to send confirmation email:', emailErr);
+        }
+      }
+
+      // 4. Close confirm form
+      setShowConfirmForm(false);
+      setConfirmSending(false);
+
+    } catch (err) {
+      console.error('Failed to confirm booking:', err);
+      setConfirmSending(false);
+    }
+  };
 
   const DEAD_REASONS = [
     "No response",
@@ -239,6 +322,77 @@ export default function ScheduleDetailPanel({
           </div>
         </div>
 
+        {/* Confirm form */}
+        {showConfirmForm && (
+          <div className="mx-6 mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+            <p className="text-sm font-semibold text-[#0B2040] mb-3">Confirm Appointment</p>
+
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Date</label>
+                <input
+                  type="date"
+                  value={confirmDate}
+                  onChange={(e) => setConfirmDate(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Arrival Window</label>
+                <select
+                  value={confirmTime}
+                  onChange={(e) => setConfirmTime(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                >
+                  <option value="">Select time</option>
+                  <option value="7:00 AM - 8:00 AM">7:00 AM - 8:00 AM</option>
+                  <option value="8:00 AM - 9:00 AM">8:00 AM - 9:00 AM</option>
+                  <option value="9:00 AM - 10:00 AM">9:00 AM - 10:00 AM</option>
+                  <option value="10:00 AM - 11:00 AM">10:00 AM - 11:00 AM</option>
+                  <option value="11:00 AM - 12:00 PM">11:00 AM - 12:00 PM</option>
+                  <option value="12:00 PM - 1:00 PM">12:00 PM - 1:00 PM</option>
+                  <option value="1:00 PM - 2:00 PM">1:00 PM - 2:00 PM</option>
+                  <option value="2:00 PM - 3:00 PM">2:00 PM - 3:00 PM</option>
+                  <option value="3:00 PM - 4:00 PM">3:00 PM - 4:00 PM</option>
+                  <option value="4:00 PM - 5:00 PM">4:00 PM - 5:00 PM</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="mb-3">
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Estimated Duration</label>
+              <select
+                value={confirmDuration}
+                onChange={(e) => setConfirmDuration(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="30">30 minutes</option>
+                <option value="60">1 hour</option>
+                <option value="90">1.5 hours</option>
+                <option value="120">2 hours</option>
+                <option value="180">3 hours</option>
+                <option value="240">4+ hours</option>
+              </select>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={handleConfirmBooking}
+                disabled={!confirmDate || !confirmTime || confirmSending}
+                className="flex-1 py-2 bg-[#1A5FAC] text-white rounded-lg text-sm font-semibold hover:bg-[#164d8f] disabled:opacity-50"
+              >
+                {confirmSending ? 'Sending...' : 'Confirm & Send Invite'}
+              </button>
+              <button
+                onClick={() => setShowConfirmForm(false)}
+                className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-semibold text-gray-500 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Bottom action bar */}
         <div className="border-t border-gray-200 px-6 py-4">
           {isCancelled ? (
@@ -255,11 +409,13 @@ export default function ScheduleDetailPanel({
           ) : (
             <>
               <div className="flex gap-2.5">
-                {primaryLabel && (
+                {primaryLabel && !showConfirmForm && (
                   <button
                     onClick={() => {
                       if (primaryNextStatus === "invoice") {
                         openModal("invoice", { bookingId: b.id });
+                      } else if (b.status === "pending" || b.status === "new-lead") {
+                        setShowConfirmForm(true);
                       } else {
                         onAdvance(b.id, primaryNextStatus);
                       }

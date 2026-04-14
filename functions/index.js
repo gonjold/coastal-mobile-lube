@@ -356,7 +356,217 @@ exports.sendConfirmationEmail = onRequest(
   }
 );
 
-// ─── Invoice email sent to CUSTOMER from admin invoicing page ───────
+// ─── Booking confirmation with .ics calendar invite ──────────────
+
+exports.sendBookingConfirmation = onRequest(
+  {
+    region: "us-east1",
+    secrets: [gmailUser, gmailAppPassword],
+    cors: allowedOrigins,
+  },
+  async (req, res) => {
+    const {
+      customerName,
+      customerEmail,
+      customerPhone,
+      services,
+      vehicle,
+      address,
+      confirmedDate,
+      confirmedTime,
+      estimatedDuration,
+      division,
+      notes,
+      bookingId,
+    } = req.body;
+
+    if (!customerEmail || !confirmedDate || !confirmedTime) {
+      res.status(400).json({ success: false, error: "Missing required fields" });
+      return;
+    }
+
+    // Parse the arrival window to get start time
+    // confirmedTime is like "9:00 AM - 10:00 AM"
+    const startTimeStr = confirmedTime.split(" - ")[0].trim();
+    const durationMin = parseInt(estimatedDuration) || 60;
+
+    // Build Date objects for .ics
+    const dateObj = new Date(confirmedDate + "T00:00:00");
+    const [timeStr, ampm] = startTimeStr.split(/(AM|PM)/i);
+    const timeParts = timeStr.trim().split(":");
+    let hours = parseInt(timeParts[0]);
+    const minutes = parseInt(timeParts[1] || "0");
+    if (ampm && ampm.toUpperCase() === "PM" && hours !== 12) hours += 12;
+    if (ampm && ampm.toUpperCase() === "AM" && hours === 12) hours = 0;
+
+    const startDate = new Date(dateObj);
+    startDate.setHours(hours, minutes, 0, 0);
+    const endDate = new Date(startDate.getTime() + durationMin * 60 * 1000);
+
+    // Format dates for .ics (YYYYMMDDTHHMMSS)
+    const formatICS = (d) => {
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+    };
+
+    const serviceList = Array.isArray(services) ? services.join(", ") : services || "Service appointment";
+    const formattedDate = formatDateNice(confirmedDate) || confirmedDate;
+
+    // Generate .ics file
+    const uid = `coastal-${bookingId || Date.now()}@coastalmobilelube.com`;
+    const now = formatICS(new Date());
+    const icsContent = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//Coastal Mobile Lube & Tire//Booking//EN",
+      "METHOD:REQUEST",
+      "BEGIN:VEVENT",
+      `UID:${uid}`,
+      `DTSTAMP:${now}`,
+      `DTSTART:${formatICS(startDate)}`,
+      `DTEND:${formatICS(endDate)}`,
+      `SUMMARY:Coastal Mobile Lube - ${serviceList}`,
+      `DESCRIPTION:Service: ${serviceList}\\nVehicle: ${vehicle || "Not specified"}\\nAddress: ${address || "Not specified"}\\nPhone: ${customerPhone || ""}\\nNotes: ${notes || "None"}`,
+      `LOCATION:${address || "Customer location (mobile service)"}`,
+      `ORGANIZER;CN=Coastal Mobile Lube:mailto:info@coastalmobilelube.com`,
+      `ATTENDEE;CN=${customerName}:mailto:${customerEmail}`,
+      "STATUS:CONFIRMED",
+      "BEGIN:VALARM",
+      "TRIGGER:-PT1H",
+      "ACTION:DISPLAY",
+      "DESCRIPTION:Coastal Mobile Lube appointment in 1 hour",
+      "END:VALARM",
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\r\n");
+
+    // Build HTML email
+    const htmlEmail = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#ffffff;">
+    <tr>
+      <td style="background:#0B2040;padding:28px 32px;text-align:center;">
+        <h1 style="color:#ffffff;font-size:22px;margin:0;font-weight:700;">Coastal Mobile Lube & Tire</h1>
+        <p style="color:#6BA3E0;font-size:13px;margin:6px 0 0 0;letter-spacing:1px;">APPOINTMENT CONFIRMED</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:32px;">
+        <p style="font-size:16px;color:#1a1a1a;margin:0 0 20px 0;">
+          Hi ${customerName},
+        </p>
+        <p style="font-size:15px;color:#333;line-height:1.6;margin:0 0 24px 0;">
+          Your appointment has been confirmed. We will arrive at your location during the scheduled window below.
+        </p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:#F7F8FA;border-radius:12px;margin:0 0 24px 0;">
+          <tr>
+            <td style="padding:24px;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding:0 0 12px 0;border-bottom:1px solid #e4e4e4;">
+                    <p style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px 0;">Date</p>
+                    <p style="font-size:16px;color:#0B2040;font-weight:700;margin:0;">${formattedDate}</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:12px 0;border-bottom:1px solid #e4e4e4;">
+                    <p style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px 0;">Arrival Window</p>
+                    <p style="font-size:16px;color:#0B2040;font-weight:700;margin:0;">${confirmedTime}</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:12px 0;border-bottom:1px solid #e4e4e4;">
+                    <p style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px 0;">Service</p>
+                    <p style="font-size:15px;color:#333;font-weight:600;margin:0;">${serviceList}</p>
+                  </td>
+                </tr>
+                ${vehicle ? `
+                <tr>
+                  <td style="padding:12px 0;border-bottom:1px solid #e4e4e4;">
+                    <p style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px 0;">Vehicle</p>
+                    <p style="font-size:15px;color:#333;margin:0;">${vehicle}</p>
+                  </td>
+                </tr>` : ""}
+                ${address ? `
+                <tr>
+                  <td style="padding:12px 0;">
+                    <p style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px 0;">Location</p>
+                    <p style="font-size:15px;color:#333;margin:0;">${address}</p>
+                  </td>
+                </tr>` : ""}
+              </table>
+            </td>
+          </tr>
+        </table>
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px 0;">
+          <tr>
+            <td style="text-align:center;">
+              <p style="font-size:13px;color:#666;margin:0 0 8px 0;">A calendar invite is attached to this email.</p>
+              <p style="font-size:13px;color:#888;margin:0;">Open the attachment to add this appointment to your calendar.</p>
+            </td>
+          </tr>
+        </table>
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px 0;">
+          <tr>
+            <td style="padding:20px;background:#EBF4FF;border-radius:10px;">
+              <p style="font-size:14px;font-weight:700;color:#0B2040;margin:0 0 8px 0;">What to expect</p>
+              <p style="font-size:14px;color:#333;line-height:1.6;margin:0;">
+                Our technician will arrive at your location during the scheduled window. Please make sure the vehicle is accessible and parked on a flat surface. We bring all tools and supplies needed to complete the service.
+              </p>
+            </td>
+          </tr>
+        </table>
+        <p style="font-size:14px;color:#666;line-height:1.6;margin:0;">
+          Need to reschedule or have questions? Call us at
+          <a href="tel:+18132775500" style="color:#1A5FAC;font-weight:600;text-decoration:none;">(813) 277-5500</a>
+          or reply to this email.
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="background:#0B2040;padding:24px 32px;text-align:center;">
+        <p style="color:#6BA3E0;font-size:13px;margin:0;">Coastal Mobile Lube & Tire</p>
+        <p style="color:#ffffff60;font-size:12px;margin:6px 0 0 0;">Apollo Beach, FL | Mon-Fri 8AM-5PM</p>
+        <p style="color:#ffffff40;font-size:11px;margin:8px 0 0 0;">We come to you.</p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    // Send email with .ics attachment
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: gmailUser.value(),
+        pass: gmailAppPassword.value(),
+      },
+    });
+
+    try {
+      await transporter.sendMail({
+        from: `"Coastal Mobile Lube & Tire" <${gmailUser.value()}>`,
+        to: customerEmail,
+        cc: "info@coastalmobilelube.com",
+        subject: `Appointment Confirmed - ${formattedDate}, ${confirmedTime}`,
+        html: htmlEmail,
+        icalEvent: {
+          method: "REQUEST",
+          filename: "appointment.ics",
+          content: icsContent,
+        },
+      });
+      console.log(`Booking confirmation sent to ${customerEmail} for booking ${bookingId}`);
+      res.json({ success: true });
+    } catch (error) {
+      console.error(`Failed to send booking confirmation to ${customerEmail}:`, error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+);
 
 // ─── VIN Decoder proxy (avoids CORS from browser) ────────────────
 
