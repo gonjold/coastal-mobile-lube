@@ -42,6 +42,43 @@ for (let h = 8; h <= 16; h++) {
 
 const DIVISIONS = ["Auto", "Marine", "Fleet", "RV"];
 
+const COMMON_MAKES = [
+  "Acura", "Alfa Romeo", "Audi", "BMW", "Buick", "Cadillac", "Chevrolet",
+  "Chrysler", "Dodge", "Ferrari", "Fiat", "Ford", "Genesis", "GMC", "Honda",
+  "Hyundai", "Infiniti", "Jaguar", "Jeep", "Kia", "Lamborghini", "Land Rover",
+  "Lexus", "Lincoln", "Maserati", "Mazda", "McLaren", "Mercedes-Benz",
+  "Mercury", "Mini", "Mitsubishi", "Nissan", "Pontiac", "Porsche", "Ram",
+  "Rivian", "Rolls-Royce", "Saturn", "Scion", "Subaru", "Tesla", "Toyota",
+  "Volkswagen", "Volvo",
+];
+
+function parseVehicleText(text: string): { year?: string; make?: string; model?: string } {
+  const tokens = text.trim().split(/\s+/);
+  let year: string | undefined;
+  let make: string | undefined;
+  const rest: string[] = [];
+
+  for (const tok of tokens) {
+    if (!year && /^\d{4}$/.test(tok)) {
+      const y = parseInt(tok, 10);
+      if (y >= 1990 && y <= 2030) { year = tok; continue; }
+    }
+    if (!make) {
+      const found = COMMON_MAKES.find((m) => m.toLowerCase() === tok.toLowerCase());
+      if (found) { make = found; continue; }
+      // Two-word makes
+      if (rest.length > 0) {
+        const twoWord = `${rest[rest.length - 1]} ${tok}`;
+        const found2 = COMMON_MAKES.find((m) => m.toLowerCase() === twoWord.toLowerCase());
+        if (found2) { rest.pop(); make = found2; continue; }
+      }
+    }
+    rest.push(tok);
+  }
+
+  return { year, make, model: rest.join(" ") || undefined };
+}
+
 /* ── Types ── */
 
 interface PreFilledCustomer {
@@ -82,12 +119,19 @@ export default function NewBookingModal({
   const [vehicleYear, setVehicleYear] = useState("");
   const [vehicleMake, setVehicleMake] = useState("");
   const [vehicleModel, setVehicleModel] = useState("");
+  const [vehicleTrim, setVehicleTrim] = useState("");
+  const [engineSize, setEngineSize] = useState("");
   const [fuelType, setFuelType] = useState("");
+  const [isHybrid, setIsHybrid] = useState(false);
+  const [isElectric, setIsElectric] = useState(false);
+  const [isDiesel, setIsDiesel] = useState(false);
   const [yearOptions] = useState(() => getYears());
   const [makeOptions, setMakeOptions] = useState<string[]>([]);
   const [modelOptions, setModelOptions] = useState<string[]>([]);
   const [makesLoading, setMakesLoading] = useState(false);
   const [modelsLoading, setModelsLoading] = useState(false);
+  const [vehicleSearchText, setVehicleSearchText] = useState("");
+  const [showManualVehicle, setShowManualVehicle] = useState(false);
 
   const [date, setDate] = useState(() => {
     const tomorrow = new Date();
@@ -271,7 +315,12 @@ export default function NewBookingModal({
       setVehicleYear(result.year);
       setVehicleMake(result.make);
       setVehicleModel(result.model);
+      setVehicleTrim(result.trim);
+      setEngineSize(result.engineSize);
       setFuelType(result.fuelType);
+      setIsHybrid(result.isHybrid);
+      setIsElectric(result.isElectric);
+      setIsDiesel(result.isDiesel);
       setVinStatus("success");
     } else {
       setVinStatus("error");
@@ -641,63 +690,130 @@ export default function NewBookingModal({
               )}
             </div>
 
-            {/* Divider */}
-            <div className="flex items-center gap-3 my-3">
-              <div className="flex-1 h-px bg-gray-200" />
-              <span className="text-xs text-gray-400">or enter manually</span>
-              <div className="flex-1 h-px bg-gray-200" />
+            {/* VIN decode result summary */}
+            {vinStatus === "success" && (vehicleTrim || engineSize || isHybrid || isElectric || isDiesel) && (
+              <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                {vehicleTrim && (
+                  <span className="inline-flex items-center bg-gray-100 text-gray-700 text-xs font-medium px-2 py-1 rounded-md">
+                    {vehicleTrim}
+                  </span>
+                )}
+                {engineSize && (
+                  <span className="text-xs text-gray-500">{engineSize}</span>
+                )}
+                {isHybrid && (
+                  <span className="inline-flex items-center bg-amber-100 text-amber-700 text-xs font-semibold px-2 py-1 rounded-md">
+                    Hybrid
+                  </span>
+                )}
+                {isDiesel && (
+                  <span className="inline-flex items-center bg-gray-200 text-gray-700 text-xs font-semibold px-2 py-1 rounded-md">
+                    Diesel
+                  </span>
+                )}
+                {isElectric && (
+                  <span className="inline-flex items-center bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-md">
+                    Electric
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Quick Vehicle Search */}
+            <div className="mt-3">
+              <input
+                type="text"
+                value={vehicleSearchText}
+                onChange={(e) => setVehicleSearchText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    const parsed = parseVehicleText(vehicleSearchText);
+                    if (parsed.year) setVehicleYear(parsed.year);
+                    if (parsed.make) setVehicleMake(parsed.make);
+                    if (parsed.model) setVehicleModel(parsed.model);
+                    setShowManualVehicle(true);
+                  }
+                }}
+                onBlur={() => {
+                  if (!vehicleSearchText.trim()) return;
+                  const parsed = parseVehicleText(vehicleSearchText);
+                  if (parsed.year) setVehicleYear(parsed.year);
+                  if (parsed.make) setVehicleMake(parsed.make);
+                  if (parsed.model) setVehicleModel(parsed.model);
+                  if (parsed.year || parsed.make || parsed.model) setShowManualVehicle(true);
+                }}
+                placeholder="Search vehicle... (e.g. 2024 Toyota Camry)"
+                className={inputCls}
+              />
             </div>
+
+            {/* Manual Y/M/M toggle */}
+            {!showManualVehicle && !vehicleYear && (
+              <button
+                onClick={() => setShowManualVehicle(!showManualVehicle)}
+                className="text-xs text-[#1A5FAC] mt-1 cursor-pointer"
+              >
+                Or select year/make/model manually
+              </button>
+            )}
 
             {/* Year / Make / Model dropdowns */}
-            <div className="grid grid-cols-3 gap-3">
-              <select
-                value={vehicleYear}
-                onChange={(e) => { setVehicleYear(e.target.value); setVehicleMake(""); setVehicleModel(""); }}
-                className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-[#1A5FAC] outline-none bg-white"
-              >
-                <option value="" className="text-gray-400">Year</option>
-                {yearOptions.map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-              <select
-                value={vehicleMake}
-                onChange={(e) => { setVehicleMake(e.target.value); setVehicleModel(""); }}
-                disabled={!vehicleYear}
-                className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-[#1A5FAC] outline-none bg-white disabled:opacity-50"
-              >
-                <option value="" className="text-gray-400">{makesLoading ? "Loading..." : "Make"}</option>
-                {makeOptions.map((m) => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-              <select
-                value={vehicleModel}
-                onChange={(e) => setVehicleModel(e.target.value)}
-                disabled={!vehicleMake}
-                className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-[#1A5FAC] outline-none bg-white disabled:opacity-50"
-              >
-                <option value="" className="text-gray-400">{modelsLoading ? "Loading..." : "Model"}</option>
-                {modelOptions.map((m) => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            </div>
+            {(showManualVehicle || !!vehicleYear) && (
+              <>
+                <div className="grid grid-cols-3 gap-3 mt-3">
+                  <select
+                    value={vehicleYear}
+                    onChange={(e) => { setVehicleYear(e.target.value); setVehicleMake(""); setVehicleModel(""); }}
+                    className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-[#1A5FAC] outline-none bg-white"
+                  >
+                    <option value="" className="text-gray-400">Year</option>
+                    {yearOptions.map((y) => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={vehicleMake}
+                    onChange={(e) => { setVehicleMake(e.target.value); setVehicleModel(""); }}
+                    disabled={!vehicleYear}
+                    className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-[#1A5FAC] outline-none bg-white disabled:opacity-50"
+                  >
+                    <option value="" className="text-gray-400">{makesLoading ? "Loading..." : "Make"}</option>
+                    {makeOptions.map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={vehicleModel}
+                    onChange={(e) => setVehicleModel(e.target.value)}
+                    disabled={!vehicleMake}
+                    className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-[#1A5FAC] outline-none bg-white disabled:opacity-50"
+                  >
+                    <option value="" className="text-gray-400">{modelsLoading ? "Loading..." : "Model"}</option>
+                    {modelOptions.map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                </div>
 
-            {/* Engine / Fuel Type */}
-            <div className="mt-3">
-              <select
-                value={fuelType}
-                onChange={(e) => setFuelType(e.target.value)}
-                className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-[#1A5FAC] outline-none bg-white w-full sm:w-1/2"
-              >
-                <option value="">Fuel Type</option>
-                <option value="Gas">Gas</option>
-                <option value="Diesel">Diesel</option>
-                <option value="Hybrid">Hybrid</option>
-                <option value="Electric">Electric</option>
-              </select>
-            </div>
+                {/* Engine / Fuel Type */}
+                <div className="mt-3">
+                  <select
+                    value={fuelType}
+                    onChange={(e) => setFuelType(e.target.value)}
+                    className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-[#1A5FAC] outline-none bg-white w-full sm:w-1/2"
+                  >
+                    <option value="">Fuel Type</option>
+                    <option value="Gas">Gas</option>
+                    <option value="Diesel">Diesel</option>
+                    <option value="Hybrid">Hybrid</option>
+                    <option value="Electric">Electric</option>
+                    <option value="Flex Fuel">Flex Fuel</option>
+                    <option value="Plug-in Hybrid">Plug-in Hybrid</option>
+                  </select>
+                </div>
+              </>
+            )}
           </div>
 
           {/* ── Services ── */}

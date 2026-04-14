@@ -473,9 +473,7 @@ export default function CustomersPage() {
       <AdminTopBar
         title="Customers"
         subtitle={`${filteredCustomers.length} customer${filteredCustomers.length !== 1 ? "s" : ""}`}
-        searchValue={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search by name, phone, or email..."
       />
 
       {/* ═══ Filter bar ═══ */}

@@ -586,14 +586,14 @@ function SchedulePageInner() {
                       {actionMenuId === b.id && (
                         <div className="absolute right-full top-0 mr-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[180px] z-[50]" onMouseDown={(e) => e.stopPropagation()}>
                           <button
-                            onClick={() => { setSelectedBookingId(b.id); setActionMenuId(null); }}
+                            onMouseDown={(e) => { e.preventDefault(); setSelectedBookingId(b.id); setActionMenuId(null); }}
                             className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition"
                           >
                             View Details
                           </button>
                           {(b.status === "pending" || b.status === "new-lead" || b.type === "lead") && (
                             <button
-                              onClick={() => { handleAdvance(b.id, "confirmed"); setActionMenuId(null); }}
+                              onMouseDown={(e) => { e.preventDefault(); handleAdvance(b.id, "confirmed"); setActionMenuId(null); }}
                               className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition"
                             >
                               Confirm
@@ -601,7 +601,7 @@ function SchedulePageInner() {
                           )}
                           <div className="relative">
                             <button
-                              onClick={(e) => { e.stopPropagation(); setDeadReasonMenuId(deadReasonMenuId === b.id ? null : b.id); }}
+                              onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setDeadReasonMenuId(deadReasonMenuId === b.id ? null : b.id); }}
                               className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition"
                             >
                               Mark as Dead
@@ -611,7 +611,7 @@ function SchedulePageInner() {
                                 {DEAD_REASONS.map((reason) => (
                                   <button
                                     key={reason}
-                                    onClick={() => { handleAdvance(b.id, `dead:${reason}`); setActionMenuId(null); setDeadReasonMenuId(null); }}
+                                    onMouseDown={(e) => { e.preventDefault(); handleAdvance(b.id, `dead:${reason}`); setActionMenuId(null); setDeadReasonMenuId(null); }}
                                     className="block w-full text-left px-6 py-1.5 text-xs text-gray-600 cursor-pointer hover:bg-gray-100 transition"
                                   >
                                     {reason}
@@ -624,7 +624,7 @@ function SchedulePageInner() {
                             <>
                               <div className="h-px bg-gray-100 my-1" />
                               <button
-                                onClick={() => { handleAdvance(b.id, "cancelled"); setActionMenuId(null); }}
+                                onMouseDown={(e) => { e.preventDefault(); handleAdvance(b.id, "cancelled"); setActionMenuId(null); }}
                                 className="block w-full text-left px-4 py-2 text-sm text-red-600 cursor-pointer hover:bg-gray-50 transition"
                               >
                                 Cancel

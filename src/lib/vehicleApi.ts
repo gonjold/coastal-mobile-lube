@@ -8,7 +8,11 @@ export interface VehicleInfo {
   model: string;
   trim: string;
   engineType: string; // e.g., "2.5L I4"
-  fuelType: string; // Gas, Diesel, Hybrid, Electric, Plug-in Hybrid
+  engineSize: string; // e.g., "3.4L 6-cyl"
+  fuelType: string; // Gas, Diesel, Hybrid, Electric, Plug-in Hybrid, Flex Fuel
+  isHybrid: boolean;
+  isElectric: boolean;
+  isDiesel: boolean;
   driveType: string; // FWD, RWD, AWD, 4WD
   bodyClass: string; // Sedan, SUV, Truck, Van, etc.
   vinDecoded: boolean;
@@ -29,31 +33,57 @@ export async function decodeVIN(vin: string): Promise<VehicleInfo | null> {
     if (!results || !results.ModelYear || results.ErrorCode === "1") return null;
 
     // Build engine type string e.g. "2.5L I4" or "3.5L V6"
+    const displacement = results.DisplacementL || "";
+    const cylinders = results.EngineCylinders || "";
     let engineType = "";
-    if (results.DisplacementL) {
-      const liters = parseFloat(results.DisplacementL).toFixed(1);
-      const cylinders = results.EngineCylinders || "";
+    let engineSize = "";
+    if (displacement) {
+      const liters = parseFloat(displacement).toFixed(1);
       if (cylinders) {
         const cyl = parseInt(cylinders, 10);
         engineType = `${liters}L ${cyl <= 4 ? "I" : "V"}${cyl}`;
+        engineSize = `${liters}L ${cyl}-cyl`;
       } else {
         engineType = `${liters}L`;
+        engineSize = `${liters}L`;
       }
     } else if (results.EngineModel) {
       engineType = results.EngineModel;
     }
 
-    // Normalize fuel type
-    const rawFuel = results.FuelTypePrimary || "";
+    // Normalize fuel type with secondary fuel & electrification detection
+    const primaryFuel = results.FuelTypePrimary || "";
+    const secondaryFuel = results.FuelTypeSecondary || "";
+    const electrification = results.ElectrificationLevel || "";
+
     let fuelType = "Gas";
-    if (/diesel/i.test(rawFuel)) {
-      fuelType = "Diesel";
-    } else if (/plug.?in|phev/i.test(rawFuel)) {
-      fuelType = "Plug-in Hybrid";
-    } else if (/hybrid/i.test(rawFuel)) {
-      fuelType = "Hybrid";
-    } else if (/electric|bev/i.test(rawFuel)) {
+    let isHybrid = false;
+    let isElectric = false;
+    let isDiesel = false;
+
+    if (/bev/i.test(electrification)) {
       fuelType = "Electric";
+      isElectric = true;
+    } else if (electrification || /electric/i.test(secondaryFuel)) {
+      fuelType = "Hybrid";
+      isHybrid = true;
+      if (/phev|plug.?in/i.test(electrification)) {
+        fuelType = "Plug-in Hybrid";
+      }
+    } else if (/diesel/i.test(primaryFuel)) {
+      fuelType = "Diesel";
+      isDiesel = true;
+    } else if (/plug.?in|phev/i.test(primaryFuel)) {
+      fuelType = "Plug-in Hybrid";
+      isHybrid = true;
+    } else if (/hybrid/i.test(primaryFuel)) {
+      fuelType = "Hybrid";
+      isHybrid = true;
+    } else if (/electric|bev/i.test(primaryFuel)) {
+      fuelType = "Electric";
+      isElectric = true;
+    } else if (/flex|e85/i.test(primaryFuel)) {
+      fuelType = "Flex Fuel";
     }
 
     return {
@@ -62,7 +92,11 @@ export async function decodeVIN(vin: string): Promise<VehicleInfo | null> {
       model: results.Model || "",
       trim: results.Trim || "",
       engineType,
+      engineSize,
       fuelType,
+      isHybrid,
+      isElectric,
+      isDiesel,
       driveType: results.DriveType || "",
       bodyClass: results.BodyClass || "",
       vinDecoded: true,

@@ -21,19 +21,13 @@ export default function AdminTopBar({
   title,
   subtitle,
   children,
-  searchValue,
   onSearchChange,
-  searchPlaceholder,
 }: {
   title: string;
   subtitle?: string;
   children?: ReactNode;
-  searchValue?: string;
   onSearchChange?: (value: string) => void;
-  searchPlaceholder?: string;
 }) {
-  const isGlobalSearch = !onSearchChange;
-
   return (
     <div className="sticky top-0 z-40 bg-white border-b border-gray-200">
       <div className="flex justify-between items-center px-8 py-3.5">
@@ -47,23 +41,7 @@ export default function AdminTopBar({
 
         {/* Right side */}
         <div className="flex items-center gap-3">
-          {isGlobalSearch ? (
-            <GlobalSearchBar />
-          ) : (
-            <div className="flex items-center bg-gray-50 border border-gray-200 rounded-lg px-3.5 py-2 gap-2 min-w-[220px]">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              <input
-                type="text"
-                value={searchValue ?? ""}
-                onChange={(e) => onSearchChange(e.target.value)}
-                placeholder={searchPlaceholder || "Search customers, bookings..."}
-                className="border-none outline-none bg-transparent text-[13px] w-full"
-              />
-            </div>
-          )}
+          <GlobalSearchBar onSearchChange={onSearchChange} />
 
           {/* User avatar */}
           <div className="w-[34px] h-[34px] rounded-full bg-[#0B2040] text-white flex items-center justify-center text-[13px] font-bold">
@@ -80,7 +58,7 @@ export default function AdminTopBar({
 
 /* ── Global Search Component ── */
 
-function GlobalSearchBar() {
+function GlobalSearchBar({ onSearchChange }: { onSearchChange?: (value: string) => void }) {
   const router = useRouter();
   const { openModal } = useAdminModal();
   const [query_, setQuery] = useState("");
@@ -171,9 +149,9 @@ function GlobalSearchBar() {
         <input
           type="text"
           value={query_}
-          onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+          onChange={(e) => { setQuery(e.target.value); setOpen(true); onSearchChange?.(e.target.value); }}
           onFocus={() => { if (query_.length >= 2) setOpen(true); }}
-          placeholder="Search customers, bookings..."
+          placeholder="Search customers..."
           className="border-none outline-none bg-transparent text-[13px] w-full"
         />
       </div>

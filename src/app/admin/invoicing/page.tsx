@@ -1226,20 +1226,20 @@ function InvoicingPageInner() {
                     </button>
                     {actionMenuId === inv.id && (
                       <div className="absolute right-full top-0 mr-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[160px] z-[50]" onMouseDown={(e) => e.stopPropagation()}>
-                        <button onClick={() => { setSelectedInvoice(inv); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">View Details</button>
-                        <button onClick={() => { setSelectedInvoice(inv); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Edit Invoice</button>
+                        <button onMouseDown={(e) => { e.preventDefault(); setSelectedInvoice(inv); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">View Details</button>
+                        <button onMouseDown={(e) => { e.preventDefault(); openEdit(inv); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Edit Invoice</button>
                         {(inv.status === "sent" || inv.status === "overdue") && (
-                          <button onClick={() => { handleMarkPaid(inv.id); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Mark as Paid</button>
+                          <button onMouseDown={(e) => { e.preventDefault(); handleMarkPaid(inv.id); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Mark as Paid</button>
                         )}
                         {inv.status === "paid" && (
-                          <button onClick={() => { handleRevertToSent(inv.id); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Revert to Sent</button>
+                          <button onMouseDown={(e) => { e.preventDefault(); handleRevertToSent(inv.id); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Revert to Sent</button>
                         )}
                         {(inv.status === "sent" || inv.status === "overdue") && (
-                          <button onClick={() => { handleSendInvoice(inv); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Resend</button>
+                          <button onMouseDown={(e) => { e.preventDefault(); handleSendInvoice(inv); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Resend</button>
                         )}
-                        <button onClick={() => { handlePrint(inv); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Print / PDF</button>
+                        <button onMouseDown={(e) => { e.preventDefault(); handlePrint(inv); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Print / PDF</button>
                         <div className="h-px bg-gray-100 my-1" />
-                        <button onClick={() => { setDeleteConfirm(inv.id); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-red-600 cursor-pointer hover:bg-gray-50 transition">Delete Invoice</button>
+                        <button onMouseDown={(e) => { e.preventDefault(); if (!confirm('Delete this invoice? This cannot be undone.')) return; handleDelete(inv.id); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-red-600 cursor-pointer hover:bg-gray-50 transition">Delete Invoice</button>
                       </div>
                     )}
                   </div>

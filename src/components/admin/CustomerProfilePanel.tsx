@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { db } from "@/lib/firebase";
 import {
   doc,
@@ -588,6 +588,25 @@ function DetailsTab({
   });
   const [saving, setSaving] = useState(false);
 
+  /* Local comm prefs state — syncs from props, allows optimistic toggle */
+  const [commPrefs, setCommPrefs] = useState<CommunicationPreferences>({
+    doNotCall: customer.communicationPreferences?.doNotCall ?? false,
+    doNotText: customer.communicationPreferences?.doNotText ?? false,
+    doNotEmail: customer.communicationPreferences?.doNotEmail ?? false,
+    optOutDate: customer.communicationPreferences?.optOutDate ?? null,
+    optOutReason: customer.communicationPreferences?.optOutReason ?? null,
+  });
+
+  useEffect(() => {
+    setCommPrefs({
+      doNotCall: customer.communicationPreferences?.doNotCall ?? false,
+      doNotText: customer.communicationPreferences?.doNotText ?? false,
+      doNotEmail: customer.communicationPreferences?.doNotEmail ?? false,
+      optOutDate: customer.communicationPreferences?.optOutDate ?? null,
+      optOutReason: customer.communicationPreferences?.optOutReason ?? null,
+    });
+  }, [customer.communicationPreferences]);
+
   function startEdit() {
     setEditForm({
       name: customer.name,
@@ -767,38 +786,38 @@ function DetailsTab({
           { key: "doNotText" as const, label: "Do Not Text" },
           { key: "doNotEmail" as const, label: "Do Not Email" },
         ]).map((pref) => {
-          const isOn = customer.communicationPreferences?.[pref.key] ?? false;
+          const isOn = commPrefs[pref.key];
           return (
             <div key={pref.key} className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-[13px] text-[#0B2040]">{pref.label}</span>
-                {isOn && customer.communicationPreferences?.optOutDate && (
-                  <span className="text-[10px] text-gray-400">(opted out {customer.communicationPreferences.optOutDate})</span>
+                {isOn && commPrefs.optOutDate && (
+                  <span className="text-[10px] text-gray-400">(opted out {commPrefs.optOutDate})</span>
                 )}
               </div>
               <button
                 onClick={async () => {
                   const newVal = !isOn;
-                  const prefs = {
-                    doNotCall: customer.communicationPreferences?.doNotCall ?? false,
-                    doNotText: customer.communicationPreferences?.doNotText ?? false,
-                    doNotEmail: customer.communicationPreferences?.doNotEmail ?? false,
+                  const newPrefs = {
+                    ...commPrefs,
                     [pref.key]: newVal,
-                    optOutDate: newVal ? new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : customer.communicationPreferences?.optOutDate || null,
+                    optOutDate: newVal ? new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : commPrefs.optOutDate || null,
                     optOutReason: null,
                   };
+                  setCommPrefs(newPrefs);
                   try {
-                    const { writeBatch, doc, serverTimestamp } = await import("firebase/firestore");
-                    const { db } = await import("@/lib/firebase");
                     const batch = writeBatch(db);
                     bookings.forEach((b) => {
                       batch.update(doc(db, "bookings", b.id), {
-                        communicationPreferences: prefs,
+                        communicationPreferences: newPrefs,
                         updatedAt: serverTimestamp(),
                       });
                     });
                     await batch.commit();
-                  } catch { /* silent */ }
+                  } catch (err) {
+                    console.error("Failed to update DNC status:", err);
+                    setCommPrefs(commPrefs);
+                  }
                 }}
                 className={`w-9 h-5 rounded-full relative transition cursor-pointer ${isOn ? "bg-red-500" : "bg-gray-200"}`}
               >

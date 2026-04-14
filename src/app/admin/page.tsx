@@ -13,8 +13,11 @@ import AdminTopBar from "@/components/admin/AdminTopBar";
 import AdminBadge from "@/components/admin/AdminBadge";
 import PipelineCard from "@/components/admin/PipelineCard";
 import DashboardDrilldownModal from "@/components/admin/DashboardDrilldownModal";
+import CustomerProfilePanel, { type PanelInvoice } from "@/components/admin/CustomerProfilePanel";
+import { useAdminModal } from "@/contexts/AdminModalContext";
 import {
   type Booking,
+  buildCustomerList,
   getServiceLabel,
   getStatusStyle,
   toISODate,
@@ -66,6 +69,7 @@ function badgeVariant(status?: string): "green" | "red" | "amber" | "gray" | "bl
 
 export default function AdminHome() {
   const router = useRouter();
+  const { activeModal, preFill, closeModal } = useAdminModal();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -515,6 +519,64 @@ export default function AdminHome() {
           viewAllLabel={drilldown.type === "booking" ? "View All in Schedule" : "View All in Invoicing"}
         />
       )}
+
+      {/* Customer Profile Panel (from global search or drilldown clicks) */}
+      {activeModal === "customer-profile" && preFill?.customer && (() => {
+        const c = preFill.customer;
+        const custName = c.name.toLowerCase();
+        const custPhone = c.phone?.replace(/\D/g, "");
+        const custEmail = c.email?.toLowerCase();
+
+        const customerBookings = bookings.filter((b) => {
+          const bName = (b.name || b.customerName || "").toLowerCase();
+          const bPhone = (b.phone || b.customerPhone || "").replace(/\D/g, "");
+          const bEmail = (b.email || b.customerEmail || "").toLowerCase();
+          if (custName && bName === custName) return true;
+          if (custPhone && bPhone === custPhone) return true;
+          if (custEmail && bEmail === custEmail) return true;
+          return false;
+        });
+
+        const customerInvoices: PanelInvoice[] = invoices
+          .filter((inv) => inv.customerName.toLowerCase() === custName)
+          .map((inv) => ({
+            id: inv.id,
+            invoiceNumber: inv.invoiceNumber,
+            total: inv.total,
+            status: inv.status,
+            invoiceDate: "",
+            createdAt: inv.createdAt,
+          }));
+
+        const completed = customerBookings.filter((b) => b.status === "completed" || b.status === "invoiced");
+        const totalSpent = customerInvoices
+          .filter((i) => i.status === "paid")
+          .reduce((sum, i) => sum + (i.total || 0), 0);
+
+        return (
+          <CustomerProfilePanel
+            customer={{
+              name: c.name,
+              phone: c.phone,
+              email: c.email,
+              address: c.address,
+              type: "Residential",
+              status: completed.length > 0 ? "Active" : "Lead",
+              totalSpent,
+              jobCount: customerBookings.length,
+              lastVisit: completed[0]?.createdAt?.toDate?.()
+                ? completed[0].createdAt.toDate().toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                : "Not yet",
+              customerSince: customerBookings.length > 0 && customerBookings[customerBookings.length - 1]?.createdAt?.toDate?.()
+                ? customerBookings[customerBookings.length - 1].createdAt!.toDate().toLocaleDateString("en-US", { month: "short", year: "numeric" })
+                : "—",
+            }}
+            bookings={customerBookings}
+            invoices={customerInvoices}
+            onClose={closeModal}
+          />
+        );
+      })()}
     </>
   );
 }
