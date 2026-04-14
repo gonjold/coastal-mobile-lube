@@ -25,7 +25,6 @@ import ScheduleCalendar from "@/components/admin/ScheduleCalendar";
 import ToastContainer, { type ToastItem } from "../Toast";
 import {
   type Booking,
-  formatPhone,
   toISODate,
   getBookingCalendarDate,
   getServiceLabel,
@@ -85,7 +84,6 @@ export default function SchedulePage() {
 
   /* Filters */
   const [statusFilter, setStatusFilter] = useState("all");
-  const [timeFilter, setTimeFilter] = useState<"today" | "week" | "month" | "all">("all");
   const [divisionFilter, setDivisionFilter] = useState("all");
 
   /* Detail panel */
@@ -128,17 +126,6 @@ export default function SchedulePage() {
     return () => unsub();
   }, []);
 
-  /* ── Time filter boundaries ── */
-  const now = new Date();
-  const todayISO = toISODate(now);
-
-  const startOfWeek = new Date(now);
-  startOfWeek.setDate(now.getDate() - now.getDay());
-  startOfWeek.setHours(0, 0, 0, 0);
-
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  startOfMonth.setHours(0, 0, 0, 0);
-
   /* ── Client-side filtering ── */
   const filtered = bookings.filter((b) => {
     // Status filter
@@ -151,27 +138,6 @@ export default function SchedulePage() {
     // Division filter
     if (divisionFilter !== "all") {
       if (getDivision(b) !== divisionFilter) return false;
-    }
-
-    // Time filter
-    if (timeFilter !== "all") {
-      const bookingDate = getBookingCalendarDate(b);
-      if (timeFilter === "today") {
-        if (bookingDate !== todayISO) return false;
-      } else if (timeFilter === "week") {
-        if (!bookingDate) return false;
-        const bd = new Date(bookingDate + "T12:00:00");
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(startOfWeek.getDate() + 6);
-        endOfWeek.setHours(23, 59, 59, 999);
-        if (bd < startOfWeek || bd > endOfWeek) return false;
-      } else if (timeFilter === "month") {
-        if (!bookingDate) return false;
-        const bd = new Date(bookingDate + "T12:00:00");
-        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-        endOfMonth.setHours(23, 59, 59, 999);
-        if (bd < startOfMonth || bd > endOfMonth) return false;
-      }
     }
 
     return true;
@@ -308,13 +274,6 @@ export default function SchedulePage() {
     { key: "cancelled", label: "Cancelled" },
   ];
 
-  const timeOptions = [
-    { key: "today", label: "Today" },
-    { key: "week", label: "This Week" },
-    { key: "month", label: "This Month" },
-    { key: "all", label: "All Time" },
-  ] as const;
-
   const divisionOptions = [
     { key: "all", label: "All" },
     { key: "auto", label: "Auto" },
@@ -325,24 +284,7 @@ export default function SchedulePage() {
 
   return (
     <div>
-      {/* AdminTopBar with List/Calendar toggle */}
-      <AdminTopBar title="Schedule" subtitle={`${filtered.length} booking${filtered.length !== 1 ? "s" : ""}`}>
-        <div className="flex items-center bg-[#F7F8FA] rounded-lg p-0.5 border border-gray-200">
-          {(["list", "calendar"] as const).map((mode) => (
-            <button
-              key={mode}
-              onClick={() => setViewMode(mode)}
-              className={`px-4 py-1.5 text-xs cursor-pointer transition rounded-md ${
-                viewMode === mode
-                  ? "bg-white text-[#0B2040] font-semibold shadow-sm"
-                  : "bg-transparent text-gray-500 font-medium"
-              }`}
-            >
-              {mode === "list" ? "List" : "Calendar"}
-            </button>
-          ))}
-        </div>
-      </AdminTopBar>
+      <AdminTopBar title="Schedule" subtitle={`${filtered.length} booking${filtered.length !== 1 ? "s" : ""}`} />
 
       {/* ═══ Filter Row ═══ */}
       <div className="bg-white border-b border-gray-200 px-8 py-3">
@@ -391,26 +333,6 @@ export default function SchedulePage() {
           {/* Divider */}
           <div className="w-px h-6 bg-gray-200" />
 
-          {/* Time filter */}
-          <div className="flex items-center gap-1">
-            {timeOptions.map((opt) => (
-              <button
-                key={opt.key}
-                onClick={() => setTimeFilter(opt.key)}
-                className={`px-3 py-1.5 rounded-lg text-xs cursor-pointer transition ${
-                  timeFilter === opt.key
-                    ? "bg-[#F7F8FA] text-[#0B2040] font-semibold"
-                    : "text-gray-500 font-medium hover:bg-gray-50"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Divider */}
-          <div className="w-px h-6 bg-gray-200" />
-
           {/* Division filter */}
           <div className="flex items-center gap-1">
             {divisionOptions.map((opt) => (
@@ -424,6 +346,23 @@ export default function SchedulePage() {
                 }`}
               >
                 {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {/* List / Calendar toggle */}
+          <div className="flex items-center bg-[#F7F8FA] rounded-lg p-0.5 border border-gray-200 ml-auto">
+            {(["list", "calendar"] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setViewMode(mode)}
+                className={`px-4 py-1.5 text-xs cursor-pointer transition rounded-md ${
+                  viewMode === mode
+                    ? "bg-white text-[#0B2040] font-semibold shadow-sm"
+                    : "bg-transparent text-gray-500 font-medium"
+                }`}
+              >
+                {mode === "list" ? "List" : "Calendar"}
               </button>
             ))}
           </div>
