@@ -157,7 +157,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
   const [otherText, setOtherText] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [packagesExpanded, setPackagesExpanded] = useState(true);
+  const [packagesExpanded, setPackagesExpanded] = useState(false);
 
   /* ── Step 1: Vehicle (was Step 2) ── */
   const [vinOrHull, setVinOrHull] = useState("");
@@ -194,6 +194,10 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
   const [prefetchLoading, setPrefetchLoading] = useState(false);
   const prefetchStartedRef = useRef(false);
   const allMakesRef = useRef<string[]>([]);
+
+  /* ── Vehicle text search (public wizard) ── */
+  const [vehicleSearchText, setVehicleSearchText] = useState("");
+  const [showManualDropdowns, setShowManualDropdowns] = useState(false);
 
   /* ── Marine vessel description ── */
   const [vesselYear, setVesselYear] = useState("");
@@ -337,6 +341,35 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
     loadFees();
   }, []);
 
+  /* ── First-time customer check (triggers on Step 3 phone/email input) ── */
+  useEffect(() => {
+    if (step !== 3) return;
+
+    const phone = customerPhone.replace(/\D/g, "");
+    const email = customerEmail.trim().toLowerCase();
+
+    if (!phone && !email) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        let found = false;
+        for (const field of ["phone", "email"] as const) {
+          const val = field === "phone" ? phone : email;
+          if (!val || (field === "phone" && val.length < 7)) continue;
+          const q = query(collection(db, "customers"), where(field, "==", val), firestoreLimit(1));
+          const snap = await getDocs(q);
+          if (!snap.empty) {
+            found = true;
+            break;
+          }
+        }
+        setFeeWaived(!found && !!feeConfig?.waiveFirstService);
+      } catch { /* silent */ }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [step, customerPhone, customerEmail, feeConfig?.waiveFirstService]);
+
   /* ── Fuel category for service steering ── */
   const fuelCategory = getFuelCategory(fuelType);
 
@@ -358,6 +391,8 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
     setYmmSearch("");
     setYmmDropdownOpen(false);
     setShowManualFields(false);
+    setVehicleSearchText("");
+    setShowManualDropdowns(false);
   }
 
   /* ── Service toggle ── */
@@ -418,6 +453,61 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
     setVehicleMake(val);
     setVehicleModel("");
   }
+
+  /* ── Vehicle text search parser ── */
+  const parseVehicleText = (text: string) => {
+    const words = text.trim().split(/\s+/);
+    let year = '';
+    let make = '';
+    let model = '';
+    let trim = '';
+
+    const yearIdx = words.findIndex(w => /^(19|20)\d{2}$/.test(w));
+    if (yearIdx !== -1) {
+      year = words[yearIdx];
+      words.splice(yearIdx, 1);
+    }
+
+    const makes = [
+      'Acura', 'Alfa Romeo', 'Audi', 'BMW', 'Buick', 'Cadillac', 'Chevrolet', 'Chevy',
+      'Chrysler', 'Dodge', 'Ferrari', 'Fiat', 'Ford', 'Genesis', 'GMC', 'Honda',
+      'Hyundai', 'Infiniti', 'Jaguar', 'Jeep', 'Kia', 'Lamborghini', 'Land Rover',
+      'Lexus', 'Lincoln', 'Maserati', 'Mazda', 'McLaren', 'Mercedes', 'Mercedes-Benz',
+      'Mini', 'Mitsubishi', 'Nissan', 'Porsche', 'Ram', 'Rivian', 'Rolls-Royce',
+      'Subaru', 'Tesla', 'Toyota', 'Volkswagen', 'VW', 'Volvo',
+    ];
+
+    const makeIdx = words.findIndex(w =>
+      makes.some(m => m.toLowerCase() === w.toLowerCase())
+    );
+
+    if (makeIdx !== -1) {
+      const matched = words[makeIdx];
+      if (matched.toLowerCase() === 'chevy') make = 'Chevrolet';
+      else if (matched.toLowerCase() === 'vw') make = 'Volkswagen';
+      else if (matched.toLowerCase() === 'mercedes') make = 'Mercedes-Benz';
+      else make = makes.find(m => m.toLowerCase() === matched.toLowerCase()) || matched;
+      words.splice(makeIdx, 1);
+    }
+
+    if (words.length > 0) {
+      model = words[0];
+      if (words.length > 1) {
+        trim = words.slice(1).join(' ');
+      }
+    }
+
+    return { year, make, model, trim };
+  };
+
+  const handleVehicleTextBlur = () => {
+    if (!vehicleSearchText.trim()) return;
+    const parsed = parseVehicleText(vehicleSearchText);
+    if (parsed.year) setVehicleYear(parsed.year);
+    if (parsed.make) setVehicleMake(parsed.make);
+    if (parsed.model) setVehicleModel(parsed.model);
+    if (parsed.trim) setVehicleTrim(parsed.trim);
+  };
 
   /* ── VIN decode handler (button-triggered) ── */
   async function handleVinDecode() {
@@ -909,6 +999,8 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
     setYmmSearch("");
     setYmmDropdownOpen(false);
     setShowManualFields(false);
+    setVehicleSearchText("");
+    setShowManualDropdowns(false);
     setLookupOpen(false);
     setLookupPhone("");
     setLookupLoading(false);
@@ -1002,13 +1094,11 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
   }
 
   function applyLookupBooking(b: LookupBooking) {
-    if (b.vehicleYear) setVehicleYear(b.vehicleYear);
-    if (b.vehicleMake) setVehicleMake(b.vehicleMake);
-    if (b.vehicleModel) setVehicleModel(b.vehicleModel);
+    // Only set customer identity fields — never override vehicle from Step 1
     if (b.customerFirstName) setCustomerFirstName(b.customerFirstName);
     if (b.customerLastName) setCustomerLastName(b.customerLastName);
     if (b.customerPhone) setCustomerPhone(formatPhoneDisplay(b.customerPhone));
-    if (b.customerEmail) setCustomerEmail(b.customerEmail);
+    if (b.customerEmail && !customerEmail) setCustomerEmail(b.customerEmail);
     setLookupDone(true);
     setLookupResults([]);
     setLookupMsg("");
@@ -1633,8 +1723,25 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                   {/* Divider */}
                   <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "16px 0" }}>
                     <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
-                    <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 500 }}>or enter manually</span>
+                    <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 500 }}>or describe your vehicle</span>
                     <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
+                  </div>
+
+                  {/* Vehicle text search */}
+                  <div style={{ marginBottom: 12 }}>
+                    <input
+                      type="text"
+                      value={vehicleSearchText}
+                      onChange={(e) => setVehicleSearchText(e.target.value)}
+                      onBlur={handleVehicleTextBlur}
+                      placeholder="e.g. 2024 Toyota Camry LE"
+                      style={{
+                        width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
+                        fontSize: 14, outline: "none", fontFamily: "inherit",
+                        background: "#FFFFFF", color: "#1E293B",
+                      }}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = "#E07B2D"; e.currentTarget.style.boxShadow = "0 0 0 1px #E07B2D"; }}
+                    />
                   </div>
                 </>
               )}
@@ -1713,63 +1820,80 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                 </div>
               ) : (
                 <>
-                  {/* Year / Make / Model cascading dropdowns */}
-                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 10 }}>
-                    <div>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Year</label>
-                      <select
-                        value={vehicleYear}
-                        onChange={(e) => handleYearChange(e.target.value)}
-                        style={{
-                          width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
-                          fontSize: 14, outline: "none", background: "#FFFFFF", color: vehicleYear ? "#1E293B" : "#94A3B8", fontFamily: "inherit",
-                        }}
-                        onFocus={(e) => { e.currentTarget.style.borderColor = "#E07B2D"; e.currentTarget.style.boxShadow = "0 0 0 1px #E07B2D"; }}
-                        onBlur={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.boxShadow = "none"; }}
-                      >
-                        <option value="">Select year</option>
-                        {YEARS.map((y) => <option key={y} value={String(y)}>{y}</option>)}
-                      </select>
+                  {/* Year / Make / Model cascading dropdowns — toggleable */}
+                  {(showManualDropdowns || vehicleYear || vehicleMake) && (
+                    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 10 }}>
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Year</label>
+                        <select
+                          value={vehicleYear}
+                          onChange={(e) => handleYearChange(e.target.value)}
+                          style={{
+                            width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
+                            fontSize: 14, outline: "none", background: "#FFFFFF", color: vehicleYear ? "#1E293B" : "#94A3B8", fontFamily: "inherit",
+                          }}
+                          onFocus={(e) => { e.currentTarget.style.borderColor = "#E07B2D"; e.currentTarget.style.boxShadow = "0 0 0 1px #E07B2D"; }}
+                          onBlur={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.boxShadow = "none"; }}
+                        >
+                          <option value="">Select year</option>
+                          {YEARS.map((y) => <option key={y} value={String(y)}>{y}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Make</label>
+                        <select
+                          value={vehicleMake}
+                          onChange={(e) => handleMakeChange(e.target.value)}
+                          style={{
+                            width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
+                            fontSize: 14, outline: "none", background: "#FFFFFF", color: vehicleMake ? "#1E293B" : "#94A3B8", fontFamily: "inherit",
+                          }}
+                          onFocus={(e) => { e.currentTarget.style.borderColor = "#E07B2D"; e.currentTarget.style.boxShadow = "0 0 0 1px #E07B2D"; }}
+                          onBlur={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.boxShadow = "none"; }}
+                        >
+                          <option value="">Select make</option>
+                          {POPULAR_MAKES.map((pm) => <option key={pm} value={pm}>{pm}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Model</label>
+                        <select
+                          value={vehicleModel}
+                          onChange={(e) => setVehicleModel(e.target.value)}
+                          disabled={!vehicleMake || modelsLoading}
+                          style={{
+                            width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
+                            fontSize: 14, outline: "none", background: "#FFFFFF", color: vehicleModel ? "#1E293B" : "#94A3B8", fontFamily: "inherit",
+                            opacity: !vehicleMake || modelsLoading ? 0.5 : 1,
+                          }}
+                          onFocus={(e) => { e.currentTarget.style.borderColor = "#E07B2D"; e.currentTarget.style.boxShadow = "0 0 0 1px #E07B2D"; }}
+                          onBlur={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.boxShadow = "none"; }}
+                        >
+                          <option value="">
+                            {modelsLoading ? "Loading..." : !vehicleMake ? "Select make first" : "Select model"}
+                          </option>
+                          {currentModels.map((m) => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                      </div>
                     </div>
-                    <div>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Make</label>
-                      <select
-                        value={vehicleMake}
-                        onChange={(e) => handleMakeChange(e.target.value)}
-                        style={{
-                          width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
-                          fontSize: 14, outline: "none", background: "#FFFFFF", color: vehicleMake ? "#1E293B" : "#94A3B8", fontFamily: "inherit",
-                        }}
-                        onFocus={(e) => { e.currentTarget.style.borderColor = "#E07B2D"; e.currentTarget.style.boxShadow = "0 0 0 1px #E07B2D"; }}
-                        onBlur={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.boxShadow = "none"; }}
-                      >
-                        <option value="">Select make</option>
-                        {POPULAR_MAKES.map((pm) => <option key={pm} value={pm}>{pm}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Model</label>
-                      <select
-                        value={vehicleModel}
-                        onChange={(e) => setVehicleModel(e.target.value)}
-                        disabled={!vehicleMake || modelsLoading}
-                        style={{
-                          width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
-                          fontSize: 14, outline: "none", background: "#FFFFFF", color: vehicleModel ? "#1E293B" : "#94A3B8", fontFamily: "inherit",
-                          opacity: !vehicleMake || modelsLoading ? 0.5 : 1,
-                        }}
-                        onFocus={(e) => { e.currentTarget.style.borderColor = "#E07B2D"; e.currentTarget.style.boxShadow = "0 0 0 1px #E07B2D"; }}
-                        onBlur={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.boxShadow = "none"; }}
-                      >
-                        <option value="">
-                          {modelsLoading ? "Loading..." : !vehicleMake ? "Select make first" : "Select model"}
-                        </option>
-                        {currentModels.map((m) => <option key={m} value={m}>{m}</option>)}
-                      </select>
-                    </div>
-                  </div>
+                  )}
 
-                  {/* Fuel Type */}
+                  {!showManualDropdowns && !vehicleYear && !vehicleMake && (
+                    <button
+                      type="button"
+                      onClick={() => setShowManualDropdowns(true)}
+                      style={{
+                        background: "none", border: "none", cursor: "pointer", padding: 0,
+                        fontSize: 13, fontWeight: 500, color: "#1A5FAC", marginTop: 2,
+                      }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.textDecoration = "underline"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.textDecoration = "none"; }}
+                    >
+                      Or select year, make, and model
+                    </button>
+                  )}
+
+                  {/* Fuel Type — always visible */}
                   <div style={{ marginTop: 16 }}>
                     <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Engine / Fuel Type</label>
                     <select

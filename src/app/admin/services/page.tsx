@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import AdminTopBar from "@/components/admin/AdminTopBar";
 import { db } from "@/lib/firebase";
 import {
@@ -11,6 +11,8 @@ import {
   deleteDoc,
   serverTimestamp,
   writeBatch,
+  getDoc,
+  setDoc,
 } from "firebase/firestore";
 import {
   useServices,
@@ -202,6 +204,54 @@ export default function ServicesPage() {
     category: ServiceCategory;
     targetDivision: "auto" | "marine" | "fleet" | "rv";
   } | null>(null);
+
+  /* ── Fee settings state ── */
+  const [feeSettings, setFeeSettings] = useState({
+    enabled: true,
+    amount: 39.95,
+    label: 'Mobile Service Fee',
+    taxable: false,
+    waiveFirstService: true,
+    promoOverride: false,
+  });
+  const [feeLoading, setFeeLoading] = useState(true);
+  const [feeSaving, setFeeSaving] = useState(false);
+
+  useEffect(() => {
+    const loadFees = async () => {
+      try {
+        const feeDoc = await getDoc(doc(db, 'settings', 'fees'));
+        if (feeDoc.exists()) {
+          const data = feeDoc.data();
+          setFeeSettings({
+            enabled: data.convenienceFee?.enabled ?? true,
+            amount: data.convenienceFee?.amount ?? 39.95,
+            label: data.convenienceFee?.label ?? 'Mobile Service Fee',
+            taxable: data.convenienceFee?.taxable ?? false,
+            waiveFirstService: data.convenienceFee?.waiveFirstService ?? true,
+            promoOverride: data.convenienceFee?.promoOverride ?? false,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load fee settings:', err);
+      }
+      setFeeLoading(false);
+    };
+    loadFees();
+  }, []);
+
+  const handleSaveFees = async () => {
+    setFeeSaving(true);
+    try {
+      await setDoc(doc(db, 'settings', 'fees'), {
+        convenienceFee: feeSettings,
+      }, { merge: true });
+      addToast('Fee settings saved');
+    } catch (err) {
+      console.error('Failed to save fee settings:', err);
+    }
+    setFeeSaving(false);
+  };
 
   /* ── Toast helper ── */
 
@@ -1580,6 +1630,110 @@ export default function ServicesPage() {
           </div>
         </Modal>
       )}
+
+      {/* Service Fees Section */}
+      <div className="mt-8 bg-white border border-gray-200 rounded-xl p-6">
+        <h2 className="text-lg font-bold text-[#0B2040] mb-4">Service Fees</h2>
+
+        {feeLoading ? (
+          <p className="text-sm text-gray-500">Loading...</p>
+        ) : (
+          <div className="space-y-4">
+            {/* Enable/Disable */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-[#0B2040]">Mobile Service Fee</p>
+                <p className="text-xs text-gray-500">Charge a fee for mobile service visits</p>
+              </div>
+              <button
+                onClick={() => setFeeSettings(prev => ({ ...prev, enabled: !prev.enabled }))}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  feeSettings.enabled ? 'bg-[#1A5FAC]' : 'bg-gray-200'
+                }`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                  feeSettings.enabled ? 'translate-x-6' : 'translate-x-1'
+                }`} />
+              </button>
+            </div>
+
+            {feeSettings.enabled && (
+              <>
+                {/* Amount */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Fee Amount ($)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={feeSettings.amount}
+                    onChange={(e) => setFeeSettings(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
+                    className="w-48 border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+
+                {/* Label */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Display Label</label>
+                  <input
+                    type="text"
+                    value={feeSettings.label}
+                    onChange={(e) => setFeeSettings(prev => ({ ...prev, label: e.target.value }))}
+                    className="w-full max-w-sm border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                    placeholder="e.g. Mobile Service Fee, Convenience Fee"
+                  />
+                </div>
+
+                {/* Waive First Service */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-[#0B2040]">Waive for first-time customers</p>
+                    <p className="text-xs text-gray-500">New customers get the fee waived on their first booking</p>
+                  </div>
+                  <button
+                    onClick={() => setFeeSettings(prev => ({ ...prev, waiveFirstService: !prev.waiveFirstService }))}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      feeSettings.waiveFirstService ? 'bg-[#1A5FAC]' : 'bg-gray-200'
+                    }`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                      feeSettings.waiveFirstService ? 'translate-x-6' : 'translate-x-1'
+                    }`} />
+                  </button>
+                </div>
+
+                {/* Taxable */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-[#0B2040]">Include in tax calculation</p>
+                    <p className="text-xs text-gray-500">Whether the fee is subject to sales tax</p>
+                  </div>
+                  <button
+                    onClick={() => setFeeSettings(prev => ({ ...prev, taxable: !prev.taxable }))}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      feeSettings.taxable ? 'bg-[#1A5FAC]' : 'bg-gray-200'
+                    }`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                      feeSettings.taxable ? 'translate-x-6' : 'translate-x-1'
+                    }`} />
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* Save Button */}
+            <div className="pt-2">
+              <button
+                onClick={handleSaveFees}
+                disabled={feeSaving}
+                className="px-6 py-2.5 bg-[#E07B2D] text-white rounded-lg text-sm font-semibold hover:bg-[#CC6A1F] disabled:opacity-50"
+              >
+                {feeSaving ? 'Saving...' : 'Save Fee Settings'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Toasts */}
       <ToastContainer
