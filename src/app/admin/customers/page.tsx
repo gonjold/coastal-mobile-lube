@@ -10,6 +10,8 @@ import {
   query,
   addDoc,
   serverTimestamp,
+  writeBatch,
+  doc,
 } from "firebase/firestore";
 import ToastContainer, { type ToastItem } from "../Toast";
 import {
@@ -710,12 +712,65 @@ export default function CustomersPage() {
                     </button>
                     {actionMenuKey === c.key && (
                       <div className="absolute right-full top-0 mr-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[160px] z-[50]" onMouseDown={(e) => e.stopPropagation()}>
-                        <button onClick={() => { setInitialEditMode(false); setSelectedCustomer(c); setActionMenuKey(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">View Profile</button>
-                        <button onClick={() => { setInitialEditMode(true); setSelectedCustomer(c); setActionMenuKey(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Edit Customer</button>
-                        <button onClick={() => { openModal("booking", { customer: { name: c.name, phone: c.phone, email: c.email, address: c.address } }); setActionMenuKey(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">New Booking</button>
-                        <button onClick={() => { openModal("invoice", { customer: { name: c.name, phone: c.phone, email: c.email, address: c.address } }); setActionMenuKey(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">New Invoice</button>
+                        <button
+                          onMouseDown={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            setInitialEditMode(false);
+                            setSelectedCustomer(c);
+                            setActionMenuKey(null);
+                          }}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition"
+                        >
+                          View Profile
+                        </button>
+                        <button
+                          onMouseDown={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            setInitialEditMode(true);
+                            setSelectedCustomer(c);
+                            setActionMenuKey(null);
+                          }}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition"
+                        >
+                          Edit Customer
+                        </button>
+                        <button
+                          onMouseDown={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            openModal("booking", { customer: { name: c.name, phone: c.phone, email: c.email, address: c.address } });
+                            setActionMenuKey(null);
+                          }}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition"
+                        >
+                          New Booking
+                        </button>
+                        <button
+                          onMouseDown={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            openModal("invoice", { customer: { name: c.name, phone: c.phone, email: c.email, address: c.address } });
+                            setActionMenuKey(null);
+                          }}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition"
+                        >
+                          New Invoice
+                        </button>
                         <div className="h-px bg-gray-100 my-1" />
-                        <button onClick={() => { setDeleteTarget(c); setShowDeleteConfirm(true); setActionMenuKey(null); }} className="block w-full text-left px-4 py-2 text-sm text-red-600 cursor-pointer hover:bg-gray-50 transition">Delete Customer</button>
+                        <button
+                          onMouseDown={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            setDeleteTarget(c);
+                            setShowDeleteConfirm(true);
+                            setActionMenuKey(null);
+                          }}
+                          className="block w-full text-left px-4 py-2 text-sm text-red-600 cursor-pointer hover:bg-gray-50 transition"
+                        >
+                          Delete Customer
+                        </button>
                       </div>
                     )}
                   </div>
@@ -931,6 +986,51 @@ export default function CustomersPage() {
       )}
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+      {/* ═══ Delete Confirmation Modal ═══ */}
+      {showDeleteConfirm && deleteTarget && (
+        <div className="fixed inset-0 bg-black/30 z-[80] flex items-center justify-center">
+          <div className="bg-white rounded-xl shadow-xl w-[400px] mx-4 p-6">
+            <h3 className="text-lg font-bold text-[#0B2040]">Delete Customer</h3>
+            <p className="text-sm text-gray-500 mt-2">
+              Are you sure you want to delete <strong>{deleteTarget.name}</strong>? This will
+              permanently remove their profile. Bookings and invoices linked to this customer
+              will NOT be deleted.
+            </p>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => { setShowDeleteConfirm(false); setDeleteTarget(null); }}
+                className="flex-1 border border-gray-200 rounded-lg py-2.5 text-sm font-semibold text-gray-500 cursor-pointer hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    const batch = writeBatch(db);
+                    deleteTarget.bookings.forEach((b) => {
+                      batch.update(doc(db, "bookings", b.id), {
+                        customerDeleted: true,
+                        updatedAt: serverTimestamp(),
+                      });
+                    });
+                    await batch.commit();
+                    addToast(`"${deleteTarget.name}" deleted`);
+                    setShowDeleteConfirm(false);
+                    setDeleteTarget(null);
+                    setSelectedCustomer(null);
+                  } catch {
+                    addToast("Failed to delete customer", "info");
+                  }
+                }}
+                className="flex-1 bg-red-600 rounded-lg py-2.5 text-sm font-semibold text-white cursor-pointer hover:bg-red-700 transition"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ═══ Merge Modal ═══ */}
       {mergeGroup && (
