@@ -1,335 +1,427 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
-import { Calendar, Users, Receipt, Tag, Plus, FileDown, UserPlus } from "lucide-react";
+import {
+  collection,
+  onSnapshot,
+  orderBy,
+  query,
+} from "firebase/firestore";
+import AdminTopBar from "@/components/admin/AdminTopBar";
+import AdminBadge from "@/components/admin/AdminBadge";
+import PipelineCard from "@/components/admin/PipelineCard";
 import {
   type Booking,
-  formatPhone,
-  formatTimestamp,
+  getServiceLabel,
   getStatusStyle,
-  getSourceLabel,
-  buildCustomerList,
-  exportBookingsCsv,
+  toISODate,
 } from "./shared";
 
+/* ─── Invoice type (mirrors invoicing page) ─────────────── */
+interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  customerName: string;
+  total: number;
+  status: "draft" | "sent" | "paid" | "overdue";
+  createdAt?: { toDate: () => Date };
+}
+
+/* ─── Badge variant mapper ───────────────────────────────── */
+function badgeVariant(status?: string): "green" | "red" | "amber" | "gray" | "blue" | "teal" {
+  switch (status) {
+    case "confirmed": return "blue";
+    case "completed": return "green";
+    case "pending": return "amber";
+    case "cancelled": return "red";
+    case "in-progress": return "teal";
+    default: return "gray";
+  }
+}
+
 export default function AdminHome() {
+  const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(db, "bookings"), orderBy("createdAt", "desc"));
-    const unsub = onSnapshot(
-      q,
+    const qBookings = query(collection(db, "bookings"), orderBy("createdAt", "desc"));
+    const unsub1 = onSnapshot(
+      qBookings,
       (snap) => {
         setBookings(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Booking));
         setLoading(false);
       },
-      () => setLoading(false)
+      () => setLoading(false),
     );
-    return () => unsub();
+
+    const qInvoices = query(collection(db, "invoices"), orderBy("createdAt", "desc"));
+    const unsub2 = onSnapshot(
+      qInvoices,
+      (snap) => {
+        setInvoices(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Invoice));
+      },
+      () => {},
+    );
+
+    return () => { unsub1(); unsub2(); };
   }, []);
 
-  /* ── Computed stats ── */
-  const totalBookings = bookings.length;
-  const pendingCount = bookings.filter((b) => b.status === "pending").length;
-  const customers = buildCustomerList(bookings);
-  const totalCustomers = customers.length;
-
-  // This week
+  /* ── Today's date ── */
   const now = new Date();
+  const todayISO = toISODate(now);
+  const todayLabel = now.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  /* ── Week bounds ── */
   const startOfWeek = new Date(now);
   startOfWeek.setDate(now.getDate() - now.getDay());
   startOfWeek.setHours(0, 0, 0, 0);
-  const weeklyBookings = bookings.filter((b) => {
-    if (!b.createdAt?.toDate) return false;
-    return b.createdAt.toDate() >= startOfWeek;
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+  endOfWeek.setHours(23, 59, 59, 999);
+
+  /* ── Pipeline counts ── */
+  const newLeads = bookings.filter(
+    (b) => b.status === "new" || b.status === "new-lead" || b.type === "lead",
+  ).length;
+  const quoteRequests = bookings.filter(
+    (b) => (b.source || "").toLowerCase().includes("quote"),
+  ).length;
+  const pendingBookings = bookings.filter((b) => b.status === "pending").length;
+  const incomingTotal = newLeads + quoteRequests + pendingBookings;
+
+  const confirmedBookings = bookings.filter((b) => b.status === "confirmed").length;
+  const todayBookings = bookings.filter((b) => {
+    const date = b.confirmedDate || b.preferredDate;
+    return date === todayISO && (b.status === "confirmed" || b.status === "in-progress");
+  });
+  const weekBookings = bookings.filter((b) => {
+    const dateStr = b.confirmedDate || b.preferredDate;
+    if (!dateStr) return false;
+    const d = new Date(dateStr + "T00:00:00");
+    return d >= startOfWeek && d <= endOfWeek;
   }).length;
+  const scheduledTotal = confirmedBookings + todayBookings.length + weekBookings;
 
-  // Recent 5 bookings
-  const recent = bookings.slice(0, 5);
+  const inProgress = bookings.filter((b) => b.status === "in-progress").length;
+  const completedBookings = bookings.filter((b) => b.status === "completed");
+  // TODO: wire up "needs invoice" - check for completed bookings without a linked invoiceId
+  const needsInvoice = completedBookings.filter(
+    (b) => !(b as unknown as Record<string, unknown>).invoiceId,
+  ).length;
+  const completedCount = completedBookings.length;
+  const jobsTotal = inProgress + needsInvoice + completedCount;
 
-  // Activity detail expansion
-  const [expandedActivity, setExpandedActivity] = useState<string | null>(null);
+  const sentInvoices = invoices.filter((i) => i.status === "sent");
+  const paidInvoices = invoices.filter((i) => i.status === "paid");
+  const overdueInvoices = invoices.filter((i) => i.status === "overdue");
+  const invoiceTotal = sentInvoices.length + paidInvoices.length + overdueInvoices.length;
+
+  const sumTotal = (arr: Invoice[]) =>
+    arr.reduce((s, i) => s + (i.total || 0), 0);
+  const fmt$ = (n: number) =>
+    n >= 1000 ? `$${(n / 1000).toFixed(1)}k` : `$${n.toFixed(0)}`;
+
+  /* ── Today's schedule list ── */
+  const todaySchedule = todayBookings.length > 0 ? todayBookings : bookings.filter((b) => {
+    const date = b.confirmedDate || b.preferredDate;
+    return date === todayISO;
+  });
+
+  /* ── Action items ── */
+  const actionItems: { label: string; urgency: string; action: string; href: string }[] = [];
+  if (overdueInvoices.length > 0)
+    actionItems.push({ label: `${overdueInvoices.length} overdue invoice${overdueInvoices.length > 1 ? "s" : ""}`, urgency: "red", action: "View", href: "/admin/invoicing" });
+  if (needsInvoice > 0)
+    actionItems.push({ label: `${needsInvoice} completed job${needsInvoice > 1 ? "s" : ""} need invoicing`, urgency: "red", action: "Invoice", href: "/admin/invoicing" });
+  if (pendingBookings > 0)
+    actionItems.push({ label: `${pendingBookings} unconfirmed booking${pendingBookings > 1 ? "s" : ""}`, urgency: "#F59E0B", action: "Review", href: "/admin/schedule" });
+  if (quoteRequests > 0)
+    actionItems.push({ label: `${quoteRequests} quote request${quoteRequests > 1 ? "s" : ""} awaiting response`, urgency: "#1A5FAC", action: "Review", href: "/admin/schedule" });
+
+  /* ── Revenue summary (placeholder data where Firestore doesn't provide) ── */
+  // TODO: wire up real revenue aggregation queries from Firestore
+  const thisMonthRevenue = sumTotal(paidInvoices);
+  const outstanding = sumTotal(sentInvoices) + sumTotal(overdueInvoices);
+  const avgJobValue = paidInvoices.length > 0 ? thisMonthRevenue / paidInvoices.length : 0;
+  const currentInvoiceAmount = sumTotal(sentInvoices);
+  const overdueAmount = sumTotal(overdueInvoices);
+  const agingTotal = currentInvoiceAmount + overdueAmount || 1; // avoid /0
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-32">
-        <div className="animate-spin w-8 h-8 border-4 border-[#E07B2D] border-t-transparent rounded-full" />
-      </div>
+      <>
+        <AdminTopBar title="Dashboard" subtitle={todayLabel} />
+        <div className="flex items-center justify-center py-32">
+          <div className="animate-spin w-8 h-8 border-4 border-[#E07B2D] border-t-transparent rounded-full" />
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="px-4 lg:px-8 py-6 max-w-[1200px] mx-auto">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-[13px] text-[#888] mb-6">
-        <span className="text-[#0B2040] font-semibold">Dashboard</span>
-      </div>
+    <>
+      <AdminTopBar title="Dashboard" subtitle={todayLabel} />
 
-      {/* Header */}
-      <div className="mb-8">
-        <p className="text-[14px] text-[#888]">
-          {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
-        </p>
-      </div>
+      <div className="px-4 lg:px-8 py-6 max-w-[1400px] mx-auto">
+        {/* ═══ PIPELINE CARDS ═══ */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+          <PipelineCard
+            title="Incoming"
+            accentColor="#1A5FAC"
+            total={incomingTotal}
+            rows={[
+              { label: "New Leads", count: newLeads, dotColor: "#1A5FAC" },
+              { label: "Quote Requests", count: quoteRequests, dotColor: "#F59E0B", amount: fmt$(sumTotal(sentInvoices)) },
+              { label: "Pending Bookings", count: pendingBookings, dotColor: "#F59E0B" },
+            ]}
+            actionLabel="Review Incoming"
+            onAction={() => router.push("/admin/schedule")}
+          />
 
-      {/* ═══ TOP ROW - Quick Stats ═══ */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {/* Total Bookings */}
-        <Link href="/admin/schedule" className="bg-white border border-[#e8e8e8] rounded-[12px] p-5 hover:border-[#1A5FAC]/30 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-[10px] bg-[#EBF4FF] flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-[#1A5FAC]" />
-            </div>
-          </div>
-          <p className="text-[32px] font-[800] text-[#0B2040] leading-none mb-1">{totalBookings}</p>
-          <p className="text-[13px] text-[#888] font-medium">Total Bookings</p>
-        </Link>
+          <PipelineCard
+            title="Scheduled"
+            accentColor="#16A34A"
+            total={scheduledTotal}
+            rows={[
+              { label: "Confirmed", count: confirmedBookings, dotColor: "#16A34A" },
+              { label: "Today", count: todayBookings.length, dotColor: "#0D8A8F" },
+              { label: "This Week", count: weekBookings, dotColor: "#1A5FAC" },
+            ]}
+            actionLabel="View Schedule"
+            onAction={() => router.push("/admin/schedule")}
+          />
 
-        {/* This Week */}
-        <Link href="/admin/schedule?time=week" className="bg-white border border-[#e8e8e8] rounded-[12px] p-5 hover:border-[#16a34a]/30 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-[10px] bg-[#F0FAF0] flex items-center justify-center">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-                <polyline points="17 6 23 6 23 12" />
-              </svg>
-            </div>
-          </div>
-          <p className="text-[32px] font-[800] text-[#16a34a] leading-none mb-1">{weeklyBookings}</p>
-          <p className="text-[13px] text-[#888] font-medium">This Week</p>
-        </Link>
+          <PipelineCard
+            title="Jobs"
+            accentColor="#E07B2D"
+            total={jobsTotal}
+            rows={[
+              { label: "In Progress", count: inProgress, dotColor: "#E07B2D" },
+              { label: "Needs Invoice", count: needsInvoice, dotColor: "#dc2626", amount: fmt$(needsInvoice * 150) },
+              { label: "Completed", count: completedCount, dotColor: "#16A34A", amount: fmt$(completedCount * 185) },
+            ]}
+            actionLabel="Create Invoice"
+            onAction={() => router.push("/admin/invoicing")}
+          />
 
-        {/* Pending - orange highlight only when > 0 */}
-        <Link href="/admin/schedule?status=pending" className={`bg-white rounded-[12px] p-5 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all ${
-          pendingCount > 0
-            ? "border-2 border-[#E07B2D]/30"
-            : "border border-[#e8e8e8] hover:border-[#E07B2D]/30"
-        }`}>
-          <div className="flex items-center gap-3 mb-3">
-            <div className={`w-10 h-10 rounded-[10px] flex items-center justify-center ${
-              pendingCount > 0 ? "bg-[#FFF8F0]" : "bg-[#f5f5f5]"
-            }`}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={pendingCount > 0 ? "#E07B2D" : "#888"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-            </div>
-          </div>
-          <p className={`text-[32px] font-[800] leading-none mb-1 ${
-            pendingCount > 0 ? "text-[#E07B2D]" : "text-[#0B2040]"
-          }`}>{pendingCount}</p>
-          <p className={`text-[13px] font-semibold ${
-            pendingCount > 0 ? "text-[#E07B2D]" : "text-[#888]"
-          }`}>Pending</p>
-        </Link>
-
-        {/* Total Customers */}
-        <Link href="/admin/customers" className="bg-white border border-[#e8e8e8] rounded-[12px] p-5 hover:border-[#7c3aed]/30 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-[10px] bg-[#F5F0FF] flex items-center justify-center">
-              <Users className="w-5 h-5 text-[#7c3aed]" />
-            </div>
-          </div>
-          <p className="text-[32px] font-[800] text-[#7c3aed] leading-none mb-1">{totalCustomers}</p>
-          <p className="text-[13px] text-[#888] font-medium">Total Customers</p>
-        </Link>
-      </div>
-
-      {/* ═══ QUICK ACTIONS ═══ */}
-      <div className="flex flex-wrap gap-3 mb-10">
-        <Link
-          href="/admin/invoicing"
-          className="inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold text-white bg-[#E07B2D] rounded-lg hover:bg-[#CC6A1F] transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Create Invoice
-        </Link>
-        <Link
-          href="/admin/customers?new=1"
-          className="inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold text-white bg-[#7c3aed] rounded-lg hover:bg-[#6d28d9] transition-colors"
-        >
-          <UserPlus className="w-4 h-4" />
-          Add Customer
-        </Link>
-        <button
-          onClick={() => exportBookingsCsv(bookings)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold text-[#0B2040] bg-white border border-[#e8e8e8] rounded-lg hover:bg-[#f5f5f5] transition-colors"
-        >
-          <FileDown className="w-4 h-4" />
-          Export All Data
-        </button>
-      </div>
-
-      {/* ═══ NAVIGATION CARDS ═══ */}
-      <h2 className="text-[16px] font-bold text-[#0B2040] mb-4">Manage</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-        {/* Schedule */}
-        <Link
-          href="/admin/schedule"
-          className="group bg-white border border-[#e8e8e8] rounded-[12px] p-5 hover:border-[#1A5FAC] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-all"
-        >
-          <div className="w-11 h-11 rounded-[10px] bg-[#EBF4FF] flex items-center justify-center mb-4 group-hover:bg-[#1A5FAC] transition-colors">
-            <Calendar className="w-[22px] h-[22px] text-[#1A5FAC] group-hover:text-white transition-colors" />
-          </div>
-          <h3 className="text-[15px] font-bold text-[#0B2040] mb-1">Schedule</h3>
-          <p className="text-[13px] text-[#888] leading-snug">View calendar, incoming bookings, and appointments</p>
-        </Link>
-
-        {/* Customers */}
-        <Link
-          href="/admin/customers"
-          className="group bg-white border border-[#e8e8e8] rounded-[12px] p-5 hover:border-[#7c3aed] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-all"
-        >
-          <div className="w-11 h-11 rounded-[10px] bg-[#F5F0FF] flex items-center justify-center mb-4 group-hover:bg-[#7c3aed] transition-colors">
-            <Users className="w-[22px] h-[22px] text-[#7c3aed] group-hover:text-white transition-colors" />
-          </div>
-          <h3 className="text-[15px] font-bold text-[#0B2040] mb-1">Customers</h3>
-          <p className="text-[13px] text-[#888] leading-snug">Customer database, history, and notes</p>
-        </Link>
-
-        {/* Invoicing */}
-        <Link
-          href="/admin/invoicing"
-          className="group bg-white border border-[#e8e8e8] rounded-[12px] p-5 hover:border-[#E07B2D] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-all"
-        >
-          <div className="w-11 h-11 rounded-[10px] bg-[#FFF8F0] flex items-center justify-center mb-4 group-hover:bg-[#E07B2D] transition-colors">
-            <Receipt className="w-[22px] h-[22px] text-[#E07B2D] group-hover:text-white transition-colors" />
-          </div>
-          <h3 className="text-[15px] font-bold text-[#0B2040] mb-1">Invoicing</h3>
-          <p className="text-[13px] text-[#888] leading-snug">Create and send invoices</p>
-        </Link>
-
-        {/* Pricing & Services */}
-        <Link
-          href="/admin/pricing"
-          className="group bg-white border border-[#e8e8e8] rounded-[12px] p-5 hover:border-[#0D8A8F] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-all"
-        >
-          <div className="w-11 h-11 rounded-[10px] bg-[#ECFBFB] flex items-center justify-center mb-4 group-hover:bg-[#0D8A8F] transition-colors">
-            <Tag className="w-[22px] h-[22px] text-[#0D8A8F] group-hover:text-white transition-colors" />
-          </div>
-          <h3 className="text-[15px] font-bold text-[#0B2040] mb-1">Pricing & Services</h3>
-          <p className="text-[13px] text-[#888] leading-snug">Manage service pricing and availability</p>
-        </Link>
-      </div>
-
-      {/* ═══ RECENT ACTIVITY ═══ */}
-      <h2 className="text-[16px] font-bold text-[#0B2040] mb-4">Recent Activity</h2>
-      {recent.length === 0 ? (
-        <div className="bg-white border border-[#e8e8e8] rounded-[12px] p-12 text-center">
-          <p className="text-[14px] text-[#888]">No bookings yet. They&apos;ll appear here when customers book.</p>
+          <PipelineCard
+            title="Invoices"
+            accentColor="#0B2040"
+            total={invoiceTotal}
+            rows={[
+              { label: "Sent", count: sentInvoices.length, dotColor: "#1A5FAC", amount: fmt$(sumTotal(sentInvoices)) },
+              { label: "Paid", count: paidInvoices.length, dotColor: "#16A34A", amount: fmt$(sumTotal(paidInvoices)) },
+              { label: "Overdue", count: overdueInvoices.length, dotColor: "#dc2626", amount: fmt$(sumTotal(overdueInvoices)) },
+            ]}
+            actionLabel="View Invoices"
+            onAction={() => router.push("/admin/invoicing")}
+          />
         </div>
-      ) : (
-        <div className="bg-white border border-[#e8e8e8] rounded-[12px] overflow-hidden">
-          {recent.map((b, i) => {
-            const status = getStatusStyle(b.status);
-            const source = getSourceLabel(b.source);
-            const isExpanded = expandedActivity === b.id;
-            return (
-              <div key={b.id}>
-                <div
-                  onClick={() => setExpandedActivity(isExpanded ? null : b.id)}
-                  className={`flex items-center gap-4 px-5 py-4 cursor-pointer transition-colors hover:bg-[#FAFBFC] ${
-                    i < recent.length - 1 && !isExpanded ? "border-b border-[#f0f0f0]" : ""
-                  }`}
-                >
-                  {/* Status dot */}
-                  <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-                    b.status === "pending" ? "bg-[#E07B2D]"
-                    : b.status === "confirmed" ? "bg-[#1A5FAC]"
-                    : b.status === "completed" ? "bg-[#16a34a]"
-                    : "bg-[#999]"
-                  }`} />
 
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-semibold text-[#0B2040] truncate">
-                      {b.name || "\u2014"}
-                      <span className="ml-2 text-[13px] font-normal text-[#888]">{b.service || ""}</span>
-                    </p>
-                    <p className="text-[12px] text-[#888]">{formatTimestamp(b.createdAt)}</p>
-                  </div>
+        {/* ═══ BOTTOM SECTION ═══ */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* ── Today's Schedule ── */}
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="px-5 py-4 flex justify-between items-center border-b border-gray-200">
+              <div>
+                <h2 className="text-[15px] font-bold text-[#0B2040]">
+                  Today&apos;s Schedule
+                </h2>
+                <p className="text-xs text-gray-500">
+                  {todaySchedule.length} booking{todaySchedule.length !== 1 ? "s" : ""} today
+                </p>
+              </div>
+              <button
+                onClick={() => router.push("/admin/schedule")}
+                className="px-3.5 py-1.5 rounded-lg border border-gray-200 text-xs font-semibold text-[#1A5FAC] hover:bg-[#1A5FAC] hover:text-white hover:border-[#1A5FAC] transition cursor-pointer"
+              >
+                Full Schedule
+              </button>
+            </div>
 
-                  {/* Badges */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold text-white ${source.color}`}>
-                      {source.label}
-                    </span>
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-semibold ${status.cls}`}>
-                      {status.label}
-                    </span>
-                  </div>
-
-                  {/* Chevron */}
-                  <svg
-                    width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                    className={`shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+            {todaySchedule.length === 0 ? (
+              <div className="px-5 py-10 text-center text-sm text-gray-400">
+                No bookings scheduled for today.
+              </div>
+            ) : (
+              todaySchedule.map((b) => {
+                const statusInfo = getStatusStyle(b.status);
+                return (
+                  <div
+                    key={b.id}
+                    onClick={() => router.push("/admin/schedule")}
+                    className="flex items-center px-5 py-3 border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition"
                   >
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
+                    <span className="text-[13px] font-semibold text-gray-500 min-w-[60px] flex-shrink-0">
+                      {b.confirmedArrivalWindow
+                        ? b.confirmedArrivalWindow.split(" - ")[0] || b.confirmedArrivalWindow
+                        : b.timeWindow || "TBD"}
+                    </span>
+                    <div className="flex-1 min-w-0 ml-3">
+                      <p className="text-sm font-semibold text-[#0B2040] truncate">
+                        {b.name || b.customerName || "—"}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {getServiceLabel(b)}
+                        {(b.vehicleYear || b.vehicleMake) && ` • ${[b.vehicleYear, b.vehicleMake, b.vehicleModel].filter(Boolean).join(" ")}`}
+                      </p>
+                    </div>
+                    <AdminBadge label={statusInfo.label} variant={badgeVariant(b.status)} />
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* ── Right Column: Action Items + Revenue ── */}
+          <div className="flex flex-col gap-4">
+            {/* Action Items */}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="px-5 py-4 border-b border-gray-200">
+                <h2 className="text-[15px] font-bold text-[#0B2040]">
+                  Needs Attention
+                </h2>
+                <p className="text-xs text-gray-500">
+                  {actionItems.length} item{actionItems.length !== 1 ? "s" : ""}
+                </p>
+              </div>
+
+              {actionItems.length === 0 ? (
+                <div className="px-5 py-6 text-center text-sm text-gray-400">
+                  All caught up!
+                </div>
+              ) : (
+                actionItems.map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-center justify-between px-5 py-2.5 border-b border-gray-200"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className="w-2 h-2 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: item.urgency }}
+                      />
+                      <span className="text-[13px] text-[#0B2040]">
+                        {item.label}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => router.push(item.href)}
+                      className="px-3 py-1 rounded-md border border-gray-200 text-xs font-semibold text-[#1A5FAC] hover:bg-[#1A5FAC] hover:text-white hover:border-[#1A5FAC] transition cursor-pointer"
+                    >
+                      {item.action}
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Revenue Summary */}
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <h2 className="text-[15px] font-bold text-[#0B2040] mb-4">
+                Revenue Summary
+              </h2>
+
+              {/* Three stats */}
+              <div className="flex items-stretch">
+                {/* This Month */}
+                <div className="flex-1 text-center">
+                  <p className="text-[26px] font-bold text-[#0B2040]">
+                    {fmt$(thisMonthRevenue)}
+                  </p>
+                  <p className="text-xs text-gray-500 mb-0.5">This Month</p>
+                  {/* TODO: compute real trend from prior month */}
+                  <span className="text-xs font-semibold text-emerald-600">
+                    +12%
+                  </span>
                 </div>
 
-                {/* Expanded detail */}
-                {isExpanded && (
-                  <div className="px-5 pb-5 border-b border-[#f0f0f0]">
-                    <div className="bg-[#FAFBFC] rounded-[10px] p-4 grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3">
-                      <Detail label="Phone" value={formatPhone(b.phone)} href={b.phone ? `tel:${b.phone}` : undefined} />
-                      <Detail label="Email" value={b.email || "\u2014"} href={b.email ? `mailto:${b.email}` : undefined} />
-                      <Detail label="Address" value={b.address || "\u2014"} />
-                      <Detail label="Preferred Date" value={b.preferredDate || "\u2014"} />
-                      <Detail label="Time Window" value={b.timeWindow || "\u2014"} />
-                      <Detail label="Contact Pref" value={b.contactPreference || "\u2014"} />
-                      {b.confirmedDate && <Detail label="Confirmed Date" value={b.confirmedDate} />}
-                      {b.confirmedArrivalWindow && <Detail label="Arrival Window" value={b.confirmedArrivalWindow} />}
-                      {b.notes && <div className="col-span-2 md:col-span-3"><Detail label="Notes" value={b.notes} /></div>}
-                    </div>
-                    <div className="mt-3 flex justify-end">
-                      <Link
-                        href="/admin/schedule"
-                        className="text-[13px] font-semibold text-[#1A5FAC] hover:underline"
-                      >
-                        View in Schedule &rarr;
-                      </Link>
-                    </div>
-                  </div>
-                )}
+                <div className="w-px bg-gray-200 self-stretch" />
+
+                {/* Outstanding */}
+                <div className="flex-1 text-center">
+                  <p className="text-[26px] font-bold text-[#0B2040]">
+                    {fmt$(outstanding)}
+                  </p>
+                  <p className="text-xs text-gray-500 mb-0.5">Outstanding</p>
+                  {overdueInvoices.length > 0 && (
+                    <span className="text-xs font-semibold text-red-600">
+                      {overdueInvoices.length} overdue
+                    </span>
+                  )}
+                </div>
+
+                <div className="w-px bg-gray-200 self-stretch" />
+
+                {/* Avg Job Value */}
+                <div className="flex-1 text-center">
+                  <p className="text-[26px] font-bold text-[#0B2040]">
+                    {fmt$(avgJobValue)}
+                  </p>
+                  <p className="text-xs text-gray-500 mb-0.5">Avg Job Value</p>
+                  {/* TODO: compute real trend */}
+                  <span className="text-xs font-semibold text-emerald-600">
+                    +5%
+                  </span>
+                </div>
               </div>
-            );
-          })}
-        </div>
-      )}
 
-      {/* Quick link to see all */}
-      {bookings.length > 5 && (
-        <div className="mt-4 text-center">
-          <Link
-            href="/admin/schedule"
-            className="inline-flex items-center gap-2 px-5 py-2.5 text-[13px] font-semibold text-white bg-[#E07B2D] rounded-lg hover:bg-[#CC6A1F] transition-colors"
-          >
-            View All Bookings
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="5" y1="12" x2="19" y2="12" />
-              <polyline points="12 5 19 12 12 19" />
-            </svg>
-          </Link>
+              {/* Invoice Aging bar */}
+              <div className="mt-4">
+                <p className="text-[11px] font-bold text-gray-500 uppercase mb-1.5">
+                  Invoice Aging
+                </p>
+                <div className="flex h-2.5 rounded-md overflow-hidden gap-0.5">
+                  <div
+                    className="bg-emerald-500 rounded-sm"
+                    style={{
+                      width: `${(currentInvoiceAmount / agingTotal) * 100}%`,
+                    }}
+                  />
+                  {/* TODO: split 30-60 day vs 60+ when data is available */}
+                  <div
+                    className="bg-amber-400 rounded-sm"
+                    style={{ width: "15%" }}
+                  />
+                  <div
+                    className="bg-red-500 rounded-sm"
+                    style={{
+                      width: `${(overdueAmount / agingTotal) * 100}%`,
+                    }}
+                  />
+                </div>
+                <div className="flex justify-between mt-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-sm bg-emerald-500" />
+                    <span className="text-[11px] text-gray-500">
+                      Current {fmt$(currentInvoiceAmount)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-sm bg-amber-400" />
+                    <span className="text-[11px] text-gray-500">30-60 days</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-sm bg-red-500" />
+                    <span className="text-[11px] text-gray-500">
+                      60+ days {fmt$(overdueAmount)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      )}
-    </div>
-  );
-}
-
-function Detail({ label, value, href }: { label: string; value: string; href?: string }) {
-  return (
-    <div>
-      <p className="text-[11px] uppercase font-semibold text-[#888] tracking-[0.5px] mb-0.5">{label}</p>
-      {href ? (
-        <a href={href} className="text-[13px] text-[#1A5FAC] font-medium hover:underline" onClick={(e) => e.stopPropagation()}>{value}</a>
-      ) : (
-        <p className="text-[13px] text-[#0B2040] font-medium">{value}</p>
-      )}
-    </div>
+      </div>
+    </>
   );
 }

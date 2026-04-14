@@ -12,7 +12,7 @@ export default function AdminTopBar({
   children?: ReactNode;
 }) {
   return (
-    <div className="sticky top-0 z-40 bg-white border-b border-gray-200 ml-[230px]">
+    <div className="sticky top-0 z-40 bg-white border-b border-gray-200">
       <div className="flex justify-between items-center px-8 py-3.5">
         {/* Left side */}
         <div>
