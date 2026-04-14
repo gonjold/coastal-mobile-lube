@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import AdminBadge from "./AdminBadge";
 import {
   type Booking,
@@ -9,6 +10,7 @@ import {
   formatTimeWindow,
 } from "@/app/admin/shared";
 import { useAdminModal } from "@/contexts/AdminModalContext";
+import { formatCurrency } from "@/lib/formatCurrency";
 
 const STATUS_STEPS = ["pending", "confirmed", "in-progress", "completed", "invoiced"];
 const STATUS_LABELS: Record<string, string> = {
@@ -26,6 +28,7 @@ function getStatusBadgeVariant(status?: string): "green" | "red" | "amber" | "gr
     case "in-progress": return "teal";
     case "completed": return "green";
     case "cancelled": return "red";
+    case "dead": return "gray";
     default: return "gray";
   }
 }
@@ -57,6 +60,19 @@ export default function ScheduleDetailPanel({
   onAdvance: (bookingId: string, nextStatus: string) => void;
 }) {
   const { openModal } = useAdminModal();
+  const [showDeadReason, setShowDeadReason] = useState(false);
+  const [deadReason, setDeadReason] = useState("");
+  const [customDeadReason, setCustomDeadReason] = useState("");
+
+  const DEAD_REASONS = [
+    "No response",
+    "Not interested",
+    "Chose competitor",
+    "Wrong number",
+    "Budget",
+    "Out of service area",
+    "Other",
+  ];
 
   if (!booking) return null;
 
@@ -72,13 +88,14 @@ export default function ScheduleDetailPanel({
   const division = getDivisionLabel(b);
 
   const price = b.selectedServices?.reduce((sum, s) => sum + (s.price || 0), 0);
-  const priceDisplay = price ? `$${price.toFixed(0)}` : "—";
+  const priceDisplay = price ? formatCurrency(price) : "—";
 
   /* Primary action config */
   let primaryLabel = "";
   let primaryBg = "";
   let primaryNextStatus = "";
   const isCancelled = b.status === "cancelled";
+  const isDead = b.status === "dead";
 
   if (b.status === "pending" || b.status === "new-lead") {
     primaryLabel = "Confirm Booking";
@@ -98,7 +115,7 @@ export default function ScheduleDetailPanel({
     primaryNextStatus = "invoice";
   }
 
-  const showCancel = b.status !== "completed" && b.status !== "cancelled" && b.status !== "invoiced";
+  const showCancel = b.status !== "completed" && b.status !== "cancelled" && b.status !== "invoiced" && b.status !== "dead";
 
   return (
     <>
@@ -213,32 +230,96 @@ export default function ScheduleDetailPanel({
         </div>
 
         {/* Bottom action bar */}
-        <div className="border-t border-gray-200 px-6 py-4 flex gap-2.5">
+        <div className="border-t border-gray-200 px-6 py-4">
           {isCancelled ? (
             <p className="italic text-gray-400 text-sm">This booking was cancelled.</p>
+          ) : isDead ? (
+            <div>
+              <p className="italic text-gray-400 text-sm">This lead has been marked as dead.</p>
+              {(() => {
+                const reason = (b as unknown as Record<string, unknown>).deadReason as string | undefined;
+                if (!reason) return null;
+                return <p className="text-xs text-gray-400 mt-1">Reason: {reason}</p>;
+              })()}
+            </div>
           ) : (
             <>
-              {primaryLabel && (
+              <div className="flex gap-2.5">
+                {primaryLabel && (
+                  <button
+                    onClick={() => {
+                      if (primaryNextStatus === "invoice") {
+                        openModal("invoice", { bookingId: b.id });
+                      } else {
+                        onAdvance(b.id, primaryNextStatus);
+                      }
+                    }}
+                    className={`flex-1 py-2.5 rounded-[10px] text-white text-sm font-semibold cursor-pointer hover:opacity-90 transition ${primaryBg}`}
+                  >
+                    {primaryLabel}
+                  </button>
+                )}
+                {showCancel && (
+                  <button
+                    onClick={() => onAdvance(b.id, "cancelled")}
+                    className="px-5 py-2.5 bg-transparent border border-gray-200 rounded-[10px] text-red-600 text-[13px] font-semibold cursor-pointer hover:bg-red-50 hover:border-red-600 transition"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+
+              {/* Mark as Dead */}
+              {showCancel && !showDeadReason && (
                 <button
-                  onClick={() => {
-                    if (primaryNextStatus === "invoice") {
-                      openModal("invoice", { bookingId: b.id });
-                    } else {
-                      onAdvance(b.id, primaryNextStatus);
-                    }
-                  }}
-                  className={`flex-1 py-2.5 rounded-[10px] text-white text-sm font-semibold cursor-pointer hover:opacity-90 transition ${primaryBg}`}
+                  onClick={() => setShowDeadReason(true)}
+                  className="mt-3 text-xs text-gray-500 cursor-pointer hover:text-red-600 transition"
                 >
-                  {primaryLabel}
+                  Mark as Dead Lead
                 </button>
               )}
-              {showCancel && (
-                <button
-                  onClick={() => onAdvance(b.id, "cancelled")}
-                  className="px-5 py-2.5 bg-transparent border border-gray-200 rounded-[10px] text-red-600 text-[13px] font-semibold cursor-pointer hover:bg-red-50 hover:border-red-600 transition"
-                >
-                  Cancel
-                </button>
+              {showDeadReason && (
+                <div className="mt-3 bg-gray-50 rounded-lg p-3">
+                  <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Dead Reason</p>
+                  <select
+                    value={deadReason}
+                    onChange={(e) => setDeadReason(e.target.value)}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#1A5FAC] bg-white mb-2"
+                  >
+                    <option value="">Select reason...</option>
+                    {DEAD_REASONS.map((r) => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                  {deadReason === "Other" && (
+                    <input
+                      type="text"
+                      value={customDeadReason}
+                      onChange={(e) => setCustomDeadReason(e.target.value)}
+                      placeholder="Custom reason..."
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#1A5FAC] mb-2"
+                    />
+                  )}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        const reason = deadReason === "Other" ? customDeadReason : deadReason;
+                        if (!reason) return;
+                        onAdvance(b.id, `dead:${reason}`);
+                      }}
+                      disabled={!deadReason || (deadReason === "Other" && !customDeadReason)}
+                      className="px-4 py-1.5 bg-gray-600 text-white text-xs font-semibold rounded-lg cursor-pointer hover:bg-gray-700 transition disabled:opacity-50"
+                    >
+                      Confirm
+                    </button>
+                    <button
+                      onClick={() => { setShowDeadReason(false); setDeadReason(""); setCustomDeadReason(""); }}
+                      className="px-4 py-1.5 text-xs text-gray-500 cursor-pointer hover:text-gray-700"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
               )}
             </>
           )}

@@ -1,10 +1,11 @@
 "use client";
 
-interface PipelineRow {
+export interface PipelineRow {
   label: string;
   count: number;
   dotColor: string;
   amount?: string;
+  filterKey?: string;
 }
 
 export default function PipelineCard({
@@ -14,6 +15,7 @@ export default function PipelineCard({
   actionLabel,
   onAction,
   total,
+  onRowClick,
 }: {
   title: string;
   accentColor: string;
@@ -21,6 +23,7 @@ export default function PipelineCard({
   actionLabel: string;
   onAction: () => void;
   total: number;
+  onRowClick?: (filterKey: string) => void;
 }) {
   // Simple sparkline placeholder data
   const sparkData = [3, 5, 2, 7, 4, 6, 5];
@@ -52,6 +55,7 @@ export default function PipelineCard({
         {rows.map((row) => (
           <div
             key={row.label}
+            onClick={() => row.filterKey && onRowClick?.(row.filterKey)}
             className="flex justify-between items-center px-2.5 py-1.5 rounded-lg bg-[#F7F8FA] cursor-pointer hover:bg-[#EEF0F4] transition"
           >
             <div className="flex items-center gap-2">

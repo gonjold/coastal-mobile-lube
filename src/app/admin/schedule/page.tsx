@@ -40,6 +40,7 @@ const STATUS_PILL_COLORS: Record<string, string> = {
   "in-progress": "#0D8A8F",
   completed: "#16A34A",
   cancelled: "#999",
+  dead: "#6B7280",
 };
 
 /* ── Division text colors ── */
@@ -70,6 +71,7 @@ function getStatusBadgeVariant(status?: string): "green" | "red" | "amber" | "gr
     case "in-progress": return "teal";
     case "completed": return "green";
     case "cancelled": return "red";
+    case "dead": return "gray";
     default: return "gray";
   }
 }
@@ -232,6 +234,24 @@ function SchedulePageInner() {
 
   /* ── Status advancement ── */
   async function handleAdvance(bookingId: string, nextStatus: string) {
+    // Handle dead lead with reason
+    if (nextStatus.startsWith("dead:")) {
+      const reason = nextStatus.slice(5);
+      setBookings((prev) =>
+        prev.map((b) => (b.id === bookingId ? { ...b, status: "dead" } : b))
+      );
+      try {
+        await updateDoc(doc(db, "bookings", bookingId), {
+          status: "dead",
+          deadReason: reason,
+          deadDate: new Date().toISOString(),
+          updatedAt: serverTimestamp(),
+        });
+        addToast("Lead marked as dead");
+      } catch { /* onSnapshot will correct */ }
+      return;
+    }
+
     // Optimistic update
     setBookings((prev) =>
       prev.map((b) => (b.id === bookingId ? { ...b, status: nextStatus } : b))
@@ -320,6 +340,7 @@ function SchedulePageInner() {
     { key: "in-progress", label: "In Progress" },
     { key: "completed", label: "Completed" },
     { key: "cancelled", label: "Cancelled" },
+    { key: "dead", label: "Dead" },
   ];
 
   const timeOptions = [
@@ -487,6 +508,7 @@ function SchedulePageInner() {
                     onClick={() => setSelectedBookingId(b.id)}
                     isSelected={selectedBookingId === b.id}
                     gridTemplateColumns={gridCols}
+                    className={b.status === "dead" ? "opacity-50" : ""}
                   >
                     {/* Customer */}
                     <span className="text-sm font-semibold text-[#0B2040] truncate">

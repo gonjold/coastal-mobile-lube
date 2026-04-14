@@ -33,6 +33,7 @@ import CustomerProfilePanel, {
 import { useAdminModal } from "@/contexts/AdminModalContext";
 import { findDuplicates, type DuplicateGroup } from "@/lib/customerDedup";
 import CustomerMergeModal from "@/components/admin/CustomerMergeModal";
+import { formatCurrency } from "@/lib/formatCurrency";
 
 /* ── Types ── */
 
@@ -187,6 +188,15 @@ const COLUMNS: AdminColumn[] = [
 
 const GRID = "2fr 1.5fr 1fr 1fr 1fr 100px 40px";
 
+/* ── DNC Badge ── */
+
+function DNCBadge({ bookings }: { bookings: Booking[] }) {
+  if (!bookings[0]) return null;
+  const prefs = (bookings[0] as unknown as Record<string, unknown>).communicationPreferences as { doNotCall?: boolean; doNotText?: boolean; doNotEmail?: boolean } | undefined;
+  if (!prefs?.doNotCall && !prefs?.doNotText && !prefs?.doNotEmail) return null;
+  return <span className="text-[10px] font-bold text-red-500">DNC</span>;
+}
+
 /* ── Page ── */
 
 export default function CustomersPage() {
@@ -208,6 +218,9 @@ export default function CustomersPage() {
 
   /* Panel & modal */
   const [selectedCustomer, setSelectedCustomer] = useState<EnrichedCustomer | null>(null);
+  const [initialEditMode, setInitialEditMode] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<EnrichedCustomer | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showNewCustomer, setShowNewCustomer] = useState(false);
   const [newCustomer, setNewCustomer] = useState({
     firstName: "",
@@ -433,7 +446,7 @@ export default function CustomersPage() {
         Phone: c.phone || "",
         Email: c.email || "",
         Type: c.type,
-        "Total Spent": `$${c.totalSpent}`,
+        "Total Spent": formatCurrency(c.totalSpent),
         Jobs: c.jobCount,
         Status: c.customerStatus,
       })),
@@ -582,7 +595,7 @@ export default function CustomersPage() {
                             </div>
                           </div>
                           <div className="text-xs text-gray-500 text-right shrink-0">
-                            <div>${(c as EnrichedCustomer).totalSpent?.toLocaleString() ?? 0}</div>
+                            <div>{formatCurrency((c as EnrichedCustomer).totalSpent ?? 0)}</div>
                             <div>{c.totalBookings} job{c.totalBookings !== 1 ? "s" : ""}</div>
                           </div>
                         </div>
@@ -649,8 +662,9 @@ export default function CustomersPage() {
                       {initials}
                     </div>
                     <div className="min-w-0">
-                      <div className="text-sm font-semibold text-[#0B2040] truncate">
+                      <div className="text-sm font-semibold text-[#0B2040] truncate flex items-center gap-1.5">
                         {c.name}
+                        <DNCBadge bookings={c.bookings} />
                       </div>
                       {c.primaryVehicle && (
                         <div className="text-xs text-gray-500 truncate">
@@ -675,7 +689,7 @@ export default function CustomersPage() {
 
                   {/* Total Spent */}
                   <div className="text-center text-sm font-semibold text-[#0B2040]">
-                    ${c.totalSpent.toLocaleString()}
+                    {formatCurrency(c.totalSpent)}
                   </div>
 
                   {/* Jobs */}
@@ -696,12 +710,12 @@ export default function CustomersPage() {
                     </button>
                     {actionMenuKey === c.key && (
                       <div className="absolute right-full top-0 mr-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[160px] z-[50]" onMouseDown={(e) => e.stopPropagation()}>
-                        <button onClick={() => { setSelectedCustomer(c); setActionMenuKey(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">View Profile</button>
-                        <button onClick={() => { setSelectedCustomer(c); setActionMenuKey(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Edit Customer</button>
+                        <button onClick={() => { setInitialEditMode(false); setSelectedCustomer(c); setActionMenuKey(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">View Profile</button>
+                        <button onClick={() => { setInitialEditMode(true); setSelectedCustomer(c); setActionMenuKey(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Edit Customer</button>
                         <button onClick={() => { openModal("booking", { customer: { name: c.name, phone: c.phone, email: c.email, address: c.address } }); setActionMenuKey(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">New Booking</button>
                         <button onClick={() => { openModal("invoice", { customer: { name: c.name, phone: c.phone, email: c.email, address: c.address } }); setActionMenuKey(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">New Invoice</button>
                         <div className="h-px bg-gray-100 my-1" />
-                        <button onClick={() => { setSelectedCustomer(c); setActionMenuKey(null); }} className="block w-full text-left px-4 py-2 text-sm text-red-600 cursor-pointer hover:bg-gray-50 transition">Delete Customer</button>
+                        <button onClick={() => { setDeleteTarget(c); setShowDeleteConfirm(true); setActionMenuKey(null); }} className="block w-full text-left px-4 py-2 text-sm text-red-600 cursor-pointer hover:bg-gray-50 transition">Delete Customer</button>
                       </div>
                     )}
                   </div>
@@ -729,13 +743,15 @@ export default function CustomersPage() {
             notes:
               selectedCustomer.bookings[0]?.notes ||
               selectedCustomer.bookings[0]?.adminNotes,
+            communicationPreferences: (selectedCustomer.bookings[0] as unknown as Record<string, unknown>)?.communicationPreferences as { doNotCall: boolean; doNotText: boolean; doNotEmail: boolean; optOutDate?: string | null; optOutReason?: string | null } | undefined,
           }}
           bookings={selectedCustomer.bookings}
           invoices={selectedCustomer.matchedInvoices}
-          onClose={() => setSelectedCustomer(null)}
-          onDelete={() => setSelectedCustomer(null)}
+          onClose={() => { setSelectedCustomer(null); setInitialEditMode(false); }}
+          onDelete={() => { setSelectedCustomer(null); setInitialEditMode(false); }}
           duplicateGroups={duplicateGroups}
           onMerge={(group) => { setSelectedCustomer(null); setMergeGroup(group); }}
+          initialEditMode={initialEditMode}
         />
       )}
 

@@ -358,6 +358,66 @@ exports.sendConfirmationEmail = onRequest(
 
 // ─── Invoice email sent to CUSTOMER from admin invoicing page ───────
 
+// ─── VIN Decoder proxy (avoids CORS from browser) ────────────────
+
+exports.decodeVIN = onRequest(
+  {
+    region: "us-east1",
+    cors: true,
+  },
+  async (req, res) => {
+    const action = req.query.action || "decode";
+    const vin = req.query.vin;
+    const year = req.query.year;
+    const make = req.query.make;
+
+    try {
+      let url;
+      if (action === "decode") {
+        if (!vin || vin.length !== 17) {
+          res.status(400).json({ error: "Invalid VIN length" });
+          return;
+        }
+        url = `https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValues/${encodeURIComponent(vin)}?format=json`;
+      } else if (action === "makes") {
+        const types = ["car", "truck", "motorcycle"];
+        const results = await Promise.all(
+          types.map(async (type) => {
+            const r = await fetch(
+              `https://vpic.nhtsa.dot.gov/api/vehicles/GetMakesForVehicleType/${type}?format=json`
+            );
+            if (!r.ok) return [];
+            const json = await r.json();
+            return (json.Results || []).map((r) => r.MakeName);
+          })
+        );
+        const all = [...new Set(results.flat().filter(Boolean))].sort((a, b) =>
+          a.localeCompare(b)
+        );
+        res.json({ Results: all });
+        return;
+      } else if (action === "models") {
+        if (!year || !make) {
+          res.status(400).json({ error: "year and make are required" });
+          return;
+        }
+        url = `https://vpic.nhtsa.dot.gov/api/vehicles/GetModelsForMakeYear/make/${encodeURIComponent(make)}/modelyear/${encodeURIComponent(year)}?format=json`;
+      } else {
+        res.status(400).json({ error: "Invalid action" });
+        return;
+      }
+
+      const response = await fetch(url);
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch from NHTSA API" });
+    }
+  }
+);
+
+// ─── Invoice email sent to CUSTOMER from admin invoicing page ───────
+
 exports.sendInvoiceEmail = onRequest(
   {
     region: "us-east1",

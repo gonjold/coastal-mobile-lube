@@ -16,10 +16,12 @@ export interface VehicleInfo {
 
 /* ── VIN Decode ── */
 
+const PROXY_BASE = "https://us-east1-coastal-mobile-lube.cloudfunctions.net/decodeVIN";
+
 export async function decodeVIN(vin: string): Promise<VehicleInfo | null> {
   try {
     const res = await fetch(
-      `https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValues/${encodeURIComponent(vin)}?format=json`,
+      `${PROXY_BASE}?action=decode&vin=${encodeURIComponent(vin)}`,
     );
     if (!res.ok) return null;
     const json = await res.json();
@@ -83,24 +85,10 @@ export function getYears(): string[] {
 
 export async function getMakes(): Promise<string[]> {
   try {
-    const types = ["car", "truck", "motorcycle"];
-    const results = await Promise.all(
-      types.map(async (type) => {
-        const res = await fetch(
-          `https://vpic.nhtsa.dot.gov/api/vehicles/GetMakesForVehicleType/${type}?format=json`,
-        );
-        if (!res.ok) return [];
-        const json = await res.json();
-        return (json.Results || []).map(
-          (r: { MakeName: string }) => r.MakeName,
-        );
-      }),
-    );
-    const all = new Set<string>();
-    results.flat().forEach((name: string) => {
-      if (name) all.add(name);
-    });
-    return Array.from(all).sort((a, b) => a.localeCompare(b));
+    const res = await fetch(`${PROXY_BASE}?action=makes`);
+    if (!res.ok) return [];
+    const json = await res.json();
+    return (json.Results || []) as string[];
   } catch {
     return [];
   }
@@ -112,7 +100,7 @@ export async function getModels(
 ): Promise<string[]> {
   try {
     const res = await fetch(
-      `https://vpic.nhtsa.dot.gov/api/vehicles/GetModelsForMakeYear/make/${encodeURIComponent(make)}/modelyear/${encodeURIComponent(year)}?format=json`,
+      `${PROXY_BASE}?action=models&year=${encodeURIComponent(year)}&make=${encodeURIComponent(make)}`,
     );
     if (!res.ok) return [];
     const json = await res.json();

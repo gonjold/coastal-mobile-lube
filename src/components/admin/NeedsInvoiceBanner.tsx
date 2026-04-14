@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { type Booking, getServiceLabel } from "@/app/admin/shared";
+import { formatCurrency } from "@/lib/formatCurrency";
 
 /* ── Types ── */
 
@@ -38,7 +39,7 @@ export default function NeedsInvoiceBanner({
             {jobs.length} completed job{jobs.length !== 1 ? "s" : ""} ready for invoicing
           </span>
           <span className="text-[13px] font-medium text-amber-800">
-            (${totalAmount.toFixed(2)})
+            ({formatCurrency(totalAmount)})
           </span>
         </div>
         <svg
@@ -79,7 +80,7 @@ export default function NeedsInvoiceBanner({
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-semibold text-[#0B2040]">
-                    ${job.estimatedAmount.toFixed(2)}
+                    {formatCurrency(job.estimatedAmount)}
                   </span>
                   <button
                     onClick={() => onCreateInvoice(job)}

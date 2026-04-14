@@ -74,18 +74,20 @@ export function AdminTableRow({
   onClick,
   isSelected,
   gridTemplateColumns,
+  className,
 }: {
   children: ReactNode;
   onClick?: () => void;
   isSelected?: boolean;
   gridTemplateColumns: string;
+  className?: string;
 }) {
   return (
     <div
       onClick={onClick}
       className={`grid items-center px-5 py-3.5 border-b border-gray-200 cursor-pointer transition ${
         isSelected ? "bg-blue-50" : "bg-white hover:bg-gray-50"
-      }`}
+      } ${className || ""}`}
       style={{ gridTemplateColumns }}
     >
       {children}

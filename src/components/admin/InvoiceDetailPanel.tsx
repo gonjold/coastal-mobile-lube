@@ -1,6 +1,7 @@
 "use client";
 
 import AdminBadge from "./AdminBadge";
+import { formatCurrency } from "@/lib/formatCurrency";
 
 /* ── Types ── */
 
@@ -34,10 +35,6 @@ export interface InvoiceForPanel {
 }
 
 /* ── Helpers ── */
-
-function formatCurrency(n: number): string {
-  return "$" + n.toFixed(2);
-}
 
 function formatDateAbbr(dateStr: string): string {
   if (!dateStr) return "—";

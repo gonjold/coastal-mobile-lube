@@ -27,6 +27,7 @@ import {
   getModels,
   getFuelCategory,
 } from "@/lib/vehicleApi";
+import { formatCurrency } from "@/lib/formatCurrency";
 
 /* ── Time slots: 8:00 AM – 4:30 PM in 30-min increments ── */
 
@@ -523,6 +524,23 @@ export default function NewBookingModal({
             )}
           </div>
 
+          {/* ── DNC Warning ── */}
+          {customer && (() => {
+            const matched = customers.find((c) => c.name === customer.name);
+            const prefs = matched?.bookings[0] && (matched.bookings[0] as unknown as Record<string, unknown>).communicationPreferences as { doNotCall?: boolean; doNotText?: boolean; doNotEmail?: boolean } | undefined;
+            if (!prefs) return null;
+            const flags: string[] = [];
+            if (prefs.doNotCall) flags.push("call");
+            if (prefs.doNotText) flags.push("text");
+            if (prefs.doNotEmail) flags.push("email");
+            if (flags.length === 0) return null;
+            return (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5 text-sm text-amber-800 -mt-2">
+                This customer has opted out of <strong>{flags.join("/")}</strong>. Contact through other channels.
+              </div>
+            );
+          })()}
+
           {/* ── Inline new customer ── */}
           {creatingNewCustomer && !customer && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 -mt-1">
@@ -898,14 +916,14 @@ export default function NewBookingModal({
                       </span>
                     )}
                     <span className={`font-medium ${feeWaived ? "line-through text-gray-400" : ""}`}>
-                      ${feeConfig.amount.toFixed(2)}
+                      {formatCurrency(feeConfig.amount)}
                     </span>
                   </span>
                 </div>
               )}
               <div className="flex justify-between text-sm font-bold text-[#0B2040] pt-2 mt-2 border-t border-gray-200">
                 <span>Total</span>
-                <span>${estimatedTotal.toFixed(2)}</span>
+                <span>{formatCurrency(estimatedTotal)}</span>
               </div>
               {/* Admin waive toggle */}
               {feeConfig?.enabled && (

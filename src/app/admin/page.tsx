@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
 import {
@@ -12,6 +12,7 @@ import {
 import AdminTopBar from "@/components/admin/AdminTopBar";
 import AdminBadge from "@/components/admin/AdminBadge";
 import PipelineCard from "@/components/admin/PipelineCard";
+import DashboardDrilldownModal from "@/components/admin/DashboardDrilldownModal";
 import {
   type Booking,
   getServiceLabel,
@@ -92,6 +93,9 @@ export default function AdminHome() {
     return () => { unsub1(); unsub2(); };
   }, []);
 
+  /* ── Drilldown modal ── */
+  const [drilldown, setDrilldown] = useState<{ title: string; filterKey: string; type: "booking" | "invoice" } | null>(null);
+
   /* ── Today's date ── */
   const now = new Date();
   const todayISO = toISODate(now);
@@ -110,22 +114,23 @@ export default function AdminHome() {
   endOfWeek.setDate(startOfWeek.getDate() + 6);
   endOfWeek.setHours(23, 59, 59, 999);
 
-  /* ── Pipeline counts ── */
-  const newLeads = bookings.filter(
+  /* ── Pipeline counts (exclude dead leads) ── */
+  const activeBookings = bookings.filter((b) => b.status !== "dead");
+  const newLeads = activeBookings.filter(
     (b) => b.status === "new" || b.status === "new-lead" || b.type === "lead",
   ).length;
-  const quoteRequests = bookings.filter(
+  const quoteRequests = activeBookings.filter(
     (b) => (b.source || "").toLowerCase().includes("quote"),
   ).length;
-  const pendingBookings = bookings.filter((b) => b.status === "pending").length;
+  const pendingBookings = activeBookings.filter((b) => b.status === "pending").length;
   const incomingTotal = newLeads + quoteRequests + pendingBookings;
 
-  const confirmedBookings = bookings.filter((b) => b.status === "confirmed").length;
-  const todayBookings = bookings.filter((b) => {
+  const confirmedBookings = activeBookings.filter((b) => b.status === "confirmed").length;
+  const todayBookings = activeBookings.filter((b) => {
     const date = b.confirmedDate || b.preferredDate;
     return date === todayISO && (b.status === "confirmed" || b.status === "in-progress");
   });
-  const weekBookings = bookings.filter((b) => {
+  const weekBookings = activeBookings.filter((b) => {
     const dateStr = b.confirmedDate || b.preferredDate;
     if (!dateStr) return false;
     const d = new Date(dateStr + "T00:00:00");
@@ -133,8 +138,8 @@ export default function AdminHome() {
   }).length;
   const scheduledTotal = confirmedBookings + todayBookings.length + weekBookings;
 
-  const inProgress = bookings.filter((b) => b.status === "in-progress").length;
-  const completedBookings = bookings.filter((b) => b.status === "completed");
+  const inProgress = activeBookings.filter((b) => b.status === "in-progress").length;
+  const completedBookings = activeBookings.filter((b) => b.status === "completed");
   // TODO: wire up "needs invoice" - check for completed bookings without a linked invoiceId
   const needsInvoice = completedBookings.filter(
     (b) => !(b as unknown as Record<string, unknown>).invoiceId,
@@ -169,6 +174,57 @@ export default function AdminHome() {
   if (quoteRequests > 0)
     actionItems.push({ label: `${quoteRequests} quote request${quoteRequests > 1 ? "s" : ""} awaiting response`, urgency: "#1A5FAC", action: "Review", href: "/admin/schedule?filter=pending" });
 
+  /* ── Drilldown filter logic ── */
+  function handleDrilldownClick(filterKey: string) {
+    const filterMap: Record<string, { title: string; type: "booking" | "invoice" }> = {
+      new_leads: { title: "New Leads", type: "booking" },
+      quote_requests: { title: "Quote Requests", type: "booking" },
+      pending_bookings: { title: "Pending Bookings", type: "booking" },
+      confirmed: { title: "Confirmed", type: "booking" },
+      today: { title: "Today", type: "booking" },
+      this_week: { title: "This Week", type: "booking" },
+      in_progress: { title: "In Progress", type: "booking" },
+      needs_invoice: { title: "Needs Invoice", type: "booking" },
+      completed: { title: "Completed", type: "booking" },
+      sent_invoices: { title: "Sent Invoices", type: "invoice" },
+      paid_invoices: { title: "Paid Invoices", type: "invoice" },
+      overdue_invoices: { title: "Overdue Invoices", type: "invoice" },
+    };
+    const info = filterMap[filterKey];
+    if (info) setDrilldown({ ...info, filterKey });
+  }
+
+  const drilldownBookings = useMemo(() => {
+    if (!drilldown || drilldown.type !== "booking") return [];
+    switch (drilldown.filterKey) {
+      case "new_leads": return activeBookings.filter((b) => b.status === "new" || b.status === "new-lead" || b.type === "lead");
+      case "quote_requests": return activeBookings.filter((b) => (b.source || "").toLowerCase().includes("quote"));
+      case "pending_bookings": return activeBookings.filter((b) => b.status === "pending");
+      case "confirmed": return activeBookings.filter((b) => b.status === "confirmed");
+      case "today": return todayBookings;
+      case "this_week": return activeBookings.filter((b) => {
+        const dateStr = b.confirmedDate || b.preferredDate;
+        if (!dateStr) return false;
+        const d = new Date(dateStr + "T00:00:00");
+        return d >= startOfWeek && d <= endOfWeek;
+      });
+      case "in_progress": return activeBookings.filter((b) => b.status === "in-progress");
+      case "needs_invoice": return completedBookings.filter((b) => !(b as unknown as Record<string, unknown>).invoiceId);
+      case "completed": return completedBookings;
+      default: return [];
+    }
+  }, [drilldown, activeBookings, todayBookings, completedBookings, startOfWeek, endOfWeek]);
+
+  const drilldownInvoices = useMemo(() => {
+    if (!drilldown || drilldown.type !== "invoice") return [];
+    switch (drilldown.filterKey) {
+      case "sent_invoices": return sentInvoices;
+      case "paid_invoices": return paidInvoices;
+      case "overdue_invoices": return overdueInvoices;
+      default: return [];
+    }
+  }, [drilldown, sentInvoices, paidInvoices, overdueInvoices]);
+
   /* ── Revenue summary (placeholder data where Firestore doesn't provide) ── */
   // TODO: wire up real revenue aggregation queries from Firestore
   const thisMonthRevenue = sumTotal(paidInvoices);
@@ -201,12 +257,13 @@ export default function AdminHome() {
             accentColor="#1A5FAC"
             total={incomingTotal}
             rows={[
-              { label: "New Leads", count: newLeads, dotColor: "#1A5FAC" },
-              { label: "Quote Requests", count: quoteRequests, dotColor: "#F59E0B", amount: fmt$(sumTotal(sentInvoices)) },
-              { label: "Pending Bookings", count: pendingBookings, dotColor: "#F59E0B" },
+              { label: "New Leads", count: newLeads, dotColor: "#1A5FAC", filterKey: "new_leads" },
+              { label: "Quote Requests", count: quoteRequests, dotColor: "#F59E0B", amount: fmt$(sumTotal(sentInvoices)), filterKey: "quote_requests" },
+              { label: "Pending Bookings", count: pendingBookings, dotColor: "#F59E0B", filterKey: "pending_bookings" },
             ]}
             actionLabel="Review Incoming"
             onAction={() => router.push("/admin/schedule?filter=pending")}
+            onRowClick={handleDrilldownClick}
           />
 
           <PipelineCard
@@ -214,12 +271,13 @@ export default function AdminHome() {
             accentColor="#16A34A"
             total={scheduledTotal}
             rows={[
-              { label: "Confirmed", count: confirmedBookings, dotColor: "#16A34A" },
-              { label: "Today", count: todayBookings.length, dotColor: "#0D8A8F" },
-              { label: "This Week", count: weekBookings, dotColor: "#1A5FAC" },
+              { label: "Confirmed", count: confirmedBookings, dotColor: "#16A34A", filterKey: "confirmed" },
+              { label: "Today", count: todayBookings.length, dotColor: "#0D8A8F", filterKey: "today" },
+              { label: "This Week", count: weekBookings, dotColor: "#1A5FAC", filterKey: "this_week" },
             ]}
             actionLabel="View Schedule"
             onAction={() => router.push("/admin/schedule")}
+            onRowClick={handleDrilldownClick}
           />
 
           <PipelineCard
@@ -227,12 +285,13 @@ export default function AdminHome() {
             accentColor="#E07B2D"
             total={jobsTotal}
             rows={[
-              { label: "In Progress", count: inProgress, dotColor: "#E07B2D" },
-              { label: "Needs Invoice", count: needsInvoice, dotColor: "#dc2626", amount: fmt$(needsInvoice * 150) },
-              { label: "Completed", count: completedCount, dotColor: "#16A34A", amount: fmt$(completedCount * 185) },
+              { label: "In Progress", count: inProgress, dotColor: "#E07B2D", filterKey: "in_progress" },
+              { label: "Needs Invoice", count: needsInvoice, dotColor: "#dc2626", amount: fmt$(needsInvoice * 150), filterKey: "needs_invoice" },
+              { label: "Completed", count: completedCount, dotColor: "#16A34A", amount: fmt$(completedCount * 185), filterKey: "completed" },
             ]}
             actionLabel="Create Invoice"
             onAction={() => router.push("/admin/invoicing")}
+            onRowClick={handleDrilldownClick}
           />
 
           <PipelineCard
@@ -240,12 +299,13 @@ export default function AdminHome() {
             accentColor="#0B2040"
             total={invoiceTotal}
             rows={[
-              { label: "Sent", count: sentInvoices.length, dotColor: "#1A5FAC", amount: fmt$(sumTotal(sentInvoices)) },
-              { label: "Paid", count: paidInvoices.length, dotColor: "#16A34A", amount: fmt$(sumTotal(paidInvoices)) },
-              { label: "Overdue", count: overdueInvoices.length, dotColor: "#dc2626", amount: fmt$(sumTotal(overdueInvoices)) },
+              { label: "Sent", count: sentInvoices.length, dotColor: "#1A5FAC", amount: fmt$(sumTotal(sentInvoices)), filterKey: "sent_invoices" },
+              { label: "Paid", count: paidInvoices.length, dotColor: "#16A34A", amount: fmt$(sumTotal(paidInvoices)), filterKey: "paid_invoices" },
+              { label: "Overdue", count: overdueInvoices.length, dotColor: "#dc2626", amount: fmt$(sumTotal(overdueInvoices)), filterKey: "overdue_invoices" },
             ]}
             actionLabel="View Invoices"
             onAction={() => router.push("/admin/invoicing")}
+            onRowClick={handleDrilldownClick}
           />
         </div>
 
@@ -442,6 +502,19 @@ export default function AdminHome() {
           </div>
         </div>
       </div>
+
+      {/* Drilldown Modal */}
+      {drilldown && (
+        <DashboardDrilldownModal
+          title={drilldown.title}
+          type={drilldown.type}
+          bookings={drilldown.type === "booking" ? drilldownBookings : undefined}
+          invoices={drilldown.type === "invoice" ? drilldownInvoices : undefined}
+          onClose={() => setDrilldown(null)}
+          viewAllHref={drilldown.type === "booking" ? "/admin/schedule" : "/admin/invoicing"}
+          viewAllLabel={drilldown.type === "booking" ? "View All in Schedule" : "View All in Invoicing"}
+        />
+      )}
     </>
   );
 }

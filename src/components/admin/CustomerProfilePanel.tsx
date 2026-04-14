@@ -17,6 +17,7 @@ import {
 } from "@/app/admin/shared";
 import { useAdminModal } from "@/contexts/AdminModalContext";
 import type { DuplicateGroup } from "@/lib/customerDedup";
+import { formatCurrency } from "@/lib/formatCurrency";
 
 /* ── Types ── */
 
@@ -27,6 +28,14 @@ export interface PanelInvoice {
   status: string;
   invoiceDate: string;
   createdAt?: { toDate: () => Date };
+}
+
+export interface CommunicationPreferences {
+  doNotCall: boolean;
+  doNotText: boolean;
+  doNotEmail: boolean;
+  optOutDate?: string | null;
+  optOutReason?: string | null;
 }
 
 export interface CustomerForPanel {
@@ -41,6 +50,7 @@ export interface CustomerForPanel {
   jobCount: number;
   lastVisit: string;
   customerSince: string;
+  communicationPreferences?: CommunicationPreferences;
 }
 
 interface TimelineEntry {
@@ -107,6 +117,7 @@ export default function CustomerProfilePanel({
   onDelete,
   duplicateGroups,
   onMerge,
+  initialEditMode,
 }: {
   customer: CustomerForPanel | null;
   bookings: Booking[];
@@ -115,10 +126,12 @@ export default function CustomerProfilePanel({
   onDelete?: () => void;
   duplicateGroups?: DuplicateGroup[];
   onMerge?: (group: DuplicateGroup) => void;
+  initialEditMode?: boolean;
 }) {
   const { openModal } = useAdminModal();
-  const [activeTab, setActiveTab] = useState<"timeline" | "details" | "vehicles">("timeline");
+  const [activeTab, setActiveTab] = useState<"timeline" | "details" | "vehicles">(initialEditMode ? "details" : "timeline");
   const [timelineFilter, setTimelineFilter] = useState<"all" | "bookings" | "invoices" | "comms">("all");
+  const [vehicleFilter, setVehicleFilter] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -193,14 +206,15 @@ export default function CustomerProfilePanel({
 
   if (!customer) return null;
 
-  const filteredTimeline = timelineFilter === "all"
-    ? timeline
-    : timeline.filter((e) => {
-        if (timelineFilter === "bookings") return e.type === "booking";
-        if (timelineFilter === "invoices") return e.type === "invoice";
-        if (timelineFilter === "comms") return e.type === "comm";
-        return true;
-      });
+  const filteredTimeline = timeline.filter((e) => {
+    if (timelineFilter !== "all") {
+      if (timelineFilter === "bookings" && e.type !== "booking") return false;
+      if (timelineFilter === "invoices" && e.type !== "invoice") return false;
+      if (timelineFilter === "comms" && e.type !== "comm") return false;
+    }
+    if (vehicleFilter && e.vehicle !== vehicleFilter) return false;
+    return true;
+  });
 
   /* Avatar initials */
   const nameParts = customer.name.split(/\s+/).filter(Boolean);
@@ -274,7 +288,7 @@ export default function CustomerProfilePanel({
           {/* Quick stats */}
           <div className="mt-4 bg-[#F7F8FA] rounded-[10px] overflow-hidden flex">
             {[
-              { label: "Total Spent", value: customer.totalSpent > 0 ? `$${customer.totalSpent.toLocaleString()}` : "$0" },
+              { label: "Total Spent", value: formatCurrency(customer.totalSpent) },
               { label: "Jobs", value: String(customer.jobCount) },
               { label: "Last Visit", value: customer.lastVisit || "Not yet" },
             ].map((stat, i) => (
@@ -313,6 +327,8 @@ export default function CustomerProfilePanel({
               entries={filteredTimeline}
               filter={timelineFilter}
               onFilterChange={setTimelineFilter}
+              vehicleFilter={vehicleFilter}
+              onClearVehicleFilter={() => setVehicleFilter(null)}
             />
           )}
           {activeTab === "details" && (
@@ -320,10 +336,18 @@ export default function CustomerProfilePanel({
               customer={customer}
               bookings={bookings}
               onShowDelete={() => setShowDeleteConfirm(true)}
+              initialEditMode={initialEditMode}
             />
           )}
           {activeTab === "vehicles" && (
-            <VehiclesTab vehicles={vehicles} bookings={bookings} />
+            <VehiclesTab
+              vehicles={vehicles}
+              bookings={bookings}
+              onViewHistory={(vehicleName) => {
+                setActiveTab("timeline");
+                setVehicleFilter(vehicleName);
+              }}
+            />
           )}
         </div>
 
@@ -435,10 +459,14 @@ function TimelineTab({
   entries,
   filter,
   onFilterChange,
+  vehicleFilter,
+  onClearVehicleFilter,
 }: {
   entries: TimelineEntry[];
   filter: string;
   onFilterChange: (f: "all" | "bookings" | "invoices" | "comms") => void;
+  vehicleFilter?: string | null;
+  onClearVehicleFilter?: () => void;
 }) {
   const pills: { key: "all" | "bookings" | "invoices" | "comms"; label: string }[] = [
     { key: "all", label: "All" },
@@ -449,6 +477,21 @@ function TimelineTab({
 
   return (
     <>
+      {/* Vehicle filter chip */}
+      {vehicleFilter && (
+        <div className="flex items-center gap-1.5 mb-3">
+          <span className="inline-flex items-center gap-1.5 bg-[#EBF4FF] text-[#1A5FAC] text-xs font-semibold px-2.5 py-1.5 rounded-md">
+            {vehicleFilter}
+            <button
+              onClick={onClearVehicleFilter}
+              className="text-[#1A5FAC] hover:text-[#0B2040] cursor-pointer"
+            >
+              ✕
+            </button>
+          </span>
+        </div>
+      )}
+
       {/* Filter pills */}
       <div className="flex gap-1.5 mb-4">
         {pills.map((pill) => (
@@ -489,7 +532,7 @@ function TimelineTab({
                 <span className="text-[13px] font-semibold text-[#0B2040]">{entry.title}</span>
                 {entry.amount != null && entry.amount > 0 && (
                   <span className="text-[13px] font-semibold text-[#0B2040]">
-                    ${entry.amount.toLocaleString()}
+                    {formatCurrency(entry.amount)}
                   </span>
                 )}
               </div>
@@ -527,12 +570,14 @@ function DetailsTab({
   customer,
   bookings,
   onShowDelete,
+  initialEditMode,
 }: {
   customer: CustomerForPanel;
   bookings: Booking[];
   onShowDelete: () => void;
+  initialEditMode?: boolean;
 }) {
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(!!initialEditMode);
   const [editForm, setEditForm] = useState({
     name: customer.name,
     phone: customer.phone || "",
@@ -714,6 +759,56 @@ function DetailsTab({
         </p>
       </div>
 
+      {/* Communication Preferences */}
+      <p className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.06em] mb-3 mt-6">Communication Preferences</p>
+      <div className="flex flex-col gap-2.5">
+        {([
+          { key: "doNotCall" as const, label: "Do Not Call" },
+          { key: "doNotText" as const, label: "Do Not Text" },
+          { key: "doNotEmail" as const, label: "Do Not Email" },
+        ]).map((pref) => {
+          const isOn = customer.communicationPreferences?.[pref.key] ?? false;
+          return (
+            <div key={pref.key} className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-[13px] text-[#0B2040]">{pref.label}</span>
+                {isOn && customer.communicationPreferences?.optOutDate && (
+                  <span className="text-[10px] text-gray-400">(opted out {customer.communicationPreferences.optOutDate})</span>
+                )}
+              </div>
+              <button
+                onClick={async () => {
+                  const newVal = !isOn;
+                  const prefs = {
+                    doNotCall: customer.communicationPreferences?.doNotCall ?? false,
+                    doNotText: customer.communicationPreferences?.doNotText ?? false,
+                    doNotEmail: customer.communicationPreferences?.doNotEmail ?? false,
+                    [pref.key]: newVal,
+                    optOutDate: newVal ? new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : customer.communicationPreferences?.optOutDate || null,
+                    optOutReason: null,
+                  };
+                  try {
+                    const { writeBatch, doc, serverTimestamp } = await import("firebase/firestore");
+                    const { db } = await import("@/lib/firebase");
+                    const batch = writeBatch(db);
+                    bookings.forEach((b) => {
+                      batch.update(doc(db, "bookings", b.id), {
+                        communicationPreferences: prefs,
+                        updatedAt: serverTimestamp(),
+                      });
+                    });
+                    await batch.commit();
+                  } catch { /* silent */ }
+                }}
+                className={`w-9 h-5 rounded-full relative transition cursor-pointer ${isOn ? "bg-red-500" : "bg-gray-200"}`}
+              >
+                <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${isOn ? "translate-x-4" : "translate-x-0.5"}`} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
       {/* Delete Customer */}
       <button
         onClick={onShowDelete}
@@ -730,9 +825,11 @@ function DetailsTab({
 function VehiclesTab({
   vehicles,
   bookings,
+  onViewHistory,
 }: {
   vehicles: { name: string; bookingCount: number }[];
   bookings: Booking[];
+  onViewHistory?: (vehicleName: string) => void;
 }) {
   const [showAddInput, setShowAddInput] = useState(false);
   const [newVehicle, setNewVehicle] = useState("");
@@ -778,7 +875,10 @@ function VehiclesTab({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button className="px-3.5 py-1.5 rounded-md border border-gray-200 bg-white text-xs font-semibold text-[#1A5FAC] cursor-pointer hover:bg-gray-50 transition">
+            <button
+              onClick={() => onViewHistory?.(v.name)}
+              className="px-3.5 py-1.5 rounded-md border border-gray-200 bg-white text-xs font-semibold text-[#1A5FAC] cursor-pointer hover:bg-gray-50 transition"
+            >
               View History
             </button>
             {removingVehicle === v.name ? (

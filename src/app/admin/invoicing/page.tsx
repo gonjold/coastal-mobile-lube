@@ -30,6 +30,7 @@ import AdminBadge from "@/components/admin/AdminBadge";
 import InvoiceDetailPanel, { type InvoiceForPanel } from "@/components/admin/InvoiceDetailPanel";
 import NeedsInvoiceBanner, { type CompletedJob } from "@/components/admin/NeedsInvoiceBanner";
 import { useAdminModal } from "@/contexts/AdminModalContext";
+import { formatCurrency } from "@/lib/formatCurrency";
 
 /* ─── Types ───────────────────────────────────────────────── */
 
@@ -115,10 +116,6 @@ function recalcTotals(form: InvoiceFormData): InvoiceFormData {
   const taxAmount = Math.round(subtotal * (form.taxRate / 100) * 100) / 100;
   const total = Math.round((subtotal + taxAmount) * 100) / 100;
   return { ...form, lineItems, subtotal, taxAmount, total };
-}
-
-function formatCurrency(n: number): string {
-  return "$" + n.toFixed(2);
 }
 
 function formatDateAbbr(dateStr: string): string {
@@ -904,6 +901,22 @@ function InvoicingPageInner() {
     }
   }
 
+  /* ── Revert to Sent ── */
+  async function handleRevertToSent(invoiceId: string) {
+    try {
+      await updateDoc(doc(db, "invoices", invoiceId), {
+        status: "sent",
+        paidDate: null,
+        paidAmount: null,
+        updatedAt: serverTimestamp(),
+      });
+      setSelectedInvoice(null);
+      addToast("Invoice reverted to sent");
+    } catch {
+      addToast("Error updating invoice", "info");
+    }
+  }
+
   /* ── Send / Resend invoice email ── */
   async function handleSendInvoice(inv: Invoice | InvoiceForPanel) {
     if (!inv.customerEmail) {
@@ -1197,6 +1210,9 @@ function InvoicingPageInner() {
                         <button onClick={() => { setSelectedInvoice(inv); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Edit Invoice</button>
                         {(inv.status === "sent" || inv.status === "overdue") && (
                           <button onClick={() => { handleMarkPaid(inv.id); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Mark as Paid</button>
+                        )}
+                        {inv.status === "paid" && (
+                          <button onClick={() => { handleRevertToSent(inv.id); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Revert to Sent</button>
                         )}
                         {(inv.status === "sent" || inv.status === "overdue") && (
                           <button onClick={() => { handleSendInvoice(inv); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Resend</button>
