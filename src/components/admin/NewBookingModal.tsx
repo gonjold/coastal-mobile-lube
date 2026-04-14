@@ -580,116 +580,6 @@ export default function NewBookingModal({
             </div>
           )}
 
-          {/* ── Services ── */}
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
-              Service <span className="text-red-500">*</span>
-            </label>
-
-            {/* Selected service pills */}
-            {selectedServices.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {selectedServices.map((s) => (
-                  <span
-                    key={s.id}
-                    className="inline-flex items-center gap-1 bg-[#F0F7FF] text-[#1A5FAC] text-xs font-medium px-2.5 py-1.5 rounded-md"
-                  >
-                    {s.name}{" "}
-                    <span className="text-[#1A5FAC]/60">
-                      ${s.price}
-                    </span>
-                    <button
-                      onClick={() => removeService(s.id)}
-                      className="text-[#1A5FAC] hover:text-red-500 cursor-pointer ml-0.5"
-                    >
-                      ✕
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-
-            <div ref={serviceRef} className="relative">
-              <button
-                onClick={() => setShowServiceDropdown((p) => !p)}
-                className={`${inputCls} text-left text-gray-500 cursor-pointer`}
-              >
-                {selectedServices.length === 0
-                  ? "Select services..."
-                  : "+ Add another service"}
-              </button>
-              {showServiceDropdown && (
-                <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-[280px] overflow-y-auto">
-                  {DIVISIONS.map((div) => {
-                    const divServices = servicesByDivision[div];
-                    if (!divServices?.length) return null;
-
-                    /* Annotate and sort services based on fuelCategory */
-                    const annotated = divServices.map((s) => {
-                      const name = s.name.toLowerCase();
-                      const isDieselService = name.includes("diesel");
-                      const isOilChange = name.includes("oil change") || name.includes("oil service");
-                      let annotation = "";
-                      let dimmed = false;
-
-                      if (fuelCategory === "diesel") {
-                        if (isDieselService) annotation = "Recommended for diesel";
-                      } else if (fuelCategory === "electric") {
-                        if (isOilChange || isDieselService) { annotation = "Not compatible"; dimmed = true; }
-                      } else if (fuelCategory === "hybrid") {
-                        if (isDieselService) { annotation = "Not compatible"; dimmed = true; }
-                      } else {
-                        if (isDieselService) { annotation = "Diesel vehicles only"; dimmed = true; }
-                      }
-                      return { service: s, annotation, dimmed };
-                    });
-
-                    /* Sort: non-dimmed first */
-                    annotated.sort((a, b) => (a.dimmed === b.dimmed ? 0 : a.dimmed ? 1 : -1));
-
-                    return (
-                      <div key={div}>
-                        <div className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50 sticky top-0">
-                          {div === "Auto"
-                            ? "Automotive"
-                            : div}
-                        </div>
-                        {annotated.map(({ service: s, annotation, dimmed }) => {
-                          const isSelected = selectedServices.some(
-                            (sel) => sel.id === s.id,
-                          );
-                          return (
-                            <button
-                              key={s.id}
-                              onClick={() => toggleService(s)}
-                              className={`block w-full text-left px-4 py-2.5 text-sm cursor-pointer border-b border-gray-50 ${
-                                isSelected
-                                  ? "bg-[#EBF4FF] text-[#1A5FAC] font-medium"
-                                  : dimmed
-                                    ? "text-gray-400"
-                                    : "text-[#0B2040] hover:bg-gray-50"
-                              }`}
-                            >
-                              <span>{s.name}</span>
-                              {annotation && (
-                                <span className={`ml-2 text-[10px] font-semibold ${dimmed ? "text-gray-400" : "text-green-600"}`}>
-                                  {annotation}
-                                </span>
-                              )}
-                              <span className="float-right text-gray-500">
-                                ${s.price}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-
           {/* ── Vehicle ── */}
           <div>
             <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
@@ -807,6 +697,116 @@ export default function NewBookingModal({
                 <option value="Hybrid">Hybrid</option>
                 <option value="Electric">Electric</option>
               </select>
+            </div>
+          </div>
+
+          {/* ── Services ── */}
+          <div>
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
+              Service <span className="text-red-500">*</span>
+            </label>
+
+            {/* Selected service pills */}
+            {selectedServices.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {selectedServices.map((s) => (
+                  <span
+                    key={s.id}
+                    className="inline-flex items-center gap-1 bg-[#F0F7FF] text-[#1A5FAC] text-xs font-medium px-2.5 py-1.5 rounded-md"
+                  >
+                    {s.name}{" "}
+                    <span className="text-[#1A5FAC]/60">
+                      ${s.price}
+                    </span>
+                    <button
+                      onClick={() => removeService(s.id)}
+                      className="text-[#1A5FAC] hover:text-red-500 cursor-pointer ml-0.5"
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div ref={serviceRef} className="relative">
+              <button
+                onClick={() => setShowServiceDropdown((p) => !p)}
+                className={`${inputCls} text-left text-gray-500 cursor-pointer`}
+              >
+                {selectedServices.length === 0
+                  ? "Select services..."
+                  : "+ Add another service"}
+              </button>
+              {showServiceDropdown && (
+                <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-[280px] overflow-y-auto">
+                  {DIVISIONS.map((div) => {
+                    const divServices = servicesByDivision[div];
+                    if (!divServices?.length) return null;
+
+                    /* Annotate and sort services based on fuelCategory */
+                    const annotated = divServices.map((s) => {
+                      const name = s.name.toLowerCase();
+                      const isDieselService = name.includes("diesel");
+                      const isOilChange = name.includes("oil change") || name.includes("oil service");
+                      let annotation = "";
+                      let dimmed = false;
+
+                      if (fuelCategory === "diesel") {
+                        if (isDieselService) annotation = "Recommended for diesel";
+                      } else if (fuelCategory === "electric") {
+                        if (isOilChange || isDieselService) { annotation = "Not compatible"; dimmed = true; }
+                      } else if (fuelCategory === "hybrid") {
+                        if (isDieselService) { annotation = "Not compatible"; dimmed = true; }
+                      } else {
+                        if (isDieselService) { annotation = "Diesel vehicles only"; dimmed = true; }
+                      }
+                      return { service: s, annotation, dimmed };
+                    });
+
+                    /* Sort: non-dimmed first */
+                    annotated.sort((a, b) => (a.dimmed === b.dimmed ? 0 : a.dimmed ? 1 : -1));
+
+                    return (
+                      <div key={div}>
+                        <div className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50 sticky top-0">
+                          {div === "Auto"
+                            ? "Automotive"
+                            : div}
+                        </div>
+                        {annotated.map(({ service: s, annotation, dimmed }) => {
+                          const isSelected = selectedServices.some(
+                            (sel) => sel.id === s.id,
+                          );
+                          return (
+                            <button
+                              key={s.id}
+                              onClick={() => toggleService(s)}
+                              className={`block w-full text-left px-4 py-2.5 text-sm cursor-pointer border-b border-gray-50 ${
+                                isSelected
+                                  ? "bg-[#EBF4FF] text-[#1A5FAC] font-medium"
+                                  : dimmed
+                                    ? "text-gray-400"
+                                    : "text-[#0B2040] hover:bg-gray-50"
+                              }`}
+                            >
+                              <span>{s.name}</span>
+                              {annotation && (
+                                <span className={`ml-2 text-[10px] font-semibold ${dimmed ? "text-gray-400" : "text-green-600"}`}>
+                                  {annotation}
+                                </span>
+                              )}
+                              <span className="float-right text-gray-500">
+                                ${s.price}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 

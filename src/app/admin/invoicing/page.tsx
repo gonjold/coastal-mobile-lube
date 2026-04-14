@@ -389,6 +389,7 @@ function InvoicingPageInner() {
 
   /* Filter & sort */
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [invoiceSearch, setInvoiceSearch] = useState("");
   const [sortKey, setSortKey] = useState<string>("invoiceDate");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
@@ -482,6 +483,16 @@ function InvoicingPageInner() {
   const filtered = useMemo(() => {
     let list = statusFilter === "all" ? invoices : invoices.filter((i) => i.status === statusFilter);
 
+    // Text search filter
+    if (invoiceSearch.trim()) {
+      const q = invoiceSearch.toLowerCase().trim();
+      list = list.filter((i) =>
+        i.invoiceNumber.toLowerCase().includes(q) ||
+        i.customerName.toLowerCase().includes(q) ||
+        (i.lineItems[0]?.serviceName || "").toLowerCase().includes(q)
+      );
+    }
+
     list = [...list].sort((a, b) => {
       let aVal: string | number = "";
       let bVal: string | number = "";
@@ -503,7 +514,7 @@ function InvoicingPageInner() {
     });
 
     return list;
-  }, [invoices, statusFilter, sortKey, sortDir]);
+  }, [invoices, statusFilter, invoiceSearch, sortKey, sortDir]);
 
   /* ── Sort handler ── */
   function handleSort(key: string) {
@@ -1093,6 +1104,15 @@ function InvoicingPageInner() {
             );
           })}
         </div>
+
+        {/* Search filter */}
+        <input
+          type="text"
+          value={invoiceSearch}
+          onChange={(e) => setInvoiceSearch(e.target.value)}
+          placeholder="Filter invoices..."
+          className="border border-gray-200 rounded-lg px-3 py-2 text-sm w-[200px] outline-none focus:border-[#1A5FAC] transition"
+        />
 
         {/* Right side actions */}
         <div className="ml-auto flex gap-3">

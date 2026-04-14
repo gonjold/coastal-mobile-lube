@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import AdminBadge from "./AdminBadge";
 import { type Booking, getServiceLabel, getBookingCalendarDate } from "@/app/admin/shared";
 import { formatCurrency } from "@/lib/formatCurrency";
+import { useAdminModal } from "@/contexts/AdminModalContext";
 
 interface DrilldownInvoice {
   id: string;
@@ -47,6 +48,7 @@ export default function DashboardDrilldownModal({
   viewAllLabel: string;
 }) {
   const router = useRouter();
+  const { openModal } = useAdminModal();
   const records = type === "booking" ? (bookings || []) : (invoices || []);
   const count = records.length;
 
@@ -90,7 +92,23 @@ export default function DashboardDrilldownModal({
                   className="px-6 py-3.5 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition flex items-center justify-between"
                 >
                   <div className="min-w-0">
-                    <div className="text-sm font-semibold text-[#0B2040]">{b.name || b.customerName || "—"}</div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onClose();
+                        openModal("customer-profile", {
+                          customer: {
+                            name: b.name || b.customerName || "",
+                            phone: b.phone || b.customerPhone,
+                            email: b.email || b.customerEmail,
+                            address: b.address,
+                          },
+                        });
+                      }}
+                      className="text-sm font-semibold text-[#1A5FAC] hover:underline cursor-pointer"
+                    >
+                      {b.name || b.customerName || "—"}
+                    </button>
                     <div className="text-xs text-gray-500 mt-0.5">
                       {getServiceLabel(b)}{vehicle ? ` · ${vehicle}` : ""} · {dateDisplay}
                     </div>

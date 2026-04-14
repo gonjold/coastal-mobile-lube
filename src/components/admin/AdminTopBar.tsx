@@ -6,6 +6,7 @@ import { db } from "@/lib/firebase";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { formatCurrency } from "@/lib/formatCurrency";
 import { type Booking, buildCustomerList, formatPhone, getServiceLabel } from "@/app/admin/shared";
+import { useAdminModal } from "@/contexts/AdminModalContext";
 
 /* ── Types for global search ── */
 interface SearchInvoice {
@@ -81,6 +82,7 @@ export default function AdminTopBar({
 
 function GlobalSearchBar() {
   const router = useRouter();
+  const { openModal } = useAdminModal();
   const [query_, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -191,7 +193,14 @@ function GlobalSearchBar() {
                   onClick={() => {
                     setOpen(false);
                     setQuery("");
-                    router.push(`/admin/customers?search=${encodeURIComponent(c.name)}`);
+                    openModal("customer-profile", {
+                      customer: {
+                        name: c.name,
+                        phone: c.phone,
+                        email: c.email,
+                        address: c.address,
+                      },
+                    });
                   }}
                   className="block w-full text-left px-4 py-2.5 cursor-pointer hover:bg-gray-50"
                 >

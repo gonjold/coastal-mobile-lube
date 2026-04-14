@@ -22,11 +22,11 @@ export interface ModalPreFill {
 }
 
 interface AdminModalContextValue {
-  activeModal: "booking" | "customer" | "invoice" | null;
+  activeModal: "booking" | "customer" | "invoice" | "customer-profile" | null;
   prefillData: ModalPreFill | null;
   preFill: ModalPreFill | null;
   openModal: (
-    type: "booking" | "customer" | "invoice",
+    type: "booking" | "customer" | "invoice" | "customer-profile",
     data?: ModalPreFill,
   ) => void;
   closeModal: () => void;
@@ -41,13 +41,13 @@ const AdminModalContext = createContext<AdminModalContextValue | null>(null);
 export function AdminModalProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [activeModal, setActiveModal] = useState<
-    "booking" | "customer" | "invoice" | null
+    "booking" | "customer" | "invoice" | "customer-profile" | null
   >(null);
   const [preFill, setPreFill] = useState<ModalPreFill | null>(null);
 
   const openModal = useCallback(
     (
-      type: "booking" | "customer" | "invoice",
+      type: "booking" | "customer" | "invoice" | "customer-profile",
       data?: ModalPreFill,
     ) => {
       if (type === "invoice") {

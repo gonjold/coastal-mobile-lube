@@ -110,6 +110,20 @@ function SchedulePageInner() {
   /* Calendar day */
   const [calendarDay, setCalendarDay] = useState(toISODate(new Date()));
 
+  /* Search filter */
+  const [searchFilter, setSearchFilter] = useState("");
+
+  /* Action menu */
+  const [actionMenuId, setActionMenuId] = useState<string | null>(null);
+  const [deadReasonMenuId, setDeadReasonMenuId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!actionMenuId) return;
+    function handleClick() { setActionMenuId(null); setDeadReasonMenuId(null); }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [actionMenuId]);
+
   /* Sort */
   const [sortKey, setSortKey] = useState("date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -188,6 +202,15 @@ function SchedulePageInner() {
     // Division filter
     if (divisionFilter !== "all") {
       if (getDivision(b) !== divisionFilter) return false;
+    }
+
+    // Text search filter
+    if (searchFilter.trim()) {
+      const q = searchFilter.toLowerCase().trim();
+      const name = (b.name || b.customerName || "").toLowerCase();
+      const service = (getServiceLabel(b) || "").toLowerCase();
+      const vehicle = [b.vehicleYear, b.vehicleMake, b.vehicleModel].filter(Boolean).join(" ").toLowerCase();
+      if (!name.includes(q) && !service.includes(q) && !vehicle.includes(q)) return false;
     }
 
     return true;
@@ -328,8 +351,19 @@ function SchedulePageInner() {
     { key: "date", label: "Date", align: "center" as const, sortable: true },
     { key: "division", label: "Division", align: "center" as const, sortable: true },
     { key: "status", label: "Status", align: "center" as const, sortable: true },
+    { key: "actions", label: "", align: "center" as const, sortable: false },
   ];
-  const gridCols = "2fr 2fr 1.5fr 1fr 0.8fr 0.8fr";
+  const gridCols = "2fr 2fr 1.5fr 1fr 0.8fr 0.8fr 40px";
+
+  const DEAD_REASONS = [
+    "No response",
+    "Not interested",
+    "Chose competitor",
+    "Wrong number",
+    "Budget",
+    "Out of service area",
+    "Other",
+  ];
 
   /* ── Status filter options ── */
   const statusOptions = [
@@ -446,6 +480,15 @@ function SchedulePageInner() {
             ))}
           </div>
 
+          {/* Search filter */}
+          <input
+            type="text"
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+            placeholder="Filter bookings..."
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm w-[200px] outline-none focus:border-[#1A5FAC] transition"
+          />
+
           {/* List / Calendar toggle */}
           <div className="flex items-center bg-[#F7F8FA] rounded-lg p-0.5 border border-gray-200 ml-auto">
             {(["list", "calendar"] as const).map((mode) => (
@@ -530,6 +573,66 @@ function SchedulePageInner() {
                         label={b.status || "—"}
                         variant={getStatusBadgeVariant(b.status)}
                       />
+                    </div>
+
+                    {/* Actions */}
+                    <div className="relative flex justify-center" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setActionMenuId(actionMenuId === b.id ? null : b.id); setDeadReasonMenuId(null); }}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer hover:bg-gray-100 transition"
+                      >
+                        <span className="text-lg text-gray-400 leading-none">&#8942;</span>
+                      </button>
+                      {actionMenuId === b.id && (
+                        <div className="absolute right-full top-0 mr-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[180px] z-[50]" onMouseDown={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => { setSelectedBookingId(b.id); setActionMenuId(null); }}
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition"
+                          >
+                            View Details
+                          </button>
+                          {(b.status === "pending" || b.status === "new-lead" || b.type === "lead") && (
+                            <button
+                              onClick={() => { handleAdvance(b.id, "confirmed"); setActionMenuId(null); }}
+                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition"
+                            >
+                              Confirm
+                            </button>
+                          )}
+                          <div className="relative">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setDeadReasonMenuId(deadReasonMenuId === b.id ? null : b.id); }}
+                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition"
+                            >
+                              Mark as Dead
+                            </button>
+                            {deadReasonMenuId === b.id && (
+                              <div className="border-t border-gray-100 bg-gray-50 py-1">
+                                {DEAD_REASONS.map((reason) => (
+                                  <button
+                                    key={reason}
+                                    onClick={() => { handleAdvance(b.id, `dead:${reason}`); setActionMenuId(null); setDeadReasonMenuId(null); }}
+                                    className="block w-full text-left px-6 py-1.5 text-xs text-gray-600 cursor-pointer hover:bg-gray-100 transition"
+                                  >
+                                    {reason}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          {b.status !== "cancelled" && b.status !== "dead" && (
+                            <>
+                              <div className="h-px bg-gray-100 my-1" />
+                              <button
+                                onClick={() => { handleAdvance(b.id, "cancelled"); setActionMenuId(null); }}
+                                className="block w-full text-left px-4 py-2 text-sm text-red-600 cursor-pointer hover:bg-gray-50 transition"
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </AdminTableRow>
                 );
