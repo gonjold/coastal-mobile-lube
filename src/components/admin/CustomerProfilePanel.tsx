@@ -16,6 +16,7 @@ import {
   getSourceLabel,
 } from "@/app/admin/shared";
 import { useAdminModal } from "@/contexts/AdminModalContext";
+import type { DuplicateGroup } from "@/lib/customerDedup";
 
 /* ── Types ── */
 
@@ -104,12 +105,16 @@ export default function CustomerProfilePanel({
   invoices,
   onClose,
   onDelete,
+  duplicateGroups,
+  onMerge,
 }: {
   customer: CustomerForPanel | null;
   bookings: Booking[];
   invoices: PanelInvoice[];
   onClose: () => void;
   onDelete?: () => void;
+  duplicateGroups?: DuplicateGroup[];
+  onMerge?: (group: DuplicateGroup) => void;
 }) {
   const { openModal } = useAdminModal();
   const [activeTab, setActiveTab] = useState<"timeline" | "details" | "vehicles">("timeline");
@@ -203,6 +208,20 @@ export default function CustomerProfilePanel({
     ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase()
     : (nameParts[0]?.[0] || "?").toUpperCase();
 
+  // Find duplicate group for this customer
+  const dupGroup = duplicateGroups?.find((g) =>
+    g.customers.some(
+      (c) =>
+        c.name === customer.name &&
+        c.phone === customer.phone &&
+        c.email === customer.email,
+    ),
+  );
+  const dupOther = dupGroup?.customers.find(
+    (c) =>
+      !(c.name === customer.name && c.phone === customer.phone && c.email === customer.email),
+  );
+
   const isCommercial = customer.type === "Commercial";
   const avatarBg = isCommercial ? "bg-[#1A5FAC]" : "bg-[#0B2040]";
   const typeBadgeVariant: "blue" | "gray" = isCommercial ? "blue" : "gray";
@@ -237,6 +256,14 @@ export default function CustomerProfilePanel({
                   <AdminBadge label={customer.type} variant={typeBadgeVariant} />
                   <AdminBadge label={customer.status} variant={statusBadgeVariant} />
                 </div>
+                {dupOther && dupGroup && onMerge && (
+                  <button
+                    onClick={() => onMerge(dupGroup)}
+                    className="text-xs text-blue-600 cursor-pointer hover:underline mt-1"
+                  >
+                    Possible duplicate of {dupOther.name}
+                  </button>
+                )}
               </div>
             </div>
             <button onClick={onClose} className="text-xl text-gray-500 cursor-pointer hover:text-gray-700 transition p-1">

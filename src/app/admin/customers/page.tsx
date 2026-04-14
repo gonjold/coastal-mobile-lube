@@ -31,6 +31,8 @@ import CustomerProfilePanel, {
   type PanelInvoice,
 } from "@/components/admin/CustomerProfilePanel";
 import { useAdminModal } from "@/contexts/AdminModalContext";
+import { findDuplicates, type DuplicateGroup } from "@/lib/customerDedup";
+import CustomerMergeModal from "@/components/admin/CustomerMergeModal";
 
 /* ── Types ── */
 
@@ -296,6 +298,14 @@ export default function CustomersPage() {
     });
   }, [bookings, invoices]);
 
+  /* ── Duplicate detection ── */
+  const duplicateGroups = useMemo(
+    () => findDuplicates(enrichedCustomers),
+    [enrichedCustomers],
+  );
+  const [dupExpanded, setDupExpanded] = useState(false);
+  const [mergeGroup, setMergeGroup] = useState<DuplicateGroup | null>(null);
+
   /* ── Filter + search + sort ── */
   const filteredCustomers = useMemo(() => {
     let list = enrichedCustomers;
@@ -517,6 +527,83 @@ export default function CustomersPage() {
         </div>
       </div>
 
+      {/* ═══ Possible Duplicates Banner ═══ */}
+      {duplicateGroups.length > 0 && (
+        <div className="px-8 pt-4">
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4">
+            <button
+              onClick={() => setDupExpanded(!dupExpanded)}
+              className="w-full bg-blue-50 px-5 py-3.5 flex justify-between items-center cursor-pointer"
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                <span className="text-sm font-semibold text-blue-800">
+                  {duplicateGroups.length} possible duplicate customer{duplicateGroups.length !== 1 ? "s" : ""} found
+                </span>
+              </div>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={`text-blue-600 transition-transform duration-200 ${dupExpanded ? "rotate-180" : ""}`}
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            {dupExpanded && (
+              <div>
+                {duplicateGroups.map((group, gi) => (
+                  <div key={gi}>
+                    <div className="px-5 py-2 bg-gray-50 border-b border-gray-200">
+                      <span className="text-xs font-bold text-gray-500 uppercase">
+                        Matched by {group.matchType}: {group.matchValue}
+                      </span>
+                    </div>
+                    {group.customers.map((c) => {
+                      const initials = getInitials(c.name);
+                      return (
+                        <div
+                          key={c.key}
+                          className="flex items-center gap-3 px-5 py-3 border-b border-gray-200"
+                        >
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0 bg-[#0B2040]">
+                            {initials}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-semibold text-[#0B2040] truncate">{c.name}</div>
+                            <div className="text-xs text-gray-500 truncate">
+                              {c.phone ? formatPhone(c.phone) : "—"} &middot; {c.email || "—"}
+                            </div>
+                          </div>
+                          <div className="text-xs text-gray-500 text-right shrink-0">
+                            <div>${(c as EnrichedCustomer).totalSpent?.toLocaleString() ?? 0}</div>
+                            <div>{c.totalBookings} job{c.totalBookings !== 1 ? "s" : ""}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div className="px-5 py-2.5 flex justify-end border-b border-gray-200 last:border-b-0">
+                      <button
+                        onClick={() => setMergeGroup(group)}
+                        className="px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg cursor-pointer hover:bg-blue-700 transition"
+                      >
+                        Merge
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ═══ Customer table ═══ */}
       <div className="px-8 py-6">
         <AdminTable>
@@ -647,6 +734,8 @@ export default function CustomersPage() {
           invoices={selectedCustomer.matchedInvoices}
           onClose={() => setSelectedCustomer(null)}
           onDelete={() => setSelectedCustomer(null)}
+          duplicateGroups={duplicateGroups}
+          onMerge={(group) => { setSelectedCustomer(null); setMergeGroup(group); }}
         />
       )}
 
@@ -826,6 +915,20 @@ export default function CustomersPage() {
       )}
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+      {/* ═══ Merge Modal ═══ */}
+      {mergeGroup && (
+        <CustomerMergeModal
+          group={mergeGroup}
+          allBookings={bookings}
+          allInvoices={invoices}
+          onClose={() => setMergeGroup(null)}
+          onMerged={() => {
+            setMergeGroup(null);
+            addToast("Customers merged successfully");
+          }}
+        />
+      )}
     </>
   );
 }
