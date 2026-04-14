@@ -832,9 +832,9 @@ function DetailsTab({
                     setCommPrefs(commPrefs);
                   }
                 }}
-                className={`w-9 h-5 rounded-full relative transition cursor-pointer ${isOn ? "bg-red-500" : "bg-gray-200"}`}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${isOn ? "bg-red-500" : "bg-gray-200"}`}
               >
-                <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${isOn ? "translate-x-4" : "translate-x-0.5"}`} />
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${isOn ? "translate-x-6" : "translate-x-1"}`} />
               </button>
             </div>
           );
