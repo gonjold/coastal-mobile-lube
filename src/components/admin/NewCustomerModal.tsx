@@ -14,7 +14,8 @@ export default function NewCustomerModal({
   onSuccess,
 }: NewCustomerModalProps) {
   const [form, setForm] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     phone: "",
     email: "",
     address: "",
@@ -30,7 +31,8 @@ export default function NewCustomerModal({
 
   function reset() {
     setForm({
-      name: "",
+      firstName: "",
+      lastName: "",
       phone: "",
       email: "",
       address: "",
@@ -41,11 +43,15 @@ export default function NewCustomerModal({
   }
 
   async function handleSave() {
-    if (!form.name.trim()) return;
+    if (!form.firstName.trim() || !form.lastName.trim()) return;
     setSaving(true);
+    const fullName = `${form.firstName.trim()} ${form.lastName.trim()}`;
     try {
       await addDoc(collection(db, "bookings"), {
-        name: form.name.trim(),
+        name: fullName,
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        fullName,
         phone: form.phone.replace(/\D/g, "") || null,
         email: form.email.trim().toLowerCase() || null,
         address: form.address.trim() || null,
@@ -56,7 +62,7 @@ export default function NewCustomerModal({
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
-      onSuccess?.(form.name.trim());
+      onSuccess?.(fullName);
       reset();
       onClose();
     } catch {
@@ -88,18 +94,32 @@ export default function NewCustomerModal({
 
         {/* Form */}
         <div className="px-6 py-5 flex flex-col gap-4">
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
-              Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => update("name", e.target.value)}
-              placeholder="Full name"
-              className={inputCls}
-              autoFocus
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
+                First Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={form.firstName}
+                onChange={(e) => update("firstName", e.target.value)}
+                placeholder="First name"
+                className={inputCls}
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
+                Last Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={form.lastName}
+                onChange={(e) => update("lastName", e.target.value)}
+                placeholder="Last name"
+                className={inputCls}
+              />
+            </div>
           </div>
           <div>
             <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
@@ -189,7 +209,7 @@ export default function NewCustomerModal({
           </button>
           <button
             onClick={handleSave}
-            disabled={!form.name.trim() || saving}
+            disabled={!form.firstName.trim() || !form.lastName.trim() || saving}
             className="px-5 py-2.5 bg-[#E07B2D] rounded-lg text-sm font-semibold text-white cursor-pointer hover:bg-[#CC6A1F] transition disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save"}

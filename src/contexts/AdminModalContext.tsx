@@ -22,7 +22,8 @@ export interface ModalPreFill {
 }
 
 interface AdminModalContextValue {
-  activeModal: "booking" | "customer" | null;
+  activeModal: "booking" | "customer" | "invoice" | null;
+  prefillData: ModalPreFill | null;
   preFill: ModalPreFill | null;
   openModal: (
     type: "booking" | "customer" | "invoice",
@@ -40,7 +41,7 @@ const AdminModalContext = createContext<AdminModalContextValue | null>(null);
 export function AdminModalProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [activeModal, setActiveModal] = useState<
-    "booking" | "customer" | null
+    "booking" | "customer" | "invoice" | null
   >(null);
   const [preFill, setPreFill] = useState<ModalPreFill | null>(null);
 
@@ -50,7 +51,10 @@ export function AdminModalProvider({ children }: { children: ReactNode }) {
       data?: ModalPreFill,
     ) => {
       if (type === "invoice") {
-        // Invoice modal lives on the invoicing page — navigate there with params
+        // Set activeModal so the invoicing page can detect it
+        setPreFill(data || null);
+        setActiveModal("invoice");
+        // Also navigate (handles case where user is on a different page)
         if (data?.customer) {
           const params = new URLSearchParams({
             from: "customer",
@@ -81,7 +85,7 @@ export function AdminModalProvider({ children }: { children: ReactNode }) {
 
   return (
     <AdminModalContext.Provider
-      value={{ activeModal, preFill, openModal, closeModal }}
+      value={{ activeModal, preFill, prefillData: preFill, openModal, closeModal }}
     >
       {children}
     </AdminModalContext.Provider>

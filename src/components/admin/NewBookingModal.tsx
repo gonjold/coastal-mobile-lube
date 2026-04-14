@@ -9,6 +9,9 @@ import {
   query,
   addDoc,
   serverTimestamp,
+  writeBatch,
+  doc,
+  getDoc,
 } from "firebase/firestore";
 import {
   type Booking,
@@ -17,6 +20,13 @@ import {
   toISODate,
 } from "@/app/admin/shared";
 import { useServices, type Service } from "@/hooks/useServices";
+import {
+  decodeVIN,
+  getYears,
+  getMakes,
+  getModels,
+  getFuelCategory,
+} from "@/lib/vehicleApi";
 
 /* ── Time slots: 8:00 AM – 4:30 PM in 30-min increments ── */
 
@@ -57,9 +67,27 @@ export default function NewBookingModal({
   );
   const [customerQuery, setCustomerQuery] = useState("");
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const [creatingNewCustomer, setCreatingNewCustomer] = useState(false);
+  const [newCustFirst, setNewCustFirst] = useState("");
+  const [newCustLast, setNewCustLast] = useState("");
+  const [newCustPhone, setNewCustPhone] = useState("");
+  const [newCustEmail, setNewCustEmail] = useState("");
+  const [newCustAddress, setNewCustAddress] = useState("");
   const [selectedServices, setSelectedServices] = useState<Service[]>([]);
   const [showServiceDropdown, setShowServiceDropdown] = useState(false);
-  const [vehicle, setVehicle] = useState("");
+  /* Vehicle state */
+  const [vinInput, setVinInput] = useState("");
+  const [vinStatus, setVinStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [vehicleYear, setVehicleYear] = useState("");
+  const [vehicleMake, setVehicleMake] = useState("");
+  const [vehicleModel, setVehicleModel] = useState("");
+  const [fuelType, setFuelType] = useState("");
+  const [yearOptions] = useState(() => getYears());
+  const [makeOptions, setMakeOptions] = useState<string[]>([]);
+  const [modelOptions, setModelOptions] = useState<string[]>([]);
+  const [makesLoading, setMakesLoading] = useState(false);
+  const [modelsLoading, setModelsLoading] = useState(false);
+
   const [date, setDate] = useState(() => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -71,11 +99,47 @@ export default function NewBookingModal({
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
+  /* Convenience fee */
+  const [feeConfig, setFeeConfig] = useState<{
+    enabled: boolean; amount: number; label: string; taxable: boolean; waiveFirstService: boolean;
+  } | null>(null);
+  const [feeWaived, setFeeWaived] = useState(false);
+  const [feeWaivedReason, setFeeWaivedReason] = useState<string | null>(null);
+
   /* Data sources */
   const [bookings, setBookings] = useState<Booking[]>([]);
   const { services } = useServices();
   const customerRef = useRef<HTMLDivElement>(null);
   const serviceRef = useRef<HTMLDivElement>(null);
+
+  /* Load fee config from Firestore */
+  useEffect(() => {
+    async function loadFees() {
+      try {
+        const snap = await getDoc(doc(db, "settings", "fees"));
+        if (snap.exists()) {
+          const data = snap.data()?.convenienceFee;
+          if (data) setFeeConfig(data);
+        } else {
+          // Seed the default fee config
+          const { setDoc } = await import("firebase/firestore");
+          const defaultFee = {
+            convenienceFee: {
+              enabled: true,
+              amount: 39.95,
+              label: "Mobile Service Fee",
+              taxable: false,
+              waiveFirstService: true,
+              promoOverride: null,
+            },
+          };
+          await setDoc(doc(db, "settings", "fees"), defaultFee);
+          setFeeConfig(defaultFee.convenienceFee);
+        }
+      } catch { /* silent */ }
+    }
+    loadFees();
+  }, []);
 
   /* Load bookings for customer search */
   useEffect(() => {
@@ -160,11 +224,72 @@ export default function NewBookingModal({
     return Array.from(vehicleSet);
   }, [customer, customers]);
 
+  /* Check if customer is first-time -> auto-waive fee */
+  const isFirstTimeCustomer = useMemo(() => {
+    if (!customer) return false;
+    const matched = customers.find((c) => c.name === customer.name);
+    if (!matched) return true; // new customer
+    return matched.bookings.filter((b) => b.status === "completed").length === 0;
+  }, [customer, customers]);
+
+  useEffect(() => {
+    if (feeConfig?.waiveFirstService && isFirstTimeCustomer) {
+      setFeeWaived(true);
+      setFeeWaivedReason("first_service");
+    } else if (feeWaivedReason === "first_service") {
+      setFeeWaived(false);
+      setFeeWaivedReason(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFirstTimeCustomer, feeConfig]);
+
+  /* Load makes when year changes */
+  useEffect(() => {
+    if (!vehicleYear) { setMakeOptions([]); return; }
+    let cancelled = false;
+    setMakesLoading(true);
+    getMakes().then((m) => { if (!cancelled) { setMakeOptions(m); setMakesLoading(false); } });
+    return () => { cancelled = true; };
+  }, [vehicleYear]);
+
+  /* Load models when make changes */
+  useEffect(() => {
+    if (!vehicleYear || !vehicleMake) { setModelOptions([]); return; }
+    let cancelled = false;
+    setModelsLoading(true);
+    getModels(vehicleYear, vehicleMake).then((m) => { if (!cancelled) { setModelOptions(m); setModelsLoading(false); } });
+    return () => { cancelled = true; };
+  }, [vehicleYear, vehicleMake]);
+
+  /* VIN decode handler */
+  async function handleVinDecode() {
+    if (!vinInput.trim()) return;
+    setVinStatus("loading");
+    const result = await decodeVIN(vinInput.trim());
+    if (result) {
+      setVehicleYear(result.year);
+      setVehicleMake(result.make);
+      setVehicleModel(result.model);
+      setFuelType(result.fuelType);
+      setVinStatus("success");
+    } else {
+      setVinStatus("error");
+    }
+  }
+
+  /* Computed vehicle string for saving */
+  const vehicleString = [vehicleYear, vehicleMake, vehicleModel].filter(Boolean).join(" ");
+
+  /* Fuel category for service filtering */
+  const fuelCategory = getFuelCategory(fuelType);
+
   /* Estimated total */
-  const estimatedTotal = selectedServices.reduce(
+  const servicesTotalOnly = selectedServices.reduce(
     (sum, s) => sum + (s.price || 0),
     0,
   );
+  const feeAmount = feeConfig?.enabled && !feeWaived ? feeConfig.amount : 0;
+  const estimatedTotal = servicesTotalOnly + feeAmount;
 
   /* Handlers */
 
@@ -211,22 +336,23 @@ export default function NewBookingModal({
   }
 
   async function handleCreate(status: "pending" | "draft") {
-    if (!customer || selectedServices.length === 0 || !date || !time)
+    const hasCustomer = customer || (creatingNewCustomer && newCustFirst.trim() && newCustLast.trim());
+    if (!hasCustomer || selectedServices.length === 0 || !date || !time)
       return;
     setSaving(true);
     try {
-      await addDoc(collection(db, "bookings"), {
-        name: customer.name,
-        phone: customer.phone || null,
-        email: customer.email || null,
-        address: address || null,
+      const bookingData: Record<string, unknown> = {
         selectedServices: selectedServices.map((s) => ({
           id: s.id,
           name: s.name,
           price: s.price,
           category: s.category,
         })),
-        vehicle: vehicle || null,
+        vehicle: vehicleString || null,
+        vehicleYear: vehicleYear || null,
+        vehicleMake: vehicleMake || null,
+        vehicleModel: vehicleModel || null,
+        fuelType: fuelType || null,
         preferredDate: date,
         timeWindow: time,
         division: division.toLowerCase(),
@@ -234,9 +360,58 @@ export default function NewBookingModal({
         status,
         source: "Admin",
         totalEstimate: estimatedTotal,
+        convenienceFee: {
+          amount: feeWaived ? 0 : (feeConfig?.amount || 0),
+          waived: feeWaived,
+          waivedReason: feeWaivedReason,
+        },
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-      });
+      };
+
+      if (creatingNewCustomer) {
+        /* Create new customer + booking atomically */
+        const fullName = `${newCustFirst.trim()} ${newCustLast.trim()}`;
+        const customerData = {
+          name: fullName,
+          firstName: newCustFirst.trim(),
+          lastName: newCustLast.trim(),
+          fullName,
+          phone: newCustPhone.replace(/\D/g, "") || null,
+          email: newCustEmail.trim().toLowerCase() || null,
+          address: newCustAddress.trim() || address || null,
+          source: "admin-manual",
+          status: "pending",
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+        /* Firestore batch doesn't support addDoc, so create refs manually */
+        const batch = writeBatch(db);
+        const custRef = doc(collection(db, "customers"));
+        batch.set(custRef, customerData);
+        const bookRef = doc(collection(db, "bookings"));
+        batch.set(bookRef, {
+          ...bookingData,
+          name: fullName,
+          firstName: newCustFirst.trim(),
+          lastName: newCustLast.trim(),
+          fullName,
+          phone: newCustPhone.replace(/\D/g, "") || null,
+          email: newCustEmail.trim().toLowerCase() || null,
+          address: address || newCustAddress.trim() || null,
+          customerId: custRef.id,
+        });
+        await batch.commit();
+      } else {
+        /* Existing customer */
+        await addDoc(collection(db, "bookings"), {
+          ...bookingData,
+          name: customer!.name,
+          phone: customer!.phone || null,
+          email: customer!.email || null,
+          address: address || null,
+        });
+      }
       onClose();
     } catch {
       /* silent */
@@ -246,8 +421,9 @@ export default function NewBookingModal({
   }
 
   /* Validation */
+  const hasValidCustomer = !!customer || (creatingNewCustomer && !!newCustFirst.trim() && !!newCustLast.trim());
   const isValid =
-    !!customer && selectedServices.length > 0 && !!date && !!time;
+    hasValidCustomer && selectedServices.length > 0 && !!date && !!time;
 
   const inputCls =
     "border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm w-full focus:border-[#1A5FAC] focus:ring-1 focus:ring-[#1A5FAC] outline-none transition";
@@ -327,16 +503,64 @@ export default function NewBookingModal({
                         </div>
                       </button>
                     ))}
-                    {customerMatches.length === 0 && customerQuery && (
-                      <div className="px-4 py-3 text-sm text-gray-500">
-                        No matching customers
-                      </div>
+                    {customerQuery.trim() && (
+                      <button
+                        onClick={() => {
+                          const parts = customerQuery.trim().split(/\s+/);
+                          setNewCustFirst(parts[0] || "");
+                          setNewCustLast(parts.slice(1).join(" ") || "");
+                          setCreatingNewCustomer(true);
+                          setShowCustomerDropdown(false);
+                        }}
+                        className="block w-full text-left px-4 py-2.5 hover:bg-blue-50 cursor-pointer border-t border-gray-100 text-sm font-medium text-[#1A5FAC]"
+                      >
+                        + Create &ldquo;{customerQuery.trim()}&rdquo; as new customer
+                      </button>
                     )}
                   </div>
                 )}
               </div>
             )}
           </div>
+
+          {/* ── Inline new customer ── */}
+          {creatingNewCustomer && !customer && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 -mt-1">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold text-[#1A5FAC] uppercase">New Customer</span>
+                <button
+                  onClick={() => { setCreatingNewCustomer(false); setNewCustFirst(""); setNewCustLast(""); setNewCustPhone(""); setNewCustEmail(""); setNewCustAddress(""); }}
+                  className="text-xs text-gray-500 cursor-pointer hover:text-gray-700"
+                >
+                  Cancel
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">First Name <span className="text-red-500">*</span></label>
+                  <input type="text" value={newCustFirst} onChange={(e) => setNewCustFirst(e.target.value)} className={inputCls} placeholder="First name" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Last Name <span className="text-red-500">*</span></label>
+                  <input type="text" value={newCustLast} onChange={(e) => setNewCustLast(e.target.value)} className={inputCls} placeholder="Last name" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Phone</label>
+                  <input type="tel" value={newCustPhone} onChange={(e) => setNewCustPhone(e.target.value)} className={inputCls} placeholder="(813) 555-1234" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Email</label>
+                  <input type="email" value={newCustEmail} onChange={(e) => setNewCustEmail(e.target.value)} className={inputCls} placeholder="customer@email.com" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Address</label>
+                <input type="text" value={newCustAddress} onChange={(e) => setNewCustAddress(e.target.value)} className={inputCls} placeholder="Street address" />
+              </div>
+            </div>
+          )}
 
           {/* ── Services ── */}
           <div>
@@ -381,6 +605,30 @@ export default function NewBookingModal({
                   {DIVISIONS.map((div) => {
                     const divServices = servicesByDivision[div];
                     if (!divServices?.length) return null;
+
+                    /* Annotate and sort services based on fuelCategory */
+                    const annotated = divServices.map((s) => {
+                      const name = s.name.toLowerCase();
+                      const isDieselService = name.includes("diesel");
+                      const isOilChange = name.includes("oil change") || name.includes("oil service");
+                      let annotation = "";
+                      let dimmed = false;
+
+                      if (fuelCategory === "diesel") {
+                        if (isDieselService) annotation = "Recommended for diesel";
+                      } else if (fuelCategory === "electric") {
+                        if (isOilChange || isDieselService) { annotation = "Not compatible"; dimmed = true; }
+                      } else if (fuelCategory === "hybrid") {
+                        if (isDieselService) { annotation = "Not compatible"; dimmed = true; }
+                      } else {
+                        if (isDieselService) { annotation = "Diesel vehicles only"; dimmed = true; }
+                      }
+                      return { service: s, annotation, dimmed };
+                    });
+
+                    /* Sort: non-dimmed first */
+                    annotated.sort((a, b) => (a.dimmed === b.dimmed ? 0 : a.dimmed ? 1 : -1));
+
                     return (
                       <div key={div}>
                         <div className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50 sticky top-0">
@@ -388,7 +636,7 @@ export default function NewBookingModal({
                             ? "Automotive"
                             : div}
                         </div>
-                        {divServices.map((s) => {
+                        {annotated.map(({ service: s, annotation, dimmed }) => {
                           const isSelected = selectedServices.some(
                             (sel) => sel.id === s.id,
                           );
@@ -399,10 +647,17 @@ export default function NewBookingModal({
                               className={`block w-full text-left px-4 py-2.5 text-sm cursor-pointer border-b border-gray-50 ${
                                 isSelected
                                   ? "bg-[#EBF4FF] text-[#1A5FAC] font-medium"
-                                  : "text-[#0B2040] hover:bg-gray-50"
+                                  : dimmed
+                                    ? "text-gray-400"
+                                    : "text-[#0B2040] hover:bg-gray-50"
                               }`}
                             >
                               <span>{s.name}</span>
+                              {annotation && (
+                                <span className={`ml-2 text-[10px] font-semibold ${dimmed ? "text-gray-400" : "text-green-600"}`}>
+                                  {annotation}
+                                </span>
+                              )}
                               <span className="float-right text-gray-500">
                                 ${s.price}
                               </span>
@@ -422,14 +677,26 @@ export default function NewBookingModal({
             <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
               Vehicle
             </label>
+
+            {/* Previous vehicles for this customer */}
             {customer && customerVehicles.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {customerVehicles.map((v) => (
                   <button
                     key={v}
-                    onClick={() => setVehicle(v)}
+                    onClick={() => {
+                      const parts = v.split(" ");
+                      if (parts.length >= 3) {
+                        setVehicleYear(parts[0]);
+                        setVehicleMake(parts[1]);
+                        setVehicleModel(parts.slice(2).join(" "));
+                      } else if (parts.length === 2) {
+                        setVehicleMake(parts[0]);
+                        setVehicleModel(parts[1]);
+                      }
+                    }}
                     className={`text-xs px-2.5 py-1 rounded-md cursor-pointer transition ${
-                      vehicle === v
+                      vehicleString === v
                         ? "bg-[#0B2040] text-white"
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
@@ -439,13 +706,90 @@ export default function NewBookingModal({
                 ))}
               </div>
             )}
-            <input
-              type="text"
-              value={vehicle}
-              onChange={(e) => setVehicle(e.target.value)}
-              placeholder="Year Make Model"
-              className={inputCls}
-            />
+
+            {/* VIN input */}
+            <div className="flex gap-2 items-center">
+              <input
+                type="text"
+                value={vinInput}
+                onChange={(e) => { setVinInput(e.target.value.toUpperCase()); setVinStatus("idle"); }}
+                placeholder="Enter VIN to auto-fill"
+                className={`${inputCls} flex-1`}
+              />
+              <button
+                onClick={handleVinDecode}
+                disabled={vinStatus === "loading" || !vinInput.trim()}
+                className="px-4 py-2.5 bg-[#1A5FAC] text-white text-xs font-semibold rounded-lg cursor-pointer hover:bg-[#174f94] transition disabled:opacity-50 shrink-0"
+              >
+                {vinStatus === "loading" ? "Decoding..." : "Decode"}
+              </button>
+              {vinStatus === "success" && (
+                <span className="text-xs text-green-600 font-semibold flex items-center gap-1 shrink-0">
+                  <span>&#10003;</span> Decoded
+                </span>
+              )}
+              {vinStatus === "error" && (
+                <span className="text-xs text-red-500 font-semibold shrink-0">Invalid VIN</span>
+              )}
+            </div>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3 my-3">
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="text-xs text-gray-400">or enter manually</span>
+              <div className="flex-1 h-px bg-gray-200" />
+            </div>
+
+            {/* Year / Make / Model dropdowns */}
+            <div className="grid grid-cols-3 gap-3">
+              <select
+                value={vehicleYear}
+                onChange={(e) => { setVehicleYear(e.target.value); setVehicleMake(""); setVehicleModel(""); }}
+                className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-[#1A5FAC] outline-none bg-white"
+              >
+                <option value="" className="text-gray-400">Year</option>
+                {yearOptions.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+              <select
+                value={vehicleMake}
+                onChange={(e) => { setVehicleMake(e.target.value); setVehicleModel(""); }}
+                disabled={!vehicleYear}
+                className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-[#1A5FAC] outline-none bg-white disabled:opacity-50"
+              >
+                <option value="" className="text-gray-400">{makesLoading ? "Loading..." : "Make"}</option>
+                {makeOptions.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+              <select
+                value={vehicleModel}
+                onChange={(e) => setVehicleModel(e.target.value)}
+                disabled={!vehicleMake}
+                className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-[#1A5FAC] outline-none bg-white disabled:opacity-50"
+              >
+                <option value="" className="text-gray-400">{modelsLoading ? "Loading..." : "Model"}</option>
+                {modelOptions.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Engine / Fuel Type */}
+            <div className="mt-3">
+              <select
+                value={fuelType}
+                onChange={(e) => setFuelType(e.target.value)}
+                className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-[#1A5FAC] outline-none bg-white w-full sm:w-1/2"
+              >
+                <option value="">Fuel Type</option>
+                <option value="Gas">Gas</option>
+                <option value="Diesel">Diesel</option>
+                <option value="Hybrid">Hybrid</option>
+                <option value="Electric">Electric</option>
+              </select>
+            </div>
           </div>
 
           {/* ── Date + Time row ── */}
@@ -520,7 +864,7 @@ export default function NewBookingModal({
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Gate code, key location, special instructions..."
+              placeholder="E.g.: Keys will be at reception, ask for Ana. Call (813) 555-1234 upon arrival. Access code: #1234. Car is on parking level 2, spot 45."
               rows={3}
               className={`${inputCls} resize-none`}
             />
@@ -541,10 +885,49 @@ export default function NewBookingModal({
                   <span className="font-medium">${s.price}</span>
                 </div>
               ))}
+              {/* Convenience fee line */}
+              {feeConfig?.enabled && (
+                <div className="flex justify-between text-sm text-[#0B2040] py-0.5">
+                  <span className={feeWaived ? "line-through text-gray-400" : ""}>
+                    {feeConfig.label}
+                  </span>
+                  <span className="flex items-center gap-2">
+                    {feeWaived && (
+                      <span className="text-xs text-green-600 font-medium">
+                        Waived{feeWaivedReason === "first_service" ? " - first service" : ""}
+                      </span>
+                    )}
+                    <span className={`font-medium ${feeWaived ? "line-through text-gray-400" : ""}`}>
+                      ${feeConfig.amount.toFixed(2)}
+                    </span>
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between text-sm font-bold text-[#0B2040] pt-2 mt-2 border-t border-gray-200">
                 <span>Total</span>
                 <span>${estimatedTotal.toFixed(2)}</span>
               </div>
+              {/* Admin waive toggle */}
+              {feeConfig?.enabled && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (feeWaived && feeWaivedReason !== "first_service") {
+                      setFeeWaived(false);
+                      setFeeWaivedReason(null);
+                    } else if (!feeWaived) {
+                      setFeeWaived(true);
+                      setFeeWaivedReason("admin_override");
+                    } else {
+                      setFeeWaived(false);
+                      setFeeWaivedReason(null);
+                    }
+                  }}
+                  className="text-xs text-blue-600 cursor-pointer mt-2 hover:underline"
+                >
+                  {feeWaived ? "Restore Mobile Service Fee" : "Waive Mobile Service Fee"}
+                </button>
+              )}
             </div>
           )}
         </div>

@@ -30,6 +30,7 @@ import AdminBadge from "@/components/admin/AdminBadge";
 import CustomerProfilePanel, {
   type PanelInvoice,
 } from "@/components/admin/CustomerProfilePanel";
+import { useAdminModal } from "@/contexts/AdminModalContext";
 
 /* ── Types ── */
 
@@ -179,9 +180,10 @@ const COLUMNS: AdminColumn[] = [
   { key: "totalSpent", label: "Total Spent", align: "center", sortable: true },
   { key: "jobs", label: "Jobs", align: "center", sortable: true },
   { key: "status", label: "Status", align: "center", sortable: true },
+  { key: "actions", label: "", align: "center", sortable: false },
 ];
 
-const GRID = "2fr 1.5fr 1fr 1fr 1fr 100px";
+const GRID = "2fr 1.5fr 1fr 1fr 1fr 100px 40px";
 
 /* ── Page ── */
 
@@ -206,7 +208,8 @@ export default function CustomersPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<EnrichedCustomer | null>(null);
   const [showNewCustomer, setShowNewCustomer] = useState(false);
   const [newCustomer, setNewCustomer] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     phone: "",
     email: "",
     address: "",
@@ -226,6 +229,18 @@ export default function CustomersPage() {
   function removeToast(id: string) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }
+
+  /* Action menu */
+  const { openModal } = useAdminModal();
+  const [actionMenuKey, setActionMenuKey] = useState<string | null>(null);
+
+  /* Close action menu on outside click */
+  useEffect(() => {
+    if (!actionMenuKey) return;
+    function handleClick() { setActionMenuKey(null); }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [actionMenuKey]);
 
   /* ── Firestore real-time listeners ── */
   useEffect(() => {
@@ -362,11 +377,15 @@ export default function CustomersPage() {
 
   /* ── Add customer ── */
   async function handleAddCustomer() {
-    if (!newCustomer.name.trim()) return;
+    if (!newCustomer.firstName.trim() || !newCustomer.lastName.trim()) return;
     setSavingNewCustomer(true);
+    const fullName = `${newCustomer.firstName.trim()} ${newCustomer.lastName.trim()}`;
     try {
       await addDoc(collection(db, "bookings"), {
-        name: newCustomer.name.trim(),
+        name: fullName,
+        firstName: newCustomer.firstName.trim(),
+        lastName: newCustomer.lastName.trim(),
+        fullName,
         phone: newCustomer.phone.replace(/\D/g, "") || null,
         email: newCustomer.email.trim().toLowerCase() || null,
         address: newCustomer.address.trim() || null,
@@ -377,9 +396,10 @@ export default function CustomersPage() {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
-      addToast(`Customer "${newCustomer.name.trim()}" added`);
+      addToast(`Customer "${fullName}" added`);
       setNewCustomer({
-        name: "",
+        firstName: "",
+        lastName: "",
         phone: "",
         email: "",
         address: "",
@@ -578,6 +598,26 @@ export default function CustomersPage() {
                   <div className="text-center">
                     <AdminBadge label={c.customerStatus} variant={statusVariant} />
                   </div>
+
+                  {/* Actions */}
+                  <div className="relative flex justify-center" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setActionMenuKey(actionMenuKey === c.key ? null : c.key); }}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer hover:bg-gray-100 transition"
+                    >
+                      <span className="text-lg text-gray-400 leading-none">&#8942;</span>
+                    </button>
+                    {actionMenuKey === c.key && (
+                      <div className="absolute right-full top-0 mr-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[160px] z-[50]" onMouseDown={(e) => e.stopPropagation()}>
+                        <button onClick={() => { setSelectedCustomer(c); setActionMenuKey(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">View Profile</button>
+                        <button onClick={() => { setSelectedCustomer(c); setActionMenuKey(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Edit Customer</button>
+                        <button onClick={() => { openModal("booking", { customer: { name: c.name, phone: c.phone, email: c.email, address: c.address } }); setActionMenuKey(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">New Booking</button>
+                        <button onClick={() => { openModal("invoice", { customer: { name: c.name, phone: c.phone, email: c.email, address: c.address } }); setActionMenuKey(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">New Invoice</button>
+                        <div className="h-px bg-gray-100 my-1" />
+                        <button onClick={() => { setSelectedCustomer(c); setActionMenuKey(null); }} className="block w-full text-left px-4 py-2 text-sm text-red-600 cursor-pointer hover:bg-gray-50 transition">Delete Customer</button>
+                      </div>
+                    )}
+                  </div>
                 </AdminTableRow>
               );
             })
@@ -621,7 +661,8 @@ export default function CustomersPage() {
                 onClick={() => {
                   setShowNewCustomer(false);
                   setNewCustomer({
-                    name: "",
+                    firstName: "",
+                    lastName: "",
                     phone: "",
                     email: "",
                     address: "",
@@ -638,18 +679,32 @@ export default function CustomersPage() {
 
             {/* Form */}
             <div className="px-6 py-5 flex flex-col gap-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
-                  Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={newCustomer.name}
-                  onChange={(e) => setNewCustomer((p) => ({ ...p, name: e.target.value }))}
-                  placeholder="Full name"
-                  className="w-full border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-[#1A5FAC] transition-colors"
-                  autoFocus
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
+                    First Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={newCustomer.firstName}
+                    onChange={(e) => setNewCustomer((p) => ({ ...p, firstName: e.target.value }))}
+                    placeholder="First name"
+                    className="w-full border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-[#1A5FAC] transition-colors"
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
+                    Last Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={newCustomer.lastName}
+                    onChange={(e) => setNewCustomer((p) => ({ ...p, lastName: e.target.value }))}
+                    placeholder="Last name"
+                    className="w-full border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm outline-none focus:border-[#1A5FAC] transition-colors"
+                  />
+                </div>
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
@@ -744,7 +799,8 @@ export default function CustomersPage() {
                 onClick={() => {
                   setShowNewCustomer(false);
                   setNewCustomer({
-                    name: "",
+                    firstName: "",
+                    lastName: "",
                     phone: "",
                     email: "",
                     address: "",
@@ -759,7 +815,7 @@ export default function CustomersPage() {
               </button>
               <button
                 onClick={handleAddCustomer}
-                disabled={!newCustomer.name.trim() || savingNewCustomer}
+                disabled={!newCustomer.firstName.trim() || !newCustomer.lastName.trim() || savingNewCustomer}
                 className="px-5 py-2.5 bg-[#E07B2D] rounded-lg text-sm font-semibold text-white cursor-pointer hover:bg-[#CC6A1F] transition disabled:opacity-50"
               >
                 {savingNewCustomer ? "Saving..." : "Save"}

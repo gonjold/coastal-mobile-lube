@@ -29,6 +29,7 @@ import AdminCSVExport from "@/components/admin/AdminCSVExport";
 import AdminBadge from "@/components/admin/AdminBadge";
 import InvoiceDetailPanel, { type InvoiceForPanel } from "@/components/admin/InvoiceDetailPanel";
 import NeedsInvoiceBanner, { type CompletedJob } from "@/components/admin/NeedsInvoiceBanner";
+import { useAdminModal } from "@/contexts/AdminModalContext";
 
 /* ─── Types ───────────────────────────────────────────────── */
 
@@ -328,9 +329,10 @@ const INVOICE_COLUMNS: AdminColumn[] = [
   { key: "dueDate", label: "Due", align: "center", sortable: true },
   { key: "total", label: "Amount", align: "center", sortable: true },
   { key: "status", label: "Status", align: "center", sortable: true },
+  { key: "actions", label: "", align: "center", sortable: false },
 ];
 
-const GRID_TEMPLATE = "150px 1.2fr 1.2fr 90px 90px 110px 90px";
+const GRID_TEMPLATE = "150px 1.2fr 1.2fr 90px 90px 110px 90px 40px";
 
 /* ─── Status filter config ───────────────────────────────── */
 
@@ -381,6 +383,13 @@ function InvoicingPageInner() {
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const customerRef = useRef<HTMLDivElement>(null);
 
+  /* Inline new customer creation in invoice modal */
+  const [creatingNewCustomer, setCreatingNewCustomer] = useState(false);
+  const [newCustFirst, setNewCustFirst] = useState("");
+  const [newCustLast, setNewCustLast] = useState("");
+  const [newCustPhone, setNewCustPhone] = useState("");
+  const [newCustEmail, setNewCustEmail] = useState("");
+
   /* Filter & sort */
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortKey, setSortKey] = useState<string>("invoiceDate");
@@ -389,6 +398,16 @@ function InvoicingPageInner() {
   /* Detail panel */
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
 
+  /* Action menu */
+  const [actionMenuId, setActionMenuId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!actionMenuId) return;
+    function handleClick() { setActionMenuId(null); }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [actionMenuId]);
+
   /* Toasts */
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   function addToast(message: string, type: "success" | "info" = "success") {
@@ -396,6 +415,21 @@ function InvoicingPageInner() {
     setToasts((prev) => [...prev, { id, message, type }]);
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3000);
   }
+
+  /* ── Listen to AdminModalContext for "invoice" triggers ── */
+  const { activeModal: globalActiveModal, prefillData: globalPrefillData, closeModal: globalCloseModal } = useAdminModal();
+  useEffect(() => {
+    if (globalActiveModal === "invoice") {
+      if (globalPrefillData?.customer) {
+        const c = globalPrefillData.customer;
+        openCreateFromCustomer(c.name, c.phone || "", c.email || "");
+      } else if (!showForm) {
+        openCreate();
+      }
+      globalCloseModal();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [globalActiveModal]);
 
   /* ── Firestore listeners ── */
   useEffect(() => {
@@ -643,6 +677,17 @@ function InvoicingPageInner() {
           lineTotal: match?.price ?? 0,
         },
       ];
+    }
+
+    // Add convenience fee if not waived
+    const fee = (b as unknown as Record<string, unknown>).convenienceFee as { amount: number; waived: boolean } | undefined;
+    if (fee && !fee.waived && fee.amount > 0) {
+      f.lineItems.push({
+        serviceName: "Mobile Service Fee",
+        quantity: 1,
+        unitPrice: fee.amount,
+        lineTotal: fee.amount,
+      });
     }
 
     const filled = recalcTotals(f);
@@ -1137,6 +1182,31 @@ function InvoicingPageInner() {
                       variant={getInvoiceBadgeVariant(inv.status)}
                     />
                   </div>
+
+                  {/* Actions */}
+                  <div className="relative flex justify-center" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setActionMenuId(actionMenuId === inv.id ? null : inv.id); }}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer hover:bg-gray-100 transition"
+                    >
+                      <span className="text-lg text-gray-400 leading-none">&#8942;</span>
+                    </button>
+                    {actionMenuId === inv.id && (
+                      <div className="absolute right-full top-0 mr-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[160px] z-[50]" onMouseDown={(e) => e.stopPropagation()}>
+                        <button onClick={() => { setSelectedInvoice(inv); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">View Details</button>
+                        <button onClick={() => { setSelectedInvoice(inv); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Edit Invoice</button>
+                        {(inv.status === "sent" || inv.status === "overdue") && (
+                          <button onClick={() => { handleMarkPaid(inv.id); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Mark as Paid</button>
+                        )}
+                        {(inv.status === "sent" || inv.status === "overdue") && (
+                          <button onClick={() => { handleSendInvoice(inv); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Resend</button>
+                        )}
+                        <button onClick={() => { handlePrint(inv); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Print / PDF</button>
+                        <div className="h-px bg-gray-100 my-1" />
+                        <button onClick={() => { setDeleteConfirm(inv.id); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-red-600 cursor-pointer hover:bg-gray-50 transition">Delete Invoice</button>
+                      </div>
+                    )}
+                  </div>
                 </AdminTableRow>
               );
             })}
@@ -1160,7 +1230,9 @@ function InvoicingPageInner() {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-[12px] p-6 max-w-[380px] w-full shadow-xl">
             <h3 className="text-[16px] font-bold text-[#0B2040] mb-2">Delete Invoice?</h3>
-            <p className="text-[14px] text-gray-500 mb-5">This cannot be undone.</p>
+            <p className="text-[14px] text-gray-500 mb-5">
+              Are you sure you want to delete invoice {invoices.find((i) => i.id === deleteConfirm)?.invoiceNumber || ""}? This action cannot be undone.
+            </p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setDeleteConfirm(null)}
@@ -1262,7 +1334,7 @@ function InvoicingPageInner() {
                     placeholder="Search existing or type new name..."
                     className="w-full px-3 py-2 text-[14px] border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#1A5FAC]"
                   />
-                  {showCustomerDropdown && customerMatches.length > 0 && (
+                  {showCustomerDropdown && (customerMatches.length > 0 || customerQuery.trim()) && (
                     <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-[8px] shadow-lg z-10 max-h-[200px] overflow-y-auto">
                       {customerMatches.map((c) => (
                         <button
@@ -1276,11 +1348,64 @@ function InvoicingPageInner() {
                           )}
                         </button>
                       ))}
+                      {customerQuery.trim() && (
+                        <button
+                          onClick={() => {
+                            const parts = customerQuery.trim().split(/\s+/);
+                            setNewCustFirst(parts[0] || "");
+                            setNewCustLast(parts.slice(1).join(" ") || "");
+                            setNewCustPhone("");
+                            setNewCustEmail("");
+                            setCreatingNewCustomer(true);
+                            setShowCustomerDropdown(false);
+                            setForm((p) => ({ ...p, customerName: customerQuery.trim() }));
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-blue-50 cursor-pointer border-t border-gray-100 text-[13px] font-medium text-[#1A5FAC]"
+                        >
+                          + Create &ldquo;{customerQuery.trim()}&rdquo; as new customer
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
               </div>
 
+              {/* Inline new customer fields */}
+              {creatingNewCustomer && (
+                <div className="bg-blue-50 border border-blue-200 rounded-[8px] p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[12px] font-bold text-[#1A5FAC] uppercase">New Customer</span>
+                    <button
+                      onClick={() => { setCreatingNewCustomer(false); setNewCustFirst(""); setNewCustLast(""); setNewCustPhone(""); setNewCustEmail(""); }}
+                      className="text-[12px] text-gray-500 cursor-pointer hover:text-gray-700"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <label className="block text-[12px] text-gray-500 mb-1">First Name *</label>
+                      <input type="text" value={newCustFirst} onChange={(e) => { setNewCustFirst(e.target.value); setForm((p) => ({ ...p, customerName: `${e.target.value} ${newCustLast}`.trim() })); }} placeholder="First name" className="w-full px-3 py-2 text-[14px] border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#1A5FAC]" />
+                    </div>
+                    <div>
+                      <label className="block text-[12px] text-gray-500 mb-1">Last Name *</label>
+                      <input type="text" value={newCustLast} onChange={(e) => { setNewCustLast(e.target.value); setForm((p) => ({ ...p, customerName: `${newCustFirst} ${e.target.value}`.trim() })); }} placeholder="Last name" className="w-full px-3 py-2 text-[14px] border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#1A5FAC]" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[12px] text-gray-500 mb-1">Phone</label>
+                      <input type="tel" value={newCustPhone} onChange={(e) => { setNewCustPhone(e.target.value); setForm((p) => ({ ...p, customerPhone: e.target.value })); }} placeholder="(813) 555-1234" className="w-full px-3 py-2 text-[14px] border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#1A5FAC]" />
+                    </div>
+                    <div>
+                      <label className="block text-[12px] text-gray-500 mb-1">Email</label>
+                      <input type="email" value={newCustEmail} onChange={(e) => { setNewCustEmail(e.target.value); setForm((p) => ({ ...p, customerEmail: e.target.value })); }} placeholder="customer@email.com" className="w-full px-3 py-2 text-[14px] border border-gray-200 rounded-[8px] focus:outline-none focus:border-[#1A5FAC]" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {!creatingNewCustomer && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] font-semibold text-gray-500 uppercase mb-1">
@@ -1305,6 +1430,7 @@ function InvoicingPageInner() {
                   />
                 </div>
               </div>
+              )}
 
               {/* Line items */}
               <div>
