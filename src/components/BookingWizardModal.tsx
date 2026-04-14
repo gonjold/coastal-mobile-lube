@@ -3,9 +3,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp, getDocs, query, where, limit as firestoreLimit } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, getDocs, query, where, limit as firestoreLimit, getDoc, doc, setDoc } from "firebase/firestore";
 import { useServices, type Service } from "@/hooks/useServices";
 import { groupByCategory } from "@/lib/serviceHelpers";
+import { decodeVIN as decodeVINApi, getFuelCategory } from "@/lib/vehicleApi";
 import SearchableSelect from "./SearchableSelect";
 
 /* ─── Types ───────────────────────────────────────────────── */
@@ -94,6 +95,8 @@ const POPULAR_MAKES = [
   "Chrysler", "Lincoln", "Tesla",
 ];
 
+const FUEL_TYPES = ["Gas", "Diesel", "Hybrid", "Electric"] as const;
+
 /* ─── Fallback service data ───────────────────────────────── */
 
 const FALLBACK: Record<DivisionKey, { category: string; services: { name: string; price: number | null }[] }[]> = {
@@ -127,93 +130,15 @@ const FALLBACK: Record<DivisionKey, { category: string; services: { name: string
   ],
 };
 
-/* ─── SVG Icons ───────────────────────────────────────────── */
+/* ─── Fee config type ─────────────────────────────────────── */
 
-function IconOilChange() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 26 26" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M13 3c-1.5 4-5 6-5 10a5 5 0 0010 0c0-4-3.5-6-5-10z" />
-      <path d="M11 16a2 2 0 004 0" />
-    </svg>
-  );
-}
-
-function IconTires() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 26 26" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="13" cy="13" r="9" />
-      <circle cx="13" cy="13" r="3" />
-      <line x1="13" y1="4" x2="13" y2="10" />
-      <line x1="13" y1="16" x2="13" y2="22" />
-      <line x1="4" y1="13" x2="10" y2="13" />
-      <line x1="16" y1="13" x2="22" y2="13" />
-    </svg>
-  );
-}
-
-function IconBrakes() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 26 26" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="13" cy="13" r="9" />
-      <circle cx="13" cy="13" r="5" />
-      <circle cx="13" cy="13" r="2" />
-    </svg>
-  );
-}
-
-function IconMaintenance() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 26 26" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M16.5 3.5l2.5 2.5-8.5 8.5-4-4L15 2z" />
-      <path d="M6.5 10.5L3 22l11.5-3.5" />
-      <path d="M14.5 18.5l4-4" />
-    </svg>
-  );
-}
-
-function IconSnowflake() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 26 26" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="13" y1="3" x2="13" y2="23" />
-      <line x1="4" y1="8" x2="22" y2="18" />
-      <line x1="4" y1="18" x2="22" y2="8" />
-      <line x1="10" y1="4.5" x2="13" y2="7" />
-      <line x1="16" y1="4.5" x2="13" y2="7" />
-      <line x1="10" y1="21.5" x2="13" y2="19" />
-      <line x1="16" y1="21.5" x2="13" y2="19" />
-    </svg>
-  );
-}
-
-function IconLightning() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 26 26" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="15 3 9 14 13 14 11 23 17 12 13 12 15 3" />
-    </svg>
-  );
-}
-
-function IconClipboardPlus() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 26 26" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="6" y="5" width="14" height="18" rx="2" />
-      <path d="M10 3h6v3a1 1 0 01-1 1h-4a1 1 0 01-1-1V3z" />
-      <line x1="13" y1="12" x2="13" y2="18" />
-      <line x1="10" y1="15" x2="16" y2="15" />
-    </svg>
-  );
-}
-
-function getCategoryIcon(category: string) {
-  const lower = category.toLowerCase();
-  if (lower.includes("oil")) return <IconOilChange />;
-  if (lower.includes("tire") || lower.includes("wheel")) return <IconTires />;
-  if (lower.includes("brake")) return <IconBrakes />;
-  if (lower.includes("maintenance") || lower.includes("engine") || lower.includes("generator")) return <IconMaintenance />;
-  if (lower.includes("a/c") || lower.includes("heating") || lower.includes("hvac") || lower.includes("winter")) return <IconSnowflake />;
-  if (lower.includes("electric") || lower.includes("battery")) return <IconLightning />;
-  if (lower.includes("else") || lower.includes("other") || lower.includes("roof")) return <IconClipboardPlus />;
-  return <IconMaintenance />;
+interface FeeConfig {
+  enabled: boolean;
+  amount: number;
+  label: string;
+  taxable: boolean;
+  waiveFirstService: boolean;
+  promoOverride?: { label: string; discount: number; startDate: string; endDate: string } | null;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -232,19 +157,26 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
   const [otherText, setOtherText] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [packagesExpanded, setPackagesExpanded] = useState(false);
+  const [packagesExpanded, setPackagesExpanded] = useState(true);
 
-  /* ── Step 2: Vehicle ── */
+  /* ── Step 1: Vehicle (was Step 2) ── */
   const [vinOrHull, setVinOrHull] = useState("");
   const [vehicleYear, setVehicleYear] = useState("");
   const [vehicleMake, setVehicleMake] = useState("");
   const [vehicleModel, setVehicleModel] = useState("");
+  const [vehicleTrim, setVehicleTrim] = useState("");
+  const [fuelType, setFuelType] = useState("Gas");
   const [vinDecoding, setVinDecoding] = useState(false);
   const [vinDecoded, setVinDecoded] = useState(false);
+  const [vinDecodeError, setVinDecodeError] = useState("");
   const vinAbortRef = useRef<AbortController | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scannerError, setScannerError] = useState("");
   const scannerRef = useRef<Html5Qrcode | null>(null);
+
+  /* ── Convenience fee ── */
+  const [feeConfig, setFeeConfig] = useState<FeeConfig | null>(null);
+  const [feeWaived, setFeeWaived] = useState(false);
 
   /* ── YMM API state ── */
   const modelsCacheRef = useRef<Record<string, string[]>>({});
@@ -349,6 +281,8 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
   const selectedTotal = selectedServices.reduce((sum, s) => sum + (s.price ?? 0), 0);
   const hasNullPriced = selectedServices.some((s) => s.price == null) || (otherSelected && otherText.trim().length > 0);
   const isMarine = division === "Marine";
+  const feeAmount = feeConfig?.enabled && !feeWaived ? feeConfig.amount : 0;
+  const estimatedTotal = selectedTotal + feeAmount;
 
   /* ── Apply preselection when modal opens ── */
   const preselectAppliedRef = useRef(false);
@@ -381,6 +315,30 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
   useEffect(() => {
     if (!isOpen) preselectAppliedRef.current = false;
   }, [isOpen]);
+
+  /* ── Load convenience fee config ── */
+  useEffect(() => {
+    async function loadFees() {
+      try {
+        const snap = await getDoc(doc(db, "settings", "fees"));
+        if (snap.exists()) {
+          const data = snap.data()?.convenienceFee;
+          if (data) setFeeConfig(data);
+        } else {
+          const defaultFee: FeeConfig = {
+            enabled: true, amount: 39.95, label: "Mobile Service Fee",
+            taxable: false, waiveFirstService: true, promoOverride: null,
+          };
+          await setDoc(doc(db, "settings", "fees"), { convenienceFee: defaultFee });
+          setFeeConfig(defaultFee);
+        }
+      } catch { /* silent */ }
+    }
+    loadFees();
+  }, []);
+
+  /* ── Fuel category for service steering ── */
+  const fuelCategory = getFuelCategory(fuelType);
 
   /* ── Reset on division change ── */
   function handleDivisionChange(d: Division) {
@@ -461,36 +419,31 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
     setVehicleModel("");
   }
 
-  /* ── VIN auto-decode ── */
-  useEffect(() => {
-    vinAbortRef.current?.abort();
-    setVinDecoded(false);
+  /* ── VIN decode handler (button-triggered) ── */
+  async function handleVinDecode() {
     const cleaned = vinOrHull.replace(/\s/g, "");
-    if (isMarine || cleaned.length !== 17) {
-      setVinDecoding(false);
-      return;
-    }
-    const ac = new AbortController();
-    vinAbortRef.current = ac;
+    if (cleaned.length !== 17) return;
     setVinDecoding(true);
-    fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVin/${cleaned}?format=json`, { signal: ac.signal })
-      .then((r) => r.json())
-      .then((data: { Results?: { VariableId: number; Value: string | null }[] }) => {
-        if (ac.signal.aborted) return;
-        const results = data.Results ?? [];
-        const get = (id: number) => results.find((r) => r.VariableId === id)?.Value?.trim() || "";
-        const y = get(29);
-        const m = get(26);
-        const mo = get(28);
-        if (y) setVehicleYear(y);
-        if (m) setVehicleMake(m);
-        if (mo) setVehicleModel(mo);
-        if (y || m || mo) setVinDecoded(true);
-      })
-      .catch(() => {})
-      .finally(() => { if (!ac.signal.aborted) setVinDecoding(false); });
-    return () => ac.abort();
-  }, [vinOrHull, isMarine]);
+    setVinDecoded(false);
+    setVinDecodeError("");
+    try {
+      const result = await decodeVINApi(cleaned);
+      if (result) {
+        setVehicleYear(result.year);
+        setVehicleMake(result.make);
+        setVehicleModel(result.model);
+        setVehicleTrim(result.trim);
+        setFuelType(result.fuelType || "Gas");
+        setVinDecoded(true);
+      } else {
+        setVinDecodeError("Could not decode VIN. Enter vehicle details manually.");
+      }
+    } catch {
+      setVinDecodeError("Could not decode VIN. Enter vehicle details manually.");
+    } finally {
+      setVinDecoding(false);
+    }
+  }
 
   /* ── Pre-fetch models for top 25 popular makes + all NHTSA makes (triggered on first focus) ── */
   function handleSearchFocus() {
@@ -817,8 +770,8 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
 
   /* ── Can advance? ── */
   function canNext(): boolean {
-    if (step === 1) return selectedServices.length > 0 || (otherSelected && otherText.trim().length > 0);
-    if (step === 2) return true; // Vehicle info is optional
+    if (step === 1) return (vehicleYear.length > 0 && vehicleMake.length > 0 && vehicleModel.length > 0) || vinDecoded;
+    if (step === 2) return selectedServices.length > 0 || (otherSelected && otherText.trim().length > 0);
     if (step === 3) return customerFirstName.trim().length > 0 && customerLastName.trim().length > 0 && customerPhone.trim().length > 0;
     return true;
   }
@@ -830,29 +783,79 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
     try {
       const serviceNames = selectedServices.map((s) => s.name);
       if (otherSelected && otherText.trim()) serviceNames.push(`Other: ${otherText.trim()}`);
+
+      const phone = customerPhone.replace(/\D/g, "");
+      const email = customerEmail.trim().toLowerCase();
+
+      // Check for existing customer by phone or email
+      let customerId: string | null = null;
+      try {
+        for (const field of ["phone", "email"] as const) {
+          const val = field === "phone" ? phone : email;
+          if (!val) continue;
+          const q = query(collection(db, "customers"), where(field, "==", val), firestoreLimit(1));
+          const snap = await getDocs(q);
+          if (!snap.empty) {
+            customerId = snap.docs[0].id;
+            // Check if first-time customer (for fee waiving)
+            break;
+          }
+        }
+
+        // Create customer if not found
+        if (!customerId) {
+          const custDoc = await addDoc(collection(db, "customers"), {
+            name: `${customerFirstName.trim()} ${customerLastName.trim()}`,
+            firstName: customerFirstName.trim(),
+            lastName: customerLastName.trim(),
+            phone,
+            email,
+            address: address.trim(),
+            totalBookings: 0,
+            createdAt: serverTimestamp(),
+          });
+          customerId = custDoc.id;
+          // Waive fee for first-time customer
+          if (feeConfig?.waiveFirstService) setFeeWaived(true);
+        }
+      } catch { /* customer dedup is best-effort */ }
+
+      const finalFeeWaived = feeWaived || (feeConfig?.waiveFirstService && !customerId);
+      const finalFeeAmount = feeConfig?.enabled && !finalFeeWaived ? feeConfig.amount : 0;
+
       await addDoc(collection(db, "bookings"), {
         division: divKey,
         service: serviceNames.join(", "),
-        selectedServices: selectedServices.map((s) => ({ id: s.id, name: s.name, price: s.price, category: s.category })),
+        selectedServices: selectedServices.map((s) => ({ id: s.id, name: s.name, price: s.price, category: s.category, division: divKey })),
         otherDescription: otherSelected ? otherText.trim() : "",
         vinOrHull: vinOrHull.trim(),
         vehicleYear: vehicleYear.trim(),
         vehicleMake: vehicleMake.trim(),
         vehicleModel: vehicleModel.trim(),
+        vehicleTrim: vehicleTrim.trim(),
+        fuelType,
+        vin: vinOrHull.trim(),
         vesselYear: vesselYear.trim(),
         vesselMake: vesselMake.trim(),
         vesselModel: vesselModel.trim(),
         firstName: customerFirstName.trim(),
         lastName: customerLastName.trim(),
         name: `${customerFirstName.trim()} ${customerLastName.trim()}`,
-        phone: customerPhone.replace(/\D/g, ""),
-        email: customerEmail.trim().toLowerCase(),
+        phone,
+        email,
         contactPreference,
         address: address.trim(),
         preferredDate,
         timeWindow: preferredTime,
         notes: notes.trim(),
-        source: "booking-wizard-v4",
+        convenienceFee: {
+          amount: finalFeeWaived ? 0 : (feeConfig?.amount || 0),
+          waived: !!finalFeeWaived,
+          label: feeConfig?.label || "Mobile Service Fee",
+        },
+        totalEstimate: selectedTotal + finalFeeAmount,
+        customerId: customerId || null,
+        source: "Website",
         status: "pending",
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -880,7 +883,11 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
     setVehicleYear("");
     setVehicleMake("");
     setVehicleModel("");
+    setVehicleTrim("");
+    setFuelType("Gas");
     setVinDecoded(false);
+    setVinDecodeError("");
+    setFeeWaived(false);
     setVesselYear("");
     setVesselMake("");
     setVesselModel("");
@@ -1092,7 +1099,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
   if (!isOpen) return null;
 
   /* ── Step labels ── */
-  const steps = ["Services", "Vehicle", "Details", "Review"];
+  const steps = ["Vehicle", "Services", "Details", "Review"];
 
   /* ═══════════════════════════════════════════════════════════════
      RENDER
@@ -1195,8 +1202,8 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
           {/* Left column (step content) */}
           <div style={{ padding: "20px 24px", ...(!isMobile ? { flex: "0 0 65%", minWidth: 0 } : {}) }}>
 
-          {/* ═══ STEP 1: Services ═══ */}
-          {step === 1 && (
+          {/* ═══ STEP 2: Services ═══ */}
+          {step === 2 && (
             <div>
               {/* Division Pills */}
               <div className="wizard-division-pills" style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
@@ -1325,169 +1332,187 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                 </div>
               )}
 
-              {/* Category Cards Grid */}
+              {/* Collapsible Accordion Categories */}
               {servicesLoading ? (
                 <div style={{ textAlign: "center", padding: "40px 0" }}>
                   <div style={{ width: 32, height: 32, border: "3px solid #E2E8F0", borderTopColor: "#0B2447", borderRadius: "50%", animation: "spin 0.7s linear infinite", margin: "0 auto" }} />
                 </div>
               ) : (
                 <>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 10 }} className="wizard-card-grid">
-                    {categoryGroups.map((group) => {
-                      const isOther = /else|other/i.test(group.category);
-                      const isExpanded = expandedCategory === group.category;
-                      const count = countForCategory(group.category);
-                      const startPrice = getStartingPrice(group);
-                      const hasSelections = count > 0 || (isOther && otherSelected);
-                      const isNoSubToggled = !group.hasSubServices && !isOther && selectedServices.some((s) => s.id === `cat-${group.category}`);
-
-                      return (
-                        <button
-                          key={group.category}
-                          type="button"
-                          onClick={() => handleCategoryClick(group)}
-                          style={{
-                            position: "relative",
-                            background: "#FFFFFF",
-                            border: `1px solid ${hasSelections ? "#16A34A" : isExpanded ? "#F97316" : "#E2E8F0"}`,
-                            boxShadow: isExpanded ? "0 2px 8px rgba(249,115,22,0.15)" : "none",
-                            borderRadius: 12,
-                            padding: "10px 8px",
-                            cursor: "pointer",
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            gap: 3,
-                            textAlign: "center",
-                            transition: "all 0.15s",
-                          }}
-                        >
-                          {/* Badge */}
-                          {count > 0 && (
-                            <span style={{
-                              position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%",
-                              background: "#22c55e", color: "#fff", fontSize: 11, fontWeight: 700,
-                              display: "flex", alignItems: "center", justifyContent: "center",
-                            }}>
-                              {count}
-                            </span>
-                          )}
-                          {/* Checkmark for direct-toggle cards */}
-                          {(isNoSubToggled || (isOther && otherSelected)) && (
-                            <span style={{
-                              position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%",
-                              background: "#22c55e", color: "#fff", fontSize: 11, fontWeight: 700,
-                              display: "flex", alignItems: "center", justifyContent: "center",
-                            }}>
-                              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="9 3 5 9 3 7" />
-                              </svg>
-                            </span>
-                          )}
-                          <span style={{ color: isExpanded ? "#F97316" : hasSelections ? "#16A34A" : "#0B2447" }}>
-                            {getCategoryIcon(group.category)}
-                          </span>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: "#0B2447", lineHeight: 1.2 }}>{group.category}</span>
-                          {startPrice && (
-                            <span style={{ fontSize: 10, color: "#F97316", fontWeight: 600 }}>From {startPrice}</span>
-                          )}
-                          {/* Arrow indicator */}
-                          {isExpanded && (
-                            <div style={{ position: "absolute", bottom: -8, left: "50%", transform: "translateX(-50%)" }}>
-                              <svg width="16" height="8" viewBox="0 0 16 8"><polygon points="0,0 16,0 8,8" fill="#F97316" /></svg>
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Detail Panel */}
-                  {expandedCategory && (() => {
-                    const group = categoryGroups.find((g) => g.category === expandedCategory);
-                    if (!group || !group.hasSubServices) return null;
-                    return (
-                      <div
-                        style={{
-                          marginTop: 16, background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12,
-                          padding: 16, animation: "fadeIn 0.2s ease-out",
-                        }}
-                      >
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "#0B2447", marginBottom: 2 }}>{group.category}</div>
-                        <div style={{ fontSize: 11, color: "#94A3B8", marginBottom: 12 }}>Select the services you need</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                          {group.services.map((svc) => {
-                            const checked = isServiceSelected(svc.id);
-                            return (
-                              <label
-                                key={svc.id}
-                                style={{
-                                  display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8,
-                                  background: checked ? "#FFF7ED" : "transparent", cursor: "pointer", transition: "background 0.15s",
-                                }}
-                              >
-                                <span
-                                  style={{
-                                    width: 18, height: 18, borderRadius: 4, flexShrink: 0,
-                                    border: checked ? "none" : "2px solid #CBD5E1",
-                                    background: checked ? "#F97316" : "#FFFFFF",
-                                    display: "flex", alignItems: "center", justifyContent: "center",
-                                  }}
-                                  onClick={(e) => { e.preventDefault(); toggleService(svc); }}
-                                >
-                                  {checked && (
-                                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                      <polyline points="9 3 5 9 3 7" />
-                                    </svg>
-                                  )}
-                                </span>
-                                <span style={{ flex: 1, fontSize: 14, color: "#1E293B" }} onClick={(e) => { e.preventDefault(); toggleService(svc); }}>{svc.name}</span>
-                                <span style={{ fontSize: 14, fontWeight: 700, color: "#F97316", whiteSpace: "nowrap" }} onClick={(e) => { e.preventDefault(); toggleService(svc); }}>
-                                  {svc.price != null ? (svc.price % 1 === 0 ? `$${svc.price}` : `$${svc.price.toFixed(2)}`) : "Quote"}
-                                </span>
-                              </label>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* "Something Else" text input */}
-                  {otherSelected && (
-                    <div style={{ marginTop: 16 }}>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: "#334155", display: "block", marginBottom: 6 }}>
-                        What do you need?
-                      </label>
-                      <textarea
-                        value={otherText}
-                        onChange={(e) => setOtherText(e.target.value)}
-                        placeholder="Describe the service you're looking for..."
-                        rows={3}
-                        style={{
-                          width: "100%", padding: "10px 12px", border: "1px solid #E2E8F0", borderRadius: 10,
-                          fontSize: 14, resize: "vertical", outline: "none", fontFamily: "inherit",
-                          background: "#FFFFFF", color: "#1E293B",
-                        }}
-                      />
+                  {/* EV notice */}
+                  {fuelCategory === "electric" && (
+                    <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: "#1E40AF" }}>
+                      Electric vehicles don&apos;t need oil changes. Here are the services available for your EV.
+                    </div>
+                  )}
+                  {/* Hybrid notice */}
+                  {fuelCategory === "hybrid" && (
+                    <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: "#166534" }}>
+                      Hybrid vehicles may have different oil requirements. Please confirm specifics with our technician.
                     </div>
                   )}
 
-                  {/* Browse all services link */}
-                  <div style={{ textAlign: "center", marginTop: 16 }}>
-                    <button
-                      type="button"
-                      onClick={() => { setSearchOpen(true); setSearchQuery(""); }}
-                      style={{
-                        background: "none", border: "none", cursor: "pointer", color: "#F97316",
-                        fontSize: 13, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6,
-                      }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#F97316" strokeWidth="1.8" strokeLinecap="round">
-                        <circle cx="6" cy="6" r="4.5" /><line x1="9.2" y1="9.2" x2="12.5" y2="12.5" />
-                      </svg>
-                      Browse all {division} services
-                    </button>
+                  {/* Accordion sections */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                    {(() => {
+                      // Determine category sort/filter/dim based on fuel type
+                      let groups = [...categoryGroups];
+                      const isDieselCat = (cat: string) => /diesel/i.test(cat);
+                      const isOilCat = (cat: string) => /oil/i.test(cat);
+
+                      if (fuelCategory === "electric") {
+                        // Hide oil and diesel categories
+                        groups = groups.filter((g) => !isOilCat(g.category) && !isDieselCat(g.category));
+                      } else if (fuelCategory === "diesel") {
+                        // Promote diesel to top
+                        const diesel = groups.filter((g) => isDieselCat(g.category));
+                        const rest = groups.filter((g) => !isDieselCat(g.category));
+                        groups = [...diesel, ...rest];
+                      }
+
+                      return groups.map((group) => {
+                        const isOther = /else|other/i.test(group.category);
+                        const isDiesel = isDieselCat(group.category);
+                        const isExpanded = expandedCategory === group.category;
+                        const count = countForCategory(group.category);
+                        const startPrice = getStartingPrice(group);
+                        const isDimmed = isDiesel && fuelCategory === "gas";
+
+                        if (isOther) {
+                          return (
+                            <div key={group.category} style={{ marginBottom: 8 }}>
+                              <button
+                                type="button"
+                                onClick={() => setOtherSelected((p) => !p)}
+                                style={{
+                                  width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+                                  padding: "14px 20px", border: "1px solid #E2E8F0", borderRadius: 12,
+                                  background: otherSelected ? "#FFF7ED" : "#FFFFFF", cursor: "pointer",
+                                  transition: "all 0.15s",
+                                }}
+                              >
+                                <span style={{ fontSize: 15, fontWeight: 600, color: "#0B2040" }}>Something Else</span>
+                                {otherSelected && (
+                                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="13 4 6 12 3 9" />
+                                  </svg>
+                                )}
+                              </button>
+                              {otherSelected && (
+                                <div style={{ padding: "12px 20px", borderLeft: "1px solid #E2E8F0", borderRight: "1px solid #E2E8F0", borderBottom: "1px solid #E2E8F0", borderRadius: "0 0 12px 12px", marginTop: -4 }}>
+                                  <textarea
+                                    value={otherText}
+                                    onChange={(e) => setOtherText(e.target.value)}
+                                    placeholder="Describe the service you're looking for..."
+                                    rows={3}
+                                    style={{
+                                      width: "100%", padding: "10px 12px", border: "1px solid #E2E8F0", borderRadius: 10,
+                                      fontSize: 14, resize: "vertical", outline: "none", fontFamily: "inherit",
+                                      background: "#FFFFFF", color: "#1E293B",
+                                    }}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div key={group.category} style={{ marginBottom: 8 }}>
+                            {/* Accordion header */}
+                            <button
+                              type="button"
+                              onClick={() => setExpandedCategory(isExpanded ? null : group.category)}
+                              style={{
+                                width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+                                padding: "14px 20px", border: "1px solid #E2E8F0", borderRadius: 12,
+                                background: count > 0 ? "#FFF7ED" : "#FFFFFF", cursor: "pointer",
+                                opacity: isDimmed ? 0.5 : 1,
+                                transition: "all 0.15s",
+                              }}
+                              onMouseEnter={(e) => { if (!isDimmed) (e.currentTarget as HTMLElement).style.background = "#F9FAFB"; }}
+                              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = count > 0 ? "#FFF7ED" : "#FFFFFF"; }}
+                            >
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <span style={{ fontSize: 15, fontWeight: 600, color: isDimmed ? "#9CA3AF" : "#0B2040" }}>
+                                  {group.category}
+                                </span>
+                                {count > 0 && (
+                                  <span style={{ width: 20, height: 20, borderRadius: "50%", background: "#22c55e", color: "#fff", fontSize: 11, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                                    {count}
+                                  </span>
+                                )}
+                                {isDimmed && (
+                                  <span style={{ fontSize: 11, color: "#9CA3AF", fontStyle: "italic" }}>(for diesel vehicles only)</span>
+                                )}
+                              </div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                {!isExpanded && startPrice && (
+                                  <span style={{ fontSize: 14, fontWeight: 500, color: "#E07B2D" }}>From {startPrice}</span>
+                                )}
+                                <svg
+                                  width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={isDimmed ? "#9CA3AF" : "#475569"}
+                                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                                  style={{ transition: "transform 0.2s", transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}
+                                >
+                                  <polyline points="4 6 8 10 12 6" />
+                                </svg>
+                              </div>
+                            </button>
+
+                            {/* Expanded service list */}
+                            {isExpanded && group.hasSubServices && (
+                              <div style={{ borderLeft: "1px solid #E2E8F0", borderRight: "1px solid #E2E8F0", borderBottom: "1px solid #E2E8F0", borderRadius: "0 0 12px 12px", marginTop: -4, overflow: "hidden", animation: "fadeIn 0.2s ease-out" }}>
+                                {group.services.map((svc, si) => {
+                                  const checked = isServiceSelected(svc.id);
+                                  const svcIsDiesel = isDiesel && fuelCategory === "gas";
+                                  return (
+                                    <label
+                                      key={svc.id}
+                                      style={{
+                                        display: "flex", alignItems: "center", gap: 10, padding: "12px 20px",
+                                        background: checked ? "#FFF7ED" : "transparent", cursor: "pointer",
+                                        borderBottom: si < group.services.length - 1 ? "1px solid #F1F5F9" : "none",
+                                        transition: "background 0.15s",
+                                        opacity: svcIsDiesel ? 0.5 : 1,
+                                      }}
+                                    >
+                                      <span
+                                        style={{
+                                          width: 18, height: 18, borderRadius: 4, flexShrink: 0,
+                                          border: checked ? "none" : "2px solid #CBD5E1",
+                                          background: checked ? "#F97316" : "#FFFFFF",
+                                          display: "flex", alignItems: "center", justifyContent: "center",
+                                        }}
+                                        onClick={(e) => { e.preventDefault(); toggleService(svc); }}
+                                      >
+                                        {checked && (
+                                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="9 3 5 9 3 7" />
+                                          </svg>
+                                        )}
+                                      </span>
+                                      <div style={{ flex: 1 }} onClick={(e) => { e.preventDefault(); toggleService(svc); }}>
+                                        <span style={{ fontSize: 14, fontWeight: 500, color: "#0B2040" }}>{svc.name}</span>
+                                      </div>
+                                      <span style={{ fontSize: 14, fontWeight: 600, color: "#E07B2D", whiteSpace: "nowrap" }} onClick={(e) => { e.preventDefault(); toggleService(svc); }}>
+                                        {svc.price != null ? (svc.price % 1 === 0 ? `$${svc.price}` : `$${svc.price.toFixed(2)}`) : "Quote"}
+                                      </span>
+                                    </label>
+                                  );
+                                })}
+                                {/* Diesel warning if gas vehicle selects diesel service */}
+                                {isDiesel && fuelCategory === "gas" && selectedServices.some((s) => s.category === group.category) && (
+                                  <div style={{ padding: "8px 20px", background: "#FFFBEB", borderTop: "1px solid #FDE68A", fontSize: 12, color: "#92400E" }}>
+                                    This service is typically for diesel vehicles. Your vehicle uses gas.
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
 
                   {/* Selection Summary (mobile only — sidebar replaces this on desktop) */}
@@ -1500,7 +1525,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                         {selectedServices.length + (otherSelected && otherText.trim() ? 1 : 0)} service(s) selected
                       </span>
                       <span style={{ fontSize: 15, fontWeight: 700, color: "#F97316" }}>
-                        {selectedTotal > 0 ? `$${selectedTotal.toFixed(2)}${hasNullPriced ? "+" : ""}` : "Quote"}
+                        {estimatedTotal > 0 ? `$${estimatedTotal.toFixed(2)}${hasNullPriced ? "+" : ""}` : "Quote"}
                       </span>
                     </div>
                   )}
@@ -1509,14 +1534,110 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
             </div>
           )}
 
-          {/* ═══ STEP 2: Vehicle ═══ */}
-          {step === 2 && (
+          {/* ═══ STEP 1: Vehicle ═══ */}
+          {step === 1 && (
             <div>
               <h3 style={{ fontSize: 18, fontWeight: 700, color: "#0B2447", margin: "0 0 16px" }}>
-                {isMarine ? "Vessel Information" : "Vehicle Information"}
+                {isMarine ? "Vessel Information" : "Your Vehicle"}
               </h3>
 
               {renderLookupUI("Been here before? We can auto-fill your vehicle info.")}
+
+              {/* VIN Decode section (non-marine only, shown FIRST) */}
+              {!isMarine && (
+                <>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>VIN (optional)</label>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                    <input
+                      type="text"
+                      value={vinOrHull}
+                      onChange={(e) => { setVinOrHull(e.target.value.toUpperCase().slice(0, 17)); setVinDecoded(false); setVinDecodeError(""); }}
+                      placeholder="Enter your VIN for auto-fill (optional)"
+                      maxLength={17}
+                      style={{
+                        flex: 1, padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
+                        fontSize: 14, outline: "none", fontFamily: "monospace", letterSpacing: 1, textTransform: "uppercase",
+                        background: "#FFFFFF", color: "#1E293B",
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleVinDecode}
+                      disabled={vinDecoding || vinOrHull.replace(/\s/g, "").length !== 17}
+                      style={{
+                        padding: "10px 20px", background: "#E07B2D", color: "#fff", border: "none", borderRadius: 10,
+                        cursor: vinDecoding || vinOrHull.replace(/\s/g, "").length !== 17 ? "not-allowed" : "pointer",
+                        fontSize: 14, fontWeight: 600, flexShrink: 0,
+                        opacity: vinDecoding || vinOrHull.replace(/\s/g, "").length !== 17 ? 0.5 : 1,
+                      }}
+                    >
+                      {vinDecoding ? "Decoding..." : "Decode"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setScannerOpen(true)}
+                      style={{
+                        padding: "10px 14px", background: "#0B2447", color: "#fff", border: "none", borderRadius: 10,
+                        cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, flexShrink: 0,
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round">
+                        <rect x="1" y="1" width="4" height="4" /><rect x="11" y="1" width="4" height="4" />
+                        <rect x="1" y="11" width="4" height="4" /><line x1="8" y1="1" x2="8" y2="6" />
+                        <line x1="11" y1="8" x2="15" y2="8" /><line x1="8" y1="11" x2="8" y2="15" /><line x1="1" y1="8" x2="6" y2="8" />
+                      </svg>
+                      Scan
+                    </button>
+                  </div>
+
+                  {/* Scanner */}
+                  {scannerOpen && (
+                    <div style={{ marginBottom: 12, background: "#000", borderRadius: 12, overflow: "hidden", position: "relative" }}>
+                      <div id="wizard-vin-scanner" style={{ width: "100%", minHeight: 200 }} />
+                      {scannerError && (
+                        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 14 }}>
+                          {scannerError}
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={closeScanner}
+                        style={{
+                          position: "absolute", top: 8, right: 8, width: 28, height: 28, borderRadius: "50%",
+                          background: "rgba(0,0,0,0.5)", border: "none", color: "#fff", cursor: "pointer",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                        }}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round">
+                          <line x1="1" y1="1" x2="11" y2="11" /><line x1="11" y1="1" x2="1" y2="11" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* VIN decode status */}
+                  {vinDecoded && !vinDecoding && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#22c55e", fontWeight: 600, marginBottom: 12 }}>
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="11 4 5.5 10 3 7.5" />
+                      </svg>
+                      {[vehicleYear, vehicleMake, vehicleModel, vehicleTrim].filter(Boolean).join(" ")} - {fuelType}
+                    </div>
+                  )}
+                  {vinDecodeError && (
+                    <div style={{ fontSize: 13, color: "#DC2626", marginBottom: 12 }}>
+                      {vinDecodeError}
+                    </div>
+                  )}
+
+                  {/* Divider */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "16px 0" }}>
+                    <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
+                    <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 500 }}>or enter manually</span>
+                    <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
+                  </div>
+                </>
+              )}
 
               {isMarine ? (
                 <div>
@@ -1592,327 +1713,78 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                 </div>
               ) : (
                 <>
-                  {/* Year / Make / Model — desktop: unified search, mobile: cascading selects */}
-                  {!isMobile ? (
-                    <>
-                      {/* Desktop: Unified YMM Search */}
-                      {hasVehicleSelected && !showManualFields && !ymmFallback ? (
-                        /* Selected vehicle chip */
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <div
-                            style={{
-                              display: "inline-flex", alignItems: "center", gap: 8,
-                              background: "#F0FDF4", border: "1px solid #86EFAC", borderRadius: 9999,
-                              padding: "10px 16px", fontSize: 15, fontWeight: 600, color: "#166534",
-                            }}
-                          >
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="13 4 6 12 3 9" />
-                            </svg>
-                            {[vehicleYear, vehicleMake, vehicleModel].filter(Boolean).join(" ")}
-                            <button
-                              type="button"
-                              onClick={clearYmmSelection}
-                              style={{
-                                background: "none", border: "none", cursor: "pointer", color: "#166534",
-                                fontSize: 16, fontWeight: 700, padding: "0 0 0 4px", lineHeight: 1,
-                              }}
-                            >
-                              &times;
-                            </button>
-                          </div>
-                        </div>
-                      ) : ymmFallback || showManualFields ? (
-                        /* Fallback / manual entry fields */
-                        <div>
-                          {ymmFallback && (
-                            <div style={{ fontSize: 13, color: "#94A3B8", marginBottom: 12 }}>
-                              Can&apos;t load vehicle database. Enter your vehicle details below.
-                            </div>
-                          )}
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-                            <div>
-                              <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Year</label>
-                              <SearchableSelect
-                                options={YEAR_OPTIONS}
-                                value={vehicleYear}
-                                onChange={handleYearChange}
-                                placeholder="Year"
-                                maxVisible={6}
-                              />
-                            </div>
-                            <div>
-                              <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Make</label>
-                              <SearchableSelect
-                                options={POPULAR_MAKES}
-                                value={vehicleMake}
-                                onChange={handleMakeChange}
-                                placeholder="Make"
-                                maxVisible={8}
-                              />
-                            </div>
-                            <div>
-                              <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Model</label>
-                              <SearchableSelect
-                                options={currentModels}
-                                value={vehicleModel}
-                                onChange={(val) => setVehicleModel(val)}
-                                placeholder={vehicleMake ? "Model" : "Select make first"}
-                                disabled={!vehicleMake}
-                                maxVisible={8}
-                                loading={modelsLoading}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        /* Unified search bar */
-                        <div ref={ymmDropdownRef} style={{ position: "relative" }}>
-                          <div style={{ position: "relative" }}>
-                            <svg
-                              width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round"
-                              style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
-                            >
-                              <circle cx="7" cy="7" r="5" /><line x1="10.5" y1="10.5" x2="14" y2="14" />
-                            </svg>
-                            <input
-                              type="text"
-                              value={ymmSearch}
-                              onChange={(e) => {
-                                setYmmSearch(e.target.value);
-                                setYmmDropdownOpen(true);
-                              }}
-                              onFocus={handleSearchFocus}
-                              placeholder={prefetchLoading ? "Loading vehicle database..." : (
-                                division === "RV" ? "Search your vehicle... e.g. 2022 Thor Four Winds" :
-                                division === "Fleet" ? "Search your vehicle... e.g. 2023 Ford Transit" :
-                                "Search your vehicle... e.g. 2024 Ford F-150"
-                              )}
-                              style={{
-                                width: "100%", padding: "12px 14px 12px 38px", border: "1px solid #E2E8F0",
-                                borderRadius: 10, fontSize: 14, outline: "none", fontFamily: "inherit",
-                                background: "#FFFFFF", color: "#1E293B",
-                              }}
-                            />
-                          </div>
-                          {/* Manual entry link */}
-                          {!ymmDropdownOpen && (
-                            <button
-                              type="button"
-                              onClick={() => { setShowManualFields(true); }}
-                              style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", fontSize: 12, fontWeight: 500, marginTop: 6, padding: 0 }}
-                            >
-                              or enter details manually
-                            </button>
-                          )}
-                          {/* Dropdown suggestions (opens downward) */}
-                          {ymmDropdownOpen && (() => {
-                            const suggestions = computeYmmSuggestions();
-                            if (suggestions.length === 0 && ymmSearch.trim().length > 1) {
-                              return (
-                                <div
-                                  style={{
-                                    position: "absolute", top: "100%", left: 0, right: 0, zIndex: 100,
-                                    background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 12,
-                                    boxShadow: "0 8px 24px rgba(0,0,0,0.12)", marginTop: 4, padding: "16px 20px",
-                                  }}
-                                >
-                                  <div style={{ fontSize: 14, color: "#64748B", marginBottom: 8 }}>
-                                    No matches for &ldquo;{ymmSearch.trim()}&rdquo;. Try searching by make or model name.
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => { setShowManualFields(true); setYmmDropdownOpen(false); }}
-                                    style={{ background: "none", border: "none", cursor: "pointer", color: "#F97316", fontWeight: 600, fontSize: 14, padding: 0 }}
-                                  >
-                                    or enter details manually
-                                  </button>
-                                </div>
-                              );
-                            }
-                            if (suggestions.length === 0) return null;
-                            const query = ymmSearch.trim();
-                            return (
-                              <div
-                                style={{
-                                  position: "absolute", top: "100%", left: 0, right: 0, zIndex: 100,
-                                  background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 12,
-                                  boxShadow: "0 8px 24px rgba(0,0,0,0.12)", marginTop: 4,
-                                  maxHeight: 280, overflowY: "auto",
-                                }}
-                              >
-                                {suggestions.map((s, i) => {
-                                  const idx = s.display.toLowerCase().indexOf(query.toLowerCase());
-                                  return (
-                                    <button
-                                      key={`${s.display}-${i}`}
-                                      type="button"
-                                      onClick={() => selectYmmSuggestion(s)}
-                                      style={{
-                                        display: "block", width: "100%", textAlign: "left", padding: "12px 20px",
-                                        border: "none", background: "transparent", cursor: "pointer",
-                                        fontSize: 15, color: "#1E293B", fontFamily: "inherit",
-                                        borderBottom: i < suggestions.length - 1 ? "1px solid #F1F5F9" : "none",
-                                      }}
-                                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#FFF7ED"; }}
-                                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
-                                    >
-                                      {idx >= 0 && query ? (
-                                        <>
-                                          {s.display.slice(0, idx)}
-                                          <span style={{ color: "#F97316", fontWeight: 700 }}>{s.display.slice(idx, idx + query.length)}</span>
-                                          {s.display.slice(idx + query.length)}
-                                        </>
-                                      ) : s.display}
-                                    </button>
-                                  );
-                                })}
-                                {suggestions.length > 8 && (
-                                  <div style={{ padding: "8px 20px 10px", fontSize: 12, color: "#94A3B8", textAlign: "center", borderTop: "1px solid #F1F5F9" }}>
-                                    Showing 8 of {suggestions.length} results
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      {/* Mobile: Cascading native selects */}
-                      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                        <div>
-                          <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Year</label>
-                          <select
-                            value={vehicleYear}
-                            onChange={(e) => handleYearChange(e.target.value)}
-                            style={{
-                              width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
-                              fontSize: 14, outline: "none", background: "#FFFFFF", color: "#1E293B", fontFamily: "inherit",
-                            }}
-                          >
-                            <option value="">Select Year</option>
-                            {YEARS.map((y) => <option key={y} value={String(y)}>{y}</option>)}
-                          </select>
-                        </div>
-                        <div>
-                          <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Make</label>
-                          <select
-                            value={vehicleMake}
-                            onChange={(e) => handleMakeChange(e.target.value)}
-                            style={{
-                              width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
-                              fontSize: 14, outline: "none", background: "#FFFFFF", color: "#1E293B", fontFamily: "inherit",
-                            }}
-                          >
-                            <option value="">Select Make</option>
-                            {POPULAR_MAKES.map((pm) => (
-                              <option key={pm} value={pm}>{pm}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Model</label>
-                          <select
-                            value={vehicleModel}
-                            onChange={(e) => setVehicleModel(e.target.value)}
-                            disabled={!vehicleMake || modelsLoading}
-                            style={{
-                              width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
-                              fontSize: 14, outline: "none", background: "#FFFFFF", color: "#1E293B", fontFamily: "inherit",
-                              opacity: !vehicleMake || modelsLoading ? 0.5 : 1,
-                            }}
-                          >
-                            <option value="">
-                              {modelsLoading ? "Loading models..." : !vehicleMake ? "Select make first" : "Select Model"}
-                            </option>
-                            {currentModels.map((m) => <option key={m} value={m}>{m}</option>)}
-                          </select>
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Divider */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "16px 0" }}>
-                    <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
-                    <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 500 }}>or enter your VIN</span>
-                    <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
-                  </div>
-
-                  {/* VIN input + scan */}
-                  <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>VIN</label>
-                  <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                    <input
-                      type="text"
-                      value={vinOrHull}
-                      onChange={(e) => setVinOrHull(e.target.value.toUpperCase().slice(0, 17))}
-                      placeholder="Enter 17-character VIN"
-                      maxLength={17}
-                      style={{
-                        flex: 1, padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
-                        fontSize: 14, outline: "none", fontFamily: "monospace", letterSpacing: 1, textTransform: "uppercase",
-                        background: "#FFFFFF", color: "#1E293B",
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setScannerOpen(true)}
-                      style={{
-                        padding: "10px 16px", background: "#0B2447", color: "#fff", border: "none", borderRadius: 10,
-                        cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, flexShrink: 0,
-                      }}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round">
-                        <rect x="1" y="1" width="4" height="4" /><rect x="11" y="1" width="4" height="4" />
-                        <rect x="1" y="11" width="4" height="4" /><line x1="8" y1="1" x2="8" y2="6" />
-                        <line x1="11" y1="8" x2="15" y2="8" /><line x1="8" y1="11" x2="8" y2="15" /><line x1="1" y1="8" x2="6" y2="8" />
-                      </svg>
-                      Scan
-                    </button>
-                  </div>
-
-                  {/* Scanner */}
-                  {scannerOpen && (
-                    <div style={{ marginBottom: 12, background: "#000", borderRadius: 12, overflow: "hidden", position: "relative" }}>
-                      <div id="wizard-vin-scanner" style={{ width: "100%", minHeight: 200 }} />
-                      {scannerError && (
-                        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 14 }}>
-                          {scannerError}
-                        </div>
-                      )}
-                      <button
-                        type="button"
-                        onClick={closeScanner}
+                  {/* Year / Make / Model cascading dropdowns */}
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 10 }}>
+                    <div>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Year</label>
+                      <select
+                        value={vehicleYear}
+                        onChange={(e) => handleYearChange(e.target.value)}
                         style={{
-                          position: "absolute", top: 8, right: 8, width: 28, height: 28, borderRadius: "50%",
-                          background: "rgba(0,0,0,0.5)", border: "none", color: "#fff", cursor: "pointer",
-                          display: "flex", alignItems: "center", justifyContent: "center",
+                          width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
+                          fontSize: 14, outline: "none", background: "#FFFFFF", color: vehicleYear ? "#1E293B" : "#94A3B8", fontFamily: "inherit",
                         }}
+                        onFocus={(e) => { e.currentTarget.style.borderColor = "#E07B2D"; e.currentTarget.style.boxShadow = "0 0 0 1px #E07B2D"; }}
+                        onBlur={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.boxShadow = "none"; }}
                       >
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round">
-                          <line x1="1" y1="1" x2="11" y2="11" /><line x1="11" y1="1" x2="1" y2="11" />
-                        </svg>
-                      </button>
+                        <option value="">Select year</option>
+                        {YEARS.map((y) => <option key={y} value={String(y)}>{y}</option>)}
+                      </select>
                     </div>
-                  )}
+                    <div>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Make</label>
+                      <select
+                        value={vehicleMake}
+                        onChange={(e) => handleMakeChange(e.target.value)}
+                        style={{
+                          width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
+                          fontSize: 14, outline: "none", background: "#FFFFFF", color: vehicleMake ? "#1E293B" : "#94A3B8", fontFamily: "inherit",
+                        }}
+                        onFocus={(e) => { e.currentTarget.style.borderColor = "#E07B2D"; e.currentTarget.style.boxShadow = "0 0 0 1px #E07B2D"; }}
+                        onBlur={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.boxShadow = "none"; }}
+                      >
+                        <option value="">Select make</option>
+                        {POPULAR_MAKES.map((pm) => <option key={pm} value={pm}>{pm}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Model</label>
+                      <select
+                        value={vehicleModel}
+                        onChange={(e) => setVehicleModel(e.target.value)}
+                        disabled={!vehicleMake || modelsLoading}
+                        style={{
+                          width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
+                          fontSize: 14, outline: "none", background: "#FFFFFF", color: vehicleModel ? "#1E293B" : "#94A3B8", fontFamily: "inherit",
+                          opacity: !vehicleMake || modelsLoading ? 0.5 : 1,
+                        }}
+                        onFocus={(e) => { e.currentTarget.style.borderColor = "#E07B2D"; e.currentTarget.style.boxShadow = "0 0 0 1px #E07B2D"; }}
+                        onBlur={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.boxShadow = "none"; }}
+                      >
+                        <option value="">
+                          {modelsLoading ? "Loading..." : !vehicleMake ? "Select make first" : "Select model"}
+                        </option>
+                        {currentModels.map((m) => <option key={m} value={m}>{m}</option>)}
+                      </select>
+                    </div>
+                  </div>
 
-                  {/* Decoding state */}
-                  {vinDecoding && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#475569", marginBottom: 12 }}>
-                      <div style={{ width: 16, height: 16, border: "2px solid #E2E8F0", borderTopColor: "#0B2447", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
-                      Decoding VIN...
-                    </div>
-                  )}
-                  {vinDecoded && !vinDecoding && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#22c55e", fontWeight: 600, marginBottom: 12 }}>
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="11 4 5.5 10 3 7.5" />
-                      </svg>
-                      VIN decoded successfully
-                    </div>
-                  )}
+                  {/* Fuel Type */}
+                  <div style={{ marginTop: 16 }}>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Engine / Fuel Type</label>
+                    <select
+                      value={fuelType}
+                      onChange={(e) => setFuelType(e.target.value)}
+                      style={{
+                        width: isMobile ? "100%" : "33%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
+                        fontSize: 14, outline: "none", background: "#FFFFFF", color: "#1E293B", fontFamily: "inherit",
+                      }}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = "#E07B2D"; e.currentTarget.style.boxShadow = "0 0 0 1px #E07B2D"; }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.boxShadow = "none"; }}
+                    >
+                      {FUEL_TYPES.map((ft) => <option key={ft} value={ft}>{ft}</option>)}
+                    </select>
+                  </div>
                 </>
               )}
             </div>
@@ -2062,7 +1934,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Special instructions, location details, etc."
+                  placeholder="E.g.: Keys will be at reception, ask for Ana. Call (813) 555-1234 upon arrival. Access code: #1234. Car is on parking level 2, spot 45."
                   rows={3}
                   style={{
                     width: "100%", padding: "10px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
@@ -2079,11 +1951,32 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
             <div>
               <h3 style={{ fontSize: 18, fontWeight: 700, color: "#0B2447", margin: "0 0 16px" }}>Review Your Booking</h3>
 
+              {/* Vehicle card */}
+              <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: 16, marginBottom: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: "#1E293B" }}>{isMarine ? "Vessel" : "Vehicle"}</span>
+                  <button type="button" onClick={() => setStep(1)} style={{ fontSize: 12, fontWeight: 600, color: "#F97316", background: "none", border: "none", cursor: "pointer" }}>Edit</button>
+                </div>
+                {(vehicleYear || vehicleMake || vehicleModel) && (
+                  <div style={{ fontSize: 15, fontWeight: 600, color: "#0B2447", marginBottom: 4 }}>
+                    {[vehicleYear, vehicleMake, vehicleModel, vehicleTrim].filter(Boolean).join(" ")}{fuelType ? ` (${fuelType})` : ""}
+                  </div>
+                )}
+                {vinOrHull && (
+                  <div style={{ fontSize: 13, color: "#475569" }}>{isMarine ? "HIN" : "VIN"}: {vinOrHull}</div>
+                )}
+                {isMarine && (vesselYear || vesselMake || vesselModel) && (
+                  <div style={{ fontSize: 13, color: "#1E293B", marginTop: 4 }}>
+                    {[vesselYear, vesselMake, vesselModel].filter(Boolean).join(" ")}
+                  </div>
+                )}
+              </div>
+
               {/* Services card */}
               <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: 16, marginBottom: 12 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                   <span style={{ fontSize: 14, fontWeight: 700, color: "#1E293B" }}>Services</span>
-                  <button type="button" onClick={() => setStep(1)} style={{ fontSize: 12, fontWeight: 600, color: "#F97316", background: "none", border: "none", cursor: "pointer" }}>Edit</button>
+                  <button type="button" onClick={() => setStep(2)} style={{ fontSize: 12, fontWeight: 600, color: "#F97316", background: "none", border: "none", cursor: "pointer" }}>Edit</button>
                 </div>
                 {selectedServices.map((s) => (
                   <div key={s.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0" }}>
@@ -2096,29 +1989,16 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                 {otherSelected && otherText.trim() && (
                   <div style={{ padding: "4px 0", fontSize: 13, color: "#475569" }}>Other: {otherText}</div>
                 )}
-              </div>
-
-              {/* Vehicle card */}
-              <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 12, padding: 16, marginBottom: 12 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: "#1E293B" }}>{isMarine ? "Vessel" : "Vehicle"}</span>
-                  <button type="button" onClick={() => setStep(2)} style={{ fontSize: 12, fontWeight: 600, color: "#F97316", background: "none", border: "none", cursor: "pointer" }}>Edit</button>
-                </div>
-                {(vehicleYear || vehicleMake || vehicleModel) && (
-                  <div style={{ fontSize: 13, color: "#1E293B", marginBottom: 4 }}>
-                    {[vehicleYear, vehicleMake, vehicleModel].filter(Boolean).join(" ")}
+                {/* Convenience fee */}
+                {feeConfig?.enabled && (
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderTop: "1px solid #E2E8F0", marginTop: 6, paddingTop: 8 }}>
+                    <span style={{ fontSize: 13, color: "#1E293B" }}>{feeConfig.label}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: feeWaived ? "#16A34A" : "#F97316" }}>
+                      {feeWaived ? (
+                        <><span style={{ textDecoration: "line-through", color: "#94A3B8", marginRight: 6 }}>${feeConfig.amount.toFixed(2)}</span>FREE</>
+                      ) : `$${feeConfig.amount.toFixed(2)}`}
+                    </span>
                   </div>
-                )}
-                {vinOrHull && (
-                  <div style={{ fontSize: 13, color: "#475569" }}>{isMarine ? "HIN" : "VIN"}: {vinOrHull}</div>
-                )}
-                {isMarine && (vesselYear || vesselMake || vesselModel) && (
-                  <div style={{ fontSize: 13, color: "#1E293B", marginTop: 4 }}>
-                    {[vesselYear, vesselMake, vesselModel].filter(Boolean).join(" ")}
-                  </div>
-                )}
-                {!vehicleYear && !vehicleMake && !vehicleModel && !vinOrHull && !(isMarine && (vesselYear || vesselMake || vesselModel)) && (
-                  <div style={{ fontSize: 13, color: "#94A3B8" }}>Not provided</div>
                 )}
               </div>
 
@@ -2144,7 +2024,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
               <div style={{ background: "#FFF7ED", border: "1px solid #FDBA74", borderRadius: 12, padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span style={{ fontSize: 14, fontWeight: 700, color: "#0B2447" }}>Estimated Total</span>
                 <span style={{ fontSize: 18, fontWeight: 800, color: "#F97316" }}>
-                  {selectedTotal > 0 ? `$${selectedTotal.toFixed(2)}${hasNullPriced ? "+" : ""}` : "Quote on-site"}
+                  {estimatedTotal > 0 ? `$${estimatedTotal.toFixed(2)}${hasNullPriced ? "+" : ""}` : "Quote on-site"}
                 </span>
               </div>
               {hasNullPriced && (
@@ -2183,9 +2063,14 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
           {/* ── Desktop Sidebar ── */}
           {!isMobile && (
             <div style={{
-              flex: "0 0 35%", borderLeft: "1px solid #E2E8F0", background: "#F8FAFC",
+              flex: "0 0 35%", borderLeft: "1px solid #E2E8F0", background: "#FFFFFF",
               padding: 20, position: "sticky", top: 0, alignSelf: "flex-start",
             }}>
+              <div style={{
+                background: "#FFFFFF", borderRadius: 14, padding: 20,
+                boxShadow: "0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04)",
+                border: "1px solid #F1F5F9",
+              }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: "#0B2447", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 16 }}>
                 Your Selection
               </div>
@@ -2244,6 +2129,24 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                     </div>
                   )}
 
+                  {/* Convenience Fee */}
+                  {feeConfig?.enabled && selectedServices.length > 0 && (
+                    <div style={{ display: "flex", alignItems: "center", padding: "4px 0", marginBottom: 4 }}>
+                      <span style={{ fontSize: 13, color: "#1E293B", flex: 1 }}>{feeConfig.label}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: feeWaived ? "#16A34A" : "#F97316", whiteSpace: "nowrap" }}>
+                        {feeWaived ? (
+                          <><span style={{ textDecoration: "line-through", color: "#94A3B8", marginRight: 4 }}>${feeConfig.amount.toFixed(2)}</span><span style={{ fontSize: 11, fontWeight: 700 }}>FREE</span></>
+                        ) : `$${feeConfig.amount.toFixed(2)}`}
+                      </span>
+                      {/* No remove button — customer cannot opt out */}
+                    </div>
+                  )}
+                  {feeWaived && feeConfig?.waiveFirstService && (
+                    <div style={{ fontSize: 11, color: "#16A34A", fontWeight: 500, marginBottom: 8 }}>
+                      FREE - first service
+                    </div>
+                  )}
+
                   {/* Divider */}
                   <div style={{ height: 1, background: "#E2E8F0", margin: "12px 0" }} />
 
@@ -2251,14 +2154,14 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <span style={{ fontSize: 14, fontWeight: 600, color: "#0B2447" }}>Estimated Total</span>
                     <span style={{ fontSize: 18, fontWeight: 700, color: "#F97316" }}>
-                      {selectedTotal > 0 ? `$${selectedTotal.toFixed(2)}${hasNullPriced ? "+" : ""}` : "Quote"}
+                      {estimatedTotal > 0 ? `$${estimatedTotal.toFixed(2)}${hasNullPriced ? "+" : ""}` : "Quote"}
                     </span>
                   </div>
 
                   {/* Vehicle info (steps 2-4) */}
                   {step >= 2 && (vehicleYear || vehicleMake || vehicleModel) && (
                     <div style={{ marginTop: 16, fontSize: 13, color: "#475569" }}>
-                      {[vehicleYear, vehicleMake, vehicleModel].filter(Boolean).join(" ")}
+                      {[vehicleYear, vehicleMake, vehicleModel].filter(Boolean).join(" ")}{fuelType ? ` (${fuelType})` : ""}
                     </div>
                   )}
 
@@ -2270,6 +2173,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                   )}
                 </>
               )}
+              </div>
             </div>
           )}
         </div>
