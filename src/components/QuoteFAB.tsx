@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { useBooking } from "@/contexts/BookingContext";
 
 export default function QuoteFAB() {
+  const pathname = usePathname();
+  const isAdmin = pathname?.startsWith("/admin");
   const { bookingOpen, quoteOpen, openQuote } = useBooking();
   const [pastHero, setPastHero] = useState(false);
   const [hasHero, setHasHero] = useState(false);
@@ -25,7 +28,7 @@ export default function QuoteFAB() {
     return () => observer.disconnect();
   }, []);
 
-  if (bookingOpen || quoteOpen) return null;
+  if (isAdmin || bookingOpen || quoteOpen) return null;
 
   // Desktop: only show after scrolling past hero (or if no hero exists)
   // Mobile: always show

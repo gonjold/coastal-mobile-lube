@@ -22,7 +22,10 @@ const SECTIONS = [
   },
   {
     label: "WEBSITE",
-    items: [{ label: "Content Editor", href: "/admin/hero-editor" }],
+    items: [
+      { label: "Content Editor", href: "/admin/hero-editor" },
+      { label: "Services & Pricing", href: "/admin/services" },
+    ],
   },
 ];
 
@@ -129,12 +132,6 @@ export default function AdminSidebar() {
 
       {/* ── Bottom actions ── */}
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-        <Link
-          href="/admin/services"
-          className="block px-5 py-2.5 text-[13px] text-white/55 hover:text-white/85 cursor-pointer transition"
-        >
-          Settings
-        </Link>
         <a
           href="/"
           target="_blank"

@@ -84,6 +84,7 @@ export default function SchedulePage() {
 
   /* Filters */
   const [statusFilter, setStatusFilter] = useState("all");
+  const [timeFilter, setTimeFilter] = useState("all");
   const [divisionFilter, setDivisionFilter] = useState("all");
 
   /* Detail panel */
@@ -126,6 +127,16 @@ export default function SchedulePage() {
     return () => unsub();
   }, []);
 
+  /* ── Time filter bounds ── */
+  const now = new Date();
+  const todayISO = toISODate(now);
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay());
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
   /* ── Client-side filtering ── */
   const filtered = bookings.filter((b) => {
     // Status filter
@@ -133,6 +144,16 @@ export default function SchedulePage() {
       if (statusFilter === "new-lead") {
         if (b.type !== "lead" && b.status !== "new-lead") return false;
       } else if (b.status !== statusFilter) return false;
+    }
+
+    // Time filter
+    if (timeFilter !== "all") {
+      const dateStr = b.confirmedDate || b.preferredDate;
+      if (!dateStr) return false;
+      const d = new Date(dateStr + "T12:00:00");
+      if (timeFilter === "today" && dateStr !== todayISO) return false;
+      if (timeFilter === "week" && (d < startOfWeek || d > endOfWeek)) return false;
+      if (timeFilter === "month" && (d < startOfMonth || d > endOfMonth)) return false;
     }
 
     // Division filter
@@ -274,6 +295,13 @@ export default function SchedulePage() {
     { key: "cancelled", label: "Cancelled" },
   ];
 
+  const timeOptions = [
+    { key: "today", label: "Today" },
+    { key: "week", label: "This Week" },
+    { key: "month", label: "This Month" },
+    { key: "all", label: "All Time" },
+  ];
+
   const divisionOptions = [
     { key: "all", label: "All" },
     { key: "auto", label: "Auto" },
@@ -328,6 +356,26 @@ export default function SchedulePage() {
                 </button>
               );
             })}
+          </div>
+
+          {/* Divider */}
+          <div className="w-px h-6 bg-gray-200" />
+
+          {/* Time filter */}
+          <div className="flex items-center gap-1">
+            {timeOptions.map((opt) => (
+              <button
+                key={opt.key}
+                onClick={() => setTimeFilter(opt.key)}
+                className={`px-3 py-1.5 rounded-lg text-xs cursor-pointer transition ${
+                  timeFilter === opt.key
+                    ? "bg-[#F7F8FA] text-[#0B2040] font-semibold"
+                    : "text-gray-500 font-medium hover:bg-gray-50"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
           </div>
 
           {/* Divider */}

@@ -330,7 +330,7 @@ const INVOICE_COLUMNS: AdminColumn[] = [
   { key: "status", label: "Status", align: "center", sortable: true },
 ];
 
-const GRID_TEMPLATE = "100px 1.5fr 1.5fr 100px 100px 100px 90px";
+const GRID_TEMPLATE = "150px 1.2fr 1.2fr 90px 90px 110px 90px";
 
 /* ─── Status filter config ───────────────────────────────── */
 
@@ -1086,7 +1086,7 @@ function InvoicingPageInner() {
                   gridTemplateColumns={GRID_TEMPLATE}
                 >
                   {/* Invoice ID */}
-                  <span className="text-[13px] text-[#1A5FAC] font-semibold">
+                  <span className="text-[13px] text-[#1A5FAC] font-semibold whitespace-nowrap">
                     {inv.invoiceNumber}
                   </span>
 

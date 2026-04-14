@@ -29,6 +29,28 @@ interface Invoice {
   createdAt?: { toDate: () => Date };
 }
 
+/* ─── Time formatting for schedule display ────────────────── */
+const TIME_WINDOW_LABELS: Record<string, string> = {
+  "early-morning": "7:00 AM",
+  earlyMorning: "7:00 AM",
+  morning: "9:00 AM",
+  midday: "11:00 AM",
+  afternoon: "1:00 PM",
+  "late-afternoon": "3:00 PM",
+  lateAfternoon: "3:00 PM",
+  late: "4:00 PM",
+};
+
+function formatBookingTime(b: Booking): string {
+  if (b.confirmedArrivalWindow) {
+    return b.confirmedArrivalWindow.split(" - ")[0] || b.confirmedArrivalWindow;
+  }
+  if (b.timeWindow) {
+    return TIME_WINDOW_LABELS[b.timeWindow] || b.timeWindow;
+  }
+  return "TBD";
+}
+
 /* ─── Badge variant mapper ───────────────────────────────── */
 function badgeVariant(status?: string): "green" | "red" | "amber" | "gray" | "blue" | "teal" {
   switch (status) {
@@ -262,9 +284,7 @@ export default function AdminHome() {
                     className="flex items-center px-5 py-3 border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition"
                   >
                     <span className="text-[13px] font-semibold text-gray-500 min-w-[60px] flex-shrink-0">
-                      {b.confirmedArrivalWindow
-                        ? b.confirmedArrivalWindow.split(" - ")[0] || b.confirmedArrivalWindow
-                        : b.timeWindow || "TBD"}
+                      {formatBookingTime(b)}
                     </span>
                     <div className="flex-1 min-w-0 ml-3">
                       <p className="text-sm font-semibold text-[#0B2040] truncate">

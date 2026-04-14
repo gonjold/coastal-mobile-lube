@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
-import Link from "next/link";
+import AdminTopBar from "@/components/admin/AdminTopBar";
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -660,26 +660,11 @@ export default function ServicesPage() {
   /* ── Render ── */
 
   return (
+    <>
+    <AdminTopBar title="Services & Pricing" />
     <div className="px-4 lg:px-8 py-6 max-w-[1400px] mx-auto">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-[13px] text-[#888] mb-6">
-        <Link
-          href="/admin"
-          className="hover:text-[#1A5FAC] transition-colors"
-        >
-          Dashboard
-        </Link>
-        <span>/</span>
-        <span className="text-[#0B2040] font-semibold">
-          Service Management
-        </span>
-      </div>
-
       {/* Top bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <h1 className="text-[26px] font-[800] text-[#0B2040]">
-          Service Management
-        </h1>
         <div className="flex items-center gap-3 flex-wrap">
           {/* Search */}
           <div className="relative">
@@ -1609,5 +1594,6 @@ export default function ServicesPage() {
         <ServicePreviewPanel division={activeDivision} onClose={() => setShowPreview(false)} />
       )}
     </div>
+    </>
   );
 }
