@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import AdminBadge from "./AdminBadge";
 import { formatCurrency } from "@/lib/formatCurrency";
 
@@ -75,6 +76,15 @@ export default function InvoiceDetailPanel({
   onPrint: (invoice: InvoiceForPanel) => void;
   onSendInvoice?: (invoice: InvoiceForPanel) => void;
 }) {
+  /* Escape key handler */
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
   if (!invoice) return null;
 
   const inv = invoice;
@@ -111,13 +121,16 @@ export default function InvoiceDetailPanel({
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/15 z-[55]" onClick={onClose} />
-
-      {/* Panel */}
       <div
-        className="fixed top-0 right-0 w-[500px] h-screen bg-white border-l border-gray-200 z-[60] flex flex-col"
-        style={{ boxShadow: "-8px 0 32px rgba(0,0,0,0.08)" }}
-      >
+        className="fixed inset-0 bg-black/40 z-[70]"
+        onClick={onClose}
+      />
+      {/* Modal */}
+      <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
+        <div
+          className="bg-white rounded-2xl shadow-2xl w-[95vw] max-w-[960px] h-[90vh] flex flex-col pointer-events-auto overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
         {/* Header */}
         <div className="px-6 py-6 border-b border-gray-200">
           <div className="flex items-start justify-between">
@@ -332,6 +345,7 @@ export default function InvoiceDetailPanel({
             </>
           )}
         </div>
+      </div>
       </div>
     </>
   );
