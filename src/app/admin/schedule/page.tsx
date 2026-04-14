@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -75,7 +75,22 @@ function getStatusBadgeVariant(status?: string): "green" | "red" | "amber" | "gr
 }
 
 export default function SchedulePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-32">
+          <div className="animate-spin w-8 h-8 border-4 border-[#E07B2D] border-t-transparent rounded-full" />
+        </div>
+      }
+    >
+      <SchedulePageInner />
+    </Suspense>
+  );
+}
+
+function SchedulePageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -107,6 +122,18 @@ export default function SchedulePage() {
   function removeToast(id: string) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }
+
+  /* ── Read URL filter param on mount ── */
+  const [filterApplied, setFilterApplied] = useState(false);
+  useEffect(() => {
+    if (filterApplied) return;
+    const filterParam = searchParams.get("filter");
+    if (filterParam) {
+      setStatusFilter(filterParam);
+      setFilterApplied(true);
+      router.replace("/admin/schedule", { scroll: false });
+    }
+  }, [searchParams, filterApplied, router]);
 
   /* ── Firestore real-time listener ── */
   useEffect(() => {

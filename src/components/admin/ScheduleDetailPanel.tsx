@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import AdminBadge from "./AdminBadge";
 import {
   type Booking,
@@ -9,6 +8,7 @@ import {
   getBookingCalendarDate,
   formatTimeWindow,
 } from "@/app/admin/shared";
+import { useAdminModal } from "@/contexts/AdminModalContext";
 
 const STATUS_STEPS = ["pending", "confirmed", "in-progress", "completed", "invoiced"];
 const STATUS_LABELS: Record<string, string> = {
@@ -56,7 +56,7 @@ export default function ScheduleDetailPanel({
   onClose: () => void;
   onAdvance: (bookingId: string, nextStatus: string) => void;
 }) {
-  const router = useRouter();
+  const { openModal } = useAdminModal();
 
   if (!booking) return null;
 
@@ -222,7 +222,7 @@ export default function ScheduleDetailPanel({
                 <button
                   onClick={() => {
                     if (primaryNextStatus === "invoice") {
-                      router.push(`/admin/invoicing?from=booking&id=${b.id}`);
+                      openModal("invoice", { bookingId: b.id });
                     } else {
                       onAdvance(b.id, primaryNextStatus);
                     }

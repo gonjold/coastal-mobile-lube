@@ -250,9 +250,12 @@ export default function CustomersPage() {
     };
   }, []);
 
-  /* ── Build enriched customers ── */
+  /* ── Build enriched customers (filter out deleted) ── */
   const enrichedCustomers = useMemo(() => {
-    const baseCustomers = buildCustomerList(bookings);
+    const nonDeletedBookings = bookings.filter(
+      (b) => !(b as unknown as Record<string, unknown>).customerDeleted,
+    );
+    const baseCustomers = buildCustomerList(nonDeletedBookings);
     return baseCustomers.map((c) => {
       const matched = matchInvoicesToCustomer(c, invoices);
       // TODO: Add "type" field (Residential/Commercial) to customer documents
@@ -603,6 +606,7 @@ export default function CustomersPage() {
           bookings={selectedCustomer.bookings}
           invoices={selectedCustomer.matchedInvoices}
           onClose={() => setSelectedCustomer(null)}
+          onDelete={() => setSelectedCustomer(null)}
         />
       )}
 

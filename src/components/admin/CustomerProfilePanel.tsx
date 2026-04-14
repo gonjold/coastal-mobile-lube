@@ -1,6 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { db } from "@/lib/firebase";
+import {
+  doc,
+  updateDoc,
+  serverTimestamp,
+  writeBatch,
+} from "firebase/firestore";
 import AdminBadge from "./AdminBadge";
 import {
   type Booking,
@@ -8,6 +15,7 @@ import {
   getServiceLabel,
   getSourceLabel,
 } from "@/app/admin/shared";
+import { useAdminModal } from "@/contexts/AdminModalContext";
 
 /* ── Types ── */
 
@@ -95,14 +103,19 @@ export default function CustomerProfilePanel({
   bookings,
   invoices,
   onClose,
+  onDelete,
 }: {
   customer: CustomerForPanel | null;
   bookings: Booking[];
   invoices: PanelInvoice[];
   onClose: () => void;
+  onDelete?: () => void;
 }) {
+  const { openModal } = useAdminModal();
   const [activeTab, setActiveTab] = useState<"timeline" | "details" | "vehicles">("timeline");
   const [timelineFilter, setTimelineFilter] = useState<"all" | "bookings" | "invoices" | "comms">("all");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   /* Build vehicles list */
   const vehicles = useMemo(() => {
@@ -275,26 +288,103 @@ export default function CustomerProfilePanel({
               onFilterChange={setTimelineFilter}
             />
           )}
-          {activeTab === "details" && <DetailsTab customer={customer} />}
-          {activeTab === "vehicles" && <VehiclesTab vehicles={vehicles} />}
+          {activeTab === "details" && (
+            <DetailsTab
+              customer={customer}
+              bookings={bookings}
+              onShowDelete={() => setShowDeleteConfirm(true)}
+            />
+          )}
+          {activeTab === "vehicles" && (
+            <VehiclesTab vehicles={vehicles} bookings={bookings} />
+          )}
         </div>
 
         {/* Bottom action bar */}
         <div className="border-t border-gray-200 px-6 py-4 flex gap-2.5">
           <button
-            onClick={() => alert("New Booking — coming soon")}
+            onClick={() =>
+              openModal("booking", {
+                customer: {
+                  name: customer.name,
+                  phone: customer.phone,
+                  email: customer.email,
+                  address: customer.address,
+                },
+              })
+            }
             className="flex-1 py-2.5 bg-[#E07B2D] rounded-[10px] text-white text-sm font-semibold cursor-pointer hover:opacity-90 transition"
           >
             New Booking
           </button>
           <button
-            onClick={() => alert("New Invoice — coming soon")}
+            onClick={() =>
+              openModal("invoice", {
+                customer: {
+                  name: customer.name,
+                  phone: customer.phone,
+                  email: customer.email,
+                  address: customer.address,
+                },
+              })
+            }
             className="flex-1 py-2.5 bg-transparent border border-gray-200 rounded-[10px] text-[#16A34A] text-sm font-semibold cursor-pointer hover:bg-green-50 hover:border-green-600 transition"
           >
             New Invoice
           </button>
         </div>
       </div>
+
+      {/* ── Delete Confirmation Modal ── */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/30 z-[80] flex items-center justify-center">
+          <div className="bg-white rounded-xl shadow-xl w-[400px] mx-4 p-6">
+            <h3 className="text-lg font-bold text-[#0B2040]">
+              Delete Customer
+            </h3>
+            <p className="text-sm text-gray-500 mt-2">
+              Are you sure you want to delete{" "}
+              <strong>{customer.name}</strong>? This will permanently
+              remove their profile. Bookings and invoices linked to this
+              customer will NOT be deleted.
+            </p>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 border border-gray-200 rounded-lg py-2.5 text-sm font-semibold text-gray-500 cursor-pointer hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  setDeleting(true);
+                  try {
+                    const batch = writeBatch(db);
+                    bookings.forEach((b) => {
+                      batch.update(doc(db, "bookings", b.id), {
+                        customerDeleted: true,
+                        updatedAt: serverTimestamp(),
+                      });
+                    });
+                    await batch.commit();
+                    setShowDeleteConfirm(false);
+                    onClose();
+                    onDelete?.();
+                  } catch {
+                    /* silent */
+                  } finally {
+                    setDeleting(false);
+                  }
+                }}
+                disabled={deleting}
+                className="flex-1 bg-red-600 rounded-lg py-2.5 text-sm font-semibold text-white cursor-pointer hover:bg-red-700 transition disabled:opacity-50"
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -406,7 +496,160 @@ function TimelineTab({
 
 /* ── Details Tab ── */
 
-function DetailsTab({ customer }: { customer: CustomerForPanel }) {
+function DetailsTab({
+  customer,
+  bookings,
+  onShowDelete,
+}: {
+  customer: CustomerForPanel;
+  bookings: Booking[];
+  onShowDelete: () => void;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: customer.name,
+    phone: customer.phone || "",
+    email: customer.email || "",
+    address: customer.address || "",
+    type: customer.type || "Residential",
+    notes: customer.notes || "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  function startEdit() {
+    setEditForm({
+      name: customer.name,
+      phone: customer.phone || "",
+      email: customer.email || "",
+      address: customer.address || "",
+      type: customer.type || "Residential",
+      notes: customer.notes || "",
+    });
+    setIsEditing(true);
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const batch = writeBatch(db);
+      bookings.forEach((b) => {
+        batch.update(doc(db, "bookings", b.id), {
+          name: editForm.name.trim(),
+          phone: editForm.phone.replace(/\D/g, "") || null,
+          email: editForm.email.trim().toLowerCase() || null,
+          address: editForm.address.trim() || null,
+          notes: editForm.notes.trim() || null,
+          updatedAt: serverTimestamp(),
+        });
+      });
+      await batch.commit();
+      setIsEditing(false);
+    } catch {
+      /* silent */
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const inputCls =
+    "border border-gray-200 rounded-lg px-3 py-2 text-sm w-full outline-none focus:border-[#1A5FAC] transition-colors";
+
+  if (isEditing) {
+    return (
+      <>
+        <p className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.06em] mb-3">
+          Edit Contact Information
+        </p>
+        <div className="flex flex-col gap-3">
+          <div>
+            <label className="text-[13px] text-gray-500 mb-1 block">Name</label>
+            <input
+              type="text"
+              value={editForm.name}
+              onChange={(e) =>
+                setEditForm((p) => ({ ...p, name: e.target.value }))
+              }
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className="text-[13px] text-gray-500 mb-1 block">Phone</label>
+            <input
+              type="tel"
+              value={editForm.phone}
+              onChange={(e) =>
+                setEditForm((p) => ({ ...p, phone: e.target.value }))
+              }
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className="text-[13px] text-gray-500 mb-1 block">Email</label>
+            <input
+              type="email"
+              value={editForm.email}
+              onChange={(e) =>
+                setEditForm((p) => ({ ...p, email: e.target.value }))
+              }
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className="text-[13px] text-gray-500 mb-1 block">Address</label>
+            <input
+              type="text"
+              value={editForm.address}
+              onChange={(e) =>
+                setEditForm((p) => ({ ...p, address: e.target.value }))
+              }
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className="text-[13px] text-gray-500 mb-1 block">Type</label>
+            <select
+              value={editForm.type}
+              onChange={(e) =>
+                setEditForm((p) => ({ ...p, type: e.target.value }))
+              }
+              className={`${inputCls} bg-white`}
+            >
+              <option value="Residential">Residential</option>
+              <option value="Commercial">Commercial</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-[13px] text-gray-500 mb-1 block">Notes</label>
+            <textarea
+              value={editForm.notes}
+              onChange={(e) =>
+                setEditForm((p) => ({ ...p, notes: e.target.value }))
+              }
+              rows={3}
+              className={`${inputCls} resize-none`}
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-2.5 mt-4">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex-1 py-2.5 rounded-lg bg-[#16A34A] text-white text-[13px] font-semibold cursor-pointer hover:opacity-90 transition disabled:opacity-50"
+          >
+            {saving ? "Saving..." : "Save Changes"}
+          </button>
+          <button
+            onClick={() => setIsEditing(false)}
+            className="border border-gray-200 rounded-lg px-4 py-2.5 text-[13px] font-semibold text-gray-500 cursor-pointer hover:bg-gray-50 transition"
+          >
+            Cancel
+          </button>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <p className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.06em] mb-3">Contact Information</p>
@@ -430,7 +673,7 @@ function DetailsTab({ customer }: { customer: CustomerForPanel }) {
       ))}
 
       <button
-        onClick={() => alert("Edit Customer — coming soon")}
+        onClick={startEdit}
         className="w-full py-2.5 rounded-lg border border-gray-200 text-[13px] font-semibold text-[#1A5FAC] hover:bg-gray-50 mt-4 cursor-pointer transition"
       >
         Edit Customer
@@ -443,13 +686,60 @@ function DetailsTab({ customer }: { customer: CustomerForPanel }) {
           {customer.notes || "No notes."}
         </p>
       </div>
+
+      {/* Delete Customer */}
+      <button
+        onClick={onShowDelete}
+        className="mt-6 text-red-500 text-xs font-medium cursor-pointer hover:text-red-700 transition"
+      >
+        Delete Customer
+      </button>
     </>
   );
 }
 
 /* ── Vehicles Tab ── */
 
-function VehiclesTab({ vehicles }: { vehicles: { name: string; bookingCount: number }[] }) {
+function VehiclesTab({
+  vehicles,
+  bookings,
+}: {
+  vehicles: { name: string; bookingCount: number }[];
+  bookings: Booking[];
+}) {
+  const [showAddInput, setShowAddInput] = useState(false);
+  const [newVehicle, setNewVehicle] = useState("");
+  const [savingVehicle, setSavingVehicle] = useState(false);
+  const [removingVehicle, setRemovingVehicle] = useState<string | null>(null);
+
+  async function handleAddVehicle() {
+    if (!newVehicle.trim() || !bookings[0]) return;
+    setSavingVehicle(true);
+    try {
+      // Add as a booking with vehicle info
+      const { addDoc, collection, serverTimestamp } = await import("firebase/firestore");
+      const { db } = await import("@/lib/firebase");
+      const latestBooking = bookings[0];
+      await addDoc(collection(db, "bookings"), {
+        name: latestBooking.name || latestBooking.customerName,
+        phone: latestBooking.phone || latestBooking.customerPhone || null,
+        email: latestBooking.email || latestBooking.customerEmail || null,
+        vehicleMake: newVehicle.trim(),
+        source: "admin-manual",
+        status: "pending",
+        notes: "Vehicle added from customer profile",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+      setNewVehicle("");
+      setShowAddInput(false);
+    } catch {
+      /* silent */
+    } finally {
+      setSavingVehicle(false);
+    }
+  }
+
   return (
     <>
       {vehicles.map((v) => (
@@ -460,9 +750,35 @@ function VehiclesTab({ vehicles }: { vehicles: { name: string; bookingCount: num
               {v.bookingCount} booking{v.bookingCount !== 1 ? "s" : ""}
             </div>
           </div>
-          <button className="px-3.5 py-1.5 rounded-md border border-gray-200 bg-white text-xs font-semibold text-[#1A5FAC] cursor-pointer hover:bg-gray-50 transition">
-            View History
-          </button>
+          <div className="flex items-center gap-2">
+            <button className="px-3.5 py-1.5 rounded-md border border-gray-200 bg-white text-xs font-semibold text-[#1A5FAC] cursor-pointer hover:bg-gray-50 transition">
+              View History
+            </button>
+            {removingVehicle === v.name ? (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-red-500">Remove?</span>
+                <button
+                  onClick={() => setRemovingVehicle(null)}
+                  className="text-xs text-gray-500 cursor-pointer"
+                >
+                  No
+                </button>
+                <button
+                  onClick={() => setRemovingVehicle(null)}
+                  className="text-xs text-red-600 font-semibold cursor-pointer"
+                >
+                  Yes
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setRemovingVehicle(v.name)}
+                className="w-6 h-6 rounded flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 cursor-pointer transition"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
       ))}
 
@@ -470,9 +786,41 @@ function VehiclesTab({ vehicles }: { vehicles: { name: string; bookingCount: num
         <p className="text-[13px] text-gray-500 italic mb-2">No vehicles on file</p>
       )}
 
-      <button className="w-full py-2.5 rounded-[10px] border border-dashed border-gray-300 text-[13px] font-semibold text-gray-500 hover:border-[#1A5FAC] hover:text-[#1A5FAC] cursor-pointer transition">
-        + Add Vehicle
-      </button>
+      {showAddInput ? (
+        <div className="flex gap-2 mt-2">
+          <input
+            type="text"
+            value={newVehicle}
+            onChange={(e) => setNewVehicle(e.target.value)}
+            placeholder="Year Make Model"
+            className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#1A5FAC] transition-colors"
+            autoFocus
+          />
+          <button
+            onClick={handleAddVehicle}
+            disabled={!newVehicle.trim() || savingVehicle}
+            className="px-4 py-2 bg-[#1A5FAC] text-white text-sm font-semibold rounded-lg cursor-pointer hover:opacity-90 transition disabled:opacity-50"
+          >
+            {savingVehicle ? "..." : "Save"}
+          </button>
+          <button
+            onClick={() => {
+              setShowAddInput(false);
+              setNewVehicle("");
+            }}
+            className="px-3 py-2 text-sm text-gray-500 cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setShowAddInput(true)}
+          className="w-full py-2.5 rounded-[10px] border border-dashed border-gray-300 text-[13px] font-semibold text-gray-500 hover:border-[#1A5FAC] hover:text-[#1A5FAC] cursor-pointer transition"
+        >
+          + Add Vehicle
+        </button>
+      )}
     </>
   );
 }

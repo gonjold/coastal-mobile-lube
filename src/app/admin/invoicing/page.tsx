@@ -688,6 +688,18 @@ function InvoicingPageInner() {
       const email = searchParams.get("email") || "";
       openCreateFromCustomer(name, phone, email);
       router.replace("/admin/invoicing", { scroll: false });
+    } else if (from === "new") {
+      setPrefillHandled(true);
+      openCreate();
+      router.replace("/admin/invoicing", { scroll: false });
+    } else {
+      // Check for filter param
+      const filterParam = searchParams.get("filter");
+      if (filterParam) {
+        setPrefillHandled(true);
+        setStatusFilter(filterParam);
+        router.replace("/admin/invoicing", { scroll: false });
+      }
     }
   }, [searchParams, loading, prefillHandled, openCreateFromBooking, router]);
 

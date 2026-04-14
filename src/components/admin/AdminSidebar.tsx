@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { useAdminModal } from "@/contexts/AdminModalContext";
 
 /* ── Navigation structure ── */
 const SECTIONS = [
@@ -34,6 +35,7 @@ const CREATE_ITEMS = ["New Booking", "New Customer", "New Invoice"];
 export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { openModal } = useAdminModal();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -89,7 +91,12 @@ export default function AdminSidebar() {
             {CREATE_ITEMS.map((item, i) => (
               <button
                 key={item}
-                onClick={() => setDropdownOpen(false)}
+                onClick={() => {
+                  setDropdownOpen(false);
+                  if (item === "New Booking") openModal("booking");
+                  else if (item === "New Customer") openModal("customer");
+                  else if (item === "New Invoice") openModal("invoice");
+                }}
                 className={`block w-full text-left px-4 py-2.5 text-[13px] font-medium text-gray-900 hover:bg-gray-50 cursor-pointer ${
                   i < CREATE_ITEMS.length - 1
                     ? "border-b border-gray-200"

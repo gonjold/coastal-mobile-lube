@@ -161,13 +161,13 @@ export default function AdminHome() {
   /* ── Action items ── */
   const actionItems: { label: string; urgency: string; action: string; href: string }[] = [];
   if (overdueInvoices.length > 0)
-    actionItems.push({ label: `${overdueInvoices.length} overdue invoice${overdueInvoices.length > 1 ? "s" : ""}`, urgency: "red", action: "View", href: "/admin/invoicing" });
+    actionItems.push({ label: `${overdueInvoices.length} overdue invoice${overdueInvoices.length > 1 ? "s" : ""}`, urgency: "red", action: "View", href: "/admin/invoicing?filter=overdue" });
   if (needsInvoice > 0)
     actionItems.push({ label: `${needsInvoice} completed job${needsInvoice > 1 ? "s" : ""} need invoicing`, urgency: "red", action: "Invoice", href: "/admin/invoicing" });
   if (pendingBookings > 0)
-    actionItems.push({ label: `${pendingBookings} unconfirmed booking${pendingBookings > 1 ? "s" : ""}`, urgency: "#F59E0B", action: "Review", href: "/admin/schedule" });
+    actionItems.push({ label: `${pendingBookings} unconfirmed booking${pendingBookings > 1 ? "s" : ""}`, urgency: "#F59E0B", action: "Review", href: "/admin/schedule?filter=pending" });
   if (quoteRequests > 0)
-    actionItems.push({ label: `${quoteRequests} quote request${quoteRequests > 1 ? "s" : ""} awaiting response`, urgency: "#1A5FAC", action: "Review", href: "/admin/schedule" });
+    actionItems.push({ label: `${quoteRequests} quote request${quoteRequests > 1 ? "s" : ""} awaiting response`, urgency: "#1A5FAC", action: "Review", href: "/admin/schedule?filter=pending" });
 
   /* ── Revenue summary (placeholder data where Firestore doesn't provide) ── */
   // TODO: wire up real revenue aggregation queries from Firestore
@@ -206,7 +206,7 @@ export default function AdminHome() {
               { label: "Pending Bookings", count: pendingBookings, dotColor: "#F59E0B" },
             ]}
             actionLabel="Review Incoming"
-            onAction={() => router.push("/admin/schedule")}
+            onAction={() => router.push("/admin/schedule?filter=pending")}
           />
 
           <PipelineCard
