@@ -1,0 +1,341 @@
+"use client";
+
+import AdminBadge from "./AdminBadge";
+
+/* ── Types ── */
+
+interface LineItem {
+  serviceName: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+}
+
+export interface InvoiceForPanel {
+  id: string;
+  invoiceNumber: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  lineItems: LineItem[];
+  subtotal: number;
+  taxRate: number;
+  taxAmount: number;
+  total: number;
+  status: "draft" | "sent" | "paid" | "overdue";
+  notes: string;
+  invoiceDate: string;
+  dueDate: string;
+  paidDate?: string;
+  paidAmount?: number;
+  division?: string;
+  jobReference?: string;
+  vehicle?: string;
+}
+
+/* ── Helpers ── */
+
+function formatCurrency(n: number): string {
+  return "$" + n.toFixed(2);
+}
+
+function formatDateAbbr(dateStr: string): string {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr + "T12:00:00");
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function isOverdue(inv: InvoiceForPanel): boolean {
+  if (inv.status === "overdue") return true;
+  if (inv.status === "sent" && inv.dueDate) {
+    return new Date(inv.dueDate + "T23:59:59") < new Date();
+  }
+  return false;
+}
+
+function getStatusBadgeVariant(status: string): "green" | "red" | "amber" | "gray" | "blue" {
+  switch (status) {
+    case "paid": return "green";
+    case "overdue": return "red";
+    case "sent": return "blue";
+    case "draft": return "gray";
+    default: return "gray";
+  }
+}
+
+/* ── Component ── */
+
+export default function InvoiceDetailPanel({
+  invoice,
+  onClose,
+  onMarkPaid,
+  onPrint,
+  onSendInvoice,
+}: {
+  invoice: InvoiceForPanel | null;
+  onClose: () => void;
+  onMarkPaid: (invoiceId: string) => void;
+  onPrint: (invoice: InvoiceForPanel) => void;
+  onSendInvoice?: (invoice: InvoiceForPanel) => void;
+}) {
+  if (!invoice) return null;
+
+  const inv = invoice;
+  const overdue = isOverdue(inv);
+  const statusLabel = inv.status.charAt(0).toUpperCase() + inv.status.slice(1);
+  const balance = inv.total - (inv.paidAmount ?? 0);
+  const partiallyPaid = inv.status === "paid" && inv.paidAmount !== undefined && inv.paidAmount < inv.total && inv.paidAmount > 0;
+
+  /* Amount hero background + color */
+  let heroBg = "bg-[#F7F8FA]";
+  let amountColor = "text-[#0B2040]";
+  let amountLabel = "Balance Due";
+
+  if (overdue || inv.status === "overdue") {
+    heroBg = "bg-red-50";
+    amountColor = "text-red-600";
+  } else if (inv.status === "paid") {
+    heroBg = "bg-green-50";
+    amountColor = "text-green-700";
+    amountLabel = "Amount Paid";
+  }
+
+  /* Detail rows */
+  const detailRows: { label: string; value: string; isEmail?: boolean }[] = [
+    { label: "Customer", value: inv.customerName || "—" },
+    { label: "Email", value: inv.customerEmail || "—", isEmail: !!inv.customerEmail },
+    { label: "Job Reference", value: inv.jobReference || "—" },
+    { label: "Vehicle", value: inv.vehicle || "—" },
+    { label: "Invoice Date", value: formatDateAbbr(inv.invoiceDate) },
+    { label: "Due Date", value: formatDateAbbr(inv.dueDate) },
+    { label: "Division", value: inv.division || "—" },
+  ];
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 bg-black/15 z-[55]" onClick={onClose} />
+
+      {/* Panel */}
+      <div
+        className="fixed top-0 right-0 w-[500px] h-screen bg-white border-l border-gray-200 z-[60] flex flex-col"
+        style={{ boxShadow: "-8px 0 32px rgba(0,0,0,0.08)" }}
+      >
+        {/* Header */}
+        <div className="px-6 py-6 border-b border-gray-200">
+          <div className="flex items-start justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-[#0B2040]">{inv.invoiceNumber}</h2>
+              <div className="flex items-center gap-2 mt-1.5">
+                <AdminBadge label={statusLabel} variant={getStatusBadgeVariant(inv.status)} />
+                {overdue && (
+                  <span className="text-xs font-semibold text-red-600">Past due</span>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-xl text-gray-500 cursor-pointer hover:text-gray-700 transition p-1"
+            >
+              &times;
+            </button>
+          </div>
+
+          {/* Amount hero block */}
+          <div className={`mt-3 rounded-xl p-4 px-5 flex justify-between items-center ${heroBg}`}>
+            <div>
+              <div className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.05em]">
+                {amountLabel}
+              </div>
+              <div className={`text-[32px] font-extrabold ${amountColor}`}>
+                {formatCurrency(inv.status === "paid" ? (inv.paidAmount ?? inv.total) : balance)}
+              </div>
+            </div>
+            {inv.status === "paid" && inv.paidDate && (
+              <div className="text-right">
+                <div className="text-[11px] text-gray-500">Paid on</div>
+                <div className="text-[13px] font-semibold text-green-700">
+                  {formatDateAbbr(inv.paidDate)}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+          {/* Invoice details */}
+          <div className="mb-5">
+            {detailRows.map((row) => (
+              <div
+                key={row.label}
+                className="flex justify-between items-start py-2 border-b border-gray-100 last:border-0"
+              >
+                <span className="text-[12px] text-gray-500 font-medium">{row.label}</span>
+                {row.isEmail ? (
+                  <a
+                    href={`mailto:${row.value}`}
+                    className="text-[13px] font-medium text-[#1A5FAC] hover:underline text-right"
+                  >
+                    {row.value}
+                  </a>
+                ) : (
+                  <span className="text-[13px] font-medium text-[#0B2040] text-right">
+                    {row.value}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Line items */}
+          <div className="mb-4">
+            <div className="border border-gray-200 rounded-[10px] overflow-hidden">
+              {/* Header row */}
+              <div className="grid grid-cols-[1fr_60px_80px_80px] bg-[#F7F8FA] px-3.5 py-2.5">
+                <span className="text-[11px] font-bold text-gray-500 uppercase">Description</span>
+                <span className="text-[11px] font-bold text-gray-500 uppercase text-center">Qty</span>
+                <span className="text-[11px] font-bold text-gray-500 uppercase text-center">Rate</span>
+                <span className="text-[11px] font-bold text-gray-500 uppercase text-center">Amount</span>
+              </div>
+              {/* Item rows */}
+              {inv.lineItems.map((li, idx) => (
+                <div
+                  key={idx}
+                  className={`grid grid-cols-[1fr_60px_80px_80px] px-3.5 py-3 ${
+                    idx < inv.lineItems.length - 1 ? "border-b border-gray-200" : ""
+                  }`}
+                >
+                  <span className="text-[13px] text-[#0B2040]">{li.serviceName}</span>
+                  <span className="text-[13px] text-[#0B2040] text-center">{li.quantity}</span>
+                  <span className="text-[13px] text-gray-500 text-center">{formatCurrency(li.unitPrice)}</span>
+                  <span className="text-[13px] font-semibold text-[#0B2040] text-center">
+                    {formatCurrency(li.quantity * li.unitPrice)}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Totals block */}
+            <div className="flex flex-col items-end gap-1.5 mt-3">
+              <div className="flex items-center gap-4">
+                <span className="text-[13px] text-gray-500">Subtotal</span>
+                <span className="text-[13px] font-medium min-w-[80px] text-right">
+                  {formatCurrency(inv.subtotal)}
+                </span>
+              </div>
+              {inv.taxRate > 0 && (
+                <div className="flex items-center gap-4">
+                  <span className="text-[13px] text-gray-500">Tax ({inv.taxRate}%)</span>
+                  <span className="text-[13px] font-medium min-w-[80px] text-right">
+                    {formatCurrency(inv.taxAmount)}
+                  </span>
+                </div>
+              )}
+              <div className="w-[180px] h-px bg-gray-200 my-1" />
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-bold text-[#0B2040]">Total</span>
+                <span className="text-base font-bold min-w-[80px] text-right text-[#0B2040]">
+                  {formatCurrency(inv.total)}
+                </span>
+              </div>
+              {partiallyPaid && (
+                <>
+                  <div className="flex items-center gap-4">
+                    <span className="text-[13px] text-green-600">Paid</span>
+                    <span className="text-[13px] font-medium text-green-600 min-w-[80px] text-right">
+                      {formatCurrency(inv.paidAmount!)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="text-[13px] font-bold text-red-600">Balance Due</span>
+                    <span className="text-[13px] font-bold text-red-600 min-w-[80px] text-right">
+                      {formatCurrency(balance)}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Notes */}
+          {inv.notes && (
+            <div className="bg-[#F7F8FA] rounded-[10px] p-3.5 mb-4">
+              <p className="text-[11px] font-bold text-gray-500 uppercase mb-1">Notes</p>
+              <p className="text-[13px] text-[#0B2040] whitespace-pre-wrap">{inv.notes}</p>
+            </div>
+          )}
+
+          {/* QuickBooks sync placeholder */}
+          <div className="bg-[#F7F8FA] rounded-[10px] p-3.5 flex items-center gap-2.5">
+            <span className="w-2 h-2 rounded-full bg-gray-300 shrink-0" />
+            <span className="text-xs text-gray-500">QuickBooks sync not connected</span>
+            <span className="text-[11px] font-semibold text-[#1A5FAC] cursor-pointer ml-auto">
+              Set up
+            </span>
+          </div>
+        </div>
+
+        {/* Bottom action bar */}
+        <div className="border-t border-gray-200 px-6 py-4 flex gap-2.5">
+          {inv.status === "draft" && (
+            <>
+              <button
+                onClick={() => onSendInvoice?.(inv)}
+                className="flex-1 bg-[#1A5FAC] text-white rounded-[10px] py-2.5 font-semibold text-[13px] cursor-pointer hover:bg-[#174f94] transition"
+              >
+                Send Invoice
+              </button>
+              <button
+                onClick={() => onPrint(inv)}
+                className="px-5 border border-gray-200 rounded-[10px] py-2.5 text-gray-500 font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
+              >
+                Print / PDF
+              </button>
+            </>
+          )}
+
+          {(inv.status === "sent" || inv.status === "overdue") && (
+            <>
+              <button
+                onClick={() => onMarkPaid(inv.id)}
+                className="flex-1 bg-[#16A34A] text-white rounded-[10px] py-2.5 font-semibold text-[13px] cursor-pointer hover:bg-[#15803d] transition"
+              >
+                Mark as Paid
+              </button>
+              <button
+                onClick={() => onSendInvoice?.(inv)}
+                className="px-5 border border-gray-200 rounded-[10px] py-2.5 text-[#1A5FAC] font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
+              >
+                Resend
+              </button>
+              <button
+                onClick={() => onPrint(inv)}
+                className="px-5 border border-gray-200 rounded-[10px] py-2.5 text-gray-500 font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
+              >
+                Print / PDF
+              </button>
+            </>
+          )}
+
+          {inv.status === "paid" && (
+            <>
+              <button
+                onClick={() => onPrint(inv)}
+                className="flex-1 border border-gray-200 rounded-[10px] py-2.5 text-[#0B2040] font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
+              >
+                Print / PDF
+              </button>
+              <button
+                onClick={() => onSendInvoice?.(inv)}
+                className="flex-1 border border-gray-200 rounded-[10px] py-2.5 text-[#1A5FAC] font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
+              >
+                Resend
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
