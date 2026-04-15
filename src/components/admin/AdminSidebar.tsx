@@ -7,6 +7,63 @@ import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useAdminModal } from "@/contexts/AdminModalContext";
 
+/* ── SVG Icons for each nav item ── */
+const NAV_ICONS: Record<string, React.ReactNode> = {
+  Dashboard: (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1" y="1" width="7" height="7" rx="1.5"/>
+      <rect x="10" y="1" width="7" height="3" rx="1.5"/>
+      <rect x="1" y="10" width="7" height="7" rx="1.5"/>
+      <rect x="10" y="6" width="7" height="11" rx="1.5"/>
+    </svg>
+  ),
+  Schedule: (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="3" width="14" height="13" rx="2"/>
+      <line x1="2" y1="7" x2="16" y2="7"/>
+      <line x1="6" y1="1" x2="6" y2="5"/>
+      <line x1="12" y1="1" x2="12" y2="5"/>
+    </svg>
+  ),
+  Customers: (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="9" cy="6" r="3.5"/>
+      <path d="M2.5 17c0-3.5 2.9-6.5 6.5-6.5s6.5 3 6.5 6.5"/>
+    </svg>
+  ),
+  Invoicing: (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="1" width="12" height="16" rx="2"/>
+      <line x1="6" y1="6" x2="12" y2="6"/>
+      <line x1="6" y1="9" x2="12" y2="9"/>
+      <line x1="6" y1="12" x2="9" y2="12"/>
+    </svg>
+  ),
+  Integrations: (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="7" cy="9" r="4.5"/>
+      <circle cx="11" cy="9" r="4.5"/>
+    </svg>
+  ),
+  "Content Editor": (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M13 2l3 3-10 10H3v-3L13 2z"/>
+    </svg>
+  ),
+  "Services & Pricing": (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12.5 2.5c-2 0-3.5 1.5-3.5 3.5 0 .5.1 1 .3 1.5L3 13.5l1.5 1.5 6-6.3c.5.2 1 .3 1.5.3 2 0 3.5-1.5 3.5-3.5l-2 2-1.5-1.5 2-2z"/>
+    </svg>
+  ),
+  "Service Fees": (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="14" y1="4" x2="4" y2="14"/>
+      <circle cx="5.5" cy="5.5" r="2"/>
+      <circle cx="12.5" cy="12.5" r="2"/>
+    </svg>
+  ),
+};
+
 /* ── Navigation structure ── */
 const SECTIONS = [
   {
@@ -36,7 +93,13 @@ const SECTIONS = [
 
 const CREATE_ITEMS = ["New Booking", "New Customer", "New Invoice"];
 
-export default function AdminSidebar() {
+export default function AdminSidebar({
+  collapsed,
+  onToggle,
+}: {
+  collapsed: boolean;
+  onToggle: () => void;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const { openModal } = useAdminModal();
@@ -69,29 +132,83 @@ export default function AdminSidebar() {
   }
 
   return (
-    <aside className="fixed inset-y-0 left-0 w-[230px] bg-[#0B2040] text-white flex flex-col z-50">
-      {/* ── Logo area ── */}
+    <aside
+      className="fixed inset-y-0 left-0 bg-[#0B2040] text-white flex flex-col z-50"
+      style={{ width: collapsed ? 56 : 230, transition: "width 200ms ease" }}
+    >
+      {/* ── Toggle button + Logo area ── */}
       <div
-        className="px-5 py-5"
+        className={
+          collapsed
+            ? "flex justify-center py-4"
+            : "px-5 py-5 flex items-center justify-between"
+        }
         style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
       >
-        <div className="text-[15px] font-bold text-white">Coastal Mobile</div>
-        <div className="text-[11px] text-white/45 font-medium mt-0.5">
-          Lube &amp; Tire Admin
-        </div>
+        {!collapsed && (
+          <div>
+            <div className="text-[15px] font-bold text-white">
+              Coastal Mobile
+            </div>
+            <div className="text-[11px] text-white/45 font-medium mt-0.5">
+              Lube &amp; Tire Admin
+            </div>
+          </div>
+        )}
+        <button
+          onClick={onToggle}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="w-[32px] h-[32px] flex items-center justify-center rounded-md hover:bg-white/[0.08] text-white/40 transition cursor-pointer shrink-0"
+        >
+          {collapsed ? (
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6,3 11,8 6,13"/>
+            </svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="10,3 5,8 10,13"/>
+            </svg>
+          )}
+        </button>
       </div>
 
       {/* ── Create New button ── */}
-      <div className="px-4 pt-4 pb-2 relative" ref={dropdownRef}>
-        <button
-          onClick={() => setDropdownOpen((prev) => !prev)}
-          className="w-full bg-[#E07B2D] hover:bg-[#CC6A1F] transition rounded-[10px] text-[13px] font-semibold text-white py-2.5 cursor-pointer"
-        >
-          + Create New
-        </button>
+      <div
+        className={
+          collapsed
+            ? "px-2 pt-3 pb-2 relative flex justify-center"
+            : "px-4 pt-4 pb-2 relative"
+        }
+        ref={dropdownRef}
+      >
+        {collapsed ? (
+          <button
+            onClick={() => setDropdownOpen((prev) => !prev)}
+            title="Create New"
+            className="w-[34px] h-[34px] flex items-center justify-center bg-[#E07B2D] hover:bg-[#CC6A1F] transition rounded-lg text-white cursor-pointer"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="8" y1="3" x2="8" y2="13"/>
+              <line x1="3" y1="8" x2="13" y2="8"/>
+            </svg>
+          </button>
+        ) : (
+          <button
+            onClick={() => setDropdownOpen((prev) => !prev)}
+            className="w-full bg-[#E07B2D] hover:bg-[#CC6A1F] transition rounded-[10px] text-[13px] font-semibold text-white py-2.5 cursor-pointer"
+          >
+            + Create New
+          </button>
+        )}
 
         {dropdownOpen && (
-          <div className="absolute left-4 right-4 top-full mt-1 bg-white rounded-[10px] shadow-lg z-50 overflow-hidden">
+          <div
+            className={
+              collapsed
+                ? "absolute left-full top-0 ml-1 bg-white rounded-[10px] shadow-lg z-50 overflow-hidden w-[160px]"
+                : "absolute left-4 right-4 top-full mt-1 bg-white rounded-[10px] shadow-lg z-50 overflow-hidden"
+            }
+          >
             {CREATE_ITEMS.map((item, i) => (
               <button
                 key={item}
@@ -116,13 +233,41 @@ export default function AdminSidebar() {
 
       {/* ── Navigation sections ── */}
       <nav className="flex-1 overflow-y-auto pt-2">
-        {SECTIONS.map((section) => (
+        {SECTIONS.map((section, sectionIdx) => (
           <div key={section.label}>
-            <div className="px-5 py-3 pb-1.5 text-[10px] font-bold text-white/35 uppercase tracking-[0.08em]">
-              {section.label}
-            </div>
+            {collapsed ? (
+              sectionIdx > 0 && (
+                <div className="flex justify-center py-2">
+                  <div className="w-[24px] h-px bg-white/10" />
+                </div>
+              )
+            ) : (
+              <div className="px-5 py-3 pb-1.5 text-[10px] font-bold text-white/35 uppercase tracking-[0.08em]">
+                {section.label}
+              </div>
+            )}
             {section.items.map((item) => {
               const active = isActive(item.href);
+              const icon = NAV_ICONS[item.label];
+
+              if (collapsed) {
+                return (
+                  <div key={item.href} className="flex justify-center py-1">
+                    <Link
+                      href={item.href}
+                      title={item.label}
+                      className={`w-[34px] h-[34px] flex items-center justify-center rounded-md transition-all ${
+                        active
+                          ? "bg-white/[0.1] text-white"
+                          : "text-white/40 hover:bg-white/[0.06] hover:text-white/70"
+                      }`}
+                    >
+                      {icon}
+                    </Link>
+                  </div>
+                );
+              }
+
               return (
                 <Link
                   key={item.href}
@@ -143,20 +288,55 @@ export default function AdminSidebar() {
 
       {/* ── Bottom actions ── */}
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-        <a
-          href="/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block px-5 py-2.5 text-[13px] text-white/55 hover:text-white/85 cursor-pointer transition"
-        >
-          View Site
-        </a>
-        <button
-          onClick={handleSignOut}
-          className="block w-full text-left px-5 py-2.5 text-[13px] text-white/40 hover:text-white/85 cursor-pointer transition"
-        >
-          Sign Out
-        </button>
+        {collapsed ? (
+          <>
+            <div className="flex justify-center py-2">
+              <a
+                href="/"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="View Site"
+                className="w-[34px] h-[34px] flex items-center justify-center rounded-md text-white/40 hover:bg-white/[0.06] hover:text-white/70 transition"
+              >
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 10v5a1 1 0 01-1 1H3a1 1 0 01-1-1V5a1 1 0 011-1h5"/>
+                  <polyline points="10,2 16,2 16,8"/>
+                  <line x1="16" y1="2" x2="8" y2="10"/>
+                </svg>
+              </a>
+            </div>
+            <div className="flex justify-center pb-3">
+              <button
+                onClick={handleSignOut}
+                title="Sign Out"
+                className="w-[34px] h-[34px] flex items-center justify-center rounded-md text-white/40 hover:bg-white/[0.06] hover:text-white/70 transition cursor-pointer"
+              >
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M7 16H3a1 1 0 01-1-1V3a1 1 0 011-1h4"/>
+                  <polyline points="11,5 16,9 11,13"/>
+                  <line x1="16" y1="9" x2="7" y2="9"/>
+                </svg>
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <a
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block px-5 py-2.5 text-[13px] text-white/55 hover:text-white/85 cursor-pointer transition"
+            >
+              View Site
+            </a>
+            <button
+              onClick={handleSignOut}
+              className="block w-full text-left px-5 py-2.5 text-[13px] text-white/40 hover:text-white/85 cursor-pointer transition"
+            >
+              Sign Out
+            </button>
+          </>
+        )}
       </div>
     </aside>
   );

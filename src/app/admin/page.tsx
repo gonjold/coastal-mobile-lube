@@ -156,6 +156,79 @@ export default function AdminHome() {
   const overdueInvoices = invoices.filter((i) => i.status === "overdue");
   const invoiceTotal = sentInvoices.length + paidInvoices.length + overdueInvoices.length;
 
+  /* ── Sparkline: daily counts for last 7 days ── */
+  const last7Days = useMemo(() => {
+    const days: string[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      days.push(toISODate(d));
+    }
+    return days;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [todayISO]);
+
+  const countPerDay = (
+    records: { createdAt?: { toDate: () => Date } }[],
+    filter: (r: Booking | Invoice) => boolean,
+    days: string[],
+  ): number[] => {
+    const filtered = (records as (Booking | Invoice)[]).filter(filter);
+    return days.map(
+      (day) =>
+        filtered.filter((r) => {
+          const ca = (r as { createdAt?: { toDate: () => Date } }).createdAt;
+          if (!ca?.toDate) return false;
+          return toISODate(ca.toDate()) === day;
+        }).length,
+    );
+  };
+
+  const incomingSparkline = useMemo(
+    () =>
+      countPerDay(
+        bookings,
+        (b) => {
+          const bk = b as Booking;
+          return (
+            bk.status === "pending" ||
+            bk.status === "new-lead" ||
+            (bk.source || "").toLowerCase().includes("quote")
+          );
+        },
+        last7Days,
+      ),
+    [bookings, last7Days],
+  );
+
+  const scheduledSparkline = useMemo(
+    () =>
+      countPerDay(
+        bookings,
+        (b) => (b as Booking).status === "confirmed",
+        last7Days,
+      ),
+    [bookings, last7Days],
+  );
+
+  const jobsSparkline = useMemo(
+    () =>
+      countPerDay(
+        bookings,
+        (b) => {
+          const s = (b as Booking).status;
+          return s === "in-progress" || s === "completed";
+        },
+        last7Days,
+      ),
+    [bookings, last7Days],
+  );
+
+  const invoicesSparkline = useMemo(
+    () => countPerDay(invoices, () => true, last7Days),
+    [invoices, last7Days],
+  );
+
   const sumTotal = (arr: Invoice[]) =>
     arr.reduce((s, i) => s + (i.total || 0), 0);
   const fmt$ = (n: number) =>
@@ -268,6 +341,7 @@ export default function AdminHome() {
             actionLabel="Review Incoming"
             onAction={() => router.push("/admin/schedule?filter=pending")}
             onRowClick={handleDrilldownClick}
+            sparklineData={incomingSparkline}
           />
 
           <PipelineCard
@@ -282,6 +356,7 @@ export default function AdminHome() {
             actionLabel="View Schedule"
             onAction={() => router.push("/admin/schedule")}
             onRowClick={handleDrilldownClick}
+            sparklineData={scheduledSparkline}
           />
 
           <PipelineCard
@@ -296,6 +371,7 @@ export default function AdminHome() {
             actionLabel="Create Invoice"
             onAction={() => router.push("/admin/invoicing")}
             onRowClick={handleDrilldownClick}
+            sparklineData={jobsSparkline}
           />
 
           <PipelineCard
@@ -310,6 +386,7 @@ export default function AdminHome() {
             actionLabel="View Invoices"
             onAction={() => router.push("/admin/invoicing")}
             onRowClick={handleDrilldownClick}
+            sparklineData={invoicesSparkline}
           />
         </div>
 

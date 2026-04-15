@@ -8,6 +8,33 @@ export interface PipelineRow {
   filterKey?: string;
 }
 
+function Sparkline({ data, color }: { data: number[]; color: string }) {
+  const w = 100;
+  const h = 28;
+  const max = Math.max(...data, 1);
+  const pad = 2;
+  const points = data
+    .map((v, i) => {
+      const x = pad + (i / (data.length - 1)) * (w - pad * 2);
+      const y = h - pad - (v / max) * (h - pad * 2);
+      return `${x},${y}`;
+    })
+    .join(" ");
+
+  return (
+    <svg width={w} height={h} className="block">
+      <polyline
+        points={points}
+        fill="none"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export default function PipelineCard({
   title,
   accentColor,
@@ -16,6 +43,7 @@ export default function PipelineCard({
   onAction,
   total,
   onRowClick,
+  sparklineData,
 }: {
   title: string;
   accentColor: string;
@@ -24,16 +52,8 @@ export default function PipelineCard({
   onAction: () => void;
   total: number;
   onRowClick?: (filterKey: string) => void;
+  sparklineData?: number[];
 }) {
-  // Simple sparkline placeholder data
-  const sparkData = [3, 5, 2, 7, 4, 6, 5];
-  const max = Math.max(...sparkData);
-  const h = 24;
-  const w = 100; // percentage-based, SVG viewBox
-  const points = sparkData
-    .map((v, i) => `${(i / (sparkData.length - 1)) * w},${h - (v / max) * h}`)
-    .join(" ");
-
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5 relative overflow-hidden flex-1">
       {/* 3px accent bar */}
@@ -79,26 +99,13 @@ export default function PipelineCard({
         ))}
       </div>
 
-      {/* Sparkline area */}
-      <div className="mb-3">
-        <svg
-          viewBox={`0 0 ${w} ${h}`}
-          className="w-full"
-          style={{ height: 24 }}
-          preserveAspectRatio="none"
-        >
-          <polyline
-            points={points}
-            fill="none"
-            stroke={accentColor}
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            vectorEffect="non-scaling-stroke"
-          />
-        </svg>
-        <p className="text-[10px] text-gray-500">Last 7 days</p>
-      </div>
+      {/* Sparkline — last 7 days */}
+      {sparklineData && sparklineData.length > 0 && (
+        <div className="mb-3">
+          <Sparkline data={sparklineData} color={accentColor} />
+          <p className="text-[10px] text-gray-500 mt-0.5">Last 7 days</p>
+        </div>
+      )}
 
       {/* Action button */}
       <button

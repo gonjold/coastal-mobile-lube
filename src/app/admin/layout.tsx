@@ -25,6 +25,18 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
 
+  /* ── Sidebar collapse state (persisted in localStorage) ── */
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("admin-sidebar-collapsed") === "true";
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("admin-sidebar-collapsed", String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
+
   /* ── Login page - no admin chrome ── */
   if (pathname === "/admin/login") {
     return (
@@ -51,9 +63,9 @@ export default function AdminLayout({
       />
 
       <AdminModalProvider>
-        <AdminSidebar />
+        <AdminSidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed((prev) => !prev)} />
 
-        <div className="ml-[230px] min-h-screen bg-[#F7F8FA]">
+        <div className="min-h-screen bg-[#F7F8FA]" style={{ marginLeft: sidebarCollapsed ? 56 : 230, transition: "margin-left 200ms ease" }}>
           <main>
             <AdminAuthGuard>{children}</AdminAuthGuard>
           </main>
