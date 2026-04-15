@@ -13,6 +13,7 @@ const DIVISIONS: { key: Division; label: string }[] = [
 
 interface ServiceRowProps {
   svc: Service;
+  rowIndex: number;
   isEditing: boolean;
   isEditingPrice: boolean;
   priceEditValue: string;
@@ -47,6 +48,7 @@ interface ServiceRowProps {
 
 export default function ServiceRow({
   svc,
+  rowIndex,
   isEditing,
   isEditingPrice,
   priceEditValue,
@@ -102,7 +104,9 @@ export default function ServiceRow({
           ? "rgba(26,82,118,0.05)"
           : isDragging
             ? "#F0F7FF"
-            : "transparent",
+            : rowIndex % 2 === 1
+              ? "#FAFBFC"
+              : "transparent",
         transition: "background 0.15s",
       }}
     >

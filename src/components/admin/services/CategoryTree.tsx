@@ -75,10 +75,10 @@ export default function CategoryTree({
   return (
     <div
       style={{
-        width: 200,
-        minWidth: 200,
-        borderRight: "0.5px solid #E5E7EB",
-        background: "#FFFFFF",
+        width: 230,
+        minWidth: 230,
+        borderRight: "1px solid #E2E8F0",
+        background: "#F8F9FA",
         display: "flex",
         flexDirection: "column",
         height: "100%",

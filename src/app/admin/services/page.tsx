@@ -454,7 +454,7 @@ export default function ServicesPage() {
         {/* Right panel */}
         <div style={{ flex: 1, padding: "16px 24px", overflowY: "auto" }}>
           {/* Category header */}
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12, paddingBottom: 12, borderBottom: "1px solid #E2E8F0" }}>
             <div>
               <div style={{ fontSize: 15, fontWeight: 500, color: "#0B2040" }}>{headerTitle}</div>
               <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>{tableServices.length} services &middot; {activeCount} active &middot; {divisionLabel}</div>
@@ -479,9 +479,9 @@ export default function ServicesPage() {
           )}
 
           {/* Table */}
-          <div style={{ background: "#FFF", border: "0.5px solid #E5E7EB", borderRadius: 12, overflow: "hidden" }}>
+          <div style={{ background: "#FFF", border: "1px solid #E2E8F0", borderRadius: 12, overflow: "hidden" }}>
             {/* Table header */}
-            <div style={{ display: "grid", gridTemplateColumns: "28px 28px 1fr 90px 72px 72px 60px 36px", padding: "8px 12px", background: "#FAFBFC", fontSize: 11, color: "#9CA3AF", fontWeight: 500, alignItems: "center", borderBottom: "0.5px solid #E5E7EB" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "28px 28px 1fr 90px 72px 72px 60px 36px", padding: "8px 12px", background: "#F1F5F9", fontSize: 11, color: "#64748B", fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.05em", alignItems: "center", borderBottom: "1px solid #E2E8F0" }}>
               <div><input type="checkbox" checked={tableServices.length > 0 && selectedServices.size === tableServices.length} onChange={toggleSelectAll} style={{ accentColor: "#1a5276" }} /></div>
               <div /><div>SERVICE</div><div>PRICE</div>
               <div style={{ textAlign: "center" }}>BOOK</div><div style={{ textAlign: "center" }}>SITE</div>
@@ -509,7 +509,7 @@ export default function ServicesPage() {
                 onDragOver={(e) => { e.preventDefault(); setDragOverIdx(idx); }}
                 onDrop={(e) => { e.preventDefault(); handleDrop(idx); }}>
                 {dragOverIdx === idx && dragId !== svc.id && <div style={{ height: 2, background: "#1a5276", margin: "0 12px" }} />}
-                <ServiceRow svc={svc} isEditing={editingRowId === svc.id} isEditingPrice={editingPriceId === svc.id}
+                <ServiceRow svc={svc} rowIndex={idx} isEditing={editingRowId === svc.id} isEditingPrice={editingPriceId === svc.id}
                   priceEditValue={priceEditValue} priceFlash={priceFlash === svc.id} isSelected={selectedServices.has(svc.id)}
                   isDragging={dragId === svc.id} menuOpen={menuOpenId === svc.id} moveMenuOpen={moveMenuId === svc.id}
                   copyMenuOpen={copyMenuId === svc.id} activeDivision={activeDivision} divisionCategories={divisionCategories}
