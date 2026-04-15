@@ -33,6 +33,8 @@ export interface InvoiceForPanel {
   division?: string;
   jobReference?: string;
   vehicle?: string;
+  qbInvoiceId?: string;
+  qbPaymentLink?: string;
 }
 
 /* ── Helpers ── */
@@ -402,13 +404,29 @@ export default function InvoiceDetailPanel({
             </div>
           )}
 
-          {/* QuickBooks sync placeholder */}
+          {/* QuickBooks sync status */}
           <div className="bg-[#F7F8FA] rounded-[10px] p-3.5 flex items-center gap-2.5">
-            <span className="w-2 h-2 rounded-full bg-gray-300 shrink-0" />
-            <span className="text-xs text-gray-500">QuickBooks sync not connected</span>
-            <span className="text-[11px] font-semibold text-[#1A5FAC] cursor-pointer ml-auto">
-              Set up
-            </span>
+            {inv.qbInvoiceId ? (
+              <>
+                <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+                <span className="text-xs text-green-700 font-semibold">Synced to QuickBooks</span>
+                {inv.qbPaymentLink && (
+                  <a
+                    href={inv.qbPaymentLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] font-semibold text-[#1A5FAC] ml-auto hover:underline"
+                  >
+                    Payment link
+                  </a>
+                )}
+              </>
+            ) : (
+              <>
+                <span className="w-2 h-2 rounded-full bg-gray-300 shrink-0" />
+                <span className="text-xs text-gray-500">Not synced to QuickBooks</span>
+              </>
+            )}
           </div>
         </div>
 

@@ -61,6 +61,8 @@ interface Invoice {
   division?: string;
   jobReference?: string;
   vehicle?: string;
+  qbInvoiceId?: string;
+  qbPaymentLink?: string;
   createdAt?: { toDate: () => Date };
   updatedAt?: { toDate: () => Date };
 }
@@ -867,26 +869,56 @@ function InvoicingPageInner() {
       if (statusOverride === "sent" && form.customerEmail) {
         try {
           const idToken = await auth.currentUser?.getIdToken();
-          await fetch("https://us-east1-coastal-mobile-lube.cloudfunctions.net/sendInvoiceEmail", {
+
+          // Check QB connection
+          const qbDoc = await getDoc(doc(db, "settings", "quickbooks"));
+          const qbConnected = qbDoc.exists() && qbDoc.data()?.accessToken;
+
+          const endpoint = qbConnected
+            ? "https://us-east1-coastal-mobile-lube.cloudfunctions.net/sendInvoiceWithQBPayment"
+            : "https://us-east1-coastal-mobile-lube.cloudfunctions.net/sendInvoiceEmail";
+
+          const filteredItems = form.lineItems.filter((li) => li.serviceName.trim());
+
+          const body = qbConnected
+            ? {
+                invoiceId: editingId || "",
+                invoiceNumber: form.invoiceNumber,
+                customerName: form.customerName,
+                customerEmail: form.customerEmail,
+                customerPhone: form.customerPhone || "",
+                customerAddress: "",
+                customerId: "",
+                lineItems: filteredItems,
+                subtotal: form.subtotal,
+                tax: form.taxAmount,
+                convenienceFee: 0,
+                total: form.total,
+                vehicle: "",
+                dueDate: form.dueDate || "",
+              }
+            : {
+                customerEmail: form.customerEmail,
+                customerName: form.customerName,
+                customerPhone: form.customerPhone || "",
+                invoiceNumber: form.invoiceNumber,
+                lineItems: filteredItems,
+                subtotal: form.subtotal,
+                taxAmount: form.taxAmount,
+                total: form.total,
+                notes: form.notes,
+                vehicle: "",
+                invoiceDate: form.invoiceDate || "",
+                dueDate: form.dueDate || "",
+              };
+
+          await fetch(endpoint, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
             },
-            body: JSON.stringify({
-              customerEmail: form.customerEmail,
-              customerName: form.customerName,
-              customerPhone: form.customerPhone || "",
-              invoiceNumber: form.invoiceNumber,
-              lineItems: form.lineItems.filter((li) => li.serviceName.trim()),
-              subtotal: form.subtotal,
-              taxAmount: form.taxAmount,
-              total: form.total,
-              notes: form.notes,
-              vehicle: "",
-              invoiceDate: form.invoiceDate || "",
-              dueDate: form.dueDate || "",
-            }),
+            body: JSON.stringify(body),
           });
           addToast(`Invoice email sent to ${form.customerEmail}`, "success");
         } catch {
@@ -948,26 +980,54 @@ function InvoicingPageInner() {
 
     try {
       const idToken = await auth.currentUser?.getIdToken();
-      await fetch("https://us-east1-coastal-mobile-lube.cloudfunctions.net/sendInvoiceEmail", {
+
+      // Check QB connection
+      const qbDoc = await getDoc(doc(db, "settings", "quickbooks"));
+      const qbConnected = qbDoc.exists() && qbDoc.data()?.accessToken;
+
+      const endpoint = qbConnected
+        ? "https://us-east1-coastal-mobile-lube.cloudfunctions.net/sendInvoiceWithQBPayment"
+        : "https://us-east1-coastal-mobile-lube.cloudfunctions.net/sendInvoiceEmail";
+
+      const body = qbConnected
+        ? {
+            invoiceId: inv.id,
+            invoiceNumber: inv.invoiceNumber,
+            customerName: inv.customerName,
+            customerEmail: inv.customerEmail,
+            customerPhone: inv.customerPhone || "",
+            customerAddress: "",
+            customerId: "",
+            lineItems: inv.lineItems,
+            subtotal: inv.subtotal,
+            tax: inv.taxAmount,
+            convenienceFee: 0,
+            total: inv.total,
+            vehicle: inv.vehicle || "",
+            dueDate: inv.dueDate || "",
+          }
+        : {
+            customerEmail: inv.customerEmail,
+            customerName: inv.customerName,
+            customerPhone: inv.customerPhone || "",
+            invoiceNumber: inv.invoiceNumber,
+            lineItems: inv.lineItems,
+            subtotal: inv.subtotal,
+            taxAmount: inv.taxAmount,
+            total: inv.total,
+            notes: inv.notes,
+            vehicle: inv.vehicle || "",
+            invoiceDate: inv.invoiceDate || "",
+            dueDate: inv.dueDate || "",
+          };
+
+      await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
         },
-        body: JSON.stringify({
-          customerEmail: inv.customerEmail,
-          customerName: inv.customerName,
-          customerPhone: inv.customerPhone || "",
-          invoiceNumber: inv.invoiceNumber,
-          lineItems: inv.lineItems,
-          subtotal: inv.subtotal,
-          taxAmount: inv.taxAmount,
-          total: inv.total,
-          notes: inv.notes,
-          vehicle: inv.vehicle || "",
-          invoiceDate: inv.invoiceDate || "",
-          dueDate: inv.dueDate || "",
-        }),
+        body: JSON.stringify(body),
       });
       addToast(`Invoice email sent to ${inv.customerEmail}`, "success");
     } catch {

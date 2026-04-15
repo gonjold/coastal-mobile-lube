@@ -2,12 +2,15 @@ const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { defineSecret } = require("firebase-functions/params");
 const nodemailer = require("nodemailer");
 const admin = require("firebase-admin");
+const crypto = require("crypto");
 
 admin.initializeApp();
 const firestoreDb = admin.firestore();
 
 const gmailUser = defineSecret("GMAIL_USER");
 const gmailAppPassword = defineSecret("GMAIL_APP_PASSWORD");
+const qbClientId = defineSecret("QB_CLIENT_ID");
+const qbClientSecret = defineSecret("QB_CLIENT_SECRET");
 
 // Email sent to ADMIN when a new booking comes in
 exports.onNewBooking = onDocumentCreated(
@@ -974,6 +977,541 @@ exports.sendInvoiceEmail = onRequest(
     } catch (error) {
       console.error(`Failed to send invoice to ${customerEmail}:`, error);
       res.status(500).json({ success: false, error: error.message });
+    }
+  }
+);
+
+// ─── QuickBooks OAuth: Start ──────────────────────────────────────
+
+exports.qbOAuthStart = onRequest(
+  {
+    region: "us-east1",
+    secrets: [qbClientId],
+  },
+  async (req, res) => {
+    const redirectUri = "https://us-east1-coastal-mobile-lube.cloudfunctions.net/qbOAuthCallback";
+    const state = crypto.randomBytes(16).toString("hex");
+
+    await firestoreDb.collection("settings").doc("qbOAuthState").set({
+      state,
+      createdAt: new Date().toISOString(),
+    });
+
+    const authUrl =
+      `https://appcenter.intuit.com/connect/oauth2?` +
+      `client_id=${qbClientId.value()}` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&response_type=code` +
+      `&scope=com.intuit.quickbooks.accounting` +
+      `&state=${state}`;
+
+    res.redirect(authUrl);
+  }
+);
+
+// ─── QuickBooks OAuth: Callback ───────────────────────────────────
+
+exports.qbOAuthCallback = onRequest(
+  {
+    region: "us-east1",
+    secrets: [qbClientId, qbClientSecret],
+  },
+  async (req, res) => {
+    const { code, state, realmId } = req.query;
+
+    // Verify state parameter
+    const stateDoc = await firestoreDb.collection("settings").doc("qbOAuthState").get();
+    if (!stateDoc.exists || stateDoc.data().state !== state) {
+      res.status(403).send("Invalid state parameter");
+      return;
+    }
+
+    const redirectUri = "https://us-east1-coastal-mobile-lube.cloudfunctions.net/qbOAuthCallback";
+
+    // Exchange code for tokens
+    const tokenResponse = await fetch("https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: "Basic " + Buffer.from(`${qbClientId.value()}:${qbClientSecret.value()}`).toString("base64"),
+      },
+      body: new URLSearchParams({
+        grant_type: "authorization_code",
+        code,
+        redirect_uri: redirectUri,
+      }),
+    });
+
+    const tokens = await tokenResponse.json();
+
+    if (tokens.error) {
+      res.status(400).send(`OAuth error: ${tokens.error}`);
+      return;
+    }
+
+    // Store tokens in Firestore
+    await firestoreDb.collection("settings").doc("quickbooks").set({
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      accessTokenExpiresAt: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
+      refreshTokenExpiresAt: new Date(Date.now() + tokens.x_refresh_token_expires_in * 1000).toISOString(),
+      realmId: realmId,
+      connectedAt: new Date().toISOString(),
+    });
+
+    // Clean up state doc
+    await firestoreDb.collection("settings").doc("qbOAuthState").delete();
+
+    // Redirect back to admin with success
+    res.redirect("https://coastal-mobile-lube.netlify.app/admin?qb=connected");
+  }
+);
+
+// ─── QuickBooks: Token refresh helper ─────────────────────────────
+
+async function getQBAccessToken() {
+  const qbDoc = await firestoreDb.collection("settings").doc("quickbooks").get();
+  if (!qbDoc.exists) throw new Error("QuickBooks not connected");
+
+  const qbData = qbDoc.data();
+  const now = new Date();
+  const expiresAt = new Date(qbData.accessTokenExpiresAt);
+
+  // If token expires within 5 minutes, refresh it
+  if (now >= new Date(expiresAt.getTime() - 5 * 60 * 1000)) {
+    const tokenResponse = await fetch("https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: "Basic " + Buffer.from(`${qbClientId.value()}:${qbClientSecret.value()}`).toString("base64"),
+      },
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: qbData.refreshToken,
+      }),
+    });
+
+    const tokens = await tokenResponse.json();
+    if (tokens.error) throw new Error(`Token refresh failed: ${tokens.error}`);
+
+    await firestoreDb.collection("settings").doc("quickbooks").update({
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      accessTokenExpiresAt: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
+      refreshTokenExpiresAt: new Date(Date.now() + tokens.x_refresh_token_expires_in * 1000).toISOString(),
+    });
+
+    return { accessToken: tokens.access_token, realmId: qbData.realmId };
+  }
+
+  return { accessToken: qbData.accessToken, realmId: qbData.realmId };
+}
+
+// ─── QuickBooks: Customer sync helper ─────────────────────────────
+
+const QB_BASE = "sandbox-quickbooks.api.intuit.com";
+
+async function syncCustomerToQB(customerData) {
+  const { accessToken, realmId } = await getQBAccessToken();
+  const baseUrl = `https://${QB_BASE}/v3/company/${realmId}`;
+
+  // Check if customer already exists by email
+  if (customerData.email) {
+    const queryResponse = await fetch(
+      `${baseUrl}/query?query=${encodeURIComponent(`SELECT * FROM Customer WHERE PrimaryEmailAddr = '${customerData.email}'`)}&minorversion=75`,
+      { headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" } }
+    );
+    const queryResult = await queryResponse.json();
+    if (queryResult.QueryResponse?.Customer?.[0]) {
+      return queryResult.QueryResponse.Customer[0].Id;
+    }
+  }
+
+  // Create new customer
+  const qbCustomer = {
+    DisplayName: `${customerData.firstName || ""} ${customerData.lastName || ""}`.trim() || customerData.name || "Customer",
+    GivenName: customerData.firstName || "",
+    FamilyName: customerData.lastName || "",
+    PrimaryEmailAddr: customerData.email ? { Address: customerData.email } : undefined,
+    PrimaryPhone: customerData.phone ? { FreeFormNumber: customerData.phone } : undefined,
+    BillAddr: customerData.address
+      ? {
+          Line1: customerData.address,
+          City: customerData.city || "",
+          CountrySubDivisionCode: customerData.state || "FL",
+          PostalCode: customerData.zip || "",
+        }
+      : undefined,
+  };
+
+  const createResponse = await fetch(`${baseUrl}/customer?minorversion=75`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(qbCustomer),
+  });
+
+  const created = await createResponse.json();
+  if (created.Fault) throw new Error(`QB customer create failed: ${JSON.stringify(created.Fault)}`);
+
+  return created.Customer.Id;
+}
+
+// ─── QuickBooks: Get or create Service item helper ────────────────
+
+async function getOrCreateQBServiceItem(accessToken, realmId) {
+  const baseUrl = `https://${QB_BASE}/v3/company/${realmId}`;
+
+  const queryResponse = await fetch(
+    `${baseUrl}/query?query=${encodeURIComponent("SELECT * FROM Item WHERE Name = 'Service'")}&minorversion=75`,
+    { headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" } }
+  );
+  const queryResult = await queryResponse.json();
+  if (queryResult.QueryResponse?.Item?.[0]) {
+    return queryResult.QueryResponse.Item[0].Id;
+  }
+
+  // Create Service item
+  const createResponse = await fetch(`${baseUrl}/item?minorversion=75`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      Name: "Service",
+      Type: "Service",
+      IncomeAccountRef: { name: "Services", value: "1" },
+    }),
+  });
+  const created = await createResponse.json();
+  if (created.Fault) throw new Error(`QB item create failed: ${JSON.stringify(created.Fault)}`);
+  return created.Item.Id;
+}
+
+// ─── QuickBooks: Send invoice with payment link ───────────────────
+
+exports.sendInvoiceWithQBPayment = onRequest(
+  {
+    region: "us-east1",
+    memory: "512MiB",
+    secrets: [qbClientId, qbClientSecret, gmailUser, gmailAppPassword],
+    cors: allowedOrigins,
+  },
+  async (req, res) => {
+    // Auth check
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    try {
+      const token = authHeader.split("Bearer ")[1];
+      await admin.auth().verifyIdToken(token);
+    } catch (error) {
+      return res.status(401).json({ error: "Invalid token" });
+    }
+
+    const {
+      invoiceId,
+      invoiceNumber,
+      customerName,
+      customerEmail,
+      customerPhone,
+      customerAddress,
+      customerId,
+      lineItems,
+      subtotal,
+      tax,
+      convenienceFee,
+      total,
+      vehicle,
+      dueDate,
+    } = req.body;
+
+    try {
+      const { accessToken, realmId } = await getQBAccessToken();
+      const baseUrl = `https://${QB_BASE}/v3/company/${realmId}`;
+
+      // 1. Sync customer to QB (or find existing)
+      let qbCustomerId;
+
+      if (customerId) {
+        const customerDoc = await firestoreDb.collection("customers").doc(customerId).get();
+        if (customerDoc.exists && customerDoc.data().qbCustomerId) {
+          qbCustomerId = customerDoc.data().qbCustomerId;
+        }
+      }
+
+      if (!qbCustomerId) {
+        qbCustomerId = await syncCustomerToQB({
+          firstName: customerName?.split(" ")[0] || "",
+          lastName: customerName?.split(" ").slice(1).join(" ") || "",
+          email: customerEmail,
+          phone: customerPhone,
+          address: customerAddress,
+        });
+
+        if (customerId) {
+          await firestoreDb.collection("customers").doc(customerId).update({ qbCustomerId });
+        }
+      }
+
+      // 2. Create QB invoice
+      const serviceItemId = await getOrCreateQBServiceItem(accessToken, realmId);
+
+      const qbLineItems = (lineItems || []).map((item) => ({
+        DetailType: "SalesItemLineDetail",
+        Amount: (item.quantity || 1) * parseFloat(item.unitPrice || item.price || 0),
+        Description: item.serviceName || item.description || item.name || "Service",
+        SalesItemLineDetail: {
+          ItemRef: { value: serviceItemId },
+          UnitPrice: parseFloat(item.unitPrice || item.price || 0),
+          Qty: item.quantity || 1,
+        },
+      }));
+
+      // Add convenience fee as a line item if present
+      if (convenienceFee && parseFloat(convenienceFee) > 0) {
+        qbLineItems.push({
+          DetailType: "SalesItemLineDetail",
+          Amount: parseFloat(convenienceFee),
+          Description: "Mobile Service Fee",
+          SalesItemLineDetail: {
+            ItemRef: { value: serviceItemId },
+            UnitPrice: parseFloat(convenienceFee),
+            Qty: 1,
+          },
+        });
+      }
+
+      const qbInvoice = {
+        CustomerRef: { value: qbCustomerId },
+        Line: qbLineItems,
+        DocNumber: invoiceNumber,
+        BillEmail: { Address: customerEmail },
+        AllowOnlineCreditCardPayment: true,
+        AllowOnlineACHPayment: true,
+        DueDate: dueDate || undefined,
+        CustomerMemo: { value: vehicle ? `Vehicle: ${vehicle}` : "Thank you for your business!" },
+        EmailStatus: "NotSet",
+      };
+
+      const invoiceResponse = await fetch(`${baseUrl}/invoice?minorversion=75`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(qbInvoice),
+      });
+
+      const invoiceResult = await invoiceResponse.json();
+      if (invoiceResult.Fault) {
+        throw new Error(`QB invoice create failed: ${JSON.stringify(invoiceResult.Fault)}`);
+      }
+
+      const qbInvoiceId = invoiceResult.Invoice.Id;
+
+      // 3. Get the payment link
+      const linkResponse = await fetch(
+        `${baseUrl}/invoice/${qbInvoiceId}?minorversion=75&include=invoiceLink`,
+        { headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" } }
+      );
+
+      const linkResult = await linkResponse.json();
+      const paymentLink = linkResult.Invoice?.InvoiceLink || "";
+
+      // 4. Save QB invoice ID and payment link to Coastal invoice doc
+      if (invoiceId) {
+        await firestoreDb.collection("invoices").doc(invoiceId).update({
+          qbInvoiceId,
+          qbPaymentLink: paymentLink,
+          status: "sent",
+          sentDate: new Date().toISOString(),
+        });
+      }
+
+      // 5. Send branded email with payment link
+      const lineItemsHTML = (lineItems || [])
+        .map((item) => {
+          const qty = item.quantity || 1;
+          const price = parseFloat(item.unitPrice || item.price || 0);
+          const itemTotal = qty * price;
+          return `<tr>
+          <td style="padding:10px 16px;border-bottom:1px solid #eee;font-size:14px;">${item.serviceName || item.description || item.name || "Service"}</td>
+          <td style="padding:10px 16px;border-bottom:1px solid #eee;text-align:center;font-size:14px;">${qty}</td>
+          <td style="padding:10px 16px;border-bottom:1px solid #eee;text-align:right;font-size:14px;">$${price.toFixed(2)}</td>
+          <td style="padding:10px 16px;border-bottom:1px solid #eee;text-align:right;font-size:14px;font-weight:700;">$${itemTotal.toFixed(2)}</td>
+        </tr>`;
+        })
+        .join("");
+
+      const payButtonHTML = paymentLink
+        ? `
+      <tr>
+        <td style="padding:24px 32px;text-align:center;">
+          <a href="${paymentLink}" style="display:inline-block;padding:14px 40px;background:#E07B2D;color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;border-radius:8px;">
+            Pay Now
+          </a>
+          <p style="font-size:12px;color:#888;margin:10px 0 0 0;">Secure payment powered by QuickBooks</p>
+        </td>
+      </tr>`
+        : "";
+
+      const htmlEmail = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#ffffff;">
+    <tr>
+      <td style="background:#0B2040;padding:28px 32px;text-align:center;">
+        <h1 style="color:#ffffff;font-size:22px;margin:0;font-weight:700;">Coastal Mobile Lube & Tire</h1>
+        <p style="color:#6BA3E0;font-size:13px;margin:6px 0 0 0;letter-spacing:1px;">INVOICE ${invoiceNumber}</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:32px;">
+        <p style="font-size:16px;color:#1a1a1a;margin:0 0 20px 0;">Hi ${customerName},</p>
+        <p style="font-size:15px;color:#333;line-height:1.6;margin:0 0 24px 0;">Here is your invoice for recent services. Please review the details below.</p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px 0;">
+          <tr>
+            <th style="background:#0B2040;color:white;padding:10px 16px;font-size:10px;text-transform:uppercase;text-align:left;">Service</th>
+            <th style="background:#0B2040;color:white;padding:10px 16px;font-size:10px;text-transform:uppercase;text-align:center;">Qty</th>
+            <th style="background:#0B2040;color:white;padding:10px 16px;font-size:10px;text-transform:uppercase;text-align:right;">Price</th>
+            <th style="background:#0B2040;color:white;padding:10px 16px;font-size:10px;text-transform:uppercase;text-align:right;">Total</th>
+          </tr>
+          ${lineItemsHTML}
+        </table>
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td style="text-align:right;padding:8px 16px;">
+              <span style="font-size:11px;color:#888;text-transform:uppercase;">Total Due</span>
+              <span style="font-size:24px;font-weight:700;color:#E07B2D;margin-left:16px;">$${parseFloat(total).toFixed(2)}</span>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    ${payButtonHTML}
+    <tr>
+      <td style="padding:0 32px 24px 32px;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:#FFF8EE;border-left:3px solid #E07B2D;border-radius:0 8px 8px 0;">
+          <tr>
+            <td style="padding:16px 20px;">
+              <p style="font-size:13px;font-weight:700;color:#0B2040;margin:0 0 6px 0;">Payment Instructions</p>
+              <p style="font-size:13px;color:#666;margin:2px 0;">We accept cash, check, Venmo, Zelle, and all major credit cards.</p>
+              <p style="font-size:13px;color:#666;margin:2px 0;">For questions, call or text us at <a href="tel:+18132775500" style="color:#1A5FAC;text-decoration:none;font-weight:600;">(813) 277-5500</a>.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:0 32px 32px 32px;">
+        <p style="font-size:14px;color:#666;margin:0;">Thank you for choosing Coastal Mobile Lube & Tire. We appreciate your business!</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="background:#0B2040;padding:24px 32px;text-align:center;">
+        <p style="color:#6BA3E0;font-size:13px;margin:0;">Coastal Mobile Lube & Tire</p>
+        <p style="color:#ffffff60;font-size:12px;margin:6px 0 0 0;">Apollo Beach, FL | Mon-Fri 8AM-5PM</p>
+        <p style="color:#ffffff40;font-size:11px;margin:8px 0 0 0;">We come to you.</p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+      // Send email
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: { user: gmailUser.value(), pass: gmailAppPassword.value() },
+      });
+
+      await transporter.sendMail({
+        from: `"Coastal Mobile Lube" <${gmailUser.value()}>`,
+        to: customerEmail,
+        cc: "info@coastalmobilelube.com",
+        subject: `Invoice ${invoiceNumber} - Coastal Mobile Lube & Tire`,
+        html: htmlEmail,
+      });
+
+      res.status(200).json({
+        success: true,
+        qbInvoiceId,
+        paymentLink,
+      });
+    } catch (err) {
+      console.error("QB invoice error:", err);
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
+// ─── QuickBooks: Webhook listener (payment received) ──────────────
+
+exports.qbWebhook = onRequest(
+  {
+    region: "us-east1",
+    secrets: [qbClientId, qbClientSecret],
+  },
+  async (req, res) => {
+    // Respond immediately
+    res.status(200).send("OK");
+
+    const notifications = req.body?.eventNotifications || [];
+
+    for (const notification of notifications) {
+      const entities = notification?.dataChangeEvent?.entities || [];
+
+      for (const entity of entities) {
+        if (entity.name === "Payment" && entity.operation === "Create") {
+          try {
+            const { accessToken, realmId } = await getQBAccessToken();
+
+            const paymentResponse = await fetch(
+              `https://${QB_BASE}/v3/company/${realmId}/payment/${entity.id}?minorversion=75`,
+              { headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" } }
+            );
+            const paymentResult = await paymentResponse.json();
+            const payment = paymentResult.Payment;
+
+            if (!payment) continue;
+
+            // Find linked invoice(s)
+            const linkedInvoices = (payment.Line || [])
+              .filter((line) => line.LinkedTxn)
+              .flatMap((line) => line.LinkedTxn)
+              .filter((txn) => txn.TxnType === "Invoice");
+
+            for (const linkedInvoice of linkedInvoices) {
+              const qbInvoiceId = linkedInvoice.TxnId;
+
+              const coastalInvoices = await firestoreDb
+                .collection("invoices")
+                .where("qbInvoiceId", "==", qbInvoiceId)
+                .get();
+
+              if (!coastalInvoices.empty) {
+                const coastalInvoice = coastalInvoices.docs[0];
+                await coastalInvoice.ref.update({
+                  status: "paid",
+                  paidDate: new Date().toISOString(),
+                  paidAmount: payment.TotalAmt,
+                  qbPaymentId: payment.Id,
+                });
+              }
+            }
+          } catch (err) {
+            console.error("QB webhook processing error:", err);
+          }
+        }
+      }
     }
   }
 );
