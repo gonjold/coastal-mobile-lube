@@ -55,7 +55,7 @@ const NAV_ICONS: Record<string, React.ReactNode> = {
       <path d="M12.5 2.5c-2 0-3.5 1.5-3.5 3.5 0 .5.1 1 .3 1.5L3 13.5l1.5 1.5 6-6.3c.5.2 1 .3 1.5.3 2 0 3.5-1.5 3.5-3.5l-2 2-1.5-1.5 2-2z"/>
     </svg>
   ),
-  "Service Fees": (
+  "Fees & Promos": (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
       <line x1="14" y1="4" x2="4" y2="14"/>
       <circle cx="5.5" cy="5.5" r="2"/>
@@ -86,7 +86,7 @@ const SECTIONS = [
     items: [
       { label: "Content Editor", href: "/admin/hero-editor" },
       { label: "Services & Pricing", href: "/admin/services" },
-      { label: "Service Fees", href: "/admin/services#fees" },
+      { label: "Fees & Promos", href: "/admin/fees" },
     ],
   },
 ];

@@ -23,7 +23,7 @@ import CategoryTree from "@/components/admin/services/CategoryTree";
 import InlineEditForm from "@/components/admin/services/InlineEditForm";
 import BulkActionsBar from "@/components/admin/services/BulkActionsBar";
 import ServiceRow from "@/components/admin/services/ServiceRow";
-import FeeSettings from "@/components/admin/services/FeeSettings";
+
 
 /* ── Constants ── */
 
@@ -537,8 +537,6 @@ export default function ServicesPage() {
             ))}
           </div>
 
-          {/* Fee settings */}
-          <FeeSettings onToast={addToast} />
         </div>
       </div>
 
