@@ -19,13 +19,18 @@ const SECTIONS = [
   },
   {
     label: "FINANCIAL",
-    items: [{ label: "Invoicing", href: "/admin/invoicing" }],
+    items: [
+      { label: "Invoicing", href: "/admin/invoicing" },
+      { label: "QuickBooks", href: "/admin/quickbooks" },
+      { label: "Clover", href: "/admin/clover" },
+    ],
   },
   {
     label: "WEBSITE",
     items: [
       { label: "Content Editor", href: "/admin/hero-editor" },
       { label: "Services & Pricing", href: "/admin/services" },
+      { label: "Service Fees", href: "/admin/services#fees" },
     ],
   },
 ];
