@@ -313,6 +313,12 @@ function SchedulePageInner() {
           commsLog: arrayUnion(entry),
         });
         addToast("Booking cancelled");
+        // Fire-and-forget: send cancellation email to customer
+        fetch("https://us-east1-coastal-mobile-lube.cloudfunctions.net/sendCancellationEmail", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ bookingId }),
+        }).catch((err) => console.error("Failed to send cancellation email:", err));
       } else {
         await updateDoc(doc(db, "bookings", bookingId), {
           status: nextStatus,

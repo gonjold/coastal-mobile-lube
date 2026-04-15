@@ -143,6 +143,7 @@ exports.onNewBooking = onDocumentCreated(
       await transporter.sendMail({
         from: `"Coastal Mobile Lube" <${gmailUser.value()}>`,
         to: "jon@jgoldco.com",
+        bcc: "9492926686@txt.att.net",
         subject: `New ${categoryLabel} Booking — ${booking.name || formattedPhone}`,
         html: adminHtml,
       });
@@ -1457,12 +1458,146 @@ exports.sendInvoiceWithQBPayment = onRequest(
   }
 );
 
+// ─── Cancellation email sent to CUSTOMER when admin cancels a booking ───
+
+exports.sendCancellationEmail = onRequest(
+  {
+    region: "us-east1",
+    secrets: [gmailUser, gmailAppPassword],
+    cors: allowedOrigins,
+  },
+  async (req, res) => {
+    const { bookingId } = req.body;
+
+    if (!bookingId) {
+      res.status(400).json({ success: false, error: "bookingId is required" });
+      return;
+    }
+
+    // Read booking from Firestore
+    let booking;
+    try {
+      const bookingDoc = await firestoreDb.collection("bookings").doc(bookingId).get();
+      if (!bookingDoc.exists) {
+        res.status(404).json({ success: false, error: "Booking not found" });
+        return;
+      }
+      booking = bookingDoc.data();
+    } catch (err) {
+      console.error("Failed to read booking:", err);
+      res.status(500).json({ success: false, error: "Failed to read booking" });
+      return;
+    }
+
+    const customerEmail = booking.email || booking.customerEmail;
+    if (!customerEmail) {
+      console.log(`No email on file for booking ${bookingId}, skipping cancellation email`);
+      res.json({ success: true, skipped: true, reason: "No customer email" });
+      return;
+    }
+
+    const customerName = booking.name || booking.customerName || "there";
+    const serviceName = booking.service || "your scheduled service";
+
+    // Build date/time display if the booking was confirmed
+    const displayDate = booking.confirmedDate
+      ? formatDateNice(booking.confirmedDate)
+      : (booking.preferredDate ? (formatDateNice(booking.preferredDate) || booking.preferredDate) : null);
+    const displayTime = booking.confirmedArrivalWindow || booking.timeWindow || null;
+
+    const appointmentBlock = (displayDate || displayTime) ? `
+      <div style="background: #FFF5F5; border: 1px solid #FED7D7; border-radius: 8px; padding: 16px; margin: 16px 0;">
+        <p style="font-size: 12px; text-transform: uppercase; color: #E53E3E; font-weight: 600; margin: 0 0 8px; letter-spacing: 0.5px;">Cancelled Appointment</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="padding: 4px 0; color: #666; width: 100px;">Service</td>
+            <td style="padding: 4px 0; font-weight: 600; color: #0B2040;">${serviceName}</td>
+          </tr>
+          ${displayDate ? `
+          <tr>
+            <td style="padding: 4px 0; color: #666;">Date</td>
+            <td style="padding: 4px 0; font-weight: 600; color: #0B2040;">${displayDate}</td>
+          </tr>` : ""}
+          ${displayTime ? `
+          <tr>
+            <td style="padding: 4px 0; color: #666;">Time</td>
+            <td style="padding: 4px 0; font-weight: 600; color: #0B2040;">${displayTime}</td>
+          </tr>` : ""}
+        </table>
+      </div>` : "";
+
+    const cancellationHtml = `
+      <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #0B2040; padding: 20px 24px; border-radius: 8px 8px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 20px;">Appointment Cancelled</h1>
+        </div>
+        <div style="background: white; padding: 24px; border: 1px solid #e8e8e8; border-top: none;">
+          <p style="font-size: 16px; color: #333; margin-top: 0;">
+            Hi ${customerName},
+          </p>
+          <p style="color: #666; line-height: 1.6;">
+            We're sorry to see this appointment cancelled. We wanted to let you know that your upcoming service has been removed from our schedule.
+          </p>
+          ${appointmentBlock}
+          <p style="color: #666; line-height: 1.6;">
+            We'd love to help you in the future. Whenever you're ready, you can book a new appointment online — it only takes a minute.
+          </p>
+          <div style="text-align: center; margin: 24px 0;">
+            <a href="https://coastalmobilelube.com/book"
+               style="display: inline-block; background: #E07B2D; color: white; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px;">
+              Book Again
+            </a>
+          </div>
+          <p style="color: #666; line-height: 1.6;">
+            Questions? Call or text us anytime:
+          </p>
+          <div style="text-align: center; margin: 16px 0;">
+            <a href="tel:8137225823" style="display: inline-block; background: #0B2040; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+              Call 813-722-LUBE
+            </a>
+          </div>
+        </div>
+        <div style="background: #0B2040; padding: 16px 24px; border-radius: 0 0 8px 8px; text-align: center;">
+          <p style="color: #ccc; font-size: 12px; margin: 0;">
+            Coastal Mobile Lube & Tire — Tampa, FL<br>
+            Mobile oil changes, tire service, and marine engine maintenance
+          </p>
+        </div>
+      </div>
+    `;
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: gmailUser.value(),
+        pass: gmailAppPassword.value(),
+      },
+    });
+
+    try {
+      await transporter.sendMail({
+        from: `"Coastal Mobile Lube" <${gmailUser.value()}>`,
+        to: customerEmail,
+        cc: "info@coastalmobilelube.com",
+        bcc: "9492926686@txt.att.net",
+        subject: "Your Coastal Mobile Lube appointment has been cancelled",
+        html: cancellationHtml,
+      });
+      console.log(`Cancellation email sent to ${customerEmail} for booking ${bookingId}`);
+      res.json({ success: true });
+    } catch (error) {
+      console.error(`Failed to send cancellation email to ${customerEmail}:`, error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+);
+
 // ─── QuickBooks: Webhook listener (payment received) ──────────────
 
 exports.qbWebhook = onRequest(
   {
     region: "us-east1",
-    secrets: [qbClientId, qbClientSecret],
+    secrets: [qbClientId, qbClientSecret, gmailUser, gmailAppPassword],
   },
   async (req, res) => {
     // Respond immediately
@@ -1503,12 +1638,84 @@ exports.qbWebhook = onRequest(
 
               if (!coastalInvoices.empty) {
                 const coastalInvoice = coastalInvoices.docs[0];
+                const invoiceData = coastalInvoice.data();
+
                 await coastalInvoice.ref.update({
                   status: "paid",
                   paidDate: new Date().toISOString(),
                   paidAmount: payment.TotalAmt,
                   qbPaymentId: payment.Id,
                 });
+
+                // Send admin payment notification email
+                try {
+                  const paidAmount = parseFloat(payment.TotalAmt || 0).toFixed(2);
+                  const invoiceNumber = invoiceData.invoiceNumber || `QB-${qbInvoiceId}`;
+                  const customerName = invoiceData.customerName || "Unknown";
+                  const paidDate = new Date().toLocaleDateString("en-US", {
+                    year: "numeric", month: "long", day: "numeric",
+                  });
+
+                  const paymentHtml = `
+                    <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                      <div style="background: #0B2040; padding: 20px 24px; border-radius: 8px 8px 0 0;">
+                        <h1 style="color: white; margin: 0; font-size: 20px;">Payment Received</h1>
+                      </div>
+                      <div style="background: white; padding: 24px; border: 1px solid #e8e8e8; border-top: none; border-radius: 0 0 8px 8px;">
+                        <div style="background: #F0FFF4; border: 1px solid #C6F6D5; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                          <p style="font-size: 24px; font-weight: 800; color: #22543D; margin: 0; text-align: center;">$${paidAmount}</p>
+                          <p style="font-size: 13px; color: #276749; margin: 4px 0 0; text-align: center;">Payment received via QuickBooks</p>
+                        </div>
+                        <table style="width: 100%; border-collapse: collapse;">
+                          <tr>
+                            <td style="padding: 8px 0; color: #666; width: 120px;">Invoice</td>
+                            <td style="padding: 8px 0; font-weight: 600; color: #0B2040;">${invoiceNumber}</td>
+                          </tr>
+                          <tr>
+                            <td style="padding: 8px 0; color: #666;">Customer</td>
+                            <td style="padding: 8px 0; font-weight: 600; color: #0B2040;">${customerName}</td>
+                          </tr>
+                          <tr>
+                            <td style="padding: 8px 0; color: #666;">Amount</td>
+                            <td style="padding: 8px 0; font-weight: 600; color: #0B2040;">$${paidAmount}</td>
+                          </tr>
+                          <tr>
+                            <td style="padding: 8px 0; color: #666;">Date</td>
+                            <td style="padding: 8px 0; color: #0B2040;">${paidDate}</td>
+                          </tr>
+                        </table>
+                        <div style="margin-top: 16px; text-align: center;">
+                          <a href="https://coastal-mobile-lube.netlify.app/admin/invoicing"
+                             style="display: inline-block; background: #E07B2D; color: white; padding: 10px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 13px;">
+                            View in Admin
+                          </a>
+                        </div>
+                      </div>
+                      <p style="color: #999; font-size: 12px; text-align: center; margin-top: 12px;">
+                        Coastal Mobile Lube & Tire — Automated Notification
+                      </p>
+                    </div>
+                  `;
+
+                  const transporter = nodemailer.createTransport({
+                    service: "gmail",
+                    auth: {
+                      user: gmailUser.value(),
+                      pass: gmailAppPassword.value(),
+                    },
+                  });
+
+                  await transporter.sendMail({
+                    from: `"Coastal Mobile Lube" <${gmailUser.value()}>`,
+                    to: "info@coastalmobilelube.com",
+                    bcc: "9492926686@txt.att.net",
+                    subject: `Payment received — ${invoiceNumber}`,
+                    html: paymentHtml,
+                  });
+                  console.log(`Payment notification sent for ${invoiceNumber} ($${paidAmount})`);
+                } catch (emailErr) {
+                  console.error("Failed to send payment notification email:", emailErr);
+                }
               }
             }
           } catch (err) {
