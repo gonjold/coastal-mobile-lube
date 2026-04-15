@@ -986,7 +986,7 @@ exports.sendInvoiceEmail = onRequest(
 exports.qbOAuthStart = onRequest(
   {
     region: "us-east1",
-    secrets: [qbClientId],
+    secrets: [qbClientId, qbClientSecret],
   },
   async (req, res) => {
     const redirectUri = "https://us-east1-coastal-mobile-lube.cloudfunctions.net/qbOAuthCallback";
@@ -996,6 +996,8 @@ exports.qbOAuthStart = onRequest(
       state,
       createdAt: new Date().toISOString(),
     });
+
+    console.log('QB OAuth redirect, client_id present:', !!qbClientId.value(), 'redirect_uri:', redirectUri);
 
     const authUrl =
       `https://appcenter.intuit.com/connect/oauth2?` +
@@ -1018,6 +1020,8 @@ exports.qbOAuthCallback = onRequest(
   },
   async (req, res) => {
     const { code, state, realmId } = req.query;
+
+    console.log('QB OAuth callback received, code present:', !!code, 'realmId:', realmId);
 
     // Verify state parameter
     const stateDoc = await firestoreDb.collection("settings").doc("qbOAuthState").get();

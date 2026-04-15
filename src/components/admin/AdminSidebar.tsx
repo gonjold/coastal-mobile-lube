@@ -21,8 +21,7 @@ const SECTIONS = [
     label: "FINANCIAL",
     items: [
       { label: "Invoicing", href: "/admin/invoicing" },
-      { label: "QuickBooks", href: "/admin/quickbooks" },
-      { label: "Clover", href: "/admin/clover" },
+      { label: "Integrations", href: "/admin/integrations" },
     ],
   },
   {
