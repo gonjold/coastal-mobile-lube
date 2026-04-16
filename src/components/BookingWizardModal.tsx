@@ -48,6 +48,7 @@ interface LookupBooking {
   vehicleYear: string;
   vehicleMake: string;
   vehicleModel: string;
+  fuelType: string;
   services: string;
   date: string;
   sortKey: number;
@@ -1041,6 +1042,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
         vehicleYear: d.vehicleYear || "",
         vehicleMake: d.vehicleMake || "",
         vehicleModel: d.vehicleModel || "",
+        fuelType: d.fuelType || "Gas",
         services: svcs,
         date: ts ? ts.toLocaleDateString() : "",
         sortKey: ts ? ts.getTime() : 0,
@@ -1094,11 +1096,16 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
   }
 
   function applyLookupBooking(b: LookupBooking) {
-    // Only set customer identity fields — never override vehicle from Step 1
+    // Set customer identity fields
     if (b.customerFirstName) setCustomerFirstName(b.customerFirstName);
     if (b.customerLastName) setCustomerLastName(b.customerLastName);
     if (b.customerPhone) setCustomerPhone(formatPhoneDisplay(b.customerPhone));
     if (b.customerEmail && !customerEmail) setCustomerEmail(b.customerEmail);
+    // Populate vehicle fields from previous booking
+    if (b.vehicleYear) setVehicleYear(b.vehicleYear);
+    if (b.vehicleMake) setVehicleMake(b.vehicleMake);
+    if (b.vehicleModel) setVehicleModel(b.vehicleModel);
+    if (b.fuelType) setFuelType(b.fuelType);
     setLookupDone(true);
     setLookupResults([]);
     setLookupMsg("");
