@@ -39,15 +39,73 @@ let allMakesFetching = false;
 const modelsCache: Record<string, NHTSAModel[]> = {};
 
 const TOP_50_MAKES = [
-  "Toyota", "Honda", "Ford", "Chevrolet", "Nissan", "Hyundai", "Kia",
-  "BMW", "Mercedes-Benz", "Volkswagen", "Subaru", "Mazda", "Jeep", "Ram",
-  "GMC", "Dodge", "Lexus", "Audi", "Acura", "Infiniti", "Buick", "Cadillac",
-  "Chrysler", "Lincoln", "Tesla", "Volvo", "Porsche", "Land Rover", "Jaguar",
-  "Mitsubishi", "Mini", "Fiat", "Alfa Romeo", "Genesis", "Maserati", "Rivian",
-  "Lucid", "Polestar", "Ferrari", "Lamborghini", "McLaren", "Bentley",
-  "Rolls-Royce", "Aston Martin", "Lotus", "Scion", "Saturn", "Pontiac",
+  "Toyota", "Ford", "Chevrolet", "Honda", "Nissan", "Jeep", "Ram",
+  "GMC", "Hyundai", "Kia", "Subaru", "Mazda", "Volkswagen", "Tesla",
+  "BMW", "Mercedes-Benz", "Lexus", "Dodge", "Chrysler", "Buick", "Cadillac",
+  "Acura", "Infiniti", "Audi", "Volvo", "Lincoln", "Mitsubishi", "Porsche",
+  "Land Rover", "Jaguar", "Mini", "Genesis", "Fiat", "Alfa Romeo", "Maserati",
+  "Pontiac", "Saturn", "Scion", "Rivian", "Lucid", "Polestar", "Ferrari",
+  "Lamborghini", "McLaren", "Bentley", "Rolls-Royce", "Aston Martin", "Lotus",
   "Mercury", "Saab",
 ];
+
+// Popularity ranking for make sorting. Lower rank = higher priority.
+// Covers top 45 passenger vehicle makes by US relevance.
+// Makes not in this list get rank 999 and sort alphabetically after ranked makes.
+const MAKE_POPULARITY_RANK: Record<string, number> = {
+  'TOYOTA': 1,
+  'FORD': 2,
+  'CHEVROLET': 3,
+  'HONDA': 4,
+  'NISSAN': 5,
+  'JEEP': 6,
+  'RAM': 7,
+  'GMC': 8,
+  'HYUNDAI': 9,
+  'KIA': 10,
+  'SUBARU': 11,
+  'MAZDA': 12,
+  'VOLKSWAGEN': 13,
+  'TESLA': 14,
+  'BMW': 15,
+  'MERCEDES-BENZ': 16,
+  'LEXUS': 17,
+  'DODGE': 18,
+  'CHRYSLER': 19,
+  'BUICK': 20,
+  'CADILLAC': 21,
+  'ACURA': 22,
+  'INFINITI': 23,
+  'AUDI': 24,
+  'VOLVO': 25,
+  'LINCOLN': 26,
+  'MITSUBISHI': 27,
+  'PORSCHE': 28,
+  'LAND ROVER': 29,
+  'JAGUAR': 30,
+  'MINI': 31,
+  'GENESIS': 32,
+  'FIAT': 33,
+  'ALFA ROMEO': 34,
+  'MASERATI': 35,
+  'PONTIAC': 36,
+  'SATURN': 37,
+  'SCION': 38,
+  'HUMMER': 39,
+  'SUZUKI': 40,
+  'ISUZU': 41,
+  'MERCURY': 42,
+  'OLDSMOBILE': 43,
+  'PLYMOUTH': 44,
+  'SMART': 45,
+};
+
+function compareByPopularity(a: string, b: string): number {
+  const rankA = MAKE_POPULARITY_RANK[a.toUpperCase()] ?? 999;
+  const rankB = MAKE_POPULARITY_RANK[b.toUpperCase()] ?? 999;
+  if (rankA !== rankB) return rankA - rankB;
+  return a.localeCompare(b);
+}
 
 const NHTSA_BASE = "https://vpic.nhtsa.dot.gov/api/vehicles";
 
@@ -204,7 +262,7 @@ export default function VehicleTypeahead({ onSelect, initialValue, vinDecoded }:
       const lowerRest = rest.toLowerCase();
       const matchedMakes = allMakesCache.filter((m) =>
         m.Make_Name.toLowerCase().startsWith(lowerRest)
-      ).slice(0, 8);
+      ).sort((a, b) => compareByPopularity(a.Make_Name, b.Make_Name)).slice(0, 8);
 
       if (matchedMakes.length > 0) {
         setHint("Add a year for better results (e.g., 2021 " + matchedMakes[0].Make_Name + ")");
@@ -255,7 +313,8 @@ export default function VehicleTypeahead({ onSelect, initialValue, vinDecoded }:
         return;
       }
 
-      // Show makes as suggestions (up to 8)
+      // Show makes as suggestions (up to 8), sorted by popularity
+      partialMakes.sort((a, b) => compareByPopularity(a.Make_Name, b.Make_Name));
       const makeResults = partialMakes.slice(0, 8).map((m) => ({
         year,
         make: m.Make_Name,

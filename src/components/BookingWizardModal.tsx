@@ -1113,6 +1113,9 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
     if (b.vehicleMake) setVehicleMake(b.vehicleMake);
     if (b.vehicleModel) setVehicleModel(b.vehicleModel);
     if (b.fuelType) setFuelType(b.fuelType);
+    // Sync typeahead display so the VehicleTypeahead input reflects the selection
+    const vehicleDisplay = [b.vehicleYear, b.vehicleMake, b.vehicleModel].filter(Boolean).join(" ");
+    if (vehicleDisplay) setTypeaheadValue(vehicleDisplay);
     setLookupDone(true);
     setLookupResults([]);
     setLookupMsg("");
