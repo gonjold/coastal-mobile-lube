@@ -8,6 +8,7 @@ import { useServices, type Service } from "@/hooks/useServices";
 import { groupByCategory } from "@/lib/serviceHelpers";
 import { decodeVIN as decodeVINApi, getFuelCategory } from "@/lib/vehicleApi";
 import SearchableSelect from "./SearchableSelect";
+import VehicleTypeahead from "./VehicleTypeahead";
 
 /* ─── Types ───────────────────────────────────────────────── */
 
@@ -195,6 +196,9 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
   const [prefetchLoading, setPrefetchLoading] = useState(false);
   const prefetchStartedRef = useRef(false);
   const allMakesRef = useRef<string[]>([]);
+
+  /* ── Typeahead display value ── */
+  const [typeaheadValue, setTypeaheadValue] = useState("");
 
   /* ── Vehicle text search (public wizard) ── */
   const [vehicleSearchText, setVehicleSearchText] = useState("");
@@ -394,6 +398,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
     setShowManualFields(false);
     setVehicleSearchText("");
     setShowManualDropdowns(false);
+    setTypeaheadValue("");
   }
 
   /* ── Service toggle ── */
@@ -525,6 +530,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
         setVehicleModel(result.model);
         setVehicleTrim(result.trim);
         setFuelType(result.fuelType || "Gas");
+        setTypeaheadValue([result.year, result.make, result.model, result.trim].filter(Boolean).join(" "));
         setVinDecoded(true);
       } else {
         setVinDecodeError("Could not decode VIN. Enter vehicle details manually.");
@@ -1002,6 +1008,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
     setShowManualFields(false);
     setVehicleSearchText("");
     setShowManualDropdowns(false);
+    setTypeaheadValue("");
     setLookupOpen(false);
     setLookupPhone("");
     setLookupLoading(false);
@@ -1730,24 +1737,28 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                   {/* Divider */}
                   <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "16px 0" }}>
                     <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
-                    <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 500 }}>or describe your vehicle</span>
+                    <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 500 }}>or search your vehicle</span>
                     <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
                   </div>
 
-                  {/* Vehicle text search */}
+                  {/* NHTSA Typeahead Vehicle Search */}
                   <div style={{ marginBottom: 12 }}>
-                    <input
-                      type="text"
-                      value={vehicleSearchText}
-                      onChange={(e) => setVehicleSearchText(e.target.value)}
-                      onBlur={handleVehicleTextBlur}
-                      placeholder="e.g. 2024 Toyota Camry LE"
-                      style={{
-                        width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
-                        fontSize: 14, outline: "none", fontFamily: "inherit",
-                        background: "#FFFFFF", color: "#1E293B",
+                    <VehicleTypeahead
+                      initialValue={typeaheadValue}
+                      vinDecoded={vinDecoded}
+                      onSelect={(v) => {
+                        setVehicleYear(v.year);
+                        setVehicleMake(v.make);
+                        setVehicleModel(v.model);
+                        setVehicleTrim(v.trim);
+                        setFuelType(v.fuelType);
+                        setTypeaheadValue([v.year, v.make, v.model, v.trim].filter(Boolean).join(" "));
+                        // If user types in typeahead after VIN decode, clear VIN state
+                        if (vinDecoded) {
+                          setVinDecoded(false);
+                          setVinOrHull("");
+                        }
                       }}
-                      onFocus={(e) => { e.currentTarget.style.borderColor = "#E07B2D"; e.currentTarget.style.boxShadow = "0 0 0 1px #E07B2D"; }}
                     />
                   </div>
                 </>
@@ -1827,79 +1838,6 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                 </div>
               ) : (
                 <>
-                  {/* Year / Make / Model cascading dropdowns — toggleable */}
-                  {(showManualDropdowns || vehicleYear || vehicleMake) && (
-                    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 10 }}>
-                      <div>
-                        <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Year</label>
-                        <select
-                          value={vehicleYear}
-                          onChange={(e) => handleYearChange(e.target.value)}
-                          style={{
-                            width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
-                            fontSize: 14, outline: "none", background: "#FFFFFF", color: vehicleYear ? "#1E293B" : "#94A3B8", fontFamily: "inherit",
-                          }}
-                          onFocus={(e) => { e.currentTarget.style.borderColor = "#E07B2D"; e.currentTarget.style.boxShadow = "0 0 0 1px #E07B2D"; }}
-                          onBlur={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.boxShadow = "none"; }}
-                        >
-                          <option value="">Select year</option>
-                          {YEARS.map((y) => <option key={y} value={String(y)}>{y}</option>)}
-                        </select>
-                      </div>
-                      <div>
-                        <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Make</label>
-                        <select
-                          value={vehicleMake}
-                          onChange={(e) => handleMakeChange(e.target.value)}
-                          style={{
-                            width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
-                            fontSize: 14, outline: "none", background: "#FFFFFF", color: vehicleMake ? "#1E293B" : "#94A3B8", fontFamily: "inherit",
-                          }}
-                          onFocus={(e) => { e.currentTarget.style.borderColor = "#E07B2D"; e.currentTarget.style.boxShadow = "0 0 0 1px #E07B2D"; }}
-                          onBlur={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.boxShadow = "none"; }}
-                        >
-                          <option value="">Select make</option>
-                          {POPULAR_MAKES.map((pm) => <option key={pm} value={pm}>{pm}</option>)}
-                        </select>
-                      </div>
-                      <div>
-                        <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Model</label>
-                        <select
-                          value={vehicleModel}
-                          onChange={(e) => setVehicleModel(e.target.value)}
-                          disabled={!vehicleMake || modelsLoading}
-                          style={{
-                            width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
-                            fontSize: 14, outline: "none", background: "#FFFFFF", color: vehicleModel ? "#1E293B" : "#94A3B8", fontFamily: "inherit",
-                            opacity: !vehicleMake || modelsLoading ? 0.5 : 1,
-                          }}
-                          onFocus={(e) => { e.currentTarget.style.borderColor = "#E07B2D"; e.currentTarget.style.boxShadow = "0 0 0 1px #E07B2D"; }}
-                          onBlur={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.boxShadow = "none"; }}
-                        >
-                          <option value="">
-                            {modelsLoading ? "Loading..." : !vehicleMake ? "Select make first" : "Select model"}
-                          </option>
-                          {currentModels.map((m) => <option key={m} value={m}>{m}</option>)}
-                        </select>
-                      </div>
-                    </div>
-                  )}
-
-                  {!showManualDropdowns && !vehicleYear && !vehicleMake && (
-                    <button
-                      type="button"
-                      onClick={() => setShowManualDropdowns(true)}
-                      style={{
-                        background: "none", border: "none", cursor: "pointer", padding: 0,
-                        fontSize: 13, fontWeight: 500, color: "#1A5FAC", marginTop: 2,
-                      }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.textDecoration = "underline"; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.textDecoration = "none"; }}
-                    >
-                      Or select year, make, and model
-                    </button>
-                  )}
-
                   {/* Fuel Type — always visible */}
                   <div style={{ marginTop: 16 }}>
                     <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Engine / Fuel Type</label>
