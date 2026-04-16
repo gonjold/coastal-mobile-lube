@@ -5,6 +5,7 @@ import { Phone } from "lucide-react";
 import { useBooking } from "@/contexts/BookingContext";
 
 const serviceLinks = [
+  { label: "All Services", href: "/services-overview" },
   { label: "Automotive", href: "/services" },
   { label: "Fleet & Commercial", href: "/fleet" },
   { label: "Marine", href: "/marine" },
@@ -13,6 +14,7 @@ const serviceLinks = [
 ];
 
 const companyLinks = [
+  { label: "How It Works", href: "/how-it-works" },
   { label: "About", href: "/about" },
   { label: "Service Areas", href: "/service-areas" },
   { label: "FAQ", href: "/faq" },

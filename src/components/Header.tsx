@@ -6,18 +6,11 @@ import Link from "next/link";
 import { Phone, Menu, X } from "lucide-react";
 import Button from "./Button";
 import { useBooking } from "@/contexts/BookingContext";
-
-const navLinks = [
-  { label: "Automotive", href: "/services" },
-  { label: "RV", href: "/rv" },
-  { label: "Marine", href: "/marine" },
-  { label: "Fleet", href: "/fleet" },
-  { label: "About", href: "/about" },
-  { label: "Contact", href: "/contact" },
-];
+import { NavServicesDropdown } from "./NavServicesDropdown";
 
 export default function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
   const [scrolledPastHero, setScrolledPastHero] = useState(true);
   const pathname = usePathname();
   const { openBooking, openQuote } = useBooking();
@@ -76,20 +69,35 @@ export default function Header() {
         </Link>
 
         {/* Desktop Nav */}
-        <nav className="hidden lg:flex items-center gap-6">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`text-sm font-medium transition-colors ${
-                pathname === link.href
-                  ? "text-white"
-                  : "text-white/85 hover:text-white"
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
+        <nav className="hidden lg:flex items-center gap-6 text-sm font-medium">
+          <Link
+            href="/how-it-works"
+            className={`text-white hover:text-orange-400 transition-colors ${
+              pathname === '/how-it-works' ? 'text-orange-400' : ''
+            }`}
+          >
+            How It Works
+          </Link>
+
+          <NavServicesDropdown />
+
+          <Link
+            href="/about"
+            className={`text-white hover:text-orange-400 transition-colors ${
+              pathname === '/about' ? 'text-orange-400' : ''
+            }`}
+          >
+            About
+          </Link>
+
+          <Link
+            href="/contact"
+            className={`text-white hover:text-orange-400 transition-colors ${
+              pathname === '/contact' ? 'text-orange-400' : ''
+            }`}
+          >
+            Contact
+          </Link>
         </nav>
 
         {/* Desktop Actions */}
@@ -150,20 +158,91 @@ export default function Header() {
             </button>
           </div>
           <nav className="flex flex-col px-6 gap-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setDrawerOpen(false)}
-                className={`min-h-[48px] py-4 font-semibold text-[17px] border-b border-white/10 transition-colors ${
-                  pathname === link.href
-                    ? "text-white"
-                    : "text-white/85 hover:text-white"
-                }`}
+            <Link
+              href="/how-it-works"
+              className="block py-3 text-white text-lg font-medium"
+              onClick={() => setDrawerOpen(false)}
+            >
+              How It Works
+            </Link>
+
+            <button
+              type="button"
+              className="w-full flex items-center justify-between py-3 text-white text-lg font-medium"
+              onClick={() => setMobileServicesOpen((v) => !v)}
+              aria-expanded={mobileServicesOpen}
+            >
+              Services
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 12 12"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={`transition-transform ${mobileServicesOpen ? 'rotate-180' : ''}`}
               >
-                {link.label}
-              </Link>
-            ))}
+                <path d="M3 5 L6 8 L9 5" />
+              </svg>
+            </button>
+
+            {mobileServicesOpen && (
+              <div className="pl-4 pb-2 space-y-1 border-l-2 border-orange-400">
+                <Link
+                  href="/services-overview"
+                  className="block py-2 text-white/80 text-base"
+                  onClick={() => setDrawerOpen(false)}
+                >
+                  All Services
+                </Link>
+                <Link
+                  href="/services"
+                  className="block py-2 text-white/80 text-base"
+                  onClick={() => setDrawerOpen(false)}
+                >
+                  Automotive
+                </Link>
+                <Link
+                  href="/marine"
+                  className="block py-2 text-white/80 text-base"
+                  onClick={() => setDrawerOpen(false)}
+                >
+                  Marine
+                </Link>
+                <Link
+                  href="/rv"
+                  className="block py-2 text-white/80 text-base"
+                  onClick={() => setDrawerOpen(false)}
+                >
+                  RV
+                </Link>
+                <Link
+                  href="/fleet"
+                  className="block py-2 text-white/80 text-base"
+                  onClick={() => setDrawerOpen(false)}
+                >
+                  Fleet
+                </Link>
+              </div>
+            )}
+
+            <Link
+              href="/about"
+              className="block py-3 text-white text-lg font-medium"
+              onClick={() => setDrawerOpen(false)}
+            >
+              About
+            </Link>
+
+            <Link
+              href="/contact"
+              className="block py-3 text-white text-lg font-medium"
+              onClick={() => setDrawerOpen(false)}
+            >
+              Contact
+            </Link>
           </nav>
           <div className="mt-6 px-6 flex flex-col gap-3">
             <button
