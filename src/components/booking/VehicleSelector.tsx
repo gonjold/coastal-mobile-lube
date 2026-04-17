@@ -527,42 +527,149 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
         </button>
       </div>
 
-      {/* ── YMM Mode: 4 searchable dropdowns in 2x2 grid ── */}
+      {/* ── YMM Mode: 4 native selects, stacked on mobile, 2x2 on tablet+ ── */}
       {mode === "ymm" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <SearchableDropdown
-            label="Year"
-            options={YEARS}
-            value={year}
-            onChange={handleYearChange}
-            placeholder="Select year"
-          />
-          <SearchableDropdown
-            label="Make"
-            options={makeNames}
-            value={make}
-            onChange={handleMakeChange}
-            disabled={!year || !makesReady}
-            placeholder={!makesReady ? "Loading makes..." : "Select make"}
-            loading={!makesReady && !!year}
-          />
-          <SearchableDropdown
-            label="Model"
-            options={models}
-            value={model}
-            onChange={handleModelChange}
-            disabled={!make}
-            placeholder={modelsLoading ? "Loading models..." : "Select model"}
-            loading={modelsLoading}
-          />
-          <SearchableDropdown
-            label="Fuel Type"
-            options={FUEL_OPTIONS}
-            value={fuelType}
-            onChange={handleFuelTypeChange}
-            disabled={!model}
-            placeholder="Select fuel type"
-          />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="w-full">
+            <label
+              htmlFor="vehicle-year"
+              className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2"
+            >
+              Year
+            </label>
+            <div className="relative">
+              <select
+                id="vehicle-year"
+                value={year}
+                onChange={(e) => handleYearChange(e.target.value)}
+                className="w-full h-12 px-4 pr-10 text-base bg-white border border-slate-300 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-[#E07B2D] focus:border-[#E07B2D] disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+              >
+                <option value="">Select year</option>
+                {YEARS.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+              <svg
+                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+
+          <div className="w-full">
+            <label
+              htmlFor="vehicle-make"
+              className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2"
+            >
+              Make
+            </label>
+            <div className="relative">
+              <select
+                id="vehicle-make"
+                value={make}
+                onChange={(e) => handleMakeChange(e.target.value)}
+                disabled={!year || !makesReady}
+                className="w-full h-12 px-4 pr-10 text-base bg-white border border-slate-300 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-[#E07B2D] focus:border-[#E07B2D] disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+              >
+                <option value="">
+                  {!year
+                    ? "Select year first"
+                    : !makesReady
+                    ? "Loading makes..."
+                    : "Select make"}
+                </option>
+                {makeNames.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+              <svg
+                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+
+          <div className="w-full">
+            <label
+              htmlFor="vehicle-model"
+              className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2"
+            >
+              Model
+            </label>
+            <div className="relative">
+              <select
+                id="vehicle-model"
+                value={model}
+                onChange={(e) => handleModelChange(e.target.value)}
+                disabled={!make || modelsLoading}
+                className="w-full h-12 px-4 pr-10 text-base bg-white border border-slate-300 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-[#E07B2D] focus:border-[#E07B2D] disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+              >
+                <option value="">
+                  {!make
+                    ? "Select make first"
+                    : modelsLoading
+                    ? "Loading models..."
+                    : "Select model"}
+                </option>
+                {models.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+              <svg
+                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+
+          <div className="w-full">
+            <label
+              htmlFor="vehicle-fuel"
+              className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2"
+            >
+              Fuel Type
+            </label>
+            <div className="relative">
+              <select
+                id="vehicle-fuel"
+                value={fuelType}
+                onChange={(e) => handleFuelTypeChange(e.target.value)}
+                disabled={!model}
+                className="w-full h-12 px-4 pr-10 text-base bg-white border border-slate-300 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-[#E07B2D] focus:border-[#E07B2D] disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+              >
+                <option value="">
+                  {!model ? "Select model first" : "Select fuel type"}
+                </option>
+                {FUEL_OPTIONS.map((f) => (
+                  <option key={f} value={f}>{f}</option>
+                ))}
+              </select>
+              <svg
+                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
         </div>
       )}
 
