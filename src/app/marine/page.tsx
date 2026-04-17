@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import MarineContent from "./MarineContent";
 
 export const metadata: Metadata = {
-  title: "Marine Services",
+  title: "Marine Engine Service at Your Marina | Coastal Mobile Lube",
   description:
-    "Dockside boat engine service, diesel maintenance, and trailer tire service. We come to your marina or boat ramp.",
+    "Outboard, inboard, and sterndrive service at the marina, slip, or dry storage across Tampa Bay. No hauling. Factory-grade parts, 12-month warranty.",
   openGraph: {
-    title: "Marine Services | Coastal Mobile Lube & Tire",
+    title: "Marine Engine Service at Your Marina | Coastal Mobile Lube",
     description:
-      "Dockside boat engine service, diesel maintenance, and trailer tire service. We come to your marina or boat ramp.",
+      "Outboard, inboard, and sterndrive service at the marina, slip, or dry storage across Tampa Bay. No hauling. Factory-grade parts, 12-month warranty.",
     url: "https://coastalmobilelube.com/marine",
     type: "website",
   },

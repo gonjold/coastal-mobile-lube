@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import ServicesContent from "./ServicesContent";
 
 export const metadata: Metadata = {
-  title: "Automotive Services",
+  title: "Mobile Oil Change, Tires & Brakes | Coastal Mobile Lube",
   description:
-    "Mobile oil changes, brake service, tire mounting, HVAC, and full automotive maintenance. We come to your home or office in Tampa Bay.",
+    "Mobile vacuum-extraction oil changes, tire mount and balance, brake service, and full automotive maintenance across Apollo Beach and the South Shore. We come to your home or office.",
   openGraph: {
-    title: "Automotive Services | Coastal Mobile Lube & Tire",
+    title: "Mobile Oil Change, Tires & Brakes | Coastal Mobile Lube",
     description:
-      "Mobile oil changes, brake service, tire mounting, HVAC, and full automotive maintenance. We come to your home or office in Tampa Bay.",
+      "Mobile vacuum-extraction oil changes, tire mount and balance, brake service, and full automotive maintenance across Apollo Beach and the South Shore. We come to your home or office.",
     url: "https://coastalmobilelube.com/services",
     type: "website",
   },

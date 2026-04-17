@@ -189,12 +189,10 @@ export default function FleetContent() {
               Fleet & Commercial
             </p>
             <h1 className="text-[30px] md:text-[42px] font-[800] leading-[1.08] text-white tracking-[-1px] mb-5">
-              Keep your fleet on the road
+              Your fleet stays on the road. We stay on schedule.
             </h1>
             <p className="text-[16px] leading-[1.7] text-white/60 mb-8 max-w-[520px]">
-              Scheduled mobile maintenance for company vehicles, box trucks,
-              vans, and commercial fleets. We come to your yard, your lot, or
-              your job site. No vehicle downtime, no shop visits.
+              Scheduled mobile maintenance for company vehicles, vans, box trucks, and commercial fleets. We come to your yard or job site. Your drivers stay driving. One vendor, one invoice, volume pricing.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Button href="#fleet-quote" variant="primary" size="lg" className="text-[18px] px-10 py-5 shadow-[0_4px_24px_rgba(224,123,45,0.35)]">

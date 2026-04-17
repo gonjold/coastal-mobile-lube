@@ -75,11 +75,13 @@ const serviceTabs: { key: TabKey; label: string }[] = [
 ];
 
 const HERO_DEFAULTS = {
-  eyebrowLine1: "Mobile Service",
-  eyebrowLine2: "Oil, Brakes, Tires & More",
-  headline: "We bring the shop.",
-  subheadline: "Oil changes, tires, and brakes wherever you are. A master tech with 30 years of experience. Apollo Beach and the South Shore.",
+  eyebrowLine1: "APOLLO BEACH \u00B7 TAMPA BAY \u00B7 SOUTH SHORE",
+  eyebrowLine2: "Cars. Boats. RVs. Fleets.",
+  headline: "We bring the shop. You keep your day.",
+  subheadline: "Mobile oil, tires, brakes, marine, RV, and fleet service. A fully equipped shop on wheels, at your driveway, marina, RV park, storage lot, or job site. Backed by 30 years of dealership service and a 12-month warranty on every job.",
 };
+
+const HERO_MOBILE_SUBHEADLINE = "Mobile service for cars, boats, RVs, and fleets. We come to wherever your vehicle lives.";
 
 function formatHeroPhone(value: string): string {
   const d = value.replace(/\D/g, "").slice(0, 10);
@@ -246,7 +248,7 @@ export default function Home() {
               <p className="text-[11px] uppercase font-semibold text-[#D9A441] tracking-[2px] opacity-90">{heroCopy.eyebrowLine2}</p>
             </div>
             <h1 className="text-[34px] font-extrabold leading-[1.06] text-white tracking-[-0.8px] mb-3">{heroCopy.headline}</h1>
-            <p className="text-[15px] leading-[1.55] text-white/[0.68] max-w-[320px] mx-auto mb-5">{heroCopy.subheadline}</p>
+            <p className="text-[15px] leading-[1.55] text-white/[0.68] max-w-[320px] mx-auto mb-5">{HERO_MOBILE_SUBHEADLINE}</p>
             {/* CTAs stacked */}
             <div className="flex flex-col gap-[10px] max-w-[300px] mx-auto">
               <button onClick={openBooking} className="w-full min-h-[48px] bg-[#E07B2D] text-white px-7 py-3.5 rounded-[8px] font-semibold shadow-[0_2px_12px_rgba(224,123,45,0.35)]">Book Service</button>
@@ -258,16 +260,16 @@ export default function Home() {
             {/* Trust cards */}
             <div className="flex gap-2 mt-5">
               <div className="flex-1 flex flex-col items-center justify-center gap-[5px] p-[12px_6px_10px] rounded-[12px] bg-white/[0.04] border border-white/[0.1]">
-                <span className="text-[#10B4B9] text-[16px] font-extrabold">30+</span>
-                <span className="text-white/60 text-[10.5px]">Years Experience</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B4B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <span className="text-white/60 text-[10.5px]">Factory-trained team</span>
               </div>
               <div className="flex-1 flex flex-col items-center justify-center gap-[5px] p-[12px_6px_10px] rounded-[12px] bg-white/[0.04] border border-white/[0.1]">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B4B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
-                <span className="text-white/60 text-[10.5px]">Licensed &amp; Insured</span>
+                <span className="text-white/60 text-[10.5px]">Licensed and insured</span>
               </div>
               <div className="flex-1 flex flex-col items-center justify-center gap-[5px] p-[12px_6px_10px] rounded-[12px] bg-white/[0.04] border border-white/[0.1]">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D9A441" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                <span className="text-white/60 text-[10.5px]">Same-Day Available</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D9A441" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <span className="text-white/60 text-[10.5px]">12-month warranty</span>
               </div>
             </div>
           </div>
@@ -294,18 +296,18 @@ export default function Home() {
               <div className="flex justify-start mt-7">
                 <div className="inline-flex items-center rounded-full bg-white/[0.05] border border-white/[0.08] py-2 px-1.5">
                   <div className="flex items-center gap-[5px] px-[14px] py-1">
-                    <span className="text-[#10B4B9] font-extrabold text-[13px]">30+</span>
-                    <span className="text-white/55 text-[12.5px] font-semibold">yrs exp</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B4B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                    <span className="text-white/55 text-[12.5px] font-semibold">Factory-trained team</span>
                   </div>
                   <div className="w-px h-4 bg-white/10" />
                   <div className="flex items-center gap-[5px] px-[14px] py-1">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B4B9" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
-                    <span className="text-white/55 text-[12.5px] font-semibold">Licensed</span>
+                    <span className="text-white/55 text-[12.5px] font-semibold">Licensed and insured</span>
                   </div>
                   <div className="w-px h-4 bg-white/10" />
                   <div className="flex items-center gap-[5px] px-[14px] py-1">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D9A441" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    <span className="text-white/55 text-[12.5px] font-semibold">Same-day</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D9A441" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <span className="text-white/55 text-[12.5px] font-semibold">12-month warranty</span>
                   </div>
                 </div>
               </div>
@@ -370,7 +372,7 @@ export default function Home() {
               HOW IT WORKS
             </p>
             <h2 className="text-[22px] md:text-[30px] font-extrabold text-[#0B2040]">
-              Three steps. That&apos;s it.
+              Three steps. That&apos;s the whole thing.
             </h2>
           </div>
 
@@ -379,19 +381,19 @@ export default function Home() {
               {
                 num: "1",
                 title: "Book in 60 seconds",
-                desc: "Pick your service, choose a time. Or just call us.",
+                desc: "Pick your service, enter your vehicle, choose a time. Or call and we book it for you.",
                 iconPath: <><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></>,
               },
               {
                 num: "2",
-                title: "We show up",
-                desc: "Our fully equipped van arrives at your location, on time, ready to work.",
+                title: "We come to your location",
+                desc: "Our van shows up at your home, office, marina, storage lot, or job site. On time. Fully equipped. Ready to work.",
                 iconPath: <><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></>,
               },
               {
                 num: "3",
-                title: "Done. Go.",
-                desc: "No waiting rooms. No ride to the shop. You never left your day.",
+                title: "You never left your day.",
+                desc: "Most jobs done in under an hour. Digital invoice in your inbox. 12-month warranty included. Your vehicle never moved. Neither did you.",
                 iconPath: <><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></>,
               },
             ];
@@ -438,6 +440,37 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── The Coastal Difference ── */}
+      <section className="py-16 md:py-20 bg-[#FFFDF8]">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <p className="text-xs font-semibold tracking-widest text-[#E07B2D] uppercase mb-3">The Coastal Difference</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-[#0B2040] tracking-tight">Three things every other mobile mechanic doesn&apos;t have.</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Card 1: Vacuum extraction */}
+            <div className="bg-white border border-[#E2DBCE] rounded-[12px] p-6">
+              <p className="text-[11px] font-semibold tracking-widest text-[#E07B2D] uppercase mb-2">OIL SERVICE</p>
+              <h3 className="text-[18px] font-bold text-[#0B2040] mb-3">Vacuum extraction. No mess.</h3>
+              <p className="text-[14px] text-[#555] leading-[1.65]">We pull oil through the dipstick tube using the same vacuum extraction system high-end dealerships use. No drain plug, no crawling underneath, no drips on your driveway, your marina dock, or your fleet yard. Faster than conventional drain. Cleaner every time.</p>
+            </div>
+            {/* Card 2: Tire delivery (coming soon) */}
+            <div className="bg-white border border-[#E2DBCE] rounded-[12px] p-6">
+              <span className="inline-block text-[11px] font-semibold tracking-widest text-[#E07B2D] uppercase bg-[#FAEEDA] px-2 py-0.5 rounded mb-2">COMING SOON</span>
+              <h3 className="text-[18px] font-bold text-[#0B2040] mb-3">Tire delivery and install</h3>
+              <p className="text-[14px] text-[#555] leading-[1.65] mb-3">Soon you&apos;ll order tires online and have them shipped straight to your appointment location. Our van shows up with a full tire machine, mounts and balances on-site, and hauls away the old tires. Launching this summer.</p>
+              <p className="text-[13px] text-[#7A7A7A] leading-[1.55]">Already have tires you need installed? We&apos;ll mount and balance them at your location today. Just call.</p>
+            </div>
+            {/* Card 3: Multi-vertical */}
+            <div className="bg-white border border-[#E2DBCE] rounded-[12px] p-6">
+              <p className="text-[11px] font-semibold tracking-widest text-[#E07B2D] uppercase mb-2">ONE PROVIDER</p>
+              <h3 className="text-[18px] font-bold text-[#0B2040] mb-3">Cars, boats, RVs, fleets. One call.</h3>
+              <p className="text-[14px] text-[#555] leading-[1.65]">Most mobile mechanics handle one or two verticals. We cover all four. Your daily driver, your weekend boat, your RV, and your work fleet, all serviced by the same local team. One vendor. One invoice. One number to call.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── Services ── */}
       <section className="relative bg-[#F0EDE6]">
         <div className="section-inner px-4 lg:px-6 pt-8 pb-10 md:pt-14 md:pb-14">
@@ -446,11 +479,10 @@ export default function Home() {
               Services
             </p>
             <h2 className="text-[24px] md:text-[34px] font-extrabold text-[#0B2040] mb-2 md:mb-3">
-              What we handle on-site
+              Everything we handle on-site
             </h2>
             <p className="hidden md:block text-[15px] text-[#555] mx-auto max-w-[480px]">
-              Everything your vehicle, fleet, boat, or RV needs. Brought directly to
-              your location by a factory-trained technician.
+              Factory-grade work for cars, trucks, boats, RVs, and commercial fleets. Brought directly to your location by a local team trained on dealership standards.
             </p>
           </div>
 
@@ -597,10 +629,10 @@ export default function Home() {
         <div className="section-inner px-4 md:px-6 py-8 md:py-14 relative z-10">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 text-center">
             {[
-              { value: "30+", label: "Years in fixed ops" },
-              { value: "<1hr", label: "Most services completed" },
-              { value: "100%", label: "Mobile. Always." },
-              { value: "$0", label: "Surprise fees. Ever." },
+              { value: "30+", label: "Years dealership experience" },
+              { value: "<1hr", label: "Most jobs" },
+              { value: "100%", label: "Mobile, always" },
+              { value: "$0", label: "Surprise fees" },
             ].map((stat, i) => (
               <div key={stat.label} className={`relative ${i < 3 ? "md:after:content-[''] md:after:absolute md:after:right-0 md:after:top-1/2 md:after:-translate-y-1/2 md:after:h-[40px] md:after:w-px md:after:bg-white/10" : ""}`}>
                 <p className="text-[28px] md:text-[42px] font-extrabold text-[#E07B2D] mb-0.5 md:mb-1 tracking-tight">
@@ -622,7 +654,7 @@ export default function Home() {
               Reviews
             </p>
             <h2 className="text-[24px] md:text-[34px] font-extrabold text-[#0F2847]">
-              What our customers say
+              What our neighbors say
             </h2>
           </div>
         </div>
@@ -674,7 +706,7 @@ export default function Home() {
 
         <div className="section-inner px-4 lg:px-6 pb-8 md:pb-14">
           <div className="text-center mt-6 md:mt-8">
-            <p className="text-[13px] text-[#8B7355] mb-2">Reviews from customers across the South Shore</p>
+            <p className="text-[13px] text-[#8B7355] mb-2">Real customers. Real Apollo Beach, Ruskin, and Riverview locations.</p>
             {/* TODO: Replace with real Google Business Profile review URL from Jason */}
             <a href="/contact" className="text-[13px] font-semibold text-[#E07B2D] hover:underline">
               Leave us a review on Google &rarr;
@@ -692,10 +724,10 @@ export default function Home() {
         <div className="section-inner px-4 lg:px-6 py-6 md:py-12">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-0">
             {[
-              { icon: Shield, text: "Fully Licensed & Insured", color: "#1A5FAC" },
-              { icon: Wrench, text: "ASE-Certified Technicians", color: "#0D8A8F" },
-              { icon: Award, text: "12-Month Service Warranty", color: "#D9A441" },
-              { icon: Tag, text: "Transparent Pricing, No Surprises", color: "#E07B2D" },
+              { icon: Shield, text: "Licensed and insured", color: "#1A5FAC" },
+              { icon: Wrench, text: "ASE-certified team", color: "#0D8A8F" },
+              { icon: Award, text: "12-month service warranty", color: "#D9A441" },
+              { icon: Tag, text: "Flat, honest pricing", color: "#E07B2D" },
             ].map((item, i) => (
               <div
                 key={item.text}
@@ -736,14 +768,13 @@ export default function Home() {
 
         <div className="section-inner px-4 lg:px-6 py-14 md:py-20 text-center relative z-10">
           <p className="text-[13px] uppercase font-bold text-[#D9A441] tracking-[1.5px] mb-3">
-            Ready?
+            Ready when you are
           </p>
           <h2 className="text-[32px] md:text-[42px] font-extrabold text-white mb-4" style={{ textShadow: "0 2px 20px rgba(0,0,0,0.3)" }}>
-            Skip the shop.
+            Skip the shop. Keep your day.
           </h2>
           <p className="text-[16px] text-white/65 mb-10 mx-auto max-w-[460px]">
-            Book your mobile service today. Most appointments available within
-            the week.
+            Most appointments available within the week. Booking takes under a minute.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button variant="primary" size="lg" className="shadow-[0_4px_24px_rgba(224,123,45,0.35)]" onClick={openBooking}>

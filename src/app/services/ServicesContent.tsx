@@ -170,11 +170,10 @@ export default function ServicesContent() {
             Automotive Services
           </p>
           <h1 className="text-[30px] md:text-[42px] font-extrabold leading-[1.08] text-white tracking-[-1px] mb-5">
-            What we handle on-site
+            Oil, tires, brakes, and the rest of the list.
           </h1>
           <p className="text-[16px] leading-[1.65] text-white/60 mb-8 max-w-[520px]">
-            Factory-trained technicians come to your driveway, parking lot, or
-            job site with everything needed to get the job done right.
+            Mobile vacuum-extraction oil changes, tire mount and balance, brake service, and full maintenance across Apollo Beach, Ruskin, Riverview, and the South Shore. We come to your home, your office, or wherever you park.
           </p>
           <div className="flex flex-col sm:flex-row gap-3">
             <Button
@@ -311,6 +310,28 @@ export default function ServicesContent() {
         );
       })}
 
+      {/* ─── Coastal Tire Store Coming Soon ─── */}
+      <section className="py-12">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="bg-[#FAF7F2] border border-[#E2DBCE] rounded-xl p-8 md:p-10">
+            <div className="flex items-start gap-3 mb-3">
+              <span className="text-xs font-semibold tracking-widest text-[#E07B2D] uppercase bg-[#FAEEDA] px-2 py-1 rounded">Coming Soon</span>
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold text-[#0B2040] tracking-tight mb-3">Coastal Tire Store</h2>
+            <p className="text-[#555] mb-3 leading-relaxed">
+              We&apos;re launching a tire store this summer. Order tires online, have them shipped to your appointment location, we install on-site. No tire shop visit, no waiting room, no mounting fees added at checkout.
+            </p>
+            <p className="text-sm text-[#7A7A7A] mb-5">
+              Already have tires you need installed? Call 813-722-LUBE and we&apos;ll mount and balance them at your location today.
+            </p>
+            <div className="flex gap-3 flex-wrap">
+              <a href="mailto:info@coastalmobilelube.com?subject=Notify%20me%20when%20Coastal%20Tire%20Store%20launches" className="bg-[#0B2040] text-white px-5 py-2.5 rounded-lg text-sm font-semibold">Get notified when it launches</a>
+              <a href="tel:8137225823" className="border border-[#C4BCAB] text-[#0B2040] px-5 py-2.5 rounded-lg text-sm font-semibold">Call 813-722-LUBE</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ─── Bottom CTA ─── */}
       <section
         className="relative overflow-hidden"
@@ -321,11 +342,10 @@ export default function ServicesContent() {
       >
         <div className="section-inner px-4 lg:px-6 py-12 md:py-16 text-center relative z-10">
           <h2 className="text-[28px] md:text-[34px] font-extrabold text-white mb-4">
-            Ready to book?
+            Ready to keep your day?
           </h2>
           <p className="text-[15px] text-white/60 mb-8 max-w-[440px] mx-auto">
-            Pick a time that works for you. We come to your location with
-            everything we need.
+            Pick a time, pick a service, we do the rest.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button
@@ -363,7 +383,7 @@ export default function ServicesContent() {
                 href="/fleet"
                 className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#E07B2D] hover:text-[#CC6A1F] transition-colors"
               >
-                Learn about fleet services
+                See fleet services
                 <ArrowRight size={15} />
               </Link>
             </div>
@@ -378,7 +398,7 @@ export default function ServicesContent() {
                 href="/marine"
                 className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#E07B2D] hover:text-[#CC6A1F] transition-colors"
               >
-                Learn about marine services
+                See marine services
                 <ArrowRight size={15} />
               </Link>
             </div>

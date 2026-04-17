@@ -6,13 +6,13 @@ import BookServiceButton from "@/components/BookServiceButton";
 import { cloudinaryUrl, images } from "@/lib/cloudinary";
 
 export const metadata: Metadata = {
-  title: "About Us",
+  title: "About Us | Coastal Mobile Lube",
   description:
-    "30 years of dealership experience, now mobile. Licensed, insured, ASE-certified technicians serving Tampa Bay.",
+    "Founded by Jason Binder after 30 years running dealership service departments. A local team trained on dealership standards, now mobile across Apollo Beach and South Shore.",
   openGraph: {
-    title: "About Us | Coastal Mobile Lube & Tire",
+    title: "About Us | Coastal Mobile Lube",
     description:
-      "30 years of dealership experience, now mobile. Licensed, insured, ASE-certified technicians serving Tampa Bay.",
+      "Founded by Jason Binder after 30 years running dealership service departments. A local team trained on dealership standards, now mobile across Apollo Beach and South Shore.",
     url: "https://coastalmobilelube.com/about",
     type: "website",
   },
@@ -22,27 +22,27 @@ export const metadata: Metadata = {
 const valueProps = [
   {
     number: "01",
-    title: "White-Glove Service",
+    title: "A real local team",
     description:
-      "Every customer gets the same luxury experience you would expect at a top dealership. We show up on time, treat your property with respect, and leave the work area cleaner than we found it.",
+      "Multiple vans, one standard. Every tech personally trained by Jason. The same dealership-grade work, no matter who shows up.",
   },
   {
     number: "02",
-    title: "Integrity First",
+    title: "No upsells, ever",
     description:
-      "We quote honestly, work transparently, and never upsell services you do not need. If it is not broken, we will tell you.",
+      "If it doesn't need replacing, we tell you. We quote honestly and never push services you don't need.",
   },
   {
     number: "03",
-    title: "30 Years of Know-How",
+    title: "30 years of dealership experience",
     description:
-      "Three decades managing dealership service departments means we have seen it all. That experience shows up in every oil change, every tire rotation, every marine service call.",
+      "Three decades managing service departments. That experience shows up in every oil change, every tire mount, every diagnostic.",
   },
   {
     number: "04",
-    title: "Faith-Driven Values",
+    title: "Vacuum extraction. Clean every time.",
     description:
-      "Honesty, hard work, kindness, and service to others. Those are not just words on a wall. They guide every decision we make and every customer interaction we have.",
+      "The same dealership-grade tech we use on every oil change. Pulls oil through the dipstick tube. No drain plug, no crawling underneath, no drips. Your driveway, marina, or yard stays clean.",
   },
 ];
 
@@ -92,14 +92,14 @@ export default function AboutPage() {
                 Our Story
               </p>
               <h1 className="text-[32px] md:text-[46px] font-extrabold leading-[1.06] text-white tracking-[-1.5px] mb-5">
-                Dealership expertise, delivered to your{" "}
+                30 years of dealership service.{" "}
                 <span className="relative">
-                  <span className="text-[#E07B2D]">door.</span>
+                  <span className="text-[#E07B2D]">Now coming to you.</span>
                   <span className="absolute -bottom-1 left-0 right-0 h-[3px] rounded-full bg-[#E07B2D]/40" />
                 </span>
               </h1>
               <p className="text-[16px] leading-[1.7] text-white/60 max-w-[440px] mb-6">
-                30 years of fixed operations experience. Now mobile in Apollo Beach and the South Shore.
+                Founded by Jason Binder after three decades running dealership service departments. Built around a local team trained on the same standards he set in the shop.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pt-4 border-t border-white/[0.08]">
                 {["30 years experience", "Apollo Beach based", "Licensed & insured"].map((item) => (
@@ -158,45 +158,17 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
             <div className="space-y-5">
               <p className="text-[15px] leading-[1.7] text-[#444]">
-                At Coastal Mobile Lube & Tire, we built this business to serve
-                our local community with honesty, convenience, and dependable
-                service. Living in Apollo Beach and working in Tampa, we
-                recognized the need for a better way to help customers maintain
-                their vehicles and equipment without sitting in traffic or
-                waiting at a repair shop. Life is busy, and people deserve
-                service that is professional, reliable, and built around their
-                schedule. That is why Coastal Mobile Lube & Tire was created.
+                Jason Binder spent 30 years running service departments at dealerships. He knows what a well-maintained vehicle looks like, what corners never to cut, and how to treat a customer so they keep coming back.
               </p>
               <p className="text-[15px] leading-[1.7] text-[#444]">
-                With a background in automotive dealerships and fixed operations,
-                our company is built on 30 years of experience in luxury
-                customer service, operational excellence, and white-glove care.
-                That experience shaped our commitment to doing things the right
-                way, communicating clearly, and delivering service our customers
-                can trust. We use a vacuum oil extraction system that pulls the
-                oil out through the dipstick tube instead of removing the drain
-                plug and crawling under the vehicle. It is cleaner, faster, and
-                leaves no mess on your driveway. No drips, no spills.
+                When he started Coastal Mobile Lube & Tire, the idea was simple: take everything he learned inside the shop and bring it to the people who don&apos;t have time to visit one. A fully equipped van, factory-grade tools, and the same vacuum extraction system used in high-volume dealerships. No drain plugs, no drips, no mess at any location.
               </p>
               <p className="text-[15px] leading-[1.7] text-[#444]">
-                Coastal Mobile Lube & Tire is built on faith-based values that
-                matter: integrity, honesty, hard work, kindness, and service to
-                others. These principles are at the heart of how we operate, how
-                we treat our customers, and how we serve our community. We are
-                proud to serve the people who live, work, and enjoy life
-                throughout the Apollo Beach and South Shore area. Whether it is
-                your personal vehicle, boat, work truck, RV, trailer, fleet
-                vehicle, or recreational equipment, our goal is to bring
-                high-quality mobile lube, tire, and maintenance services directly
-                to you with professionalism and a personal touch.
+                What started as one van is now a growing local team. Jason hires and trains every technician personally. Same standards, same vacuum extraction, same honest pricing, same warranty, regardless of which Coastal van rolls up at your location.
               </p>
-              <blockquote className="border-l-4 border-[#E07B2D] pl-5 py-2 mt-4">
-                <p className="text-[16px] leading-[1.7] text-[#0B2040] font-semibold italic">
-                  We are more than a mobile service company. We are a local
-                  business built on experience, strong values, and a commitment
-                  to serving our community the right way.
-                </p>
-              </blockquote>
+              <p className="text-[15px] leading-[1.7] text-[#444] font-semibold">
+                Multiple vans. One standard. Wherever you need us.
+              </p>
             </div>
             <div className="relative rounded-[14px] overflow-hidden shadow-[0_8px_36px_rgba(11,32,64,0.12),0_2px_8px_rgba(11,32,64,0.06)]">
               <img
@@ -281,7 +253,7 @@ export default function AboutPage() {
                   href={vertical.href}
                   className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#E07B2D] hover:text-[#CC6A1F] transition-colors"
                 >
-                  Learn more
+                  See services
                   <ArrowRight size={15} />
                 </Link>
               </div>

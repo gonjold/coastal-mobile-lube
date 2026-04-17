@@ -3,13 +3,13 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'How It Works | Coastal Mobile Lube & Tire',
+  title: 'How Mobile Service Works | Coastal Mobile Lube',
   description:
-    'Book in 60 seconds. We show up at your location. You never leave your day. See how Coastal Mobile delivers shop-quality service right to your driveway, office, or marina.',
+    'Book in 60 seconds. We come to your location. Your vehicle never moves. Three steps, one hour, zero trips to a garage.',
   openGraph: {
-    title: 'How It Works | Coastal Mobile Lube & Tire',
+    title: 'How Mobile Service Works | Coastal Mobile Lube',
     description:
-      'Book in 60 seconds. We come to you. Skip the shop, keep your day.',
+      'Book in 60 seconds. We come to your location. Your vehicle never moves. Three steps, one hour, zero trips to a garage.',
     url: 'https://coastalmobilelube.com/how-it-works',
     type: 'website',
   },
@@ -57,6 +57,47 @@ const FAQS = [
 export default function HowItWorksPage() {
   return (
     <main className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Do you bring everything you need?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. Our van carries OEM-grade oil, factory-spec filters, tires in stock, brake parts, diagnostic tools, and everything for a full service bay. We don't make trips to the parts store."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What about jobs you can't do on-site?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "On-site we handle 95% of service and maintenance. For transmission rebuilds or internal engine work, we refer you to a trusted partner shop and coordinate drop-off for you."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How early do I need to book?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Most weeks we have same-day or next-day availability. Fleet and marine customers on a schedule book their slots weeks in advance."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What's included in the 12-month warranty?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "If the work we performed isn't holding, we come back at no charge and make it right. Parts and labor covered for 12 months or 12,000 miles, whichever comes first."
+              }
+            }
+          ]
+        }) }}
+      />
       {/* HERO */}
       <section
         className="relative text-white pt-32 pb-24 px-6 overflow-hidden"
@@ -101,11 +142,11 @@ export default function HowItWorksPage() {
             <span className="h-px w-8" style={{ backgroundColor: ORANGE }} />
           </div>
           <h1 className="text-5xl md:text-7xl font-extrabold mb-6 leading-[1.05] text-white">
-            Three steps.<br />
-            <span style={{ color: ORANGE }}>That is it.</span>
+            No shop. No waiting.<br />
+            <span style={{ color: ORANGE }}>Your vehicle never moves.</span>
           </h1>
           <p className="text-xl text-white/75 max-w-2xl mx-auto leading-relaxed">
-            Book online in under a minute. We arrive at your location on time and fully equipped. You get shop-quality service without the shop visit.
+            Here&apos;s exactly what happens from the moment you book to the moment we leave. Three steps, one hour, zero trips to a garage.
           </p>
         </div>
       </section>
@@ -138,13 +179,10 @@ export default function HowItWorksPage() {
               Book in 60 seconds
             </h2>
             <p className="text-lg text-slate-600 mb-4 leading-relaxed">
-              Pick your service, tell us about your vehicle, and choose a time that works for your day.{' '}
-              <span className="font-semibold" style={{ color: NAVY }}>
-                The whole booking takes less than a minute.
-              </span>
+              Pick your service, enter your vehicle, choose a time. The whole thing takes under a minute.
             </p>
             <p className="text-lg text-slate-600 mb-8 leading-relaxed">
-              Have a VIN? Paste it in and we auto-fill year, make, and model. Returning customer? Enter your phone and we pull up your vehicle history instantly.
+              Have a VIN? Paste it in, we auto-fill the rest. Returning customer? Enter your phone and your vehicle history loads in a second.
             </p>
             <Link
               href="/book"
@@ -472,7 +510,7 @@ export default function HowItWorksPage() {
               </span>
             </p>
             <p className="text-lg text-slate-600 leading-relaxed">
-              The van carries everything a shop bay carries: certified lifts, pneumatic tools, OEM-grade fluids, tire machine, diagnostic scanners, and factory-trained technicians. You do not lose your day sitting in a waiting room.
+              The van carries what a shop bay carries. Pneumatic tools, OEM-grade fluids, full tire machine, vacuum oil extraction, diagnostic scanners, certified equipment. And a factory-trained tech, not a gig-app contractor.
             </p>
           </div>
         </div>
@@ -503,16 +541,13 @@ export default function HowItWorksPage() {
               className="text-4xl md:text-5xl font-extrabold mb-6 leading-tight"
               style={{ color: NAVY }}
             >
-              Drive away happy
+              You never left your day
             </h2>
             <p className="text-lg text-slate-600 mb-4 leading-relaxed">
-              Most services complete in under an hour. You get a clear, itemized digital invoice and pay securely online.{' '}
-              <span className="font-semibold" style={{ color: NAVY }}>
-                No cash, no paperwork, no shop visit.
-              </span>
+              Most services complete in under an hour. You get an itemized digital invoice and pay securely online. No cash, no paperwork, no shop visit.
             </p>
             <p className="text-lg text-slate-600 leading-relaxed">
-              Every service is backed by a 12-month warranty. If anything is not right, we come back and make it right.
+              Every service is backed by a 12-month warranty. If anything is not right, we come back and make it right. Your vehicle never moved an inch. Neither did your schedule.
             </p>
           </div>
 
@@ -655,6 +690,107 @@ export default function HowItWorksPage() {
                 <polygon points="135,0 139,10 150,10 141,17 145,28 135,22 125,28 129,17 120,10 131,10" />
               </g>
             </svg>
+          </div>
+        </div>
+      </section>
+
+      {/* WHERE WE SET UP */}
+      <section className="py-16 bg-white">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="text-center mb-10">
+            <p className="text-xs font-semibold tracking-widest text-[#E07B2D] uppercase mb-3">Locations</p>
+            <h2 className="text-3xl font-bold text-[#0B2040] tracking-tight mb-3">Wherever your vehicle lives</h2>
+            <p className="text-[#555] max-w-xl mx-auto">Half the work of mobile service is showing up where you actually are. Here&apos;s where we set up.</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {[
+              "Your home driveway or garage",
+              "Your office parking lot",
+              "Marinas, slips, ramps, dry storage",
+              "RV parks, campgrounds, storage lots",
+              "Fleet yards and depots",
+              "Job sites and construction lots",
+            ].map((loc) => (
+              <div key={loc} className="bg-[#FAFBFC] border border-[#E8E8E8] rounded-[10px] px-4 py-3 text-[14px] font-medium text-[#0B2040]">{loc}</div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* WHAT'S IN THE VAN */}
+      <section className="py-16 bg-slate-50">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="text-center mb-10">
+            <p className="text-xs font-semibold tracking-widest text-[#E07B2D] uppercase mb-3">The Van</p>
+            <h2 className="text-3xl font-bold text-[#0B2040] tracking-tight mb-3">A real shop on wheels</h2>
+            <p className="text-[#555] max-w-xl mx-auto">Our service van isn&apos;t a pickup truck with a toolbox. It&apos;s a fully equipped mobile bay carrying everything a dealership service department uses.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {[
+              "Vacuum oil extraction system. The same kind dealerships use.",
+              "Full tire mount and balance machine",
+              "OEM-grade fluids and filters in stock",
+              "OBD2, marine, and RV diagnostic scanners",
+              "Pneumatic tools and calibrated torque wrenches",
+              "Spare parts on board: filters, brakes, batteries, belts, wipers",
+            ].map((item) => (
+              <div key={item} className="flex items-start gap-3 bg-white border border-[#E8E8E8] rounded-[10px] px-4 py-3">
+                <span className="inline-block w-2 h-2 rounded-full bg-[#E07B2D] mt-[7px] shrink-0" />
+                <span className="text-[14px] text-[#333] leading-[1.5]">{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* WHAT YOU DON'T HAVE TO DO */}
+      <section className="py-16 bg-white">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="text-center mb-10">
+            <p className="text-xs font-semibold tracking-widest text-[#E07B2D] uppercase mb-3">What You Skip</p>
+            <h2 className="text-3xl font-bold text-[#0B2040] tracking-tight mb-3">A short list of things you don&apos;t have to do.</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mx-auto">
+            {[
+              "Drive anywhere",
+              "Sit in a waiting room",
+              "Arrange a ride home",
+              "Reschedule your day",
+              "Deal with shop drop-off and pickup",
+              "Visit a tire shop, oil shop, or service center",
+            ].map((item) => (
+              <div key={item} className="flex items-center gap-3 px-4 py-3">
+                <span className="text-[#E07B2D] text-[16px] font-bold shrink-0">&times;</span>
+                <span className="text-[15px] text-[#888] line-through">{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* HOW-IT-WORKS FAQ STRIP */}
+      <section className="py-16 bg-slate-50">
+        <div className="max-w-3xl mx-auto px-4">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl font-bold text-[#0B2040]">Common questions</h2>
+          </div>
+          <div className="space-y-3">
+            {[
+              { q: "Do you bring everything you need?", a: "Yes. Our van carries OEM-grade oil, factory-spec filters, tires in stock, brake parts, diagnostic tools, and everything for a full service bay. We don\u2019t make trips to the parts store." },
+              { q: "What about jobs you can\u2019t do on-site?", a: "On-site we handle 95% of service and maintenance. For transmission rebuilds or internal engine work, we refer you to a trusted partner shop and coordinate drop-off for you." },
+              { q: "How early do I need to book?", a: "Most weeks we have same-day or next-day availability. Fleet and marine customers on a schedule book their slots weeks in advance." },
+              { q: "What\u2019s included in the 12-month warranty?", a: "If the work we performed isn\u2019t holding, we come back at no charge and make it right. Parts and labor covered for 12 months or 12,000 miles, whichever comes first." },
+            ].map((faq) => (
+              <details key={faq.q} className="group bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <summary className="flex items-center justify-between gap-4 px-6 py-4 cursor-pointer list-none hover:bg-slate-50 transition-colors">
+                  <span className="font-bold text-[15px] text-[#0B2040]">{faq.q}</span>
+                  <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-white transition-transform group-open:rotate-45" style={{ backgroundColor: '#E07B2D' }}>
+                    <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M7 2 V12" /><path d="M2 7 H12" /></svg>
+                  </div>
+                </summary>
+                <div className="px-6 pb-5 text-[14px] text-slate-600 leading-relaxed">{faq.a}</div>
+              </details>
+            ))}
           </div>
         </div>
       </section>
@@ -834,7 +970,7 @@ export default function HowItWorksPage() {
             Ready to skip the shop?
           </h2>
           <p className="text-xl text-white/75 mb-10 max-w-xl mx-auto leading-relaxed">
-            Book your mobile service today. Most appointments available same week.
+            Pick a time that works for you. We handle the rest.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link

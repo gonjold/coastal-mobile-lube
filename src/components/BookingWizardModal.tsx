@@ -1252,7 +1252,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                 Book Your Service
               </h2>
               <p style={{ color: "#64748B", fontSize: 11, margin: "4px 0 0", lineHeight: 1.4 }}>
-                We come to you. You never leave your day.
+                Pick your service, your vehicle, and a time. Takes about a minute.
               </p>
             </div>
             <button

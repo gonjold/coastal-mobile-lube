@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import FleetContent from "./FleetContent";
 
 export const metadata: Metadata = {
-  title: "Fleet Services",
+  title: "Fleet Mobile Maintenance | Coastal Mobile Lube",
   description:
-    "Scheduled fleet maintenance for businesses in Tampa Bay. Custom plans, on-site service, detailed reporting. Keep your fleet running.",
+    "Scheduled mobile maintenance for company vehicles, vans, and commercial fleets. One vendor, one invoice, zero downtime. Apollo Beach and South Shore.",
   openGraph: {
-    title: "Fleet Services | Coastal Mobile Lube & Tire",
+    title: "Fleet Mobile Maintenance | Coastal Mobile Lube",
     description:
-      "Scheduled fleet maintenance for businesses in Tampa Bay. Custom plans, on-site service, detailed reporting. Keep your fleet running.",
+      "Scheduled mobile maintenance for company vehicles, vans, and commercial fleets. One vendor, one invoice, zero downtime. Apollo Beach and South Shore.",
     url: "https://coastalmobilelube.com/fleet",
     type: "website",
   },

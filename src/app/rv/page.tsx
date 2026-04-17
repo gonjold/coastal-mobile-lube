@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import RVContent from "./RVContent";
 
 export const metadata: Metadata = {
-  title: "RV Services",
+  title: "Mobile RV Service | Coastal Mobile Lube",
   description:
-    "Mobile RV oil changes, generator service, roof inspection, brake and tire service for all RV classes. We come to your RV park or storage facility.",
+    "Class A, B, C, fifth wheels, travel trailers. Oil, tires, brakes, generators, and pre-trip inspections at your RV park, campground, or driveway.",
   openGraph: {
-    title: "RV Services | Coastal Mobile Lube & Tire",
+    title: "Mobile RV Service | Coastal Mobile Lube",
     description:
-      "Mobile RV oil changes, generator service, roof inspection, brake and tire service for all RV classes. We come to your RV park or storage facility.",
+      "Class A, B, C, fifth wheels, travel trailers. Oil, tires, brakes, generators, and pre-trip inspections at your RV park, campground, or driveway.",
     url: "https://coastalmobilelube.com/rv",
     type: "website",
   },

@@ -164,12 +164,10 @@ export default function MarineContent() {
               Marine Services
             </p>
             <h1 className="text-[30px] md:text-[42px] font-[800] leading-[1.08] text-white tracking-[-1px] mb-5">
-              Dockside service for your boat
+              Your boat stays in the water.
             </h1>
             <p className="text-[16px] leading-[1.7] text-white/60 mb-8 max-w-[520px]">
-              We service outboard and inboard engines right at the marina or
-              boat ramp. No hauling, no waiting. Factory-grade parts, certified
-              technicians, and a 12-month service warranty on every job.
+              Outboard, inboard, and sterndrive service at the marina, slip, ramp, or dry storage across Tampa Bay. No hauling. No 2-week shop backlogs. Factory-grade parts, certified team, 12-month warranty on every job.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Button variant="primary" size="lg" className="whitespace-nowrap shadow-[0_4px_24px_rgba(224,123,45,0.35)]" onClick={openBooking}>
@@ -257,7 +255,7 @@ export default function MarineContent() {
       <section className="relative overflow-hidden bg-[#F7F8FA]">
         <div className="section-inner px-4 lg:px-6 py-10 md:py-14 text-center relative z-10">
           <h2 className="text-[28px] font-[800] text-[#0B2040] mb-3">
-            Where we service boats
+            Marinas, slips, and ramps we cover
           </h2>
           <p className="text-[15px] text-[#666] mb-8 mx-auto max-w-[560px]">
             We come to you at marinas, boat ramps, dry storage, and private
@@ -278,6 +276,30 @@ export default function MarineContent() {
 
       {/* ─── Marine Quote Form ─── */}
       <MarineQuoteForm />
+
+      {/* ─── Marine Bottom CTA ─── */}
+      <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0B2040 0%, #0F2847 50%, #132E54 100%)" }}>
+        <div className="section-inner px-4 lg:px-6 py-14 md:py-20 text-center relative z-10">
+          <h2 className="text-[28px] md:text-[34px] font-[800] text-white mb-4">
+            Ready to skip the haul?
+          </h2>
+          <p className="text-[16px] text-white/60 mb-8 max-w-[520px] mx-auto">
+            Get a marine service quote in under two minutes. We come to the dock.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button variant="primary" size="lg" className="shadow-[0_4px_24px_rgba(224,123,45,0.35)]" onClick={openBooking}>
+              Get Marine Quote
+            </Button>
+            <a
+              href="tel:8137225823"
+              className="inline-flex items-center justify-center gap-2 px-[30px] py-[14px] font-semibold text-white bg-white/[0.06] border border-white/20 rounded-[var(--radius-button)] hover:bg-white/[0.12] hover:border-white/35 transition-all backdrop-blur-sm"
+            >
+              <Phone size={16} />
+              Call 813-722-LUBE
+            </a>
+          </div>
+        </div>
+      </section>
     </>
   );
 }

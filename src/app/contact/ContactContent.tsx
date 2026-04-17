@@ -49,7 +49,7 @@ export default function ContactContent() {
               Contact
             </p>
             <h1 className="text-[30px] md:text-[42px] font-extrabold leading-[1.1] text-white tracking-[-1px] mb-4">
-              Get in touch
+              Talk to us
             </h1>
             <p className="text-[16px] leading-[1.7] text-white/70 max-w-[700px]">
               Have a question or want to learn more about our services? We respond within one business day. For service bookings, use our{" "}

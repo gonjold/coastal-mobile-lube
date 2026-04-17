@@ -85,7 +85,7 @@ export default function FloatingQuoteBar() {
         className={`fixed bottom-[80px] lg:bottom-6 right-4 lg:right-6 z-50 items-center gap-2 px-5 py-3 rounded-full bg-[#E07B2D] text-white font-semibold text-[14px] shadow-[0_4px_20px_rgba(224,123,45,0.4)] hover:bg-[#CC6A1F] transition-colors ${hiddenOnMobile} lg:!flex`}
       >
         <ChevronUp size={16} />
-        Get a Quote
+        Need a price? Ask us.
       </button>
     );
   }
@@ -117,8 +117,8 @@ export default function FloatingQuoteBar() {
 
         {/* Header */}
         <div className="mb-4 pr-6">
-          <p className="text-[16px] font-bold text-[#0B2447]">Get a Quick Quote</p>
-          <p className="text-[13px] text-[#64748B]">We&apos;ll get back to you within the hour.</p>
+          <p className="text-[16px] font-bold text-[#0B2447]">Need a price? Ask us.</p>
+          <p className="text-[13px] text-[#64748B]">Name, number, what you need. We call back within the hour.</p>
         </div>
 
         {message ? (

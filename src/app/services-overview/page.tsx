@@ -114,11 +114,11 @@ export default function ServicesOverviewPage() {
             <span className="h-px w-8" style={{ backgroundColor: ORANGE }} />
           </div>
           <h1 className="text-5xl md:text-7xl font-extrabold mb-6 leading-[1.05] text-white">
-            Everything we handle<br />
-            <span style={{ color: ORANGE }}>on-site.</span>
+            One team. Four verticals.<br />
+            <span style={{ color: ORANGE }}>Everything you own.</span>
           </h1>
           <p className="text-xl text-white/75 max-w-2xl mx-auto leading-relaxed">
-            Four divisions, one team. Factory-trained technicians bring the shop to your driveway, marina, campground, or yard.
+            Cars, trucks, boats, RVs, and commercial fleets. Mobile service from a local team trained on dealership standards. Wherever your vehicle lives, that&apos;s where we work.
           </p>
         </div>
       </section>
@@ -174,7 +174,7 @@ export default function ServicesOverviewPage() {
                 className="text-xs uppercase font-bold mb-2"
                 style={{ color: ORANGE, letterSpacing: '0.1em' }}
               >
-                Cars, Trucks, SUVs
+                CARS &middot; TRUCKS &middot; SUVS
               </div>
               <h3 className="text-3xl font-extrabold mb-3" style={{ color: NAVY }}>
                 Automotive
@@ -254,7 +254,7 @@ export default function ServicesOverviewPage() {
                 Marine
               </h3>
               <p className="text-slate-600 mb-6 leading-relaxed">
-                On-site marine service at marinas, boat lifts, and slips across Tampa Bay. Winterization, oil changes, impellers, and tune-ups.
+                Engine service at the marina, slip, dry storage, or boat ramp across Tampa Bay. Outboards, inboards, sterndrives. Your boat stays in the water.
               </p>
               <ul className="space-y-2.5 mb-8 flex-1">
                 <CheckBullet>Engine oil and lower-unit service</CheckBullet>
@@ -331,13 +331,13 @@ export default function ServicesOverviewPage() {
                 className="text-xs uppercase font-bold mb-2"
                 style={{ color: ORANGE, letterSpacing: '0.1em' }}
               >
-                Class A, Class C, Travel Trailers
+                CLASS A &middot; CLASS C &middot; TRAVEL TRAILERS
               </div>
               <h3 className="text-3xl font-extrabold mb-3" style={{ color: NAVY }}>
                 RV
               </h3>
               <p className="text-slate-600 mb-6 leading-relaxed">
-                RV maintenance at your home, storage lot, or campground. Chassis service, generator service, and pre-trip inspections.
+                Service at the RV park, the campground, your storage lot, or your driveway. Class A, B, C, fifth wheels, travel trailers. Your rig stays parked.
               </p>
               <ul className="space-y-2.5 mb-8 flex-1">
                 <CheckBullet>Chassis and generator oil service</CheckBullet>
@@ -449,13 +449,13 @@ export default function ServicesOverviewPage() {
                 className="text-xs uppercase font-bold mb-2"
                 style={{ color: ORANGE, letterSpacing: '0.1em' }}
               >
-                Company Vehicles, Work Vans, Trucks
+                COMPANY VEHICLES &middot; WORK VANS &middot; TRUCKS
               </div>
               <h3 className="text-3xl font-extrabold mb-3" style={{ color: NAVY }}>
                 Fleet & Commercial
               </h3>
               <p className="text-slate-600 mb-6 leading-relaxed">
-                Scheduled recurring service for fleets of any size. Keep your vehicles on the road. We come to your yard on your schedule.
+                Scheduled mobile service at your yard or job site. One vendor, one invoice, zero downtime across your operation.
               </p>
               <ul className="space-y-2.5 mb-8 flex-1">
                 <CheckBullet>Recurring monthly or quarterly service</CheckBullet>
