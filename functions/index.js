@@ -90,6 +90,15 @@ exports.onNewBooking = onDocumentCreated(
               <td style="padding: 8px 0; color: #666;">Source</td>
               <td style="padding: 8px 0;">${sourceLabel}</td>
             </tr>
+            ${(booking.vehicleYear || booking.vehicleMake || booking.vehicleModel) ? `
+            <tr style="border-top: 1px solid #eee;">
+              <td style="padding: 8px 0; color: #666;">Vehicle</td>
+              <td style="padding: 8px 0; font-weight: 600;">${[booking.vehicleYear, booking.vehicleMake, booking.vehicleModel].filter(Boolean).join(' ')}${booking.fuelType ? ' (' + booking.fuelType + ')' : ''}</td>
+            </tr>` : ''}
+            ${booking.needsConfirmation ? `
+            <tr>
+              <td colspan="2" style="padding: 8px 0; color: #DC2626; font-weight: 700; background: #FEF2F2;">VEHICLE UNCONFIRMED - call customer</td>
+            </tr>` : ''}
             ${booking.preferredDate ? `
             <tr style="border-top: 1px solid #eee;">
               <td style="padding: 8px 0; color: #666;">Preferred Date</td>
@@ -145,6 +154,7 @@ exports.onNewBooking = onDocumentCreated(
         to: "jon@jgoldco.com",
         bcc: "9492926686@txt.att.net",
         subject: `New ${categoryLabel} Booking — ${booking.name || formattedPhone}`,
+        text: `New booking: ${booking.name || "Unknown"} - ${booking.service || "General"}. ${formattedPhone}.${booking.needsConfirmation ? ' VEHICLE UNCONFIRMED - call customer.' : ''} Check admin.`,
         html: adminHtml,
       });
       console.log(`Admin notification sent for booking ${bookingId}`);
@@ -1581,6 +1591,7 @@ exports.sendCancellationEmail = onRequest(
         cc: "info@coastalmobilelube.com",
         bcc: "9492926686@txt.att.net",
         subject: "Your Coastal Mobile Lube appointment has been cancelled",
+        text: `Cancelled: ${customerName} - ${serviceName}. Check admin dashboard.`,
         html: cancellationHtml,
       });
       console.log(`Cancellation email sent to ${customerEmail} for booking ${bookingId}`);
@@ -1710,6 +1721,7 @@ exports.qbWebhook = onRequest(
                     to: "info@coastalmobilelube.com",
                     bcc: "9492926686@txt.att.net",
                     subject: `Payment received — ${invoiceNumber}`,
+                    text: `Payment: $${paidAmount} from ${customerName}. Invoice ${invoiceNumber}. Check admin.`,
                     html: paymentHtml,
                   });
                   console.log(`Payment notification sent for ${invoiceNumber} ($${paidAmount})`);

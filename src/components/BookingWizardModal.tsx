@@ -8,7 +8,7 @@ import { useServices, type Service } from "@/hooks/useServices";
 import { groupByCategory } from "@/lib/serviceHelpers";
 import { decodeVIN as decodeVINApi, getFuelCategory } from "@/lib/vehicleApi";
 import SearchableSelect from "./SearchableSelect";
-import VehicleTypeahead from "./VehicleTypeahead";
+import VehicleSelector from "./booking/VehicleSelector";
 
 /* ─── Types ───────────────────────────────────────────────── */
 
@@ -167,7 +167,8 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
   const [vehicleMake, setVehicleMake] = useState("");
   const [vehicleModel, setVehicleModel] = useState("");
   const [vehicleTrim, setVehicleTrim] = useState("");
-  const [fuelType, setFuelType] = useState("Gas");
+  const [fuelType, setFuelType] = useState("");
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [vinDecoding, setVinDecoding] = useState(false);
   const [vinDecoded, setVinDecoded] = useState(false);
   const [vinDecodeError, setVinDecodeError] = useState("");
@@ -867,7 +868,11 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
 
   /* ── Can advance? ── */
   function canNext(): boolean {
-    if (step === 1) return (vehicleYear.length > 0 && vehicleMake.length > 0 && vehicleModel.length > 0) || vinDecoded;
+    if (step === 1) {
+      if (isMarine) return true;
+      const vehicleComplete = vehicleYear.length > 0 && vehicleMake.length > 0 && vehicleModel.length > 0 && fuelType.length > 0;
+      return vehicleComplete || needsConfirmation;
+    }
     if (step === 2) return selectedServices.length > 0 || (otherSelected && otherText.trim().length > 0);
     if (step === 3) return customerFirstName.trim().length > 0 && customerLastName.trim().length > 0 && customerPhone.trim().length > 0;
     return true;
@@ -932,6 +937,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
         vehicleTrim: vehicleTrim.trim(),
         fuelType,
         vin: vinOrHull.trim(),
+        needsConfirmation: needsConfirmation || false,
         vesselYear: vesselYear.trim(),
         vesselMake: vesselMake.trim(),
         vesselModel: vesselModel.trim(),
@@ -981,7 +987,8 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
     setVehicleMake("");
     setVehicleModel("");
     setVehicleTrim("");
-    setFuelType("Gas");
+    setFuelType("");
+    setNeedsConfirmation(false);
     setVinDecoded(false);
     setVinDecodeError("");
     setFeeWaived(false);
@@ -1113,9 +1120,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
     if (b.vehicleMake) setVehicleMake(b.vehicleMake);
     if (b.vehicleModel) setVehicleModel(b.vehicleModel);
     if (b.fuelType) setFuelType(b.fuelType);
-    // Sync typeahead display so the VehicleTypeahead input reflects the selection
-    const vehicleDisplay = [b.vehicleYear, b.vehicleMake, b.vehicleModel].filter(Boolean).join(" ");
-    if (vehicleDisplay) setTypeaheadValue(vehicleDisplay);
+    setNeedsConfirmation(false);
     setLookupDone(true);
     setLookupResults([]);
     setLookupMsg("");
@@ -1648,214 +1653,164 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                 {isMarine ? "Vessel Information" : "Your Vehicle"}
               </h3>
 
-              {renderLookupUI("Been here before? We can auto-fill your vehicle info.")}
-
-              {/* VIN Decode section (non-marine only, shown FIRST) */}
-              {!isMarine && (
+              {!isMarine ? (
                 <>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>VIN (optional)</label>
-                  <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                  {/* Phone lookup panel (expanded when triggered from VehicleSelector) */}
+                  {lookupOpen && !lookupDone && (
+                    <div style={{ background: "#FFF7ED", border: "1px solid #FDBA74", borderRadius: 10, padding: "12px 14px", marginBottom: 16 }}>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <input
+                          type="tel"
+                          value={lookupPhone}
+                          onChange={(e) => setLookupPhone(formatPhoneDisplay(e.target.value))}
+                          placeholder="(555) 555-5555"
+                          style={{
+                            flex: 1, padding: "8px 12px", border: "1px solid #E2E8F0", borderRadius: 8,
+                            fontSize: 13, outline: "none", fontFamily: "inherit", background: "#FFFFFF", color: "#1E293B",
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleLookup}
+                          disabled={lookupLoading}
+                          style={{
+                            padding: "8px 14px", borderRadius: 8, border: "1px solid #F97316",
+                            background: "transparent", color: "#F97316", fontSize: 13, fontWeight: 600,
+                            cursor: lookupLoading ? "not-allowed" : "pointer", whiteSpace: "nowrap",
+                          }}
+                        >
+                          {lookupLoading ? "Looking..." : "Look me up"}
+                        </button>
+                      </div>
+                      {lookupMsg && (
+                        <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 8 }}>{lookupMsg}</div>
+                      )}
+                      {lookupResults.length > 0 && (
+                        <div style={{ marginTop: 10 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#475569", marginBottom: 6 }}>
+                            Select a previous booking:
+                          </div>
+                          {lookupResults.map((b) => (
+                            <button
+                              key={b.id}
+                              type="button"
+                              onClick={() => applyLookupBooking(b)}
+                              style={{
+                                display: "block", width: "100%", textAlign: "left", padding: "10px 12px",
+                                background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 8,
+                                cursor: "pointer", marginBottom: 6, transition: "border-color 0.15s",
+                              }}
+                              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "#F97316"; }}
+                              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "#E2E8F0"; }}
+                            >
+                              <div style={{ fontSize: 13, fontWeight: 600, color: "#0B2447" }}>
+                                {[b.vehicleYear, b.vehicleMake, b.vehicleModel].filter(Boolean).join(" ") || "No vehicle info"}
+                              </div>
+                              <div style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>
+                                {b.services || "No services listed"}
+                              </div>
+                              {b.date && <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>{b.date}</div>}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <VehicleSelector
+                    value={{
+                      year: vehicleYear,
+                      make: vehicleMake,
+                      model: vehicleModel,
+                      fuelType,
+                      vin: vinOrHull,
+                      needsConfirmation,
+                    }}
+                    onChange={(v) => {
+                      setVehicleYear(v.year || "");
+                      setVehicleMake(v.make || "");
+                      setVehicleModel(v.model || "");
+                      setFuelType(v.fuelType || "");
+                      setVinOrHull(v.vin || "");
+                      setNeedsConfirmation(!!v.needsConfirmation);
+                    }}
+                    onLookupByPhone={() => setLookupOpen(true)}
+                  />
+                </>
+              ) : (
+                <>
+                  {renderLookupUI("Been here before? We can auto-fill your vessel info.")}
+
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>
+                      Hull Identification Number (HIN)
+                    </label>
                     <input
                       type="text"
                       value={vinOrHull}
-                      onChange={(e) => { setVinOrHull(e.target.value.toUpperCase().slice(0, 17)); setVinDecoded(false); setVinDecodeError(""); }}
-                      placeholder="Enter your VIN for auto-fill (optional)"
-                      maxLength={17}
+                      onChange={(e) => setVinOrHull(e.target.value.toUpperCase())}
+                      placeholder="Enter HIN"
                       style={{
-                        flex: 1, padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
-                        fontSize: 14, outline: "none", fontFamily: "monospace", letterSpacing: 1, textTransform: "uppercase",
+                        width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
+                        fontSize: 14, outline: "none", fontFamily: "inherit",
                         background: "#FFFFFF", color: "#1E293B",
                       }}
                     />
-                    <button
-                      type="button"
-                      onClick={handleVinDecode}
-                      disabled={vinDecoding || vinOrHull.replace(/\s/g, "").length !== 17}
-                      style={{
-                        padding: "10px 20px", background: "#E07B2D", color: "#fff", border: "none", borderRadius: 10,
-                        cursor: vinDecoding || vinOrHull.replace(/\s/g, "").length !== 17 ? "not-allowed" : "pointer",
-                        fontSize: 14, fontWeight: 600, flexShrink: 0,
-                        opacity: vinDecoding || vinOrHull.replace(/\s/g, "").length !== 17 ? 0.5 : 1,
-                      }}
-                    >
-                      {vinDecoding ? "Decoding..." : "Decode"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setScannerOpen(true)}
-                      style={{
-                        padding: "10px 14px", background: "#0B2447", color: "#fff", border: "none", borderRadius: 10,
-                        cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, flexShrink: 0,
-                      }}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round">
-                        <rect x="1" y="1" width="4" height="4" /><rect x="11" y="1" width="4" height="4" />
-                        <rect x="1" y="11" width="4" height="4" /><line x1="8" y1="1" x2="8" y2="6" />
-                        <line x1="11" y1="8" x2="15" y2="8" /><line x1="8" y1="11" x2="8" y2="15" /><line x1="1" y1="8" x2="6" y2="8" />
-                      </svg>
-                      Scan
-                    </button>
-                  </div>
 
-                  {/* Scanner */}
-                  {scannerOpen && (
-                    <div style={{ marginBottom: 12, background: "#000", borderRadius: 12, overflow: "hidden", position: "relative" }}>
-                      <div id="wizard-vin-scanner" style={{ width: "100%", minHeight: 200 }} />
-                      {scannerError && (
-                        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 14 }}>
-                          {scannerError}
+                    {/* Vessel description fields */}
+                    <div style={{ marginTop: 20 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+                        <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
+                        <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 500, whiteSpace: "nowrap" }}>Don&apos;t know your HIN? Describe your vessel.</span>
+                        <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                        <div>
+                          <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Vessel Year</label>
+                          <input
+                            type="number"
+                            value={vesselYear}
+                            onChange={(e) => setVesselYear(e.target.value)}
+                            placeholder="e.g. 2020"
+                            min="1950"
+                            max="2027"
+                            style={{
+                              width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
+                              fontSize: 14, outline: "none", fontFamily: "inherit",
+                              background: "#FFFFFF", color: "#1E293B",
+                            }}
+                          />
                         </div>
-                      )}
-                      <button
-                        type="button"
-                        onClick={closeScanner}
-                        style={{
-                          position: "absolute", top: 8, right: 8, width: 28, height: 28, borderRadius: "50%",
-                          background: "rgba(0,0,0,0.5)", border: "none", color: "#fff", cursor: "pointer",
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                        }}
-                      >
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round">
-                          <line x1="1" y1="1" x2="11" y2="11" /><line x1="11" y1="1" x2="1" y2="11" />
-                        </svg>
-                      </button>
-                    </div>
-                  )}
-
-                  {/* VIN decode status */}
-                  {vinDecoded && !vinDecoding && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#22c55e", fontWeight: 600, marginBottom: 12 }}>
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="11 4 5.5 10 3 7.5" />
-                      </svg>
-                      {[vehicleYear, vehicleMake, vehicleModel, vehicleTrim].filter(Boolean).join(" ")} - {fuelType}
-                    </div>
-                  )}
-                  {vinDecodeError && (
-                    <div style={{ fontSize: 13, color: "#DC2626", marginBottom: 12 }}>
-                      {vinDecodeError}
-                    </div>
-                  )}
-
-                  {/* Divider */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "16px 0" }}>
-                    <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
-                    <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 500 }}>or search your vehicle</span>
-                    <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
-                  </div>
-
-                  {/* NHTSA Typeahead Vehicle Search */}
-                  <div style={{ marginBottom: 12 }}>
-                    <VehicleTypeahead
-                      initialValue={typeaheadValue}
-                      vinDecoded={vinDecoded}
-                      onSelect={(v) => {
-                        setVehicleYear(v.year);
-                        setVehicleMake(v.make);
-                        setVehicleModel(v.model);
-                        setVehicleTrim(v.trim);
-                        setFuelType(v.fuelType);
-                        setTypeaheadValue([v.year, v.make, v.model, v.trim].filter(Boolean).join(" "));
-                        // If user types in typeahead after VIN decode, clear VIN state
-                        if (vinDecoded) {
-                          setVinDecoded(false);
-                          setVinOrHull("");
-                        }
-                      }}
-                    />
-                  </div>
-                </>
-              )}
-
-              {isMarine ? (
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>
-                    Hull Identification Number (HIN)
-                  </label>
-                  <input
-                    type="text"
-                    value={vinOrHull}
-                    onChange={(e) => setVinOrHull(e.target.value.toUpperCase())}
-                    placeholder="Enter HIN"
-                    style={{
-                      width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
-                      fontSize: 14, outline: "none", fontFamily: "inherit",
-                      background: "#FFFFFF", color: "#1E293B",
-                    }}
-                  />
-
-                  {/* Vessel description fields */}
-                  <div style={{ marginTop: 20 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                      <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
-                      <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 500, whiteSpace: "nowrap" }}>Don&apos;t know your HIN? Describe your vessel.</span>
-                      <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-                      <div>
-                        <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Vessel Year</label>
-                        <input
-                          type="number"
-                          value={vesselYear}
-                          onChange={(e) => setVesselYear(e.target.value)}
-                          placeholder="e.g. 2020"
-                          min="1950"
-                          max="2027"
-                          style={{
-                            width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
-                            fontSize: 14, outline: "none", fontFamily: "inherit",
-                            background: "#FFFFFF", color: "#1E293B",
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Vessel Make</label>
-                        <input
-                          type="text"
-                          value={vesselMake}
-                          onChange={(e) => setVesselMake(e.target.value)}
-                          placeholder="e.g. Boston Whaler"
-                          style={{
-                            width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
-                            fontSize: 14, outline: "none", fontFamily: "inherit",
-                            background: "#FFFFFF", color: "#1E293B",
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Vessel Model</label>
-                        <input
-                          type="text"
-                          value={vesselModel}
-                          onChange={(e) => setVesselModel(e.target.value)}
-                          placeholder="e.g. Montauk 170"
-                          style={{
-                            width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
-                            fontSize: 14, outline: "none", fontFamily: "inherit",
-                            background: "#FFFFFF", color: "#1E293B",
-                          }}
-                        />
+                        <div>
+                          <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Vessel Make</label>
+                          <input
+                            type="text"
+                            value={vesselMake}
+                            onChange={(e) => setVesselMake(e.target.value)}
+                            placeholder="e.g. Boston Whaler"
+                            style={{
+                              width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
+                              fontSize: 14, outline: "none", fontFamily: "inherit",
+                              background: "#FFFFFF", color: "#1E293B",
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Vessel Model</label>
+                          <input
+                            type="text"
+                            value={vesselModel}
+                            onChange={(e) => setVesselModel(e.target.value)}
+                            placeholder="e.g. Montauk 170"
+                            style={{
+                              width: "100%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
+                              fontSize: 14, outline: "none", fontFamily: "inherit",
+                              background: "#FFFFFF", color: "#1E293B",
+                            }}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  {/* Fuel Type — always visible */}
-                  <div style={{ marginTop: 16 }}>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Engine / Fuel Type</label>
-                    <select
-                      value={fuelType}
-                      onChange={(e) => setFuelType(e.target.value)}
-                      style={{
-                        width: isMobile ? "100%" : "33%", padding: "12px 14px", border: "1px solid #E2E8F0", borderRadius: 10,
-                        fontSize: 14, outline: "none", background: "#FFFFFF", color: "#1E293B", fontFamily: "inherit",
-                      }}
-                      onFocus={(e) => { e.currentTarget.style.borderColor = "#E07B2D"; e.currentTarget.style.boxShadow = "0 0 0 1px #E07B2D"; }}
-                      onBlur={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.boxShadow = "none"; }}
-                    >
-                      {FUEL_TYPES.map((ft) => <option key={ft} value={ft}>{ft}</option>)}
-                    </select>
                   </div>
                 </>
               )}
@@ -2040,6 +1995,11 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                 {isMarine && (vesselYear || vesselMake || vesselModel) && (
                   <div style={{ fontSize: 13, color: "#1E293B", marginTop: 4 }}>
                     {[vesselYear, vesselMake, vesselModel].filter(Boolean).join(" ")}
+                  </div>
+                )}
+                {needsConfirmation && (
+                  <div style={{ marginTop: 8, background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: 8, padding: "8px 12px", fontSize: 12, fontWeight: 600, color: "#92400E" }}>
+                    Vehicle details unconfirmed - we will confirm on the call
                   </div>
                 )}
               </div>

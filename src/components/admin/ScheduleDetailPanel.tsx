@@ -226,11 +226,17 @@ export default function ScheduleDetailPanel({
         <div className="border-b border-gray-200 px-6 py-5 flex items-start justify-between">
           <div>
             <h2 className="text-lg font-bold text-[#0B2040]">{b.name || b.customerName || "—"}</h2>
-            <div className="mt-1.5">
+            <div className="mt-1.5 flex items-center gap-2 flex-wrap">
               <AdminBadge
                 label={b.status === "new-lead" ? "New Lead" : (b.status || "—")}
                 variant={getStatusBadgeVariant(b.status)}
               />
+              {b.needsConfirmation && (
+                <AdminBadge
+                  label="Vehicle details unconfirmed — call customer"
+                  variant="amber"
+                />
+              )}
             </div>
           </div>
           <button

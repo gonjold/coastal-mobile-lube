@@ -32,7 +32,9 @@ export interface Booking {
   vehicleYear?: string;
   vehicleMake?: string;
   vehicleModel?: string;
+  fuelType?: string;
   vinOrHull?: string;
+  needsConfirmation?: boolean;
   vesselYear?: string;
   vesselMake?: string;
   vesselModel?: string;
