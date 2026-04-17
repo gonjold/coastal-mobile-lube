@@ -244,6 +244,9 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
   const modelsCacheRef = useRef<Record<string, string[]>>({});
   const modelsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  /* Latest quick-search hints; consumed when models load / model is set. */
+  const searchHintRef = useRef<{ model: string; fuel: string }>({ model: "", fuel: "" });
+
   /* ── VIN state ── */
   const [vinInput, setVinInput] = useState(value.vin || "");
   const [vinDecoding, setVinDecoding] = useState(false);
@@ -255,6 +258,13 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
 
   /* ── Skip state ── */
   const [skipped, setSkipped] = useState(!!value.needsConfirmation);
+
+  /* Latest-render refs so the async models-fetch closure can call onChange
+     without becoming an effect dep (parent passes an inline-arrow onChange). */
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const vinInputRef = useRef(vinInput);
+  vinInputRef.current = vinInput;
 
   /* ── Read YMM from value prop (parent is source of truth) ── */
   const year = value.year || "";
@@ -287,9 +297,35 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
       setModels([]);
       return;
     }
+
+    /* Auto-select model from quick-search hint: first word of modelHint must
+       lowercase-startsWith exactly one model name. Bundles fuel hint when the
+       model resolves so both apply in a single onChange. */
+    const applySearchHint = (names: string[]) => {
+      const hint = searchHintRef.current;
+      if (!hint.model) return;
+      const firstWord = hint.model.toLowerCase().split(/\s+/)[0];
+      if (!firstWord) return;
+      const matches = names.filter((n) => n.toLowerCase().startsWith(firstWord));
+      if (matches.length !== 1) return;
+      const matchedFuel =
+        hint.fuel && FUEL_OPTIONS.includes(hint.fuel) ? hint.fuel : "";
+      onChangeRef.current({
+        year,
+        make,
+        model: matches[0],
+        fuelType: matchedFuel,
+        vin: vinInputRef.current,
+        needsConfirmation: false,
+      });
+      searchHintRef.current = { model: "", fuel: matchedFuel ? "" : hint.fuel };
+    };
+
     const cacheKey = `${make.toLowerCase()}|${year}`;
     if (modelsCacheRef.current[cacheKey]) {
-      setModels(modelsCacheRef.current[cacheKey]);
+      const cached = modelsCacheRef.current[cacheKey];
+      setModels(cached);
+      applySearchHint(cached);
       return;
     }
     if (modelsDebounceRef.current) clearTimeout(modelsDebounceRef.current);
@@ -309,6 +345,7 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
           ].sort() as string[];
           modelsCacheRef.current[cacheKey] = names;
           setModels(names);
+          applySearchHint(names);
         })
         .catch(() => setModels([]))
         .finally(() => setModelsLoading(false));
@@ -318,6 +355,20 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
       if (modelsDebounceRef.current) clearTimeout(modelsDebounceRef.current);
     };
   }, [year, make]);
+
+  /* Apply pending fuel hint when the model becomes set (covers manual model
+     pick after an ambiguous quick-search). Skips if fuelType already filled. */
+  useEffect(() => {
+    if (!model || fuelType) return;
+    const hint = searchHintRef.current;
+    if (!hint.fuel || !FUEL_OPTIONS.includes(hint.fuel)) return;
+    onChangeRef.current({
+      year, make, model, fuelType: hint.fuel,
+      vin: vinInputRef.current, needsConfirmation: false,
+    });
+    searchHintRef.current = { ...searchHintRef.current, fuel: "" };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [model]);
 
   /* ── YMM field handlers with dependency chain ── */
   const handleYearChange = useCallback(
@@ -357,6 +408,16 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
     (val: string) => {
       setSearchQuery(val);
       const parsed = parseVehicleSearch(val, COMMON_MAKES);
+
+      /* Stash hints for the model-list / fuel-options consumers. */
+      const lower = val.toLowerCase();
+      let fuelHint = "";
+      if (/\bhybrid\b/.test(lower)) fuelHint = "Hybrid";
+      else if (/\b(electric|ev)\b/.test(lower)) fuelHint = "Electric";
+      else if (/\bdiesel\b/.test(lower)) fuelHint = "Diesel";
+      else if (/\b(gas|gasoline)\b/.test(lower)) fuelHint = "Gas";
+      searchHintRef.current = { model: parsed.modelHint, fuel: fuelHint };
+
       const nextYear = parsed.year && parsed.year !== year ? parsed.year : year;
       const nextMake = parsed.make && parsed.make !== make ? parsed.make : make;
       if (nextYear !== year || nextMake !== make) {
