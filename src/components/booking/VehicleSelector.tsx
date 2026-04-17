@@ -441,17 +441,6 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
     [onChange, year, make, model, fuelType, vinInput],
   );
 
-  /* ── Skip handlers ── */
-  function handleSkip() {
-    setSkipped(true);
-    onChange({ year, make, model, fuelType, vin: vinInput, needsConfirmation: true });
-  }
-
-  function handleUndoSkip() {
-    setSkipped(false);
-    onChange({ year, make, model, fuelType, vin: vinInput, needsConfirmation: false });
-  }
-
   /* ── VIN decode ── */
   async function handleVinDecode(override?: string) {
     const source = typeof override === "string" ? override : vinInput;
@@ -487,9 +476,6 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
     setVinDecoded(false);
     setVinResult(null);
   }
-
-  /* ── Is form complete? ── */
-  const isComplete = !!(year && make && model && fuelType) || vinDecoded;
 
   /* ══════════════════════════════════════════════════════════════
      RENDER
@@ -560,12 +546,12 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
               type="text"
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
-              placeholder="Try: 2023 Toyota Corolla"
+              placeholder="Try: 2023 Toyota"
               className="w-full h-12 pl-10 pr-4 text-base bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E07B2D] focus:border-[#E07B2D]"
               autoComplete="off"
             />
           </div>
-          <p className="mt-2 text-xs text-slate-500">Or pick below</p>
+          <p className="mt-2 text-xs text-slate-500">Fills year and make — pick model below</p>
         </div>
       )}
 
@@ -847,58 +833,6 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
               handleVinDecode(vin);
             }}
           />
-        </div>
-      )}
-
-      {/* ── Skip Option ── */}
-      {!isComplete && !skipped && (
-        <div style={{ marginTop: 16 }}>
-          <button
-            type="button"
-            onClick={handleSkip}
-            style={{
-              background: "none", border: "none", cursor: "pointer", padding: 0,
-              fontSize: 13, color: "#64748B", textAlign: "left",
-            }}
-          >
-            {mode === "vin" ? "Don\u2019t have your VIN? " : "Don\u2019t have all the details? "}
-            <span style={{ fontWeight: 600, color: "#0B2040" }}>
-              Skip and we&apos;ll confirm on the call
-            </span>
-            {" \u2192"}
-          </button>
-        </div>
-      )}
-
-      {/* ── Skip Banner (amber) ── */}
-      {skipped && (
-        <div
-          style={{
-            marginTop: 16, background: "#FEF3C7", border: "1px solid #FCD34D",
-            borderRadius: 12, padding: "12px 16px",
-            display: "flex", justifyContent: "space-between", alignItems: "flex-start",
-          }}
-        >
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "#92400E", marginBottom: 2 }}>
-              No worries if you&apos;re not sure — we&apos;ll sort it out on the call.
-            </div>
-            <div style={{ fontSize: 12, color: "#92400E" }}>
-              Keep going. We confirm every booking by phone anyway.
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={handleUndoSkip}
-            style={{
-              background: "none", border: "1px solid #D97706", borderRadius: 6,
-              cursor: "pointer", padding: "4px 12px",
-              fontSize: 12, fontWeight: 600, color: "#D97706",
-              flexShrink: 0, marginLeft: 12,
-            }}
-          >
-            Undo
-          </button>
         </div>
       )}
 

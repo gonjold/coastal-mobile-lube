@@ -868,12 +868,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
 
   /* ── Can advance? ── */
   function canNext(): boolean {
-    if (step === 1) {
-      if (isMarine) return true;
-      const hasYear = vehicleYear.length > 0;
-      const hasVin = vinOrHull.replace(/\s/g, "").length === 17;
-      return hasYear || hasVin || needsConfirmation;
-    }
+    if (step === 1) return true;
     if (step === 2) return selectedServices.length > 0 || (otherSelected && otherText.trim().length > 0);
     if (step === 3) {
       return customerFirstName.trim().length > 0
@@ -2265,6 +2260,9 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                 type="button"
                 disabled={!canNext() || submitting}
                 onClick={() => {
+                  if (step === 1 && !isMarine && (!vehicleYear || !vehicleMake)) {
+                    setNeedsConfirmation(true);
+                  }
                   if (step < 4) setStep(step + 1);
                   else handleSubmit();
                 }}
@@ -2276,16 +2274,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                   transition: "background 0.15s", flexShrink: 0,
                 }}
               >
-                {(() => {
-                  if (submitting) return "Submitting...";
-                  if (step === 4) return division === "Fleet" ? "Request a Quote" : "Submit Booking";
-                  if (step === 1 && !isMarine) {
-                    const vehicleComplete = vehicleYear && vehicleMake && vehicleModel && fuelType;
-                    const partial = !vehicleComplete && (vehicleYear || vinOrHull.replace(/\s/g, "").length === 17 || needsConfirmation);
-                    if (partial) return "Continue — we'll confirm on the call";
-                  }
-                  return "Next";
-                })()}
+                {submitting ? "Submitting..." : step === 4 ? (division === "Fleet" ? "Request a Quote" : "Submit Booking") : "Next"}
               </button>
             </div>
           );
