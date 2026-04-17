@@ -870,11 +870,16 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
   function canNext(): boolean {
     if (step === 1) {
       if (isMarine) return true;
-      const vehicleComplete = vehicleYear.length > 0 && vehicleMake.length > 0 && vehicleModel.length > 0 && fuelType.length > 0;
-      return vehicleComplete || needsConfirmation;
+      const hasYear = vehicleYear.length > 0;
+      const hasVin = vinOrHull.replace(/\s/g, "").length === 17;
+      return hasYear || hasVin || needsConfirmation;
     }
     if (step === 2) return selectedServices.length > 0 || (otherSelected && otherText.trim().length > 0);
-    if (step === 3) return customerFirstName.trim().length > 0 && customerLastName.trim().length > 0 && customerPhone.trim().length > 0;
+    if (step === 3) {
+      return customerFirstName.trim().length > 0
+        && customerPhone.trim().length > 0
+        && address.trim().length > 0;
+    }
     return true;
   }
 
@@ -1841,7 +1846,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Last name *</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Last name</label>
                   <input
                     type="text"
                     value={customerLastName}
@@ -1942,7 +1947,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
 
               {/* Service Address */}
               <div style={{ marginBottom: 14 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Service Address</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 6 }}>Service Address *</label>
                 <input
                   type="text"
                   value={address}
@@ -1998,8 +2003,8 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                   </div>
                 )}
                 {needsConfirmation && (
-                  <div style={{ marginTop: 8, background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: 8, padding: "8px 12px", fontSize: 12, fontWeight: 600, color: "#92400E" }}>
-                    Vehicle details unconfirmed - we will confirm on the call
+                  <div style={{ marginTop: 8, background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: 8, padding: "8px 12px", fontSize: 12, fontWeight: 500, color: "#92400E" }}>
+                    No worries if you&apos;re not sure — we&apos;ll sort it out on the call.
                   </div>
                 )}
               </div>
@@ -2271,7 +2276,16 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                   transition: "background 0.15s", flexShrink: 0,
                 }}
               >
-                {submitting ? "Submitting..." : step === 4 ? (division === "Fleet" ? "Request a Quote" : "Submit Booking") : "Next"}
+                {(() => {
+                  if (submitting) return "Submitting...";
+                  if (step === 4) return division === "Fleet" ? "Request a Quote" : "Submit Booking";
+                  if (step === 1 && !isMarine) {
+                    const vehicleComplete = vehicleYear && vehicleMake && vehicleModel && fuelType;
+                    const partial = !vehicleComplete && (vehicleYear || vinOrHull.replace(/\s/g, "").length === 17 || needsConfirmation);
+                    if (partial) return "Continue — we'll confirm on the call";
+                  }
+                  return "Next";
+                })()}
               </button>
             </div>
           );

@@ -687,12 +687,9 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
                 id="vehicle-fuel"
                 value={fuelType}
                 onChange={(e) => handleFuelTypeChange(e.target.value)}
-                disabled={!model}
                 className="w-full h-12 px-4 pr-10 text-base bg-white border border-slate-300 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-[#E07B2D] focus:border-[#E07B2D] disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
               >
-                <option value="">
-                  {!model ? "Select model first" : "Select fuel type"}
-                </option>
+                <option value="">Select fuel type</option>
                 {FUEL_OPTIONS.map((f) => (
                   <option key={f} value={f}>{f}</option>
                 ))}
@@ -884,10 +881,10 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
         >
           <div>
             <div style={{ fontSize: 14, fontWeight: 600, color: "#92400E", marginBottom: 2 }}>
-              We&apos;ll confirm your vehicle on the call.
+              No worries if you&apos;re not sure — we&apos;ll sort it out on the call.
             </div>
             <div style={{ fontSize: 12, color: "#92400E" }}>
-              Keep going. A technician will verify year, make, model, and fuel type before the appointment.
+              Keep going. We confirm every booking by phone anyway.
             </div>
           </div>
           <button

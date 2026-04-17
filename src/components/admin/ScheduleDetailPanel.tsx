@@ -233,7 +233,7 @@ export default function ScheduleDetailPanel({
               />
               {b.needsConfirmation && (
                 <AdminBadge
-                  label="Vehicle details unconfirmed — call customer"
+                  label="Call to confirm"
                   variant="amber"
                 />
               )}

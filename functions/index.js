@@ -95,10 +95,6 @@ exports.onNewBooking = onDocumentCreated(
               <td style="padding: 8px 0; color: #666;">Vehicle</td>
               <td style="padding: 8px 0; font-weight: 600;">${[booking.vehicleYear, booking.vehicleMake, booking.vehicleModel].filter(Boolean).join(' ')}${booking.fuelType ? ' (' + booking.fuelType + ')' : ''}</td>
             </tr>` : ''}
-            ${booking.needsConfirmation ? `
-            <tr>
-              <td colspan="2" style="padding: 8px 0; color: #DC2626; font-weight: 700; background: #FEF2F2;">VEHICLE UNCONFIRMED - call customer</td>
-            </tr>` : ''}
             ${booking.preferredDate ? `
             <tr style="border-top: 1px solid #eee;">
               <td style="padding: 8px 0; color: #666;">Preferred Date</td>
@@ -141,6 +137,10 @@ exports.onNewBooking = onDocumentCreated(
               View in Admin Dashboard
             </a>
           </div>
+          ${booking.needsConfirmation ? `
+          <p style="color: #92400E; font-size: 12px; text-align: center; margin-top: 12px;">
+            Heads up: some details to confirm on the call.
+          </p>` : ''}
         </div>
         <p style="color: #999; font-size: 12px; text-align: center; margin-top: 16px;">
           Coastal Mobile Lube & Tire — Automated Notification
@@ -154,7 +154,7 @@ exports.onNewBooking = onDocumentCreated(
         to: "jon@jgoldco.com",
         bcc: "9492926686@txt.att.net",
         subject: `New ${categoryLabel} Booking — ${booking.name || formattedPhone}`,
-        text: `New booking: ${booking.name || "Unknown"} - ${booking.service || "General"}. ${formattedPhone}.${booking.needsConfirmation ? ' VEHICLE UNCONFIRMED - call customer.' : ''} Check admin.`,
+        text: `New booking: ${booking.name || "Unknown"} - ${booking.service || "General"}. ${formattedPhone}. Check admin.${booking.needsConfirmation ? ' Heads up: some details to confirm on the call.' : ''}`,
         html: adminHtml,
       });
       console.log(`Admin notification sent for booking ${bookingId}`);
