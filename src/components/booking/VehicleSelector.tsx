@@ -84,8 +84,23 @@ function SearchableDropdown({
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [dropdownDirection, setDropdownDirection] = useState<"down" | "up">("down");
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const recomputeDirection = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const dropdownMaxHeight = 280;
+    if (spaceBelow < dropdownMaxHeight && spaceAbove > spaceBelow) {
+      setDropdownDirection("up");
+    } else {
+      setDropdownDirection("down");
+    }
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -105,6 +120,17 @@ function SearchableDropdown({
     }
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    recomputeDirection();
+    window.addEventListener("resize", recomputeDirection);
+    window.addEventListener("scroll", recomputeDirection, true);
+    return () => {
+      window.removeEventListener("resize", recomputeDirection);
+      window.removeEventListener("scroll", recomputeDirection, true);
+    };
+  }, [open, recomputeDirection]);
+
   const filtered = search
     ? options.filter((o) => o.toLowerCase().includes(search.toLowerCase()))
     : options;
@@ -120,9 +146,11 @@ function SearchableDropdown({
         {label}
       </label>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => {
           if (!disabled) {
+            if (!open) recomputeDirection();
             setOpen(!open);
             setSearch("");
           }
@@ -153,10 +181,14 @@ function SearchableDropdown({
       {open && !disabled && (
         <div
           style={{
-            position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50,
+            position: "absolute",
+            ...(dropdownDirection === "up"
+              ? { bottom: "100%", marginBottom: 4 }
+              : { top: "100%", marginTop: 4 }),
+            left: 0, right: 0, zIndex: 100,
             background: "#FFFFFF", border: "1px solid #E2E8F0", borderRadius: 8,
-            boxShadow: "0 8px 24px rgba(0,0,0,0.12)", maxHeight: 240, overflow: "hidden",
-            display: "flex", flexDirection: "column", marginTop: 4,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.12)", maxHeight: 280, overflow: "hidden",
+            display: "flex", flexDirection: "column",
           }}
         >
           <div style={{ padding: "8px 10px", borderBottom: "1px solid #F1F5F9", flexShrink: 0 }}>

@@ -2211,43 +2211,71 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
         </div>
 
         {/* ── Bottom Navigation ── */}
-        {!submitted && (
-          <div className="wizard-modal-nav" style={{
-            borderTop: "1px solid #E2E8F0", padding: "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0,
-            background: "#FFFFFF",
-          }}>
-            {step > 1 ? (
+        {!submitted && (() => {
+          const serviceCount = selectedServices.length + (otherSelected && otherText.trim() ? 1 : 0);
+          const stepLabel = steps[step - 1] || "";
+          const summaryPrimary = serviceCount > 0
+            ? `${serviceCount} service${serviceCount === 1 ? "" : "s"}`
+            : `Step ${step} · ${stepLabel}`;
+          const summarySecondary = serviceCount > 0
+            ? (estimatedTotal > 0 ? `$${estimatedTotal.toFixed(2)}${hasNullPriced ? "+" : ""} est.` : "Quote")
+            : "";
+          return (
+            <div className="wizard-modal-nav" style={{
+              borderTop: "1px solid #E2E8F0", padding: "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexShrink: 0,
+              background: "#FFFFFF",
+            }}>
+              {/* Mobile-only compact summary (hidden on desktop by .wizard-nav-summary rule) */}
+              <div className="wizard-nav-summary" style={{
+                display: "none", flex: 1, minWidth: 0, flexDirection: "column",
+                overflow: "hidden",
+              }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#0B2447", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {summaryPrimary}
+                </span>
+                {summarySecondary && (
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "#F97316", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {summarySecondary}
+                  </span>
+                )}
+              </div>
+
+              {/* Desktop: Back on left; Mobile: Back moves beside Continue */}
+              {step > 1 ? (
+                <button
+                  type="button"
+                  onClick={() => setStep(step - 1)}
+                  className="wizard-nav-back"
+                  style={{
+                    padding: "10px 20px", minHeight: 44, borderRadius: 10, border: "1px solid #E2E8F0",
+                    background: "#FFFFFF", color: "#475569", fontSize: 14, fontWeight: 600, cursor: "pointer",
+                    flexShrink: 0,
+                  }}
+                >
+                  Back
+                </button>
+              ) : <div className="wizard-nav-spacer" />}
+
               <button
                 type="button"
-                onClick={() => setStep(step - 1)}
+                disabled={!canNext() || submitting}
+                onClick={() => {
+                  if (step < 4) setStep(step + 1);
+                  else handleSubmit();
+                }}
                 style={{
-                  padding: "10px 24px", borderRadius: 10, border: "1px solid #E2E8F0",
-                  background: "#FFFFFF", color: "#475569", fontSize: 14, fontWeight: 600, cursor: "pointer",
+                  padding: "10px 24px", minHeight: 44, borderRadius: 10, border: "none",
+                  background: !canNext() || submitting ? "#E2E8F0" : "#F97316",
+                  color: "#fff", fontSize: 14, fontWeight: 700, cursor: !canNext() || submitting ? "not-allowed" : "pointer",
+                  boxShadow: canNext() && !submitting && step === 4 ? "0 0 20px rgba(249,115,22,0.4)" : "none",
+                  transition: "background 0.15s", flexShrink: 0,
                 }}
               >
-                Back
+                {submitting ? "Submitting..." : step === 4 ? (division === "Fleet" ? "Request a Quote" : "Submit Booking") : "Next"}
               </button>
-            ) : <div />}
-
-            <button
-              type="button"
-              disabled={!canNext() || submitting}
-              onClick={() => {
-                if (step < 4) setStep(step + 1);
-                else handleSubmit();
-              }}
-              style={{
-                padding: "10px 28px", borderRadius: 10, border: "none",
-                background: !canNext() || submitting ? "#E2E8F0" : "#F97316",
-                color: "#fff", fontSize: 14, fontWeight: 700, cursor: !canNext() || submitting ? "not-allowed" : "pointer",
-                boxShadow: canNext() && !submitting && step === 4 ? "0 0 20px rgba(249,115,22,0.4)" : "none",
-                transition: "background 0.15s",
-              }}
-            >
-              {submitting ? "Submitting..." : step === 4 ? (division === "Fleet" ? "Request a Quote" : "Submit Booking") : "Next"}
-            </button>
-          </div>
-        )}
+            </div>
+          );
+        })()}
       </div>
 
       {/* ── Search Overlay ── */}
@@ -2380,6 +2408,21 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
             -ms-overflow-style: none;
           }
           .wizard-division-pills::-webkit-scrollbar { display: none; }
+          .wizard-modal-card input,
+          .wizard-modal-card select,
+          .wizard-modal-card textarea {
+            font-size: 16px !important;
+          }
+          .wizard-modal-nav {
+            padding-left: 16px !important;
+            padding-right: 16px !important;
+          }
+          .wizard-nav-summary {
+            display: flex !important;
+          }
+          .wizard-nav-spacer {
+            display: none !important;
+          }
         }
         @media (max-width: 479px) {
           .wizard-card-grid {
