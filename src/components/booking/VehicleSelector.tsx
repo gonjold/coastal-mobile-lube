@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { decodeVIN as decodeVINApi } from "@/lib/vehicleApi";
 import { COMMON_MAKES, parseVehicleSearch } from "@/lib/vehicleMakes";
+import VINScanner from "./VINScanner";
 
 /* ── Types ── */
 
@@ -259,6 +260,9 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
   /* ── Skip state ── */
   const [skipped, setSkipped] = useState(!!value.needsConfirmation);
 
+  /* ── Scanner state ── */
+  const [scannerOpen, setScannerOpen] = useState(false);
+
   /* Latest-render refs so the async models-fetch closure can call onChange
      without becoming an effect dep (parent passes an inline-arrow onChange). */
   const onChangeRef = useRef(onChange);
@@ -449,8 +453,9 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
   }
 
   /* ── VIN decode ── */
-  async function handleVinDecode() {
-    const cleaned = vinInput.replace(/\s/g, "");
+  async function handleVinDecode(override?: string) {
+    const source = typeof override === "string" ? override : vinInput;
+    const cleaned = source.replace(/\s/g, "");
     if (cleaned.length !== 17) return;
     setVinDecoding(true);
     setVinDecoded(false);
@@ -711,6 +716,16 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
         <div>
           {!vinDecoded ? (
             <>
+              <button
+                type="button"
+                onClick={() => setScannerOpen(true)}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 h-12 bg-[#0B2040] text-white rounded-lg font-semibold hover:bg-[#0B2040]/90 transition-colors mb-3"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23l-.38.054a2.25 2.25 0 00-1.94 2.2v10.58A2.25 2.25 0 005.116 22.3h13.768a2.25 2.25 0 002.25-2.236V9.484a2.25 2.25 0 00-1.94-2.2l-.38-.054a2.31 2.31 0 01-1.64-1.055l-.822-1.316A2.192 2.192 0 0014.155 4h-4.31a2.192 2.192 0 00-1.857 1.03l-.822 1.316z M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
+                </svg>
+                Scan VIN with camera
+              </button>
               <label
                 style={{
                   fontSize: 11, fontWeight: 600, color: "#64748B", display: "block",
@@ -757,7 +772,7 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
                 </div>
                 <button
                   type="button"
-                  onClick={handleVinDecode}
+                  onClick={() => handleVinDecode()}
                   disabled={vinDecoding || vinInput.replace(/\s/g, "").length !== 17}
                   style={{
                     padding: "10px 24px", background: "#E07B2D", color: "#fff", border: "none",
@@ -826,6 +841,15 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
               </button>
             </div>
           )}
+          <VINScanner
+            isOpen={scannerOpen}
+            onClose={() => setScannerOpen(false)}
+            onScanSuccess={(vin) => {
+              setVinInput(vin);
+              setScannerOpen(false);
+              handleVinDecode(vin);
+            }}
+          />
         </div>
       )}
 
