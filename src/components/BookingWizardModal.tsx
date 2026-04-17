@@ -1312,7 +1312,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
         {/* ── Scrollable Content ── */}
         <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", ...(!isMobile ? { display: "flex" } : {}) }}>
           {/* Left column (step content) */}
-          <div style={{ padding: "20px 24px", ...(!isMobile ? { flex: "0 0 65%", minWidth: 0 } : {}) }}>
+          <div style={{ padding: "20px 24px", ...(!isMobile ? (step === 1 ? { flex: 1, maxWidth: 672, margin: "0 auto", minWidth: 0 } : { flex: "0 0 65%", minWidth: 0 }) : {}) }}>
 
           {/* ═══ STEP 2: Services ═══ */}
           {step === 2 && (
@@ -2092,8 +2092,8 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
           )}
           </div>{/* end left column */}
 
-          {/* ── Desktop Sidebar ── */}
-          {!isMobile && (
+          {/* ── Desktop Sidebar (hidden on Step 1) ── */}
+          {!isMobile && step > 1 && (
             <div style={{
               flex: "0 0 35%", borderLeft: "1px solid #E2E8F0", background: "#FFFFFF",
               padding: 20, position: "sticky", top: 0, alignSelf: "flex-start",

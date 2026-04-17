@@ -114,7 +114,7 @@ function SearchableDropdown({
       <label
         style={{
           fontSize: 11, fontWeight: 600, color: "#64748B", display: "block",
-          marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.05em",
+          marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em",
         }}
       >
         {label}
@@ -463,7 +463,7 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
       {/* ── Mode Toggle Pills ── */}
       <div
         style={{
-          display: "flex", gap: 0, marginBottom: 20,
+          display: "flex", gap: 0, marginBottom: 16,
           background: "#F1F5F9", borderRadius: 20, padding: 3, width: "fit-content",
         }}
       >
@@ -713,7 +713,7 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
       {onLookupByPhone && (
         <div
           style={{
-            marginTop: 20, paddingTop: 16, borderTop: "1px solid #F1F5F9",
+            marginTop: 16, paddingTop: 12, borderTop: "1px solid #F1F5F9",
             fontSize: 13, color: "#64748B",
           }}
         >
