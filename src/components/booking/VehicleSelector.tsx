@@ -2,13 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { decodeVIN as decodeVINApi } from "@/lib/vehicleApi";
+import { COMMON_MAKES, parseVehicleSearch } from "@/lib/vehicleMakes";
 
 /* ── Types ── */
-
-interface NHTSAMake {
-  Make_ID: number;
-  Make_Name: string;
-}
 
 interface VehicleValue {
   year?: string;
@@ -32,23 +28,6 @@ const NHTSA_BASE = "https://vpic.nhtsa.dot.gov/api/vehicles";
 const YEARS = Array.from({ length: 38 }, (_, i) => String(2027 - i));
 
 const FUEL_OPTIONS = ["Gas", "Hybrid", "Electric", "Diesel"];
-
-const MAKE_POPULARITY_RANK: Record<string, number> = {
-  TOYOTA: 1, FORD: 2, CHEVROLET: 3, HONDA: 4, NISSAN: 5,
-  JEEP: 6, RAM: 7, GMC: 8, HYUNDAI: 9, KIA: 10,
-  SUBARU: 11, MAZDA: 12, VOLKSWAGEN: 13, TESLA: 14, BMW: 15,
-  "MERCEDES-BENZ": 16, LEXUS: 17, DODGE: 18, CHRYSLER: 19, BUICK: 20,
-  CADILLAC: 21, ACURA: 22, INFINITI: 23, AUDI: 24, VOLVO: 25,
-  LINCOLN: 26, MITSUBISHI: 27, PORSCHE: 28, "LAND ROVER": 29, JAGUAR: 30,
-  MINI: 31, GENESIS: 32, FIAT: 33, "ALFA ROMEO": 34, MASERATI: 35,
-  PONTIAC: 36, SATURN: 37, SCION: 38, HUMMER: 39, SUZUKI: 40,
-  ISUZU: 41, MERCURY: 42, OLDSMOBILE: 43, PLYMOUTH: 44, SMART: 45,
-};
-
-/* ── Module-level make cache (shared across instances) ── */
-
-let allMakesCache: NHTSAMake[] | null = null;
-let allMakesFetching = false;
 
 /* ── Normalize fuel type from VIN decode to dropdown options ── */
 
@@ -256,9 +235,8 @@ function SearchableDropdown({
 export default function VehicleSelector({ value, onChange, onLookupByPhone }: VehicleSelectorProps) {
   const [mode, setMode] = useState<"ymm" | "vin">("ymm");
 
-  /* ── Make data ── */
-  const [allMakes, setAllMakes] = useState<NHTSAMake[]>(allMakesCache || []);
-  const [makesReady, setMakesReady] = useState(!!allMakesCache);
+  /* ── Quick-search input ── */
+  const [searchQuery, setSearchQuery] = useState("");
 
   /* ── Model data ── */
   const [models, setModels] = useState<string[]>([]);
@@ -284,52 +262,6 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
   const model = value.model || "";
   const fuelType = value.fuelType || "";
 
-  /* ── Fetch all makes on mount ── */
-  useEffect(() => {
-    if (allMakesCache) {
-      setAllMakes(allMakesCache);
-      setMakesReady(true);
-      return;
-    }
-    if (allMakesFetching) {
-      const interval = setInterval(() => {
-        if (allMakesCache) {
-          setAllMakes(allMakesCache);
-          setMakesReady(true);
-          clearInterval(interval);
-        }
-      }, 200);
-      return () => clearInterval(interval);
-    }
-    allMakesFetching = true;
-
-    fetch(`${NHTSA_BASE}/GetAllMakes?format=json`)
-      .then((r) => r.json())
-      .then((json) => {
-        const makes: NHTSAMake[] = (json.Results || []).filter(
-          (m: NHTSAMake) => m.Make_Name && m.Make_Name.trim().length > 0,
-        );
-        allMakesCache = makes;
-        setAllMakes(makes);
-        setMakesReady(true);
-      })
-      .catch(() => {
-        const fallback: NHTSAMake[] = Object.keys(MAKE_POPULARITY_RANK).map((name, i) => ({
-          Make_ID: 90000 + i,
-          Make_Name: name
-            .split(" ")
-            .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
-            .join(" "),
-        }));
-        allMakesCache = fallback;
-        setAllMakes(fallback);
-        setMakesReady(true);
-      })
-      .finally(() => {
-        allMakesFetching = false;
-      });
-  }, []);
-
   /* ── Auto-switch to YMM when external values arrive (phone lookup) ── */
   useEffect(() => {
     if (value.year && value.make && value.model && mode === "vin" && !vinDecoded) {
@@ -351,18 +283,11 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
 
   /* ── Fetch models when year + make are both set ── */
   useEffect(() => {
-    if (!year || !make || !makesReady) {
+    if (!year || !make) {
       setModels([]);
       return;
     }
-    const makeEntry = allMakes.find(
-      (m) => m.Make_Name.toLowerCase() === make.toLowerCase(),
-    );
-    if (!makeEntry) {
-      setModels([]);
-      return;
-    }
-    const cacheKey = `${makeEntry.Make_ID}|${year}`;
+    const cacheKey = `${make.toLowerCase()}|${year}`;
     if (modelsCacheRef.current[cacheKey]) {
       setModels(modelsCacheRef.current[cacheKey]);
       return;
@@ -371,7 +296,7 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
     setModelsLoading(true);
     modelsDebounceRef.current = setTimeout(() => {
       fetch(
-        `${NHTSA_BASE}/GetModelsForMakeIdYear/makeId/${makeEntry.Make_ID}/modelyear/${year}?format=json`,
+        `${NHTSA_BASE}/GetModelsForMakeYear/make/${encodeURIComponent(make)}/modelyear/${year}?format=json`,
       )
         .then((r) => r.json())
         .then((json) => {
@@ -392,17 +317,7 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
     return () => {
       if (modelsDebounceRef.current) clearTimeout(modelsDebounceRef.current);
     };
-  }, [year, make, makesReady, allMakes]);
-
-  /* ── Make option names sorted by popularity ── */
-  const makeNames = allMakes
-    .map((m) => m.Make_Name)
-    .sort((a, b) => {
-      const rankA = MAKE_POPULARITY_RANK[a.toUpperCase()] ?? 999;
-      const rankB = MAKE_POPULARITY_RANK[b.toUpperCase()] ?? 999;
-      if (rankA !== rankB) return rankA - rankB;
-      return a.localeCompare(b);
-    });
+  }, [year, make]);
 
   /* ── YMM field handlers with dependency chain ── */
   const handleYearChange = useCallback(
@@ -435,6 +350,30 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
       setSkipped(false);
     },
     [onChange, year, make, model, vinInput],
+  );
+
+  /* ── Quick-search: parse on each keystroke and cascade into selectors ── */
+  const handleSearchChange = useCallback(
+    (val: string) => {
+      setSearchQuery(val);
+      const parsed = parseVehicleSearch(val, COMMON_MAKES);
+      const nextYear = parsed.year && parsed.year !== year ? parsed.year : year;
+      const nextMake = parsed.make && parsed.make !== make ? parsed.make : make;
+      if (nextYear !== year || nextMake !== make) {
+        const clearedModel = nextMake !== make ? "" : model;
+        const clearedFuel = nextMake !== make || nextYear !== year ? "" : fuelType;
+        onChange({
+          year: nextYear,
+          make: nextMake,
+          model: clearedModel,
+          fuelType: clearedFuel,
+          vin: vinInput,
+          needsConfirmation: false,
+        });
+        setSkipped(false);
+      }
+    },
+    [onChange, year, make, model, fuelType, vinInput],
   );
 
   /* ── Skip handlers ── */
@@ -527,6 +466,43 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
         </button>
       </div>
 
+      {/* ── Quick search (YMM mode only) ── */}
+      {mode === "ymm" && (
+        <div className="mb-4">
+          <label
+            htmlFor="vehicleSearch"
+            className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2"
+          >
+            Quick search
+          </label>
+          <div className="relative">
+            <svg
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 21l-4.35-4.35M10.5 17a6.5 6.5 0 110-13 6.5 6.5 0 010 13z"
+              />
+            </svg>
+            <input
+              id="vehicleSearch"
+              type="text"
+              value={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              placeholder="Try: 2023 Toyota Corolla"
+              className="w-full h-12 pl-10 pr-4 text-base bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E07B2D] focus:border-[#E07B2D]"
+              autoComplete="off"
+            />
+          </div>
+          <p className="mt-2 text-xs text-slate-500">Or pick below</p>
+        </div>
+      )}
+
       {/* ── YMM Mode: 4 native selects, stacked on mobile, 2x2 on tablet+ ── */}
       {mode === "ymm" && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -573,17 +549,13 @@ export default function VehicleSelector({ value, onChange, onLookupByPhone }: Ve
                 id="vehicle-make"
                 value={make}
                 onChange={(e) => handleMakeChange(e.target.value)}
-                disabled={!year || !makesReady}
+                disabled={!year}
                 className="w-full h-12 px-4 pr-10 text-base bg-white border border-slate-300 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-[#E07B2D] focus:border-[#E07B2D] disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
               >
                 <option value="">
-                  {!year
-                    ? "Select year first"
-                    : !makesReady
-                    ? "Loading makes..."
-                    : "Select make"}
+                  {!year ? "Select year first" : "Select make"}
                 </option>
-                {makeNames.map((m) => (
+                {COMMON_MAKES.map((m) => (
                   <option key={m} value={m}>{m}</option>
                 ))}
               </select>
