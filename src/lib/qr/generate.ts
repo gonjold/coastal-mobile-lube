@@ -1,10 +1,12 @@
-import QRCodeStyling from "qr-code-styling";
+import QRCodeStyling, { type Options } from "qr-code-styling";
 import { COASTAL_LOGO_URL } from "./coastal-logo";
+import { DEFAULT_QR_STYLE, type QRStyleConfig } from "./types";
 
 export interface GenerateQROptions {
   url: string;
   logoUrl?: string;
   size?: number;
+  style?: QRStyleConfig;
 }
 
 export interface GenerateQRResult {
@@ -14,24 +16,32 @@ export interface GenerateQRResult {
 
 function buildQR(opts: GenerateQROptions): QRCodeStyling {
   const size = opts.size ?? 1200;
-  return new QRCodeStyling({
+  const style = opts.style ?? DEFAULT_QR_STYLE;
+  const image = style.showLogo ? (opts.logoUrl ?? COASTAL_LOGO_URL) : undefined;
+
+  const config: Options = {
     width: size,
     height: size,
     type: "svg",
     data: opts.url,
-    image: opts.logoUrl ?? COASTAL_LOGO_URL,
     qrOptions: { errorCorrectionLevel: "H" },
-    dotsOptions: { color: "#0B2040", type: "rounded" },
-    backgroundOptions: { color: "#FFFFFF" },
-    cornersSquareOptions: { color: "#E07B2D", type: "extra-rounded" },
-    cornersDotOptions: { color: "#E07B2D", type: "dot" },
-    imageOptions: {
+    dotsOptions: { color: style.dotColor, type: style.dotStyle },
+    backgroundOptions: { color: style.backgroundColor },
+    cornersSquareOptions: { color: style.cornerColor, type: "extra-rounded" },
+    cornersDotOptions: { color: style.cornerColor, type: "dot" },
+  };
+
+  if (image) {
+    config.image = image;
+    config.imageOptions = {
       crossOrigin: "anonymous",
       imageSize: 0.22,
       margin: 4,
       hideBackgroundDots: true,
-    },
-  });
+    };
+  }
+
+  return new QRCodeStyling(config);
 }
 
 export async function generateQR(

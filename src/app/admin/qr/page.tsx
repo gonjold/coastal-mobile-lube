@@ -29,6 +29,7 @@ import {
   type QRCodeDoc,
 } from "./shared";
 import { generateQR } from "@/lib/qr/generate";
+import { DEFAULT_QR_STYLE } from "@/lib/qr/types";
 
 const COLUMNS: AdminColumn[] = [
   { key: "name", label: "Name", align: "left", sortable: true },
@@ -165,6 +166,7 @@ export default function QRListPage() {
       const { png } = await generateQR({
         url: buildPublicUrl(code.slug),
         logoUrl: code.logoUrl || undefined,
+        style: code.styleConfig ?? DEFAULT_QR_STYLE,
       });
       const url = URL.createObjectURL(png);
       const a = document.createElement("a");
@@ -280,7 +282,8 @@ export default function QRListPage() {
                   onClick={() => router.push(`/admin/qr/${c.id}`)}
                   gridTemplateColumns={GRID}
                 >
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex items-center gap-2">
+                    <PresetDot preset={c.styleConfig?.preset} />
                     <div className="text-sm font-semibold text-[#0B2040] truncate">
                       {c.name}
                     </div>
@@ -434,4 +437,25 @@ export default function QRListPage() {
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </>
   );
+}
+
+function PresetDot({ preset }: { preset?: string }) {
+  const p = preset ?? "coastal-brand";
+  let className = "w-2.5 h-2.5 rounded-full shrink-0 bg-[#0B2040]";
+  let title = "Coastal Brand";
+  if (p === "classic") {
+    title = "Classic";
+  } else if (p === "minimal") {
+    title = "Minimal";
+  } else if (p === "inverted") {
+    className =
+      "w-2.5 h-2.5 rounded-full shrink-0 bg-[#0B2040] ring-2 ring-[#E07B2D]";
+    title = "Inverted";
+  } else if (p === "custom") {
+    className = "w-2.5 h-2.5 rounded-full shrink-0 bg-gray-400";
+    title = "Custom";
+  } else {
+    title = "Coastal Brand";
+  }
+  return <span className={className} title={title} />;
 }

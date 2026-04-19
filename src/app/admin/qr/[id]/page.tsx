@@ -28,6 +28,9 @@ import {
   type QRScanDoc,
 } from "../shared";
 import { buildQRForPreview, generateQR } from "@/lib/qr/generate";
+import { DEFAULT_QR_STYLE, type QRStyleConfig } from "@/lib/qr/types";
+import PresetSelector from "@/components/qr/PresetSelector";
+import AdvancedStylePanel from "@/components/qr/AdvancedStylePanel";
 
 const ReactECharts = dynamic(() => import("echarts-for-react"), {
   ssr: false,
@@ -54,6 +57,9 @@ export default function QRDetailPage({
   const [destDraft, setDestDraft] = useState("");
   const [showDelete, setShowDelete] = useState(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const [styleOpen, setStyleOpen] = useState(false);
+  const [styleDraft, setStyleDraft] = useState<QRStyleConfig>(DEFAULT_QR_STYLE);
+  const [savingStyle, setSavingStyle] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
 
   function addToast(message: string, type: "success" | "info" = "success") {
@@ -80,6 +86,7 @@ export default function QRDetailPage({
         setCode(data);
         if (!editingName) setNameDraft(data.name);
         if (!editingDest) setDestDraft(data.destination);
+        if (!styleOpen) setStyleDraft(data.styleConfig ?? DEFAULT_QR_STYLE);
       },
       () => setNotFound(true),
     );
@@ -115,12 +122,13 @@ export default function QRDetailPage({
       url: buildPublicUrl(code.slug),
       logoUrl: code.logoUrl || undefined,
       size: 400,
+      style: styleDraft,
     });
     qr.append(node);
     return () => {
       node.innerHTML = "";
     };
-  }, [code]);
+  }, [code, styleDraft]);
 
   const publicUrl = code ? buildPublicUrl(code.slug) : "";
 
@@ -323,6 +331,7 @@ export default function QRDetailPage({
         url: publicUrl,
         logoUrl: code.logoUrl || undefined,
         size: 1200,
+        style: code.styleConfig ?? DEFAULT_QR_STYLE,
       });
       if (format === "png") {
         const url = URL.createObjectURL(png);
@@ -348,6 +357,26 @@ export default function QRDetailPage({
     } catch {
       addToast("Failed to download", "info");
     }
+  }
+
+  async function saveStyle() {
+    if (!code) return;
+    setSavingStyle(true);
+    try {
+      await updateDoc(doc(db, "qrCodes", code.id), {
+        styleConfig: styleDraft,
+        updatedAt: serverTimestamp(),
+      });
+      addToast("Style saved");
+    } catch {
+      addToast("Failed to save style", "info");
+    } finally {
+      setSavingStyle(false);
+    }
+  }
+
+  function resetStyleToDefault() {
+    setStyleDraft(DEFAULT_QR_STYLE);
   }
 
   async function handleDelete() {
@@ -545,6 +574,52 @@ export default function QRDetailPage({
             value={relativeTime(stats.last)}
             small
           />
+        </div>
+
+        {/* ── Style section ── */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setStyleOpen((o) => !o)}
+            className="w-full flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-gray-50 transition"
+          >
+            <div className="text-left">
+              <h3 className="text-[13px] font-bold text-[#0B2040]">Style</h3>
+              <p className="text-xs text-gray-500">
+                Customize the visual look. Style changes don't affect
+                scanability, but always test a fresh print before distributing.
+              </p>
+            </div>
+            <span className="text-gray-400 text-xs font-semibold">
+              {styleOpen ? "Hide" : "Edit"}
+            </span>
+          </button>
+          {styleOpen && (
+            <div className="border-t border-gray-200 px-5 py-5 flex flex-col gap-5">
+              <PresetSelector value={styleDraft} onChange={setStyleDraft} />
+              <AdvancedStylePanel
+                value={styleDraft}
+                onChange={setStyleDraft}
+              />
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={saveStyle}
+                  disabled={savingStyle}
+                  className="px-4 py-2 rounded-lg bg-[#0B2040] text-white text-[13px] font-semibold cursor-pointer hover:bg-[#0a1a36] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {savingStyle ? "Saving..." : "Save Style"}
+                </button>
+                <button
+                  type="button"
+                  onClick={resetStyleToDefault}
+                  className="px-4 py-2 rounded-lg text-[13px] font-semibold text-gray-500 cursor-pointer hover:bg-gray-50 transition"
+                >
+                  Reset to Coastal Brand
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ── Charts ── */}

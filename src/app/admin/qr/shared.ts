@@ -1,4 +1,5 @@
 import type { Timestamp } from "firebase/firestore";
+import type { QRStyleConfig } from "@/lib/qr/types";
 
 export interface QRCodeDoc {
   id: string;
@@ -8,6 +9,7 @@ export interface QRCodeDoc {
   campaign?: string | null;
   active: boolean;
   logoUrl?: string | null;
+  styleConfig?: QRStyleConfig;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
   createdBy?: string;

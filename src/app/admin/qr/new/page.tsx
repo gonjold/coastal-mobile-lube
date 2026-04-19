@@ -19,6 +19,9 @@ import {
   isValidSlug,
 } from "@/lib/qr/slugs";
 import { generateQR, buildQRForPreview } from "@/lib/qr/generate";
+import { DEFAULT_QR_STYLE, type QRStyleConfig } from "@/lib/qr/types";
+import PresetSelector from "@/components/qr/PresetSelector";
+import AdvancedStylePanel from "@/components/qr/AdvancedStylePanel";
 
 type SlugStatus = "idle" | "checking" | "available" | "taken" | "invalid";
 
@@ -39,6 +42,7 @@ export default function NewQRCodePage() {
   const [destination, setDestination] = useState("");
   const [campaign, setCampaign] = useState("");
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
+  const [styleConfig, setStyleConfig] = useState<QRStyleConfig>(DEFAULT_QR_STYLE);
   const [saving, setSaving] = useState(false);
   const [slugStatus, setSlugStatus] = useState<SlugStatus>("idle");
   const [existingCampaigns, setExistingCampaigns] = useState<string[]>([]);
@@ -115,12 +119,13 @@ export default function NewQRCodePage() {
       url: previewUrl,
       logoUrl: logoDataUrl || undefined,
       size: 280,
+      style: styleConfig,
     });
     qr.append(node);
     return () => {
       node.innerHTML = "";
     };
-  }, [previewUrl, logoDataUrl]);
+  }, [previewUrl, logoDataUrl, styleConfig]);
 
   async function handleLogoUpload(file: File) {
     const reader = new FileReader();
@@ -166,6 +171,7 @@ export default function NewQRCodePage() {
         campaign: campaign.trim() || null,
         active: true,
         logoUrl: logoDataUrl || null,
+        styleConfig,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         createdBy: auth.currentUser?.uid || null,
@@ -177,6 +183,7 @@ export default function NewQRCodePage() {
         url: buildPublicUrl(slug),
         logoUrl: logoDataUrl || undefined,
         size: 1200,
+        style: styleConfig,
       });
       const url = URL.createObjectURL(png);
       const a = document.createElement("a");
@@ -210,6 +217,17 @@ export default function NewQRCodePage() {
           {/* ── Form ── */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <div className="flex flex-col gap-5">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
+                  Style preset
+                </label>
+                <PresetSelector value={styleConfig} onChange={setStyleConfig} />
+              </div>
+
+              <AdvancedStylePanel value={styleConfig} onChange={setStyleConfig} />
+
+              <div className="h-px bg-gray-100" />
+
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
                   Name <span className="text-red-500">*</span>
