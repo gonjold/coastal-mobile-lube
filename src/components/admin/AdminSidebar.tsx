@@ -62,6 +62,17 @@ const NAV_ICONS: Record<string, React.ReactNode> = {
       <circle cx="12.5" cy="12.5" r="2"/>
     </svg>
   ),
+  "QR Codes": (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="2" width="5" height="5" rx="0.5"/>
+      <rect x="11" y="2" width="5" height="5" rx="0.5"/>
+      <rect x="2" y="11" width="5" height="5" rx="0.5"/>
+      <line x1="11" y1="11" x2="11" y2="16"/>
+      <line x1="14" y1="11" x2="16" y2="11"/>
+      <line x1="16" y1="13" x2="13" y2="13"/>
+      <line x1="13" y1="16" x2="16" y2="16"/>
+    </svg>
+  ),
 };
 
 /* ── Navigation structure ── */
@@ -79,6 +90,12 @@ const SECTIONS = [
     items: [
       { label: "Invoicing", href: "/admin/invoicing" },
       { label: "Integrations", href: "/admin/integrations" },
+    ],
+  },
+  {
+    label: "MARKETING",
+    items: [
+      { label: "QR Codes", href: "/admin/qr" },
     ],
   },
   {

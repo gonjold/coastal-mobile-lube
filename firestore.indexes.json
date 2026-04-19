@@ -1,0 +1,13 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "qrScans",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "slug", "order": "ASCENDING" },
+        { "fieldPath": "scannedAt", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

@@ -29,6 +29,24 @@ service cloud.firestore {
       allow create, update, delete: if request.auth != null;
     }
 
+    // QR CODES COLLECTION
+    // Public: can READ (redirect handler needs slug lookup)
+    // Admin only: can WRITE
+    match /qrCodes/{id} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // QR SCANS COLLECTION
+    // Public: can CREATE (scan log fire-and-forget from redirect handler)
+    // Admin only: can READ
+    // Immutable: no update or delete
+    match /qrScans/{id} {
+      allow create: if true;
+      allow read: if request.auth != null;
+      allow update, delete: if false;
+    }
+
     // CATCH-ALL: deny everything else
     // Any collection not explicitly defined above is locked down
     match /{document=**} {
