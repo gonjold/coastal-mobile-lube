@@ -47,6 +47,25 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // SETTINGS/FEES DOC
+    // Public: can READ (booking wizard needs fee config to render fee line item)
+    // Admin only: can WRITE
+    match /settings/fees {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // CUSTOMERS COLLECTION
+    // Public: can CREATE (booking wizard creates new customer on submit)
+    // Public phone/email lookup: allow list queries with a limit (first-time
+    // customer detection for fee waiver; uses where(phone|email, ==, val) + limit(1))
+    // Admin only: can get-by-id, update, delete
+    match /customers/{customerId} {
+      allow create: if true;
+      allow list: if request.query.limit != null && request.query.limit <= 10;
+      allow get, update, delete: if request.auth != null;
+    }
+
     // CATCH-ALL: deny everything else
     // Any collection not explicitly defined above is locked down
     match /{document=**} {
