@@ -80,7 +80,7 @@ export default function AboutPage() {
       <section className="relative overflow-hidden bg-[#0B2040]">
         {/* Oval badge watermark */}
         <BrandLogo
-          variant="white"
+          variant="primary"
           alt=""
           width={350}
           height={140}

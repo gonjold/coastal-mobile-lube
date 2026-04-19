@@ -33,7 +33,7 @@ export default function Footer() {
           {/* Column 1 - Brand */}
           <div className="flex flex-col gap-3">
             <BrandLogo
-              variant="white"
+              variant="primary"
               width={180}
               height={50}
               className="max-w-[180px] h-auto object-contain mb-1"

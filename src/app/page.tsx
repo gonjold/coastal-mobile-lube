@@ -235,7 +235,7 @@ export default function Home() {
           <div
             className="w-full h-full bg-no-repeat bg-center"
             style={{
-              backgroundImage: `url('${BRAND_LOGOS.white}')`,
+              backgroundImage: `url('${BRAND_LOGOS.primary}')`,
               backgroundSize: "360px",
             }}
           />
@@ -759,7 +759,7 @@ export default function Home() {
 
         {/* Badge watermark echo */}
         <BrandLogo
-          variant="white"
+          variant="primary"
           alt=""
           width={200}
           height={80}
