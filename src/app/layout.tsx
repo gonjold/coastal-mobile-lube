@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import { BookingProvider } from "@/contexts/BookingContext";
 import StickyBottomBar from "@/components/StickyBottomBar";
 import QuoteFAB from "@/components/QuoteFAB";
+import { BRAND_LOGOS } from "@/lib/brand/logos";
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -26,11 +27,10 @@ export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   icons: {
     icon: [
-      { url: "/favicon.ico", sizes: "48x48" },
-      { url: "/favicon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/favicon-512.png", sizes: "512x512", type: "image/png" },
+      { url: BRAND_LOGOS.favicon192, sizes: "192x192", type: "image/png" },
+      { url: BRAND_LOGOS.favicon512, sizes: "512x512", type: "image/png" },
     ],
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+    apple: [{ url: BRAND_LOGOS.appleTouchIcon, sizes: "180x180", type: "image/png" }],
   },
   manifest: "/manifest.json",
   title: {
@@ -50,10 +50,10 @@ export const metadata: Metadata = {
     siteName: "Coastal Mobile Lube & Tire",
     images: [
       {
-        url: OG_IMAGE,
+        url: BRAND_LOGOS.ogImage,
         width: 1200,
         height: 630,
-        alt: "Coastal Mobile Lube & Tire service van",
+        alt: "Coastal Mobile Lube & Tire",
       },
     ],
     locale: "en_US",
@@ -65,7 +65,7 @@ export const metadata: Metadata = {
       "Coastal Mobile Lube & Tire | Mobile Service in Apollo Beach FL",
     description:
       "Mobile oil change, tire service, and marine engine maintenance. 30 years of dealership expertise brought to your door. Call 813-722-LUBE.",
-    images: [OG_IMAGE],
+    images: [BRAND_LOGOS.ogImage],
   },
 };
 
@@ -82,7 +82,7 @@ export default function RootLayout({
         "@id": `${BASE_URL}/#organization`,
         name: "Coastal Mobile Lube & Tire LLC",
         url: BASE_URL,
-        logo: "https://res.cloudinary.com/dgcdcqjrz/image/upload/v1775916096/Coastal_logo_bh3biu.svg",
+        logo: BRAND_LOGOS.primary,
         telephone: "+1-813-722-5823",
         email: "Coastalmobilelube@gmail.com",
         sameAs: [],

@@ -3,12 +3,12 @@
   "short_name": "Coastal Lube",
   "icons": [
     {
-      "src": "/favicon-192.png",
+      "src": "https://res.cloudinary.com/dgcdcqjrz/image/upload/w_192,h_192,c_pad,b_transparent,f_png/v1775916096/Coastal_logo_bh3biu.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/favicon-512.png",
+      "src": "https://res.cloudinary.com/dgcdcqjrz/image/upload/w_512,h_512,c_pad,b_transparent,f_png/v1775916096/Coastal_logo_bh3biu.png",
       "sizes": "512x512",
       "type": "image/png"
     }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Phone } from "lucide-react";
 import { useBooking } from "@/contexts/BookingContext";
+import { BrandLogo } from "./brand/BrandLogo";
 
 const serviceLinks = [
   { label: "All Services", href: "/services-overview" },
@@ -31,9 +32,8 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr] gap-10 lg:gap-8">
           {/* Column 1 - Brand */}
           <div className="flex flex-col gap-3">
-            <img
-              src="https://res.cloudinary.com/dgcdcqjrz/image/upload/v1775916096/Coastal_logo_bh3biu.svg"
-              alt="Coastal Mobile Lube & Tire"
+            <BrandLogo
+              variant="white"
               width={180}
               height={50}
               className="max-w-[180px] h-auto object-contain mb-1"

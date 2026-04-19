@@ -7,6 +7,7 @@ import { Phone, Menu, X } from "lucide-react";
 import Button from "./Button";
 import { useBooking } from "@/contexts/BookingContext";
 import { NavServicesDropdown } from "./NavServicesDropdown";
+import { BrandLogo } from "./brand/BrandLogo";
 
 export default function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -57,10 +58,12 @@ export default function Header() {
       <div className="section-inner flex items-center justify-between px-4 py-3 lg:px-6">
         {/* Logo */}
         <Link href="/" className="shrink-0 flex items-center gap-2">
-          <img
-            src="https://res.cloudinary.com/dgcdcqjrz/image/upload/v1775916096/Coastal_logo_bh3biu.svg"
-            alt="Coastal Mobile Lube & Tire"
+          <BrandLogo
+            variant="primary"
+            width={120}
+            height={48}
             className="h-8 lg:h-10 w-auto object-contain"
+            priority
           />
           <div className="flex flex-col">
             <span className="text-white font-[800] text-[18px] leading-tight">Coastal Mobile</span>

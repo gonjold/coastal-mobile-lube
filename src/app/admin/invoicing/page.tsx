@@ -28,6 +28,7 @@ import {
 import AdminCSVExport from "@/components/admin/AdminCSVExport";
 import AdminBadge from "@/components/admin/AdminBadge";
 import InvoiceDetailPanel, { type InvoiceForPanel } from "@/components/admin/InvoiceDetailPanel";
+import { BRAND_LOGOS } from "@/lib/brand/logos";
 import NeedsInvoiceBanner, { type CompletedJob } from "@/components/admin/NeedsInvoiceBanner";
 import { useAdminModal } from "@/contexts/AdminModalContext";
 import { formatCurrency } from "@/lib/formatCurrency";
@@ -146,7 +147,7 @@ function isOverdue(inv: Invoice): boolean {
 
 /* ─── Print HTML ──────────────────────────────────────────── */
 
-const LOGO_URL = "https://res.cloudinary.com/dgcdcqjrz/image/upload/v1775916096/Coastal_logo_bh3biu.svg";
+const LOGO_URL = BRAND_LOGOS.primaryPng;
 
 function generatePrintHtml(inv: Invoice): string {
   const rows = inv.lineItems

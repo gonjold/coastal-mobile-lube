@@ -4,6 +4,7 @@ import { ArrowRight, Phone, Check } from "lucide-react";
 import Button from "@/components/Button";
 import BookServiceButton from "@/components/BookServiceButton";
 import { cloudinaryUrl, images } from "@/lib/cloudinary";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 export const metadata: Metadata = {
   title: "About Us | Coastal Mobile Lube",
@@ -78,10 +79,11 @@ export default function AboutPage() {
       {/* Section 1 - Hero */}
       <section className="relative overflow-hidden bg-[#0B2040]">
         {/* Oval badge watermark */}
-        <img
-          src="https://res.cloudinary.com/dgcdcqjrz/image/upload/v1775916096/Coastal_logo_bh3biu.svg"
+        <BrandLogo
+          variant="white"
           alt=""
-          aria-hidden="true"
+          width={350}
+          height={140}
           className="absolute right-[5%] top-1/2 -translate-y-1/2 w-[350px] h-auto pointer-events-none select-none opacity-[0.04] hidden lg:block"
         />
 

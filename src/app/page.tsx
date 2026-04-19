@@ -8,6 +8,8 @@ import Button from "@/components/Button";
 import { useServices } from "@/hooks/useServices";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { BrandLogo } from "@/components/brand/BrandLogo";
+import { BRAND_LOGOS } from "@/lib/brand/logos";
 
 /* ── Homepage category configs per division ── */
 
@@ -233,7 +235,7 @@ export default function Home() {
           <div
             className="w-full h-full bg-no-repeat bg-center"
             style={{
-              backgroundImage: `url('https://res.cloudinary.com/dgcdcqjrz/image/upload/v1775916096/Coastal_logo_bh3biu.svg')`,
+              backgroundImage: `url('${BRAND_LOGOS.white}')`,
               backgroundSize: "360px",
             }}
           />
@@ -756,10 +758,11 @@ export default function Home() {
       <section className="hidden lg:block relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0A1C38 0%, #0F2847 40%, #132E54 100%)" }}>
 
         {/* Badge watermark echo */}
-        <img
-          src="https://res.cloudinary.com/dgcdcqjrz/image/upload/v1775916096/Coastal_logo_bh3biu.svg"
+        <BrandLogo
+          variant="white"
           alt=""
-          aria-hidden="true"
+          width={200}
+          height={80}
           className="absolute right-[10%] top-1/2 -translate-y-1/2 w-[200px] h-auto pointer-events-none select-none opacity-[0.04]"
         />
 
