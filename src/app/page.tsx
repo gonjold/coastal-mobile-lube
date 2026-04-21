@@ -621,63 +621,26 @@ export default function Home() {
       <div className="h-[3px]" style={{ background: "linear-gradient(to right, #1A5FAC, #E07B2D, #D9A441, #1A5FAC)" }} />
 
 
-      {/* ── Stats Bar ── */}
+      {/* ── Trust & Stats Band ── */}
       <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0B2040 0%, #0F2847 50%, #132E54 100%)" }}>
         {/* Top edge accent */}
         <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(to right, transparent, rgba(217,164,65,0.3), transparent)" }} />
         {/* Bottom edge accent */}
         <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: "linear-gradient(to right, transparent, rgba(217,164,65,0.3), transparent)" }} />
 
-        <div className="section-inner px-4 md:px-6 py-8 md:py-14 relative z-10">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 text-center">
+        <div className="section-inner px-4 md:px-6 py-14 md:py-20 relative z-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-10 md:gap-6 text-center">
             {[
-              { value: "30+", label: "Years dealership experience" },
-              { value: "<1hr", label: "Most jobs" },
-              { value: "100%", label: "Mobile, always" },
-              { value: "$0", label: "Surprise fees" },
-            ].map((stat, i) => (
-              <div key={stat.label} className={`relative ${i < 3 ? "md:after:content-[''] md:after:absolute md:after:right-0 md:after:top-1/2 md:after:-translate-y-1/2 md:after:h-[40px] md:after:w-px md:after:bg-white/10" : ""}`}>
-                <p className="text-[28px] md:text-[42px] font-extrabold text-[#E07B2D] mb-0.5 md:mb-1 tracking-tight">
-                  {stat.value}
-                </p>
-                <p className="text-[11px] md:text-[13px] text-white/50 font-medium">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-
-      {/* ── Hull stripe separator ── */}
-      <div className="h-[3px]" style={{ background: "linear-gradient(to right, #1A5FAC, #E07B2D, #D9A441, #1A5FAC)" }} />
-
-
-      {/* ── Trust Bar (inline) ── */}
-      <section className="relative bg-[#F8F6F1]">
-        <div className="section-inner px-4 lg:px-6 py-6 md:py-12">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-0">
-            {[
-              { icon: Shield, text: "Licensed and insured", color: "#1A5FAC" },
-              { icon: Wrench, text: "ASE-certified team", color: "#0D8A8F" },
-              { icon: Award, text: "12-month service warranty", color: "#D9A441" },
-              { icon: Tag, text: "Flat, honest pricing", color: "#E07B2D" },
-            ].map((item, i) => (
-              <div
-                key={item.text}
-                className={`flex flex-col items-center gap-2 md:gap-3 text-center justify-center ${
-                  i < 3 ? "md:border-r md:border-[#eee]" : ""
-                } md:px-6`}
-              >
-                <div
-                  className="w-[40px] h-[40px] md:w-[52px] md:h-[52px] rounded-[10px] md:rounded-[14px] flex items-center justify-center"
-                  style={{ background: `${item.color}10` }}
-                >
-                  <item.icon size={20} className="shrink-0 md:hidden" style={{ color: item.color }} strokeWidth={1.5} />
-                  <item.icon size={26} className="shrink-0 hidden md:block" style={{ color: item.color }} strokeWidth={1.5} />
-                </div>
-                <span className="text-[12px] md:text-[13px] font-semibold text-[#0F2847]">
-                  {item.text}
-                </span>
+              { Icon: Shield, stat: "30+", descriptor: "Years dealership experience", credential: "Licensed and insured" },
+              { Icon: Clock, stat: "<1hr", descriptor: "Most services completed", credential: "ASE-certified team" },
+              { Icon: Award, stat: "12mo", descriptor: "Warranty on every job", credential: "Factory-trained techs" },
+              { Icon: Tag, stat: "$0", descriptor: "Surprise fees, ever", credential: "Flat, honest pricing" },
+            ].map(({ Icon, stat, descriptor, credential }) => (
+              <div key={credential} className="flex flex-col items-center">
+                <Icon size={28} strokeWidth={1.5} className="text-[#E07B2D]/70 mb-4" />
+                <p className="text-[44px] md:text-[56px] font-extrabold text-[#E07B2D] tracking-tight leading-none mb-2">{stat}</p>
+                <p className="text-[13px] md:text-[15px] text-white/90 font-medium">{descriptor}</p>
+                <p className="text-[10px] md:text-[11px] text-white/50 uppercase tracking-wider mt-1">{credential}</p>
               </div>
             ))}
           </div>
