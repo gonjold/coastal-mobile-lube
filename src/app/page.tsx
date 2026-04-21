@@ -628,19 +628,18 @@ export default function Home() {
         {/* Bottom edge accent */}
         <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: "linear-gradient(to right, transparent, rgba(217,164,65,0.3), transparent)" }} />
 
-        <div className="section-inner px-4 md:px-6 py-14 md:py-20 relative z-10">
+        <div className="section-inner px-4 md:px-6 pt-14 md:pt-20 pb-7 md:pb-10 relative z-10">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-10 md:gap-6 text-center">
             {[
-              { Icon: Shield, stat: "30+", descriptor: "Years dealership experience", credential: "Licensed and insured" },
-              { Icon: Clock, stat: "<1hr", descriptor: "Most services completed", credential: "ASE-certified team" },
-              { Icon: Award, stat: "12mo", descriptor: "Warranty on every job", credential: "Factory-trained techs" },
-              { Icon: Tag, stat: "$0", descriptor: "Surprise fees, ever", credential: "Flat, honest pricing" },
-            ].map(({ Icon, stat, descriptor, credential }) => (
-              <div key={credential} className="flex flex-col items-center">
+              { Icon: Shield, stat: "30+", descriptor: "Years in dealership service. Licensed and insured." },
+              { Icon: Clock, stat: "<1hr", descriptor: "Most services, start to finish." },
+              { Icon: Award, stat: "12mo", descriptor: "Warranty on every job we do." },
+              { Icon: Tag, stat: "$0", descriptor: "Hidden fees. Flat pricing, always." },
+            ].map(({ Icon, stat, descriptor }) => (
+              <div key={stat} className="flex flex-col items-center">
                 <Icon size={28} strokeWidth={1.5} className="text-[#E07B2D]/70 mb-4" />
                 <p className="text-[44px] md:text-[56px] font-extrabold text-[#E07B2D] tracking-tight leading-none mb-2">{stat}</p>
                 <p className="text-[13px] md:text-[15px] text-white/90 font-medium">{descriptor}</p>
-                <p className="text-[10px] md:text-[11px] text-white/50 uppercase tracking-wider mt-1">{credential}</p>
               </div>
             ))}
           </div>
@@ -663,7 +662,7 @@ export default function Home() {
         {/* Gold accent line */}
         <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: "linear-gradient(to right, transparent, #D9A441, transparent)" }} />
 
-        <div className="section-inner px-4 lg:px-6 py-14 md:py-20 text-center relative z-10">
+        <div className="section-inner px-4 lg:px-6 pt-7 md:pt-10 pb-14 md:pb-20 text-center relative z-10">
           <p className="text-[13px] uppercase font-bold text-[#D9A441] tracking-[1.5px] mb-3">
             Ready when you are
           </p>
