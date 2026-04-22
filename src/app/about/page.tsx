@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Phone, Check } from "lucide-react";
-import Button from "@/components/Button";
 import BookServiceButton from "@/components/BookServiceButton";
 import { cloudinaryUrl, images } from "@/lib/cloudinary";
 import { BrandLogo } from "@/components/brand/BrandLogo";
@@ -152,7 +151,7 @@ export default function AboutPage() {
       <section className="relative bg-white">
         <div className="max-w-[1100px] mx-auto px-4 lg:px-6 py-10 md:py-14">
           <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
-            Our Story
+            The Founder
           </p>
           <h2 className="text-[28px] md:text-[34px] font-extrabold leading-[1.1] text-[#0B2040] tracking-[-0.5px] mb-8">
             Built on 30 years and a handshake
@@ -266,12 +265,13 @@ export default function AboutPage() {
 
 
       {/* Section 6 - CTA */}
-      <section className="relative bg-[#FAFBFC]">
-        <div className="max-w-[1100px] mx-auto px-4 lg:px-6 py-14 md:py-16 text-center">
-          <h2 className="text-[28px] md:text-[36px] font-extrabold leading-[1.1] text-[#0B2040] tracking-[-0.5px] mb-4">
+      <section className="relative overflow-hidden" style={{ background: "linear-gradient(135deg, #0A1C38 0%, #0F2847 40%, #132E54 100%)" }}>
+        <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: "linear-gradient(to right, transparent, #D9A441, transparent)" }} />
+        <div className="max-w-[1100px] mx-auto px-4 lg:px-6 py-14 md:py-16 text-center relative z-10">
+          <h2 className="text-[28px] md:text-[36px] font-extrabold leading-[1.1] text-white tracking-[-0.5px] mb-4" style={{ textShadow: "0 2px 20px rgba(0,0,0,0.3)" }}>
             Ready to skip the shop?
           </h2>
-          <p className="text-[16px] leading-[1.65] text-[#555] max-w-[480px] mx-auto mb-8">
+          <p className="text-[16px] leading-[1.65] text-white/65 max-w-[480px] mx-auto mb-8">
             Book your first service online or call us. Most appointments
             available within the week.
           </p>
@@ -279,10 +279,13 @@ export default function AboutPage() {
             <BookServiceButton variant="primary" size="lg" className="shadow-[0_4px_24px_rgba(224,123,45,0.35)]">
               Book Service
             </BookServiceButton>
-            <Button href="tel:8137225823" variant="secondary" size="lg">
-              <Phone size={16} className="mr-2" />
+            <a
+              href="tel:8137225823"
+              className="inline-flex items-center justify-center gap-2 px-[30px] py-[14px] font-semibold text-white bg-white/[0.06] border border-white/20 rounded-[var(--radius-button)] hover:bg-white/[0.12] hover:border-white/35 transition-all backdrop-blur-sm"
+            >
+              <Phone size={16} />
               Call 813-722-LUBE
-            </Button>
+            </a>
           </div>
         </div>
       </section>

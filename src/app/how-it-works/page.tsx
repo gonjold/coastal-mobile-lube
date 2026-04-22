@@ -768,33 +768,6 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
-      {/* HOW-IT-WORKS FAQ STRIP */}
-      <section className="py-16 bg-slate-50">
-        <div className="max-w-3xl mx-auto px-4">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl font-bold text-[#0B2040]">Common questions</h2>
-          </div>
-          <div className="space-y-3">
-            {[
-              { q: "Do you bring everything you need?", a: "Yes. Our van carries OEM-grade oil, factory-spec filters, tires in stock, brake parts, diagnostic tools, and everything for a full service bay. We don\u2019t make trips to the parts store." },
-              { q: "What about jobs you can\u2019t do on-site?", a: "On-site we handle 95% of service and maintenance. For transmission rebuilds or internal engine work, we refer you to a trusted partner shop and coordinate drop-off for you." },
-              { q: "How early do I need to book?", a: "Most weeks we have same-day or next-day availability. Fleet and marine customers on a schedule book their slots weeks in advance." },
-              { q: "What\u2019s included in the 12-month warranty?", a: "If the work we performed isn\u2019t holding, we come back at no charge and make it right. Parts and labor covered for 12 months or 12,000 miles, whichever comes first." },
-            ].map((faq) => (
-              <details key={faq.q} className="group bg-white rounded-xl border border-slate-200 overflow-hidden">
-                <summary className="flex items-center justify-between gap-4 px-6 py-4 cursor-pointer list-none hover:bg-slate-50 transition-colors">
-                  <span className="font-bold text-[15px] text-[#0B2040]">{faq.q}</span>
-                  <div className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-white transition-transform group-open:rotate-45" style={{ backgroundColor: '#E07B2D' }}>
-                    <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M7 2 V12" /><path d="M2 7 H12" /></svg>
-                  </div>
-                </summary>
-                <div className="px-6 pb-5 text-[14px] text-slate-600 leading-relaxed">{faq.a}</div>
-              </details>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* TRUST BAND */}
       <section
         className="py-16 px-6 text-white relative overflow-hidden"
@@ -921,23 +894,19 @@ export default function HowItWorksPage() {
                   <span className="font-bold text-base" style={{ color: NAVY }}>
                     {faq.q}
                   </span>
-                  <div
-                    className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white transition-transform group-open:rotate-45"
-                    style={{ backgroundColor: ORANGE }}
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="flex-shrink-0 text-[#E07B2D]/60 transition-transform duration-200 group-open:rotate-180 group-open:text-[#E07B2D]"
                   >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 14 14"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                    >
-                      <path d="M7 2 V12" />
-                      <path d="M2 7 H12" />
-                    </svg>
-                  </div>
+                    <path d="M6 9 L12 15 L18 9" />
+                  </svg>
                 </summary>
                 <div className="px-6 pb-6 text-slate-600 leading-relaxed">
                   {faq.a}
