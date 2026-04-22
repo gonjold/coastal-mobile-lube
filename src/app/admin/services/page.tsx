@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
+import { Package, Plus } from "lucide-react";
 import AdminTopBar from "@/components/admin/AdminTopBar";
 import { db } from "@/lib/firebase";
 import {
@@ -14,18 +15,20 @@ import {
 } from "firebase/firestore";
 import {
   useServices,
+  resolveBookingVisibility,
   type Service,
   type ServiceCategory,
+  type BookingVisibility,
 } from "@/hooks/useServices";
 import ToastContainer, { type ToastItem } from "../Toast";
 import ServicePreviewPanel from "./ServicePreviewPanel";
-import CategoryTree from "@/components/admin/services/CategoryTree";
 import InlineEditForm from "@/components/admin/services/InlineEditForm";
-import BulkActionsBar from "@/components/admin/services/BulkActionsBar";
-import ServiceRow from "@/components/admin/services/ServiceRow";
-
-
-/* ── Constants ── */
+import CategoryList from "@/components/admin/booking-cms/CategoryList";
+import SelectedCategoryPanel from "@/components/admin/booking-cms/SelectedCategoryPanel";
+import AddCategoryModal, {
+  type AddCategorySubmit,
+} from "@/components/admin/booking-cms/AddCategoryModal";
+import { NAVY, ORANGE, ORANGE_DARK, BORDER } from "@/components/admin/booking-cms/tokens";
 
 type Division = "auto" | "marine" | "fleet" | "rv";
 
@@ -53,128 +56,309 @@ const EMPTY_SERVICE = {
   laborHours: 0,
 };
 
-/* ── Main page ── */
+// Sync rule: bookingVisibility is authoritative; showOnBooking is a shadow
+// boolean kept true unless hidden, so pre-WO-40b consumers keep working.
+function shadowShowOnBooking(v: BookingVisibility): boolean {
+  return v !== "hidden";
+}
 
 export default function ServicesPage() {
   const { services, categories, loading } = useServices();
 
   const [activeDivision, setActiveDivision] = useState<Division>("auto");
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
-  // Inline editing
-  const [editingRowId, setEditingRowId] = useState<string | null>(null);
-  const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
-  const [priceEditValue, setPriceEditValue] = useState("");
-  const [priceFlash, setPriceFlash] = useState<string | null>(null);
-  const [addingNewService, setAddingNewService] = useState(false);
+  const [addModal, setAddModal] = useState<{
+    kind: "regular" | "featured";
+  } | null>(null);
+  const [editServiceTarget, setEditServiceTarget] = useState<Service | null>(
+    null
+  );
+  const [addingNewInCategory, setAddingNewInCategory] =
+    useState<ServiceCategory | null>(null);
+  const [editCategoryTarget, setEditCategoryTarget] =
+    useState<ServiceCategory | null>(null);
 
-  // Bulk selection
-  const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
-
-  // Three-dot menu
-  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
-  const [moveMenuId, setMoveMenuId] = useState<string | null>(null);
-  const [copyMenuId, setCopyMenuId] = useState<string | null>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  // Drag-and-drop
-  const [dragId, setDragId] = useState<string | null>(null);
-  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
-
-  // Delete confirm + duplicate category modal
-  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
-  const [dupCatModal, setDupCatModal] = useState<{ category: ServiceCategory; targetDivision: Division } | null>(null);
-
-  // Close menu on outside click
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpenId(null);
-        setMoveMenuId(null);
-        setCopyMenuId(null);
-      }
-    }
-    if (menuOpenId) document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [menuOpenId]);
-
-  // Reset selection on nav change
-  useEffect(() => {
-    setSelectedServices(new Set());
-    setEditingRowId(null);
-    setEditingPriceId(null);
-    setAddingNewService(false);
-  }, [activeDivision, selectedCategory]);
-
-  /* ── Toast helper ── */
-
-  const addToast = useCallback((message: string, type: "success" | "info" = "success") => {
-    const id = Date.now().toString();
-    setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => setToasts((p) => p.filter((t) => t.id !== id)), 4000);
-  }, []);
-
-  /* ── Derived data ── */
+  const addToast = useCallback(
+    (message: string, type: "success" | "info" = "success") => {
+      const id = Date.now().toString() + Math.random();
+      setToasts((prev) => [...prev, { id, message, type }]);
+      setTimeout(
+        () => setToasts((p) => p.filter((t) => t.id !== id)),
+        4000
+      );
+    },
+    []
+  );
 
   const divisionCategories = useMemo(
-    () => categories.filter((c) => c.division === activeDivision).sort((a, b) => a.sortOrder - b.sortOrder),
+    () =>
+      categories
+        .filter((c) => c.division === activeDivision)
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
     [categories, activeDivision]
   );
 
   const divisionServices = useMemo(
-    () => services.filter((s) => s.division === activeDivision).sort((a, b) => a.sortOrder - b.sortOrder),
+    () =>
+      services
+        .filter((s) => s.division === activeDivision)
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
     [services, activeDivision]
   );
 
-  const isSearchActive = search.trim().length > 0;
-
-  const tableServices = useMemo(() => {
-    if (isSearchActive) {
-      const q = search.toLowerCase();
-      return divisionServices.filter((s) => s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q));
+  // Auto-select first category when division changes or current selection disappears
+  useEffect(() => {
+    if (divisionCategories.length === 0) {
+      setSelectedCategoryId(null);
+      return;
     }
-    if (selectedCategory === null) return divisionServices;
-    return divisionServices.filter((s) => s.category === selectedCategory);
-  }, [divisionServices, selectedCategory, search, isSearchActive]);
+    const stillExists = divisionCategories.some(
+      (c) => c.id === selectedCategoryId
+    );
+    if (!stillExists) {
+      // Prefer first featured, then first regular
+      const first =
+        divisionCategories.find((c) => c.isFeatured) || divisionCategories[0];
+      setSelectedCategoryId(first.id);
+    }
+  }, [divisionCategories, selectedCategoryId]);
 
-  const activeCount = tableServices.filter((s) => s.isActive).length;
-  const divisionLabel = DIVISIONS.find((d) => d.key === activeDivision)?.label || "";
-  const headerTitle = isSearchActive ? `Search results for "${search}"` : selectedCategory || "All services";
+  const selectedCategory = useMemo(
+    () => divisionCategories.find((c) => c.id === selectedCategoryId) || null,
+    [divisionCategories, selectedCategoryId]
+  );
 
-  /* ── Toggle helpers ── */
+  const selectedCategoryServices = useMemo(() => {
+    if (!selectedCategory) return [];
+    return divisionServices.filter(
+      (s) => s.category === selectedCategory.name
+    );
+  }, [divisionServices, selectedCategory]);
 
-  async function toggleServiceField(id: string, field: "isActive" | "showOnBooking" | "showOnPricing", currentValue: boolean) {
+  const inlineCount = divisionCategories.filter(
+    (c) => resolveBookingVisibility(c) === "inline"
+  ).length;
+  const searchableCount = divisionCategories.filter(
+    (c) => resolveBookingVisibility(c) === "searchable"
+  ).length;
+  const hiddenCount = divisionCategories.filter(
+    (c) => resolveBookingVisibility(c) === "hidden"
+  ).length;
+
+  /* ── Category writes ── */
+
+  async function updateCategoryDoc(
+    id: string,
+    patch: Partial<ServiceCategory>
+  ) {
     try {
-      await updateDoc(doc(db, "services", id), { [field]: !currentValue, updatedAt: serverTimestamp() });
+      const payload: Record<string, unknown> = {
+        ...patch,
+        updatedAt: serverTimestamp(),
+      };
+      await updateDoc(doc(db, "serviceCategories", id), payload);
+    } catch {
+      addToast("Failed to update category", "info");
+    }
+  }
+
+  async function createCategory(
+    kind: "regular" | "featured",
+    data: AddCategorySubmit
+  ) {
+    const divCats = divisionCategories;
+    const maxOrder = divCats.reduce(
+      (max, c) => Math.max(max, c.sortOrder ?? 0),
+      0
+    );
+    const isFeatured = kind === "featured";
+    try {
+      const docRef = await addDoc(collection(db, "serviceCategories"), {
+        name: data.name,
+        division: activeDivision,
+        description: "",
+        startingAt: 0,
+        sortOrder: maxOrder + 1,
+        isActive: true,
+        isFeatured,
+        featuredSubtitle: isFeatured ? data.subtitle : "",
+        bookingVisibility: data.visibility,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+      addToast(isFeatured ? "Featured block created" : "Category created");
+      setSelectedCategoryId(docRef.id);
+    } catch {
+      addToast("Failed to create", "info");
+    }
+  }
+
+  async function deleteCategoryById(cat: ServiceCategory) {
+    const count = services.filter(
+      (s) => s.category === cat.name && s.division === cat.division
+    ).length;
+    if (count > 0) {
+      addToast(
+        `Cannot delete: ${count} service${count === 1 ? "" : "s"} still in this ${
+          cat.isFeatured ? "block" : "category"
+        }. Move them first.`,
+        "info"
+      );
+      return;
+    }
+    if (
+      !confirm(
+        `Delete ${cat.isFeatured ? "featured block" : "category"} "${cat.name}"?`
+      )
+    )
+      return;
+    try {
+      await deleteDoc(doc(db, "serviceCategories", cat.id));
+      addToast("Deleted");
+      if (selectedCategoryId === cat.id) setSelectedCategoryId(null);
+      setEditCategoryTarget(null);
+    } catch {
+      addToast("Failed to delete", "info");
+    }
+  }
+
+  async function saveCategoryMeta(
+    id: string,
+    patch: {
+      name: string;
+      description: string;
+      startingAt: number;
+      featuredSubtitle: string;
+    }
+  ) {
+    const current = categories.find((c) => c.id === id);
+    if (!current) return;
+    setSaving(true);
+    try {
+      await updateDoc(doc(db, "serviceCategories", id), {
+        ...patch,
+        updatedAt: serverTimestamp(),
+      });
+      // Rename services whose category name matches the old name
+      if (patch.name !== current.name) {
+        const matching = services.filter(
+          (s) =>
+            s.category === current.name && s.division === current.division
+        );
+        if (matching.length > 0) {
+          const batch = writeBatch(db);
+          matching.forEach((s) => {
+            batch.update(doc(db, "services", s.id), {
+              category: patch.name,
+              updatedAt: serverTimestamp(),
+            });
+          });
+          await batch.commit();
+        }
+      }
+      addToast("Saved");
+      setEditCategoryTarget(null);
+    } catch {
+      addToast("Failed to save", "info");
+    }
+    setSaving(false);
+  }
+
+  async function reorderCategories(
+    kind: "regular" | "featured",
+    orderedIds: string[]
+  ) {
+    // Optimistic: let Firestore snapshot redraw after batch; old order shows
+    // momentarily. If the batch fails, the snapshot will revert naturally.
+    const previousOrders = new Map<string, number>();
+    divisionCategories.forEach((c) => previousOrders.set(c.id, c.sortOrder));
+    try {
+      const batch = writeBatch(db);
+      orderedIds.forEach((id, idx) => {
+        batch.update(doc(db, "serviceCategories", id), {
+          sortOrder: idx + 1,
+          updatedAt: serverTimestamp(),
+        });
+      });
+      await batch.commit();
+    } catch {
+      addToast("Failed to reorder", "info");
+    }
+    void kind; // reserved for future cross-group guarding
+  }
+
+  /* ── Service writes ── */
+
+  async function updateServiceDoc(id: string, patch: Partial<Service>) {
+    try {
+      const payload: Record<string, unknown> = {
+        ...patch,
+        updatedAt: serverTimestamp(),
+      };
+      // Sync shadow showOnBooking when bookingVisibility changes
+      if (patch.bookingVisibility) {
+        payload.showOnBooking = shadowShowOnBooking(patch.bookingVisibility);
+      }
+      await updateDoc(doc(db, "services", id), payload);
     } catch {
       addToast("Failed to update service", "info");
     }
   }
 
-  /* ── CRUD: Services ── */
-
-  async function saveServiceFromForm(data: Partial<Service> & { _isNew?: boolean }) {
+  async function saveServiceFromForm(
+    data: Partial<Service> & { _isNew?: boolean }
+  ) {
     setSaving(true);
     try {
-      const { _isNew, id, createdAt: _ca, updatedAt: _ua, ...fields } = data as Service & { _isNew?: boolean };
+      const {
+        _isNew,
+        id,
+        createdAt: _ca,
+        updatedAt: _ua,
+        ...fields
+      } = data as Service & { _isNew?: boolean };
+      void _ca;
+      void _ua;
       if (_isNew) {
-        const catServices = services.filter((s) => s.category === fields.category && s.division === fields.division);
-        const maxOrder = catServices.reduce((max, s) => Math.max(max, s.sortOrder), 0);
+        const catServices = services.filter(
+          (s) =>
+            s.category === fields.category && s.division === fields.division
+        );
+        const maxOrder = catServices.reduce(
+          (max, s) => Math.max(max, s.sortOrder ?? 0),
+          0
+        );
+        // New services inherit the category's bookingVisibility as a default
+        const parentCat = categories.find(
+          (c) =>
+            c.name === fields.category && c.division === fields.division
+        );
+        const defaultVis: BookingVisibility =
+          parentCat ? resolveBookingVisibility(parentCat) : "inline";
         await addDoc(collection(db, "services"), {
-          ...EMPTY_SERVICE, ...fields, sortOrder: maxOrder + 1,
-          createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+          ...EMPTY_SERVICE,
+          ...fields,
+          sortOrder: maxOrder + 1,
+          bookingVisibility: defaultVis,
+          showOnBooking:
+            fields.showOnBooking ?? shadowShowOnBooking(defaultVis),
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
         });
         addToast("Service added");
       } else {
-        await updateDoc(doc(db, "services", id), { ...fields, updatedAt: serverTimestamp() });
+        await updateDoc(doc(db, "services", id), {
+          ...fields,
+          updatedAt: serverTimestamp(),
+        });
         addToast("Service updated");
       }
-      setEditingRowId(null);
-      setAddingNewService(false);
+      setEditServiceTarget(null);
+      setAddingNewInCategory(null);
     } catch {
       addToast("Failed to save service", "info");
     }
@@ -182,217 +366,44 @@ export default function ServicesPage() {
   }
 
   async function deleteService(id: string) {
+    if (!confirm("Delete this service? This cannot be undone.")) return;
     try {
       await deleteDoc(doc(db, "services", id));
       addToast("Service deleted");
     } catch {
       addToast("Failed to delete service", "info");
     }
-    setDeleteConfirm(null);
-    setEditingRowId(null);
+    setEditServiceTarget(null);
   }
 
   async function duplicateService(svc: Service) {
     try {
-      const catServices = services.filter((s) => s.category === svc.category && s.division === svc.division);
-      const maxOrder = catServices.reduce((max, s) => Math.max(max, s.sortOrder), 0);
+      const catServices = services.filter(
+        (s) => s.category === svc.category && s.division === svc.division
+      );
+      const maxOrder = catServices.reduce(
+        (max, s) => Math.max(max, s.sortOrder ?? 0),
+        0
+      );
       const { id, createdAt, updatedAt, ...data } = svc;
+      void id;
+      void createdAt;
+      void updatedAt;
       await addDoc(collection(db, "services"), {
-        ...data, name: `Copy of ${svc.name}`, isActive: false, sortOrder: maxOrder + 1,
-        createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+        ...data,
+        name: `Copy of ${svc.name}`,
+        isActive: false,
+        sortOrder: maxOrder + 1,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       });
       addToast("Service duplicated");
     } catch {
       addToast("Failed to duplicate service", "info");
     }
-    setMenuOpenId(null);
   }
 
-  async function moveServiceToCategory(svcId: string, categoryName: string) {
-    try {
-      await updateDoc(doc(db, "services", svcId), { category: categoryName, updatedAt: serverTimestamp() });
-      addToast("Service moved");
-    } catch {
-      addToast("Failed to move service", "info");
-    }
-    setMenuOpenId(null);
-    setMoveMenuId(null);
-  }
-
-  async function copyServiceToDivision(svc: Service, targetDiv: Division) {
-    try {
-      const targetCats = categories.filter((c) => c.division === targetDiv);
-      const matchingCat = targetCats.find((c) => c.name === svc.category);
-      const targetCategory = matchingCat?.name || targetCats[0]?.name || "";
-      const { id, createdAt, updatedAt, ...data } = svc;
-      await addDoc(collection(db, "services"), {
-        ...data, division: targetDiv, category: targetCategory, isActive: false,
-        createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
-      });
-      addToast("Service copied to " + targetDiv);
-    } catch {
-      addToast("Failed to copy service", "info");
-    }
-    setMenuOpenId(null);
-    setCopyMenuId(null);
-  }
-
-  /* ── Inline price editing ── */
-
-  async function savePriceEdit(svcId: string) {
-    const newPrice = parseFloat(priceEditValue) || 0;
-    try {
-      await updateDoc(doc(db, "services", svcId), { price: newPrice, updatedAt: serverTimestamp() });
-      setPriceFlash(svcId);
-      setTimeout(() => setPriceFlash(null), 600);
-    } catch {
-      addToast("Failed to update price", "info");
-    }
-    setEditingPriceId(null);
-    setPriceEditValue("");
-  }
-
-  /* ── Drag-and-drop reorder ── */
-
-  async function handleDrop(targetIdx: number) {
-    if (dragId === null) return;
-    const list = [...tableServices];
-    const fromIdx = list.findIndex((s) => s.id === dragId);
-    if (fromIdx === -1 || fromIdx === targetIdx) { setDragId(null); setDragOverIdx(null); return; }
-    const [moved] = list.splice(fromIdx, 1);
-    list.splice(targetIdx > fromIdx ? targetIdx - 1 : targetIdx, 0, moved);
-    const batch = writeBatch(db);
-    list.forEach((s, i) => {
-      batch.update(doc(db, "services", s.id), { sortOrder: i + 1, updatedAt: serverTimestamp() });
-    });
-    try { await batch.commit(); } catch { addToast("Failed to reorder", "info"); }
-    setDragId(null);
-    setDragOverIdx(null);
-  }
-
-  /* ── Bulk actions ── */
-
-  function toggleSelect(id: string) {
-    setSelectedServices((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
-  }
-
-  function toggleSelectAll() {
-    setSelectedServices(selectedServices.size === tableServices.length ? new Set() : new Set(tableServices.map((s) => s.id)));
-  }
-
-  async function bulkActivate(active: boolean) {
-    const batch = writeBatch(db);
-    selectedServices.forEach((id) => { batch.update(doc(db, "services", id), { isActive: active, updatedAt: serverTimestamp() }); });
-    try { await batch.commit(); addToast(`${selectedServices.size} service${selectedServices.size !== 1 ? "s" : ""} ${active ? "activated" : "deactivated"}`); } catch { addToast("Failed to update services", "info"); }
-    setSelectedServices(new Set());
-  }
-
-  async function bulkMoveTo(categoryName: string) {
-    const batch = writeBatch(db);
-    selectedServices.forEach((id) => { batch.update(doc(db, "services", id), { category: categoryName, updatedAt: serverTimestamp() }); });
-    try { await batch.commit(); addToast(`Moved ${selectedServices.size} services`); } catch { addToast("Failed to move services", "info"); }
-    setSelectedServices(new Set());
-  }
-
-  async function bulkDelete() {
-    if (!confirm(`Delete ${selectedServices.size} service${selectedServices.size !== 1 ? "s" : ""}? This cannot be undone.`)) return;
-    const batch = writeBatch(db);
-    selectedServices.forEach((id) => { batch.delete(doc(db, "services", id)); });
-    try { await batch.commit(); addToast(`Deleted ${selectedServices.size} services`); } catch { addToast("Failed to delete services", "info"); }
-    setSelectedServices(new Set());
-  }
-
-  async function bulkAdjustPrices(action: "increase" | "decrease" | "set", amount: number, unit: "flat" | "percent") {
-    const batch = writeBatch(db);
-    selectedServices.forEach((id) => {
-      const svc = services.find((s) => s.id === id);
-      if (!svc) return;
-      let np = svc.price;
-      if (action === "set") np = unit === "flat" ? amount : svc.price;
-      else if (action === "increase") np = unit === "flat" ? svc.price + amount : svc.price * (1 + amount / 100);
-      else np = unit === "flat" ? svc.price - amount : svc.price * (1 - amount / 100);
-      if (np < 0) np = 0;
-      batch.update(doc(db, "services", id), { price: Math.round(np * 100) / 100, updatedAt: serverTimestamp() });
-    });
-    try { await batch.commit(); addToast("Prices updated"); } catch { addToast("Failed to update prices", "info"); }
-    setSelectedServices(new Set());
-  }
-
-  /* ── CRUD: Categories ── */
-
-  async function addCategory(name: string) {
-    try {
-      const divCats = categories.filter((c) => c.division === activeDivision);
-      const maxOrder = divCats.reduce((max, c) => Math.max(max, c.sortOrder), 0);
-      await addDoc(collection(db, "serviceCategories"), {
-        name, division: activeDivision, description: "", startingAt: 0,
-        sortOrder: maxOrder + 1, isActive: true,
-        createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
-      });
-      addToast("Category added");
-      setSelectedCategory(name);
-    } catch { addToast("Failed to add category", "info"); }
-  }
-
-  async function renameCategory(id: string, newName: string) {
-    const cat = categories.find((c) => c.id === id);
-    if (!cat) return;
-    try {
-      await updateDoc(doc(db, "serviceCategories", id), { name: newName, updatedAt: serverTimestamp() });
-      const matching = services.filter((s) => s.category === cat.name && s.division === cat.division);
-      if (matching.length > 0) {
-        const batch = writeBatch(db);
-        matching.forEach((s) => { batch.update(doc(db, "services", s.id), { category: newName, updatedAt: serverTimestamp() }); });
-        await batch.commit();
-      }
-      if (selectedCategory === cat.name) setSelectedCategory(newName);
-      addToast("Category renamed");
-    } catch { addToast("Failed to rename category", "info"); }
-  }
-
-  async function handleDuplicateCategory() {
-    if (!dupCatModal) return;
-    const { category: srcCat, targetDivision } = dupCatModal;
-    setSaving(true);
-    try {
-      const divCats = categories.filter((c) => c.division === targetDivision);
-      const maxCatOrder = divCats.reduce((max, c) => Math.max(max, c.sortOrder), 0);
-      const newCatName = `Copy of ${srcCat.name}`;
-      await addDoc(collection(db, "serviceCategories"), {
-        name: newCatName, division: targetDivision, description: srcCat.description || "",
-        startingAt: srcCat.startingAt || 0, sortOrder: maxCatOrder + 1, isActive: true,
-        createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
-      });
-      const srcServices = services.filter((s) => s.category === srcCat.name && s.division === srcCat.division);
-      if (srcServices.length > 0) {
-        const batch = writeBatch(db);
-        srcServices.forEach((svc, idx) => {
-          const { id, createdAt, updatedAt, ...data } = svc;
-          batch.set(doc(collection(db, "services")), {
-            ...data, category: newCatName, division: targetDivision, isActive: false,
-            sortOrder: idx + 1, createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
-          });
-        });
-        await batch.commit();
-      }
-      addToast(`Category duplicated with ${srcServices.length} service${srcServices.length === 1 ? "" : "s"}`);
-      setDupCatModal(null);
-    } catch { addToast("Failed to duplicate category", "info"); }
-    setSaving(false);
-  }
-
-  async function handleDeleteCategory(cat: ServiceCategory) {
-    const catCount = services.filter((s) => s.category === cat.name && s.division === cat.division).length;
-    if (catCount > 0) { addToast(`Cannot delete: ${catCount} services still in this category. Move them first.`, "info"); return; }
-    if (!confirm(`Delete category "${cat.name}"?`)) return;
-    try {
-      await deleteDoc(doc(db, "serviceCategories", cat.id));
-      if (selectedCategory === cat.name) setSelectedCategory(null);
-      addToast("Category deleted");
-    } catch { addToast("Failed to delete category", "info"); }
-  }
-
-  /* ── Loading ── */
+  /* ── Render ── */
 
   if (loading) {
     return (
@@ -402,192 +413,373 @@ export default function ServicesPage() {
     );
   }
 
-  const selectedSvcList = tableServices.filter((s) => selectedServices.has(s.id));
-
-  /* ── Render ── */
-
   return (
     <>
       <AdminTopBar title="Services & Pricing">
         <button
-          onClick={() => { setAddingNewService(true); setEditingRowId(null); }}
-          style={{ padding: "7px 14px", fontSize: 13, fontWeight: 600, background: "#1a5276", color: "#FFF", border: "none", borderRadius: 8, cursor: "pointer" }}
+          type="button"
+          onClick={() => setShowPreview(true)}
+          className="px-3 py-2 text-[12px] font-semibold rounded-lg border bg-white hover:bg-gray-50 transition"
+          style={{ borderColor: BORDER, color: NAVY }}
         >
-          + Add Service
+          Preview booking modal
+        </button>
+        <button
+          type="button"
+          onClick={() => setAddModal({ kind: "featured" })}
+          className="px-3 py-2 text-[12px] font-semibold rounded-lg border bg-white hover:bg-gray-50 transition flex items-center gap-1"
+          style={{ borderColor: "rgba(224,123,45,0.3)", color: ORANGE }}
+        >
+          <Package className="w-3.5 h-3.5" />
+          New featured block
+        </button>
+        <button
+          type="button"
+          onClick={() => setAddModal({ kind: "regular" })}
+          className="px-3 py-2 text-[12px] font-semibold rounded-lg text-white transition flex items-center gap-1"
+          style={{ background: ORANGE }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.background = ORANGE_DARK)
+          }
+          onMouseLeave={(e) => (e.currentTarget.style.background = ORANGE)}
+        >
+          <Plus className="w-3.5 h-3.5" />
+          New category
         </button>
       </AdminTopBar>
 
-      {/* Division tabs + search bar */}
-      <div style={{ background: "#FFF", borderBottom: "0.5px solid #E5E7EB", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px" }}>
-        <div style={{ display: "flex" }}>
-          {DIVISIONS.map((div) => {
-            const active = activeDivision === div.key;
-            const count = services.filter((s) => s.division === div.key).length;
+      <div
+        className="px-6 py-5"
+        style={{
+          background: "#F7F8FA",
+          fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+          minHeight: "calc(100vh - 56px)",
+        }}
+      >
+        {/* Division tabs */}
+        <div
+          className="flex items-center gap-1 mb-4 border-b"
+          style={{ borderColor: BORDER }}
+        >
+          {DIVISIONS.map((d) => {
+            const count = categories.filter((c) => c.division === d.key).length;
+            const active = activeDivision === d.key;
             return (
-              <button key={div.key} onClick={() => { setActiveDivision(div.key); setSelectedCategory(null); setSearch(""); }}
-                style={{ padding: "10px 16px", fontSize: 13, fontWeight: active ? 500 : 400, color: active ? "#1a5276" : "#6B7280", background: "transparent", border: "none", borderBottom: active ? "2px solid #1a5276" : "2px solid transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-                {div.label} <span style={{ fontSize: 11, color: active ? "#1a5276" : "#9CA3AF" }}>{count}</span>
+              <button
+                key={d.key}
+                type="button"
+                onClick={() => setActiveDivision(d.key)}
+                className={`px-4 py-2.5 text-[13px] font-semibold transition relative ${
+                  active ? "" : "text-gray-500 hover:text-gray-700"
+                }`}
+                style={
+                  active
+                    ? { color: NAVY, boxShadow: `inset 0 -2px 0 ${ORANGE}` }
+                    : {}
+                }
+              >
+                {d.label}
+                <span className="ml-2 text-[10px] text-gray-400 font-medium">
+                  {count}
+                </span>
               </button>
             );
           })}
         </div>
-        <div style={{ position: "relative" }}>
-          <svg style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input type="text" placeholder="Search all services..." value={search} onChange={(e) => setSearch(e.target.value)}
-            style={{ width: 240, padding: "7px 10px 7px 32px", fontSize: 13, border: "1px solid #E5E7EB", borderRadius: 8, outline: "none" }} />
-        </div>
-      </div>
 
-      {/* Two-panel layout */}
-      <div style={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden" }}>
-        <CategoryTree
-          categories={categories} services={services} activeDivision={activeDivision}
-          selectedCategory={isSearchActive ? "__search__" : selectedCategory}
-          onSelectCategory={(name) => { setSearch(""); setSelectedCategory(name); }}
-          onAddCategory={addCategory} onRenameCategory={renameCategory}
-          onDuplicateCategory={(cat) => setDupCatModal({ category: cat, targetDivision: cat.division as Division })}
-          onDeleteCategory={handleDeleteCategory}
-        />
-
-        {/* Right panel */}
-        <div style={{ flex: 1, padding: "16px 24px", overflowY: "auto" }}>
-          {/* Category header */}
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12, paddingBottom: 12, borderBottom: "1px solid #E2E8F0" }}>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 500, color: "#0B2040" }}>{headerTitle}</div>
-              <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>{tableServices.length} services &middot; {activeCount} active &middot; {divisionLabel}</div>
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => setShowPreview(true)}
-                style={{ padding: "6px 12px", fontSize: 12, fontWeight: 500, border: "1px solid #E5E7EB", borderRadius: 6, background: "#FFF", color: "#6B7280", cursor: "pointer" }}>
-                Preview
-              </button>
-              <button onClick={() => { setAddingNewService(true); setEditingRowId(null); }}
-                style={{ padding: "6px 12px", fontSize: 12, fontWeight: 500, border: "1px solid #E5E7EB", borderRadius: 6, background: "#FFF", color: "#1a5276", cursor: "pointer" }}>
-                + Add to category
-              </button>
-            </div>
+        {/* Summary strip */}
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          <StatPill label={`${inlineCount} inline`} tone="emerald" />
+          <StatPill label={`${searchableCount} searchable`} tone="amber" />
+          <StatPill label={`${hiddenCount} hidden`} tone="gray" />
+          <div className="text-[11px] text-gray-500 ml-2">
+            Inline categories show above the fold in Step 2. Searchable ones appear only when customers type in the search bar.
           </div>
+        </div>
 
-          {/* Bulk actions bar */}
-          {selectedServices.size > 0 && (
-            <BulkActionsBar selectedCount={selectedServices.size} selectedServices={selectedSvcList} categories={categories} activeDivision={activeDivision}
-              onAdjustPrices={bulkAdjustPrices} onActivate={() => bulkActivate(true)} onDeactivate={() => bulkActivate(false)}
-              onMoveTo={bulkMoveTo} onDelete={bulkDelete} onClear={() => setSelectedServices(new Set())} />
+        {/* Two panels */}
+        <div className="grid gap-4" style={{ gridTemplateColumns: "340px 1fr" }}>
+          <CategoryList
+            categories={divisionCategories}
+            services={divisionServices}
+            selectedId={selectedCategoryId}
+            onSelect={setSelectedCategoryId}
+            onAddClick={(kind) => setAddModal({ kind })}
+            onReorder={reorderCategories}
+          />
+
+          {selectedCategory ? (
+            <SelectedCategoryPanel
+              category={selectedCategory}
+              services={selectedCategoryServices}
+              onUpdateCategory={(patch) =>
+                updateCategoryDoc(selectedCategory.id, patch)
+              }
+              onUpdateService={updateServiceDoc}
+              onEditCategoryMeta={() => setEditCategoryTarget(selectedCategory)}
+              onAddService={() => setAddingNewInCategory(selectedCategory)}
+              onEditService={(svc) => setEditServiceTarget(svc)}
+              onDuplicateService={duplicateService}
+            />
+          ) : (
+            <div
+              className="bg-white rounded-xl border flex items-center justify-center text-[13px] text-gray-500"
+              style={{ borderColor: BORDER, minHeight: 320 }}
+            >
+              No categories yet. Create one to get started.
+            </div>
           )}
-
-          {/* Table */}
-          <div style={{ background: "#FFF", border: "1px solid #E2E8F0", borderRadius: 12, overflow: "hidden" }}>
-            {/* Table header */}
-            <div style={{ display: "grid", gridTemplateColumns: "28px 28px 1fr 90px 72px 72px 60px 36px", padding: "8px 12px", background: "#F1F5F9", fontSize: 11, color: "#64748B", fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.05em", alignItems: "center", borderBottom: "1px solid #E2E8F0" }}>
-              <div><input type="checkbox" checked={tableServices.length > 0 && selectedServices.size === tableServices.length} onChange={toggleSelectAll} style={{ accentColor: "#1a5276" }} /></div>
-              <div /><div>SERVICE</div><div>PRICE</div>
-              <div style={{ textAlign: "center" }}>BOOK</div><div style={{ textAlign: "center" }}>SITE</div>
-              <div style={{ textAlign: "center" }}>ACTIVE</div><div />
-            </div>
-
-            {/* New service form */}
-            {addingNewService && (
-              <InlineEditForm
-                service={{ ...EMPTY_SERVICE, division: activeDivision, category: selectedCategory || divisionCategories[0]?.name || "", _isNew: true }}
-                categories={categories} activeDivision={activeDivision}
-                onSave={saveServiceFromForm} onCancel={() => setAddingNewService(false)} saving={saving} />
-            )}
-
-            {/* Empty state */}
-            {tableServices.length === 0 && !addingNewService && (
-              <div style={{ padding: "40px 20px", textAlign: "center", fontSize: 13, color: "#9CA3AF" }}>
-                {isSearchActive ? "No services match your search." : "No services in this category."}
-              </div>
-            )}
-
-            {/* Service rows */}
-            {tableServices.map((svc, idx) => (
-              <div key={svc.id}
-                onDragOver={(e) => { e.preventDefault(); setDragOverIdx(idx); }}
-                onDrop={(e) => { e.preventDefault(); handleDrop(idx); }}>
-                {dragOverIdx === idx && dragId !== svc.id && <div style={{ height: 2, background: "#1a5276", margin: "0 12px" }} />}
-                <ServiceRow svc={svc} rowIndex={idx} isEditing={editingRowId === svc.id} isEditingPrice={editingPriceId === svc.id}
-                  priceEditValue={priceEditValue} priceFlash={priceFlash === svc.id} isSelected={selectedServices.has(svc.id)}
-                  isDragging={dragId === svc.id} menuOpen={menuOpenId === svc.id} moveMenuOpen={moveMenuId === svc.id}
-                  copyMenuOpen={copyMenuId === svc.id} activeDivision={activeDivision} divisionCategories={divisionCategories}
-                  onToggleSelect={() => toggleSelect(svc.id)}
-                  onDragStart={() => setDragId(svc.id)}
-                  onToggleField={(field, current) => toggleServiceField(svc.id, field, current)}
-                  onStartPriceEdit={() => { setEditingPriceId(svc.id); setPriceEditValue(String(svc.price)); }}
-                  onPriceChange={setPriceEditValue} onPriceSave={() => savePriceEdit(svc.id)}
-                  onPriceCancel={() => { setEditingPriceId(null); setPriceEditValue(""); }}
-                  onMenuToggle={() => { setMenuOpenId(menuOpenId === svc.id ? null : svc.id); setMoveMenuId(null); setCopyMenuId(null); }}
-                  onEditDetails={() => { setEditingRowId(svc.id); setMenuOpenId(null); }}
-                  onDuplicate={() => duplicateService(svc)}
-                  onMoveMenuToggle={() => setMoveMenuId(moveMenuId === svc.id ? null : svc.id)}
-                  onMoveToCategory={(catName) => moveServiceToCategory(svc.id, catName)}
-                  onCopyMenuToggle={() => setCopyMenuId(copyMenuId === svc.id ? null : svc.id)}
-                  onCopyToDivision={(div) => copyServiceToDivision(svc, div)}
-                  onDelete={() => { setDeleteConfirm({ id: svc.id, name: svc.name }); setMenuOpenId(null); }}
-                  onCollapseEdit={() => setEditingRowId(null)} />
-                {editingRowId === svc.id && (
-                  <InlineEditForm service={{ ...svc, _isNew: false }} categories={categories} activeDivision={activeDivision}
-                    onSave={saveServiceFromForm} onCancel={() => setEditingRowId(null)}
-                    onDelete={(id) => setDeleteConfirm({ id, name: svc.name })} saving={saving} />
-                )}
-              </div>
-            ))}
-          </div>
-
         </div>
       </div>
 
-      {/* Delete Confirm Dialog */}
-      {deleteConfirm && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }} onClick={() => setDeleteConfirm(null)} />
-          <div style={{ position: "relative", background: "#FFF", borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.15)", width: "100%", maxWidth: 420, padding: 24, margin: 16 }}>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0B2040", marginBottom: 12 }}>Delete Service</h2>
-            <p style={{ fontSize: 14, color: "#6B7280", marginBottom: 20 }}>
-              Are you sure you want to delete <strong style={{ color: "#0B2040" }}>{deleteConfirm.name}</strong>? This action cannot be undone.
-            </p>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-              <button onClick={() => setDeleteConfirm(null)} style={{ padding: "8px 16px", fontSize: 13, fontWeight: 600, border: "1px solid #E5E7EB", borderRadius: 8, background: "#FFF", color: "#6B7280", cursor: "pointer" }}>Cancel</button>
-              <button onClick={() => deleteService(deleteConfirm.id)} style={{ padding: "8px 16px", fontSize: 13, fontWeight: 600, border: "none", borderRadius: 8, background: "#DC2626", color: "#FFF", cursor: "pointer" }}>Delete</button>
-            </div>
-          </div>
-        </div>
+      {/* New category / featured block modal */}
+      <AddCategoryModal
+        open={addModal !== null}
+        kind={addModal?.kind ?? "regular"}
+        onClose={() => setAddModal(null)}
+        onSubmit={async (data) => {
+          if (!addModal) return;
+          await createCategory(addModal.kind, data);
+        }}
+      />
+
+      {/* Edit category meta modal */}
+      {editCategoryTarget && (
+        <EditCategoryMetaModal
+          category={editCategoryTarget}
+          onClose={() => setEditCategoryTarget(null)}
+          onSave={(patch) => saveCategoryMeta(editCategoryTarget.id, patch)}
+          onDelete={() => deleteCategoryById(editCategoryTarget)}
+          saving={saving}
+        />
       )}
 
-      {/* Duplicate Category Modal */}
-      {dupCatModal && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }} onClick={() => setDupCatModal(null)} />
-          <div style={{ position: "relative", background: "#FFF", borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.15)", width: "100%", maxWidth: 420, padding: 24, margin: 16 }}>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0B2040", marginBottom: 16 }}>Duplicate: {dupCatModal.category.name}</h2>
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#6B7280", textTransform: "uppercase", marginBottom: 4 }}>Target Division</label>
-              <select value={dupCatModal.targetDivision} onChange={(e) => setDupCatModal((p) => p ? { ...p, targetDivision: e.target.value as Division } : p)}
-                style={{ width: "100%", padding: "8px 12px", border: "1px solid #E5E7EB", borderRadius: 8, fontSize: 14, background: "#FFF" }}>
-                {DIVISIONS.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
-              </select>
-            </div>
-            <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 16 }}>
-              This will create &ldquo;Copy of {dupCatModal.category.name}&rdquo; and duplicate all{" "}
-              {services.filter((s) => s.category === dupCatModal.category.name && s.division === dupCatModal.category.division).length}{" "}
-              services into it. Duplicated services will be inactive by default.
-            </p>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, borderTop: "1px solid #E5E7EB", paddingTop: 12 }}>
-              <button onClick={() => setDupCatModal(null)} style={{ padding: "8px 16px", fontSize: 13, fontWeight: 600, border: "1px solid #E5E7EB", borderRadius: 8, background: "#FFF", color: "#6B7280", cursor: "pointer" }}>Cancel</button>
-              <button onClick={handleDuplicateCategory} disabled={saving}
-                style={{ padding: "8px 16px", fontSize: 13, fontWeight: 600, border: "none", borderRadius: 8, background: "#E97F2F", color: "#FFF", cursor: saving ? "default" : "pointer", opacity: saving ? 0.5 : 1 }}>
-                {saving ? "Duplicating..." : "Duplicate"}
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Service edit / add modal (reuses InlineEditForm) */}
+      {editServiceTarget && (
+        <ServiceFormModal onClose={() => setEditServiceTarget(null)}>
+          <InlineEditForm
+            service={{ ...editServiceTarget, _isNew: false }}
+            categories={categories}
+            activeDivision={activeDivision}
+            onSave={saveServiceFromForm}
+            onCancel={() => setEditServiceTarget(null)}
+            onDelete={(id) => deleteService(id)}
+            saving={saving}
+          />
+        </ServiceFormModal>
       )}
 
-      <ToastContainer toasts={toasts} onRemove={(id) => setToasts((p) => p.filter((t) => t.id !== id))} />
-      {showPreview && <ServicePreviewPanel division={activeDivision} onClose={() => setShowPreview(false)} />}
+      {addingNewInCategory && (
+        <ServiceFormModal onClose={() => setAddingNewInCategory(null)}>
+          <InlineEditForm
+            service={{
+              ...EMPTY_SERVICE,
+              division: activeDivision,
+              category: addingNewInCategory.name,
+              _isNew: true,
+            }}
+            categories={categories}
+            activeDivision={activeDivision}
+            onSave={saveServiceFromForm}
+            onCancel={() => setAddingNewInCategory(null)}
+            saving={saving}
+          />
+        </ServiceFormModal>
+      )}
+
+      <ToastContainer
+        toasts={toasts}
+        onRemove={(id) => setToasts((p) => p.filter((t) => t.id !== id))}
+      />
+      {showPreview && (
+        <ServicePreviewPanel
+          division={activeDivision}
+          onClose={() => setShowPreview(false)}
+        />
+      )}
     </>
   );
 }
+
+/* ── Inline helpers ── */
+
+function StatPill({
+  label,
+  tone,
+}: {
+  label: string;
+  tone: "emerald" | "amber" | "gray";
+}) {
+  const toneMap = {
+    emerald: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    amber: "bg-amber-50 text-amber-700 border-amber-200",
+    gray: "bg-gray-100 text-gray-600 border-gray-200",
+  };
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] font-semibold ${toneMap[tone]}`}
+    >
+      {label}
+    </span>
+  );
+}
+
+function ServiceFormModal({
+  onClose,
+  children,
+}: {
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div
+        className="absolute inset-0"
+        style={{ background: "rgba(0,0,0,0.4)" }}
+        onClick={onClose}
+      />
+      <div
+        className="relative bg-white rounded-xl shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto"
+        style={{ border: `1px solid ${BORDER}` }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function EditCategoryMetaModal({
+  category,
+  onClose,
+  onSave,
+  onDelete,
+  saving,
+}: {
+  category: ServiceCategory;
+  onClose: () => void;
+  onSave: (patch: {
+    name: string;
+    description: string;
+    startingAt: number;
+    featuredSubtitle: string;
+  }) => void;
+  onDelete: () => void;
+  saving: boolean;
+}) {
+  const [name, setName] = useState(category.name);
+  const [description, setDescription] = useState(category.description || "");
+  const [startingAt, setStartingAt] = useState(category.startingAt || 0);
+  const [featuredSubtitle, setFeaturedSubtitle] = useState(
+    category.featuredSubtitle || ""
+  );
+  const isFeatured = !!category.isFeatured;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div
+        className="absolute inset-0"
+        style={{ background: "rgba(0,0,0,0.4)" }}
+        onClick={onClose}
+      />
+      <form
+        className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden"
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSave({ name: name.trim(), description, startingAt, featuredSubtitle });
+        }}
+      >
+        <div
+          className="px-5 py-4 border-b"
+          style={{ borderColor: BORDER, background: "#FAFAFB" }}
+        >
+          <h2 className="text-[15px] font-bold" style={{ color: NAVY }}>
+            Edit {isFeatured ? "featured block" : "category"}
+          </h2>
+        </div>
+        <div className="p-5 space-y-3">
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider mb-1 text-gray-600">
+              Name
+            </label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none"
+              style={{ borderColor: BORDER }}
+            />
+          </div>
+          {isFeatured ? (
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider mb-1 text-gray-600">
+                Subtitle
+              </label>
+              <input
+                value={featuredSubtitle}
+                onChange={(e) => setFeaturedSubtitle(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none"
+                style={{ borderColor: BORDER }}
+              />
+            </div>
+          ) : (
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider mb-1 text-gray-600">
+                Starting at ($)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={startingAt}
+                onChange={(e) => setStartingAt(parseFloat(e.target.value) || 0)}
+                className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none"
+                style={{ borderColor: BORDER }}
+              />
+            </div>
+          )}
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider mb-1 text-gray-600">
+              Description
+            </label>
+            <textarea
+              rows={3}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none resize-none"
+              style={{ borderColor: BORDER }}
+            />
+          </div>
+        </div>
+        <div
+          className="px-5 py-3 border-t flex items-center justify-between gap-2"
+          style={{ borderColor: BORDER, background: "#FAFAFB" }}
+        >
+          <button
+            type="button"
+            onClick={onDelete}
+            className="px-3 py-1.5 text-[12px] font-semibold rounded-lg border bg-white hover:bg-red-50 transition"
+            style={{ borderColor: "#FECACA", color: "#DC2626" }}
+          >
+            Delete
+          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3 py-1.5 text-[12px] font-semibold rounded-lg border bg-white hover:bg-gray-50 transition"
+              style={{ borderColor: BORDER, color: "#4b5563" }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving || !name.trim()}
+              className="px-3 py-1.5 text-[12px] font-semibold rounded-lg text-white transition disabled:opacity-50"
+              style={{ background: ORANGE }}
+            >
+              {saving ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  );
+}
+

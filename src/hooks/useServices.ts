@@ -12,6 +12,8 @@ import { db } from "@/lib/firebase";
 
 // ── Types ──────────────────────────────────────────────────
 
+export type BookingVisibility = "inline" | "searchable" | "hidden";
+
 export interface Service {
   id: string;
   name: string;
@@ -31,6 +33,7 @@ export interface Service {
   featured?: boolean;
   notes: string;
   laborHours: number;
+  bookingVisibility?: BookingVisibility;
   createdAt: unknown;
   updatedAt: unknown;
 }
@@ -45,8 +48,22 @@ export interface ServiceCategory {
   isActive: boolean;
   tabLabel?: string;
   showOnHomepage?: boolean;
+  isFeatured?: boolean;
+  featuredSubtitle?: string;
+  bookingVisibility?: BookingVisibility;
   createdAt: unknown;
   updatedAt: unknown;
+}
+
+// bookingVisibility is authoritative when present; showOnBooking is a legacy
+// shadow boolean kept in sync for pre-WO-40b consumers. Only fall back to the
+// boolean when bookingVisibility is undefined.
+export function resolveBookingVisibility(doc: {
+  bookingVisibility?: BookingVisibility;
+  showOnBooking?: boolean;
+}): BookingVisibility {
+  if (doc.bookingVisibility) return doc.bookingVisibility;
+  return doc.showOnBooking === false ? "hidden" : "inline";
 }
 
 export interface UseServicesOptions {
