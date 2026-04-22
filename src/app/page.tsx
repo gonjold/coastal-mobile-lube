@@ -456,12 +456,11 @@ export default function Home() {
               <h3 className="text-[18px] font-bold text-[#0B2040] mb-3">Vacuum extraction. No mess.</h3>
               <p className="text-[14px] text-[#555] leading-[1.65]">We pull oil through the dipstick tube using the same vacuum extraction system high-end dealerships use. No drain plug, no crawling underneath, no drips on your driveway, your marina dock, or your fleet yard. Faster than conventional drain. Cleaner every time.</p>
             </div>
-            {/* Card 2: Tire delivery (coming soon) */}
+            {/* Card 2: Factory-trained team */}
             <div className="bg-white border border-[#E2DBCE] rounded-[12px] p-6">
-              <span className="inline-block text-[11px] font-semibold tracking-widest text-[#E07B2D] uppercase bg-[#FAEEDA] px-2 py-0.5 rounded mb-2">COMING SOON</span>
-              <h3 className="text-[18px] font-bold text-[#0B2040] mb-3">Tire delivery and install</h3>
-              <p className="text-[14px] text-[#555] leading-[1.65] mb-3">Soon you&apos;ll order tires online and have them shipped straight to your appointment location. Our van shows up with a full tire machine, mounts and balances on-site, and hauls away the old tires. Launching this summer.</p>
-              <p className="text-[13px] text-[#7A7A7A] leading-[1.55]">Already have tires you need installed? We&apos;ll mount and balance them at your location today. Just call.</p>
+              <p className="text-[11px] font-semibold tracking-widest text-[#E07B2D] uppercase mb-2">FACTORY-TRAINED</p>
+              <h3 className="text-[18px] font-bold text-[#0B2040] mb-3">Every tech, trained by Jason.</h3>
+              <p className="text-[14px] text-[#555] leading-[1.65]">Coastal isn&apos;t an app. It isn&apos;t a gig-worker network. It&apos;s a local team, hired and personally trained by Jason Binder to the same standards he set running dealership service departments for 30 years. Same vacuum extraction. Same parts. Same warranty. Whichever van shows up.</p>
             </div>
             {/* Card 3: Multi-vertical */}
             <div className="bg-white border border-[#E2DBCE] rounded-[12px] p-6">
@@ -613,6 +612,56 @@ export default function Home() {
                 {currentLink.label} &rarr;
               </Link>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Who's Behind It — Founder Credentials ── */}
+      <section className="bg-white py-16 md:py-20">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+
+            {/* Left column — text (second on mobile, first on desktop) */}
+            <div className="order-2 md:order-1">
+              <p className="text-[#E07B2D] text-sm uppercase tracking-widest font-semibold mb-4">
+                Who&apos;s behind it
+              </p>
+              <h2 className="text-3xl md:text-4xl font-bold text-[#0B2040] mb-6 leading-tight">
+                Jason Binder. Thirty years. One standard.
+              </h2>
+              <p className="text-[#0B2040]/80 text-base md:text-lg leading-relaxed mb-8">
+                Jason ran service departments at dealerships for three decades before starting Coastal. He hires every tech personally and trains them to the same standards he set inside the shop. The name on the truck is his.
+              </p>
+
+              <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-[#0B2040]/70">
+                <span className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#E07B2D]"></span>
+                  Licensed and insured
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#E07B2D]"></span>
+                  ASE-certified team
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#E07B2D]"></span>
+                  Factory-trained on every major brand
+                </span>
+              </div>
+            </div>
+
+            {/* Right column — photo placeholder (first on mobile, second on desktop) */}
+            <div className="order-1 md:order-2 relative aspect-[4/5] md:aspect-[3/4] rounded-2xl overflow-hidden bg-[#0B2040]/5 border border-[#0B2040]/10">
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-8">
+                <div className="w-20 h-20 rounded-full bg-[#0B2040]/10 flex items-center justify-center mb-4">
+                  <svg className="w-10 h-10 text-[#0B2040]/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                  </svg>
+                </div>
+                <p className="text-[#0B2040]/60 text-sm font-medium">Jason Binder</p>
+                <p className="text-[#0B2040]/40 text-xs mt-1">Owner · Coastal Mobile</p>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
