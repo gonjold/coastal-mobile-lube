@@ -619,7 +619,7 @@ export default function Home() {
       {/* ── Who's Behind It — Founder Credentials ── */}
       <section className="bg-white py-16 md:py-20">
         <div className="max-w-6xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-12 items-center">
 
             {/* Left column — text (second on mobile, first on desktop) */}
             <div className="order-2 md:order-1">
@@ -649,16 +649,21 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Right column — photo placeholder (first on mobile, second on desktop) */}
-            <div className="order-1 md:order-2 relative aspect-[4/5] md:aspect-[3/4] rounded-2xl overflow-hidden bg-[#0B2040]/5 border border-[#0B2040]/10">
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-8">
-                <div className="w-20 h-20 rounded-full bg-[#0B2040]/10 flex items-center justify-center mb-4">
-                  <svg className="w-10 h-10 text-[#0B2040]/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                  </svg>
-                </div>
-                <p className="text-[#0B2040]/60 text-sm font-medium">Jason Binder</p>
-                <p className="text-[#0B2040]/40 text-xs mt-1">Owner · Coastal Mobile</p>
+            {/* Right column — Jason headshot (first on mobile, second on desktop) */}
+            <div className="order-1 md:order-2 flex flex-col items-center md:items-start md:pl-8">
+              <div className="w-44 h-44 md:w-48 md:h-48 rounded-full overflow-hidden ring-4 ring-[#E07B2D]/20 shadow-lg mb-5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="https://res.cloudinary.com/dgcdcqjrz/image/upload/f_auto,q_auto,w_400,h_400,c_fill,g_face/v1776880422/JBinderHS_aalfk5.png"
+                  alt="Jason Binder, owner of Coastal Mobile Lube & Tire"
+                  width={400}
+                  height={400}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="text-center md:text-left">
+                <p className="text-[#0B2040] text-lg font-bold">Jason Binder</p>
+                <p className="text-[#0B2040]/60 text-sm mt-1">Owner · Coastal Mobile</p>
               </div>
             </div>
 
