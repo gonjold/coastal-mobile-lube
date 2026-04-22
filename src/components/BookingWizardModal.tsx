@@ -159,7 +159,8 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
   const [otherText, setOtherText] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [packagesExpanded, setPackagesExpanded] = useState(false);
+  const [packagesExpanded, setPackagesExpanded] = useState(true);
+  const [secondaryExpanded, setSecondaryExpanded] = useState(false);
 
   /* ── Step 1: Vehicle (was Step 2) ── */
   const [vinOrHull, setVinOrHull] = useState("");
@@ -1375,7 +1376,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                   </button>
                   {packagesExpanded && (
                     <>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12, maxWidth: 600, marginLeft: "auto", marginRight: "auto", width: "100%" }}>
                         {coastalPackages.map((pkg) => {
                           const isSelected = isServiceSelected(pkg.id);
                           return (
@@ -1434,7 +1435,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                           );
                         })}
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "16px 0" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "16px auto", maxWidth: 600, width: "100%" }}>
                         <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
                         <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 500, whiteSpace: "nowrap" }}>Or choose individual services</span>
                         <div style={{ flex: 1, height: 1, background: "#E2E8F0" }} />
@@ -1471,18 +1472,14 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                       let groups = [...categoryGroups];
                       const isDieselCat = (cat: string) => /diesel/i.test(cat);
                       const isOilCat = (cat: string) => /oil/i.test(cat);
+                      const isOtherCat = (cat: string) => /else|other/i.test(cat);
 
                       if (fuelCategory === "electric") {
                         // Hide oil and diesel categories
                         groups = groups.filter((g) => !isOilCat(g.category) && !isDieselCat(g.category));
-                      } else if (fuelCategory === "diesel") {
-                        // Promote diesel to top
-                        const diesel = groups.filter((g) => isDieselCat(g.category));
-                        const rest = groups.filter((g) => !isDieselCat(g.category));
-                        groups = [...diesel, ...rest];
                       }
 
-                      return groups.map((group) => {
+                      const renderGroup = (group: CategoryGroup) => {
                         const isOther = /else|other/i.test(group.category);
                         const isDiesel = isDieselCat(group.category);
                         const isExpanded = expandedCategory === group.category;
@@ -1623,7 +1620,53 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                             )}
                           </div>
                         );
-                      });
+                      };
+
+                      // Auto: partition into top 4 primary categories + secondary collapsible
+                      if (divKey === "auto") {
+                        const isPrimary = (cat: string) =>
+                          /^oil/i.test(cat) || /tire/i.test(cat) || /^brake/i.test(cat) || /basic\s*(general\s*)?maint/i.test(cat);
+                        const primary = groups.filter((g) => isPrimary(g.category) && !isOtherCat(g.category));
+                        const secondary = groups.filter((g) => !isPrimary(g.category) || isOtherCat(g.category));
+                        return (
+                          <>
+                            {primary.map((g) => renderGroup(g))}
+                            <div style={{ marginBottom: 8 }}>
+                              <button
+                                type="button"
+                                onClick={() => setSecondaryExpanded((p) => !p)}
+                                style={{
+                                  width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+                                  padding: "14px 20px", border: "1px solid #E2E8F0", borderRadius: 12,
+                                  background: "#FFFFFF", cursor: "pointer", transition: "all 0.15s",
+                                }}
+                              >
+                                <span style={{ fontSize: 15, fontWeight: 600, color: "#0B2040" }}>Looking for something specific?</span>
+                                <svg
+                                  width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#475569"
+                                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                                  style={{ transition: "transform 0.2s", transform: secondaryExpanded ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}
+                                >
+                                  <polyline points="4 6 8 10 12 6" />
+                                </svg>
+                              </button>
+                              {secondaryExpanded && (
+                                <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 0 }}>
+                                  {secondary.map((g) => renderGroup(g))}
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        );
+                      }
+
+                      // Non-auto: preserve existing diesel-promote behavior
+                      if (fuelCategory === "diesel") {
+                        const diesel = groups.filter((g) => isDieselCat(g.category));
+                        const rest = groups.filter((g) => !isDieselCat(g.category));
+                        groups = [...diesel, ...rest];
+                      }
+                      return groups.map((g) => renderGroup(g));
                     })()}
                   </div>
 

@@ -173,7 +173,7 @@ export default function ServicesContent() {
             Oil, tires, brakes, and the rest of the list.
           </h1>
           <p className="text-[16px] leading-[1.65] text-white/60 mb-8 max-w-[520px]">
-            Mobile vacuum-extraction oil changes, tire mount and balance, brake service, and full maintenance across Apollo Beach, Ruskin, Riverview, and the South Shore. We come to your home, your office, or wherever you park.
+            Mobile oil changes, tire mount and balance, brake service, and full maintenance in Apollo Beach, Ruskin, Riverview, and the South Shore.
           </p>
           <div className="flex flex-col sm:flex-row gap-3">
             <Button

@@ -164,10 +164,10 @@ export default function MarineContent() {
               Marine Services
             </p>
             <h1 className="text-[30px] md:text-[42px] font-[800] leading-[1.08] text-white tracking-[-1px] mb-5">
-              Your boat stays in the water.
+              Dealership-grade marine service. At the dock.
             </h1>
             <p className="text-[16px] leading-[1.7] text-white/60 mb-8 max-w-[520px]">
-              Outboard, inboard, and sterndrive service at the marina, slip, ramp, or dry storage across Tampa Bay. No hauling. No 2-week shop backlogs. Factory-grade parts, certified team, 12-month warranty on every job.
+              Outboard, inboard, and sterndrive service from a factory-trained team. Written 12-month warranty, honest flat pricing, straight billing. Apollo Beach and Tampa marinas.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Button variant="primary" size="lg" className="whitespace-nowrap shadow-[0_4px_24px_rgba(224,123,45,0.35)]" onClick={openBooking}>

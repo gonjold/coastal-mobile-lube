@@ -80,7 +80,7 @@ const HERO_DEFAULTS = {
   eyebrowLine1: "APOLLO BEACH \u00B7 TAMPA BAY \u00B7 SOUTH SHORE",
   eyebrowLine2: "Cars. Boats. RVs. Fleets.",
   headline: "We bring the shop. You keep your day.",
-  subheadline: "Mobile oil, tires, brakes, marine, RV, and fleet service. A fully equipped shop on wheels, at your driveway, marina, RV park, storage lot, or job site. Backed by 30 years of dealership service and a 12-month warranty on every job.",
+  subheadline: "Mobile oil changes, tires, brakes, marine, and RV service across Apollo Beach and Tampa. Factory-trained team. 12-month warranty on every job.",
 };
 
 const HERO_MOBILE_SUBHEADLINE = "Mobile service for cars, boats, RVs, and fleets. We come to wherever your vehicle lives.";

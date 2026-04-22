@@ -184,10 +184,10 @@ export default function RVContent() {
               RV Services
             </p>
             <h1 className="text-[30px] md:text-[42px] font-[800] leading-[1.08] text-white tracking-[-1px] mb-5">
-              RV service wherever you&apos;re parked.
+              RV oil, tires, brakes, and more. At your site.
             </h1>
             <p className="text-[16px] leading-[1.7] text-white/60 mb-8 max-w-[520px]">
-              Class A, B, C, fifth wheels, travel trailers. Oil, tires, brakes, generators, and pre-trip inspections. We come to the RV park, the campground, your storage lot, or your driveway. No moving your rig.
+              Class A, B, C, fifth wheels, travel trailers. Mobile oil, tires, brakes, generator service, and pre-trip inspections. At your RV park, campground, storage lot, or driveway.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Button variant="primary" size="lg" className="whitespace-nowrap shadow-[0_4px_24px_rgba(224,123,45,0.35)]" onClick={openBooking}>
