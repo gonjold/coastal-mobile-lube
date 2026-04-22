@@ -45,7 +45,7 @@ const NAV_ICONS: Record<string, React.ReactNode> = {
       <circle cx="11" cy="9" r="4.5"/>
     </svg>
   ),
-  "Content Editor": (
+  "Hero Copy": (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
       <path d="M13 2l3 3-10 10H3v-3L13 2z"/>
     </svg>
@@ -101,7 +101,7 @@ const SECTIONS = [
   {
     label: "WEBSITE",
     items: [
-      { label: "Content Editor", href: "/admin/hero-editor" },
+      { label: "Hero Copy", href: "/admin/hero-editor" },
       { label: "Services & Pricing", href: "/admin/services" },
       { label: "Fees & Promos", href: "/admin/fees" },
     ],

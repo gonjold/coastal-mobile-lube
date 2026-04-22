@@ -113,7 +113,11 @@ export default function Home() {
           });
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        if (process.env.NODE_ENV === "development") {
+          console.warn("Hero copy Firestore read failed, using defaults:", err);
+        }
+      });
   }, []);
 
   /* ── Hero quote form state ── */
