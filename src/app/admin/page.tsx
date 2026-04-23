@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useMemo, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -31,6 +31,7 @@ interface Invoice {
   total: number;
   status: "draft" | "sent" | "paid" | "overdue";
   createdAt?: { toDate: () => Date };
+  isTest?: boolean;
 }
 
 /* ─── Time formatting for schedule display ────────────────── */
@@ -68,7 +69,26 @@ function badgeVariant(status?: string): "green" | "red" | "amber" | "gray" | "bl
 }
 
 export default function AdminHome() {
+  return (
+    <Suspense
+      fallback={
+        <>
+          <AdminTopBar title="Dashboard" />
+          <div className="flex items-center justify-center py-32">
+            <div className="animate-spin w-8 h-8 border-4 border-[#E07B2D] border-t-transparent rounded-full" />
+          </div>
+        </>
+      }
+    >
+      <AdminHomeInner />
+    </Suspense>
+  );
+}
+
+function AdminHomeInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const showTest = searchParams.get("showTest") === "1";
   const { activeModal, preFill, closeModal } = useAdminModal();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -118,8 +138,12 @@ export default function AdminHome() {
   endOfWeek.setDate(startOfWeek.getDate() + 6);
   endOfWeek.setHours(23, 59, 59, 999);
 
+  /* ── Test-data visibility (mirrors /admin/schedule, /customers, /invoicing) ── */
+  const visibleBookings = showTest ? bookings : bookings.filter((b) => b.isTest !== true);
+  const visibleInvoices = showTest ? invoices : invoices.filter((i) => i.isTest !== true);
+
   /* ── Pipeline counts (exclude dead leads) ── */
-  const activeBookings = bookings.filter((b) => b.status !== "dead");
+  const activeBookings = visibleBookings.filter((b) => b.status !== "dead");
   const newLeads = activeBookings.filter(
     (b) => b.status === "new" || b.status === "new-lead" || b.type === "lead",
   ).length;
@@ -151,9 +175,9 @@ export default function AdminHome() {
   const completedCount = completedBookings.length;
   const jobsTotal = inProgress + needsInvoice + completedCount;
 
-  const sentInvoices = invoices.filter((i) => i.status === "sent");
-  const paidInvoices = invoices.filter((i) => i.status === "paid");
-  const overdueInvoices = invoices.filter((i) => i.status === "overdue");
+  const sentInvoices = visibleInvoices.filter((i) => i.status === "sent");
+  const paidInvoices = visibleInvoices.filter((i) => i.status === "paid");
+  const overdueInvoices = visibleInvoices.filter((i) => i.status === "overdue");
   const invoiceTotal = sentInvoices.length + paidInvoices.length + overdueInvoices.length;
 
   /* ── Sparkline: daily counts for last 7 days ── */
@@ -187,7 +211,7 @@ export default function AdminHome() {
   const incomingSparkline = useMemo(
     () =>
       countPerDay(
-        bookings,
+        visibleBookings,
         (b) => {
           const bk = b as Booking;
           return (
@@ -198,35 +222,35 @@ export default function AdminHome() {
         },
         last7Days,
       ),
-    [bookings, last7Days],
+    [visibleBookings, last7Days],
   );
 
   const scheduledSparkline = useMemo(
     () =>
       countPerDay(
-        bookings,
+        visibleBookings,
         (b) => (b as Booking).status === "confirmed",
         last7Days,
       ),
-    [bookings, last7Days],
+    [visibleBookings, last7Days],
   );
 
   const jobsSparkline = useMemo(
     () =>
       countPerDay(
-        bookings,
+        visibleBookings,
         (b) => {
           const s = (b as Booking).status;
           return s === "in-progress" || s === "completed";
         },
         last7Days,
       ),
-    [bookings, last7Days],
+    [visibleBookings, last7Days],
   );
 
   const invoicesSparkline = useMemo(
-    () => countPerDay(invoices, () => true, last7Days),
-    [invoices, last7Days],
+    () => countPerDay(visibleInvoices, () => true, last7Days),
+    [visibleInvoices, last7Days],
   );
 
   const sumTotal = (arr: Invoice[]) =>
@@ -235,7 +259,7 @@ export default function AdminHome() {
     n >= 1000 ? `$${(n / 1000).toFixed(1)}k` : `$${n.toFixed(0)}`;
 
   /* ── Today's schedule list ── */
-  const todaySchedule = todayBookings.length > 0 ? todayBookings : bookings.filter((b) => {
+  const todaySchedule = todayBookings.length > 0 ? todayBookings : visibleBookings.filter((b) => {
     const date = b.confirmedDate || b.preferredDate;
     return date === todayISO;
   });
@@ -604,7 +628,7 @@ export default function AdminHome() {
         const custPhone = c.phone?.replace(/\D/g, "");
         const custEmail = c.email?.toLowerCase();
 
-        const customerBookings = bookings.filter((b) => {
+        const customerBookings = visibleBookings.filter((b) => {
           const bName = (b.name || b.customerName || "").toLowerCase();
           const bPhone = (b.phone || b.customerPhone || "").replace(/\D/g, "");
           const bEmail = (b.email || b.customerEmail || "").toLowerCase();
@@ -614,7 +638,7 @@ export default function AdminHome() {
           return false;
         });
 
-        const customerInvoices: PanelInvoice[] = invoices
+        const customerInvoices: PanelInvoice[] = visibleInvoices
           .filter((inv) => inv.customerName.toLowerCase() === custName)
           .map((inv) => ({
             id: inv.id,
