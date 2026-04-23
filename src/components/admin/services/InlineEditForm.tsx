@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Service, ServiceCategory } from "@/hooks/useServices";
+import BulletsEditor from "./BulletsEditor";
 
 type Division = "auto" | "marine" | "fleet" | "rv";
 
@@ -33,6 +34,8 @@ export default function InlineEditForm({
     notes: service.notes || "",
     showOnBooking: service.showOnBooking ?? true,
     showOnPricing: service.showOnPricing ?? true,
+    type: service.type || "",
+    bundleItems: service.bundleItems ?? [],
   });
 
   const divisionCategories = categories
@@ -51,6 +54,7 @@ export default function InlineEditForm({
       notes: form.notes,
       showOnBooking: form.showOnBooking,
       showOnPricing: form.showOnPricing,
+      bundleItems: form.bundleItems,
     });
   }
 
@@ -127,6 +131,30 @@ export default function InlineEditForm({
           }
         />
       </div>
+
+      {/* Row 2.5: Bullets — packages only */}
+      {form.type === "package" && (
+        <div style={{ marginBottom: 10 }}>
+          <label style={labelStyle}>Bullets</label>
+          <div
+            style={{
+              fontSize: 11,
+              color: "#9CA3AF",
+              marginTop: -2,
+              marginBottom: 8,
+            }}
+          >
+            Shown on the public pricing page under this package.
+          </div>
+          <BulletsEditor
+            value={form.bundleItems ?? []}
+            onChange={(next) =>
+              setForm((p) => ({ ...p, bundleItems: next }))
+            }
+            placeholder="e.g., Tire rotation, Multi-point inspection"
+          />
+        </div>
+      )}
 
       {/* Row 3: Price label + Category */}
       <div style={{ display: "flex", gap: 12, marginBottom: 10 }}>
