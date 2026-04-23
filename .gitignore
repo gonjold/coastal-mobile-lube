@@ -48,6 +48,7 @@ functions/node_modules
 firebase-debug.log
 firebase-debug.*.log
 
-# Local reports + service account keys (never commit)
+# Local reports + backups + service account keys (never commit)
 /_reports
+/_backups
 *-firebase-admin.json
