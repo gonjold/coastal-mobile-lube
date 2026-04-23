@@ -10,6 +10,7 @@ import {
   query,
   doc,
   updateDoc,
+  deleteDoc,
   serverTimestamp,
   arrayUnion,
 } from "firebase/firestore";
@@ -117,6 +118,9 @@ function SchedulePageInner() {
   /* Action menu */
   const [actionMenuId, setActionMenuId] = useState<string | null>(null);
   const [deadReasonMenuId, setDeadReasonMenuId] = useState<string | null>(null);
+
+  /* Delete confirmation (hard delete, distinct from Cancel status change) */
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!actionMenuId) return;
@@ -333,6 +337,20 @@ function SchedulePageInner() {
       }
     } catch {
       /* onSnapshot will correct */
+    }
+  }
+
+  /* ── Hard delete (removes the booking doc entirely) ── */
+  async function handleDelete(bookingId: string) {
+    try {
+      await deleteDoc(doc(db, "bookings", bookingId));
+      setBookings((prev) => prev.filter((b) => b.id !== bookingId));
+      if (selectedBookingId === bookingId) setSelectedBookingId(null);
+      addToast("Booking deleted");
+    } catch {
+      addToast("Failed to delete booking", "info");
+    } finally {
+      setDeleteConfirmId(null);
     }
   }
 
@@ -662,6 +680,13 @@ function SchedulePageInner() {
                               </button>
                             </>
                           )}
+                          <div className="h-px bg-gray-100 my-1" />
+                          <button
+                            onMouseDown={(e) => { e.preventDefault(); setDeleteConfirmId(b.id); setActionMenuId(null); }}
+                            className="block w-full text-left px-4 py-2 text-sm text-red-600 cursor-pointer hover:bg-gray-50 transition"
+                          >
+                            Delete
+                          </button>
                         </div>
                       )}
                     </div>
@@ -690,6 +715,43 @@ function SchedulePageInner() {
         onClose={() => setSelectedBookingId(null)}
         onAdvance={handleAdvance}
       />
+
+      {/* ── Delete confirmation modal ── */}
+      {deleteConfirmId && (() => {
+        const b = bookings.find((x) => x.id === deleteConfirmId);
+        const customerName = b?.name || b?.customerName || "this customer";
+        const date = b?.confirmedDate || b?.preferredDate || "—";
+        return (
+          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-[12px] p-6 max-w-[420px] w-full shadow-xl">
+              <h3 className="text-[16px] font-bold text-[#0B2040] mb-2">Delete this booking?</h3>
+              <p className="text-[14px] text-gray-500 mb-3">
+                This will permanently remove the booking for{" "}
+                <strong className="text-[#0B2040]">{customerName}</strong> on{" "}
+                <strong className="text-[#0B2040]">{date}</strong> from your records.
+              </p>
+              <p className="text-[14px] text-gray-500 mb-3">
+                If this booking has an associated invoice, the invoice will remain but its booking link will be broken.
+              </p>
+              <p className="text-[14px] text-gray-500 mb-5">This cannot be undone.</p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setDeleteConfirmId(null)}
+                  className="px-4 py-2 text-[13px] font-medium text-gray-500 bg-gray-50 rounded-[8px] hover:bg-gray-100 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDelete(deleteConfirmId)}
+                  className="px-4 py-2 text-[13px] font-medium text-white bg-[#dc2626] rounded-[8px] hover:bg-[#b91c1c] transition cursor-pointer"
+                >
+                  Delete booking
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>

@@ -12,6 +12,9 @@ import {
   serverTimestamp,
   writeBatch,
   doc,
+  getDocs,
+  where,
+  limit as firestoreLimit,
 } from "firebase/firestore";
 import ToastContainer, { type ToastItem } from "../Toast";
 import {
@@ -1028,25 +1031,51 @@ export default function CustomersPage() {
 
       {/* ═══ Delete Confirmation Modal ═══ */}
       {showDeleteConfirm && deleteTarget && (
-        <div className="fixed inset-0 bg-black/30 z-[80] flex items-center justify-center">
-          <div className="bg-white rounded-xl shadow-xl w-[400px] mx-4 p-6">
-            <h3 className="text-lg font-bold text-[#0B2040]">Delete Customer</h3>
-            <p className="text-sm text-gray-500 mt-2">
-              Are you sure you want to delete <strong>{deleteTarget.name}</strong>? This will
-              permanently remove their profile. Bookings and invoices linked to this customer
-              will NOT be deleted.
+        <div className="fixed inset-0 bg-black/40 z-[80] flex items-center justify-center p-4">
+          <div className="bg-white rounded-[12px] shadow-xl w-full max-w-[420px] p-6">
+            <h3 className="text-[16px] font-bold text-[#0B2040] mb-2">Delete this customer?</h3>
+            <p className="text-[14px] text-gray-500 mb-3">
+              This will permanently remove <strong className="text-[#0B2040]">{deleteTarget.name}</strong>{" "}
+              and their contact info from your records.
             </p>
-            <div className="flex gap-3 mt-6">
+            <p className="text-[14px] text-gray-500 mb-3">
+              Any bookings or invoices linked to this customer will remain but will show as orphaned (no customer attached).
+            </p>
+            <p className="text-[14px] text-gray-500 mb-5">
+              This cannot be undone. If you want to keep the customer record but hide it, use &ldquo;Mark Inactive&rdquo; instead.
+            </p>
+            <div className="flex gap-3 justify-end">
               <button
                 onClick={() => { setShowDeleteConfirm(false); setDeleteTarget(null); }}
-                className="flex-1 border border-gray-200 rounded-lg py-2.5 text-sm font-semibold text-gray-500 cursor-pointer hover:bg-gray-50 transition"
+                className="px-4 py-2 text-[13px] font-medium text-gray-500 bg-gray-50 rounded-[8px] hover:bg-gray-100 transition cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={async () => {
                   try {
+                    const customerRefs: ReturnType<typeof doc>[] = [];
+                    const phoneDigits = (deleteTarget.phone || "").replace(/\D/g, "");
+                    const emailLower = (deleteTarget.email || "").toLowerCase();
+                    const seen = new Set<string>();
+                    if (phoneDigits) {
+                      const snap = await getDocs(
+                        query(collection(db, "customers"), where("phone", "==", phoneDigits), firestoreLimit(10)),
+                      );
+                      snap.docs.forEach((d) => { if (!seen.has(d.id)) { seen.add(d.id); customerRefs.push(d.ref); } });
+                    }
+                    if (emailLower) {
+                      const snap = await getDocs(
+                        query(collection(db, "customers"), where("email", "==", emailLower), firestoreLimit(10)),
+                      );
+                      snap.docs.forEach((d) => { if (!seen.has(d.id)) { seen.add(d.id); customerRefs.push(d.ref); } });
+                    }
+
                     const batch = writeBatch(db);
+                    customerRefs.forEach((ref) => batch.delete(ref));
+                    /* Flag bookings as customerDeleted so the derived list hides them.
+                       Bookings themselves remain; the invoice/booking docs are not
+                       touched — they render as orphaned (no customer attached). */
                     deleteTarget.bookings.forEach((b) => {
                       batch.update(doc(db, "bookings", b.id), {
                         customerDeleted: true,
@@ -1062,9 +1091,9 @@ export default function CustomersPage() {
                     addToast("Failed to delete customer", "info");
                   }
                 }}
-                className="flex-1 bg-red-600 rounded-lg py-2.5 text-sm font-semibold text-white cursor-pointer hover:bg-red-700 transition"
+                className="px-4 py-2 text-[13px] font-medium text-white bg-[#dc2626] rounded-[8px] hover:bg-[#b91c1c] transition cursor-pointer"
               >
-                Delete
+                Delete customer
               </button>
             </div>
           </div>

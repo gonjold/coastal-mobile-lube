@@ -1345,7 +1345,7 @@ function InvoicingPageInner() {
                         )}
                         <button onMouseDown={(e) => { e.preventDefault(); handlePrint(inv); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Print / PDF</button>
                         <div className="h-px bg-gray-100 my-1" />
-                        <button onMouseDown={(e) => { e.preventDefault(); if (!confirm('Delete this invoice? This cannot be undone.')) return; handleDelete(inv.id); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-red-600 cursor-pointer hover:bg-gray-50 transition">Delete Invoice</button>
+                        <button onMouseDown={(e) => { e.preventDefault(); setDeleteConfirm(inv.id); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-red-600 cursor-pointer hover:bg-gray-50 transition">Delete Invoice</button>
                       </div>
                     )}
                   </div>
@@ -1370,11 +1370,19 @@ function InvoicingPageInner() {
       {/* ── Delete confirmation modal ── */}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-[12px] p-6 max-w-[380px] w-full shadow-xl">
-            <h3 className="text-[16px] font-bold text-[#0B2040] mb-2">Delete Invoice?</h3>
-            <p className="text-[14px] text-gray-500 mb-5">
-              Are you sure you want to delete invoice {invoices.find((i) => i.id === deleteConfirm)?.invoiceNumber || ""}? This action cannot be undone.
+          <div className="bg-white rounded-[12px] p-6 max-w-[420px] w-full shadow-xl">
+            <h3 className="text-[16px] font-bold text-[#0B2040] mb-2">Delete this invoice?</h3>
+            <p className="text-[14px] text-gray-500 mb-3">
+              This will permanently remove invoice{" "}
+              <strong className="text-[#0B2040]">
+                {invoices.find((i) => i.id === deleteConfirm)?.invoiceNumber || ""}
+              </strong>{" "}
+              from your records.
             </p>
+            <p className="text-[14px] text-gray-500 mb-3">
+              If this invoice was synced to QuickBooks, you&apos;ll need to delete it in QuickBooks separately (accountant portal → Sales → Invoices).
+            </p>
+            <p className="text-[14px] text-gray-500 mb-5">This cannot be undone.</p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setDeleteConfirm(null)}
@@ -1386,7 +1394,7 @@ function InvoicingPageInner() {
                 onClick={() => handleDelete(deleteConfirm)}
                 className="px-4 py-2 text-[13px] font-medium text-white bg-[#dc2626] rounded-[8px] hover:bg-[#b91c1c] transition cursor-pointer"
               >
-                Delete
+                Delete invoice
               </button>
             </div>
           </div>
