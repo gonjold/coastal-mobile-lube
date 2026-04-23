@@ -258,7 +258,7 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
 
   /* ── Build category groups ── */
   const categoryGroups: CategoryGroup[] = (() => {
-    const divServices = allServices.filter((s) => s.division === divKey && s.type !== "package");
+    const divServices = allServices.filter((s) => s.division === divKey);
     if (divServices.length > 0) {
       const grouped = groupByCategory(divServices);
       const groups: CategoryGroup[] = grouped
