@@ -51,6 +51,9 @@ export interface Booking {
   createdAt?: FirestoreTimestamp;
   updatedAt?: FirestoreTimestamp;
   lastViewedAt?: FirestoreTimestamp;
+  isTest?: boolean;
+  isTestFlaggedAt?: FirestoreTimestamp;
+  isTestFlaggedBy?: string;
 }
 
 export interface Customer {
@@ -63,6 +66,7 @@ export interface Customer {
   lastBookingDate: string;
   lastBookingStatus?: string;
   bookings: Booking[];
+  isTest?: boolean;
 }
 
 /* ─── Formatters ────────────────────────────────────────── */

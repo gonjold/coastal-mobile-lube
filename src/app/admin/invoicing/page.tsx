@@ -66,6 +66,7 @@ interface Invoice {
   qbPaymentLink?: string;
   createdAt?: { toDate: () => Date };
   updatedAt?: { toDate: () => Date };
+  isTest?: boolean;
 }
 
 type InvoiceFormData = Omit<Invoice, "id" | "createdAt" | "updatedAt">;
@@ -482,9 +483,20 @@ function InvoicingPageInner() {
       .slice(0, 8);
   }, [customerQuery, customers]);
 
+  /* ── Test data visibility ── */
+  const showTest = searchParams.get("showTest") === "1";
+  const visibleInvoices = useMemo(
+    () => (showTest ? invoices : invoices.filter((i) => i.isTest !== true)),
+    [invoices, showTest],
+  );
+  const testInvoiceCount = useMemo(
+    () => invoices.filter((i) => i.isTest === true).length,
+    [invoices],
+  );
+
   /* ── Filtered & sorted invoices ── */
   const filtered = useMemo(() => {
-    let list = statusFilter === "all" ? invoices : invoices.filter((i) => i.status === statusFilter);
+    let list = statusFilter === "all" ? visibleInvoices : visibleInvoices.filter((i) => i.status === statusFilter);
 
     // Text search filter
     if (invoiceSearch.trim()) {
@@ -517,7 +529,7 @@ function InvoicingPageInner() {
     });
 
     return list;
-  }, [invoices, statusFilter, invoiceSearch, sortKey, sortDir]);
+  }, [visibleInvoices, statusFilter, invoiceSearch, sortKey, sortDir]);
 
   /* ── Sort handler ── */
   function handleSort(key: string) {
@@ -531,11 +543,11 @@ function InvoicingPageInner() {
 
   /* ── Summary card stats ── */
   const stats = useMemo(() => {
-    const sentInvoices = invoices.filter((i) => i.status === "sent");
-    const overdueInvoices = invoices.filter((i) => i.status === "overdue" || (i.status === "sent" && isOverdue(i)));
+    const sentInvoices = visibleInvoices.filter((i) => i.status === "sent");
+    const overdueInvoices = visibleInvoices.filter((i) => i.status === "overdue" || (i.status === "sent" && isOverdue(i)));
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const paidThisMonth = invoices.filter((i) => {
+    const paidThisMonth = visibleInvoices.filter((i) => {
       if (i.status !== "paid") return false;
       const paidDate = i.paidDate ? new Date(i.paidDate + "T12:00:00") : (i.updatedAt?.toDate?.() ?? null);
       return paidDate && paidDate >= monthStart;
@@ -547,7 +559,7 @@ function InvoicingPageInner() {
 
     // Avg days to pay (from paid invoices in last 30 days)
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const recentPaid = invoices.filter((i) => {
+    const recentPaid = visibleInvoices.filter((i) => {
       if (i.status !== "paid") return false;
       const paidDate = i.paidDate ? new Date(i.paidDate + "T12:00:00") : (i.updatedAt?.toDate?.() ?? null);
       return paidDate && paidDate >= thirtyDaysAgo;
@@ -572,26 +584,27 @@ function InvoicingPageInner() {
       overdueCount: overdueInvoices.length,
       avgDays,
     };
-  }, [invoices]);
+  }, [visibleInvoices]);
 
   /* ── Status filter counts ── */
   const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: invoices.length };
-    invoices.forEach((i) => { counts[i.status] = (counts[i.status] || 0) + 1; });
+    const counts: Record<string, number> = { all: visibleInvoices.length };
+    visibleInvoices.forEach((i) => { counts[i.status] = (counts[i.status] || 0) + 1; });
     return counts;
-  }, [invoices]);
+  }, [visibleInvoices]);
 
   /* ── Completed jobs needing invoicing ── */
   // TODO: Add proper invoiceId field on bookings for linking. Currently matching by customer name.
   const completedJobsNeedingInvoice = useMemo<CompletedJob[]>(() => {
-    const completedBookings = bookings.filter((b) => b.status === "completed");
-    const invoiceCustomerNames = new Set(invoices.map((i) => i.customerName.toLowerCase()));
+    const visibleBookings = showTest ? bookings : bookings.filter((b) => b.isTest !== true);
+    const completedBookings = visibleBookings.filter((b) => b.status === "completed");
+    const invoiceCustomerNames = new Set(visibleInvoices.map((i) => i.customerName.toLowerCase()));
 
     return completedBookings
       .filter((b) => {
         const name = (b.name || b.customerName || "").toLowerCase();
         // Check if there's already an invoice for this customer with a matching date
-        const hasMatchingInvoice = invoices.some((inv) => {
+        const hasMatchingInvoice = visibleInvoices.some((inv) => {
           if (inv.customerName.toLowerCase() !== name) return false;
           // If invoice was created around the same time as the booking, consider it linked
           const bookingDate = b.confirmedDate || b.preferredDate || "";
@@ -610,7 +623,7 @@ function InvoicingPageInner() {
         }
         return { booking: b, estimatedAmount: amount };
       });
-  }, [bookings, invoices, catalogItems]);
+  }, [bookings, visibleInvoices, showTest, catalogItems]);
 
   /* ── Open modal pre-filled from a booking ── */
   const openCreateFromBooking = useCallback(
@@ -1091,7 +1104,7 @@ function InvoicingPageInner() {
       {/* AdminTopBar */}
       <AdminTopBar
         title="Invoicing"
-        subtitle={`${invoices.length} invoice${invoices.length !== 1 ? "s" : ""}`}
+        subtitle={`${visibleInvoices.length} invoice${visibleInvoices.length !== 1 ? "s" : ""}`}
       />
 
       {/* Summary cards */}
@@ -1188,7 +1201,20 @@ function InvoicingPageInner() {
         />
 
         {/* Right side actions */}
-        <div className="ml-auto flex gap-3">
+        <div className="ml-auto flex items-center gap-3">
+          {testInvoiceCount > 0 && (
+            <button
+              onClick={() => {
+                const p = new URLSearchParams(searchParams.toString());
+                if (showTest) p.delete("showTest"); else p.set("showTest", "1");
+                const qs = p.toString();
+                router.replace(qs ? `/admin/invoicing?${qs}` : "/admin/invoicing", { scroll: false });
+              }}
+              className="text-xs text-gray-500 hover:text-[#0B2040] cursor-pointer underline-offset-2 hover:underline"
+            >
+              {showTest ? `Hide test data (${testInvoiceCount})` : `Show test data (${testInvoiceCount})`}
+            </button>
+          )}
           <AdminCSVExport data={csvData} filename={`invoices-${toISODate(new Date())}`} />
           <button
             onClick={openCreate}
@@ -1255,7 +1281,14 @@ function InvoicingPageInner() {
 
                   {/* Customer */}
                   <div>
-                    <div className="text-[13px] font-medium text-[#0B2040]">{inv.customerName}</div>
+                    <div className="text-[13px] font-medium text-[#0B2040] flex items-center gap-1.5">
+                      <span className="truncate">{inv.customerName}</span>
+                      {inv.isTest === true && (
+                        <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide rounded-sm bg-red-50 text-red-700 border border-red-200 px-1.5 py-0.5">
+                          TEST
+                        </span>
+                      )}
+                    </div>
                     {vehicle && (
                       <div className="text-[11px] text-gray-500 mt-0.5">{vehicle}</div>
                     )}

@@ -47,3 +47,7 @@ next-env.d.ts
 functions/node_modules
 firebase-debug.log
 firebase-debug.*.log
+
+# Local reports + service account keys (never commit)
+/_reports
+*-firebase-admin.json

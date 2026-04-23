@@ -93,6 +93,7 @@ export default function SchedulePage() {
 function SchedulePageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const showTest = searchParams.get("showTest") === "1";
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -180,8 +181,11 @@ function SchedulePageInner() {
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
+  /* ── Visibility filter (test data) ── */
+  const visibleBookings = showTest ? bookings : bookings.filter((b) => b.isTest !== true);
+
   /* ── Client-side filtering ── */
-  const filtered = bookings.filter((b) => {
+  const filtered = visibleBookings.filter((b) => {
     // Status filter
     if (statusFilter !== "all") {
       if (statusFilter === "new-lead") {
@@ -243,12 +247,13 @@ function SchedulePageInner() {
     return sortDir === "asc" ? cmp : -cmp;
   });
 
-  /* ── Status counts for filter badges ── */
-  const statusCounts: Record<string, number> = { all: bookings.length };
-  bookings.forEach((b) => {
+  /* ── Status counts for filter badges (respect test visibility) ── */
+  const statusCounts: Record<string, number> = { all: visibleBookings.length };
+  visibleBookings.forEach((b) => {
     const s = b.type === "lead" ? "new-lead" : (b.status || "unknown");
     statusCounts[s] = (statusCounts[s] || 0) + 1;
   });
+  const testBookingCount = bookings.filter((b) => b.isTest === true).length;
 
   /* ── Selected booking ── */
   const selectedBooking = selectedBookingId
@@ -495,8 +500,23 @@ function SchedulePageInner() {
             className="border border-gray-200 rounded-lg px-3 py-2 text-sm w-[200px] outline-none focus:border-[#1A5FAC] transition"
           />
 
+          {/* Show/Hide test data toggle */}
+          {testBookingCount > 0 && (
+            <button
+              onClick={() => {
+                const p = new URLSearchParams(searchParams.toString());
+                if (showTest) p.delete("showTest"); else p.set("showTest", "1");
+                const qs = p.toString();
+                router.replace(qs ? `/admin/schedule?${qs}` : "/admin/schedule", { scroll: false });
+              }}
+              className="ml-auto text-xs text-gray-500 hover:text-[#0B2040] cursor-pointer underline-offset-2 hover:underline"
+            >
+              {showTest ? `Hide test data (${testBookingCount})` : `Show test data (${testBookingCount})`}
+            </button>
+          )}
+
           {/* List / Calendar toggle */}
-          <div className="flex items-center bg-[#F7F8FA] rounded-lg p-0.5 border border-gray-200 ml-auto">
+          <div className={`flex items-center bg-[#F7F8FA] rounded-lg p-0.5 border border-gray-200 ${testBookingCount > 0 ? "" : "ml-auto"}`}>
             {(["list", "calendar"] as const).map((mode) => (
               <button
                 key={mode}
@@ -560,8 +580,13 @@ function SchedulePageInner() {
                     className={b.status === "dead" ? "opacity-50" : ""}
                   >
                     {/* Customer */}
-                    <span className="text-sm font-semibold text-[#0B2040] truncate">
-                      {b.name || b.customerName || "—"}
+                    <span className="text-sm font-semibold text-[#0B2040] truncate flex items-center gap-1.5 min-w-0">
+                      <span className="truncate">{b.name || b.customerName || "—"}</span>
+                      {b.isTest === true && (
+                        <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide rounded-sm bg-red-50 text-red-700 border border-red-200 px-1.5 py-0.5">
+                          TEST
+                        </span>
+                      )}
                     </span>
                     {/* Service */}
                     <span className="text-[13px] text-gray-600 truncate">

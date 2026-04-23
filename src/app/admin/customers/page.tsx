@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -49,6 +49,7 @@ interface Invoice {
   status: string;
   invoiceDate: string;
   createdAt?: { toDate: () => Date };
+  isTest?: boolean;
 }
 
 interface EnrichedCustomer extends Customer {
@@ -60,6 +61,7 @@ interface EnrichedCustomer extends Customer {
   customerSince: string;
   primaryVehicle: string;
   matchedInvoices: PanelInvoice[];
+  isTestCustomer: boolean;
 }
 
 /* ── Helpers ── */
@@ -203,6 +205,8 @@ function DNCBadge({ bookings }: { bookings: Booking[] }) {
 
 export default function CustomersPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const showTest = searchParams.get("showTest") === "1";
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -282,14 +286,20 @@ export default function CustomersPage() {
     };
   }, []);
 
-  /* ── Build enriched customers (filter out deleted) ── */
+  /* ── Build enriched customers (filter out deleted, respect test visibility) ── */
   const enrichedCustomers = useMemo(() => {
     const nonDeletedBookings = bookings.filter(
       (b) => !(b as unknown as Record<string, unknown>).customerDeleted,
     );
-    const baseCustomers = buildCustomerList(nonDeletedBookings);
+    const scopedBookings = showTest
+      ? nonDeletedBookings
+      : nonDeletedBookings.filter((b) => b.isTest !== true);
+    const scopedInvoices = showTest
+      ? invoices
+      : invoices.filter((i) => i.isTest !== true);
+    const baseCustomers = buildCustomerList(scopedBookings);
     return baseCustomers.map((c) => {
-      const matched = matchInvoicesToCustomer(c, invoices);
+      const matched = matchInvoicesToCustomer(c, scopedInvoices);
       // TODO: Add "type" field (Residential/Commercial) to customer documents
       const type = "Residential";
       const customerStatus = deriveCustomerStatus(c.bookings);
@@ -298,6 +308,8 @@ export default function CustomersPage() {
       const lastVisit = getLastVisit(c.bookings);
       const customerSince = getCustomerSince(c.bookings);
       const primaryVehicle = getPrimaryVehicle(c.bookings);
+      const isTestCustomer =
+        c.bookings.length > 0 && c.bookings.every((b) => b.isTest === true);
 
       return {
         ...c,
@@ -309,9 +321,20 @@ export default function CustomersPage() {
         customerSince,
         primaryVehicle,
         matchedInvoices: matched,
+        isTestCustomer,
       } as EnrichedCustomer;
     });
-  }, [bookings, invoices]);
+  }, [bookings, invoices, showTest]);
+
+  /* ── Test data count (for toggle label) ── */
+  const testCustomerCount = useMemo(() => {
+    const nonDeleted = bookings.filter(
+      (b) => !(b as unknown as Record<string, unknown>).customerDeleted,
+    );
+    const testOnly = nonDeleted.filter((b) => b.isTest === true);
+    const derived = buildCustomerList(testOnly);
+    return derived.length;
+  }, [bookings]);
 
   /* ── Duplicate detection ── */
   const duplicateGroups = useMemo(
@@ -527,6 +550,19 @@ export default function CustomersPage() {
 
         {/* Right side */}
         <div className="ml-auto flex items-center gap-3">
+          {testCustomerCount > 0 && (
+            <button
+              onClick={() => {
+                const p = new URLSearchParams(searchParams.toString());
+                if (showTest) p.delete("showTest"); else p.set("showTest", "1");
+                const qs = p.toString();
+                router.replace(qs ? `/admin/customers?${qs}` : "/admin/customers", { scroll: false });
+              }}
+              className="text-xs text-gray-500 hover:text-[#0B2040] cursor-pointer underline-offset-2 hover:underline"
+            >
+              {showTest ? `Hide test data (${testCustomerCount})` : `Show test data (${testCustomerCount})`}
+            </button>
+          )}
           <AdminCSVExport
             data={csvData}
             filename={`customers-${new Date().toISOString().split("T")[0]}`}
@@ -665,6 +701,11 @@ export default function CustomersPage() {
                       <div className="text-sm font-semibold text-[#0B2040] truncate flex items-center gap-1.5">
                         {c.name}
                         <DNCBadge bookings={c.bookings} />
+                        {c.isTestCustomer && (
+                          <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide rounded-sm bg-red-50 text-red-700 border border-red-200 px-1.5 py-0.5">
+                            TEST
+                          </span>
+                        )}
                       </div>
                       {c.primaryVehicle && (
                         <div className="text-xs text-gray-500 truncate">
