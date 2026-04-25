@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { Phone, Clock, MapPin, Wrench, Shield, Award, Tag, ChevronRight, ChevronDown } from "lucide-react";
+import { Phone, Clock, MapPin, Wrench, Shield, Tag, ChevronRight, ChevronDown } from "lucide-react";
 import { useBooking } from "@/contexts/BookingContext";
 import Button from "@/components/Button";
 import { useServices } from "@/hooks/useServices";
@@ -80,7 +80,7 @@ const HERO_DEFAULTS = {
   eyebrowLine1: "APOLLO BEACH \u00B7 TAMPA BAY \u00B7 SOUTH SHORE",
   eyebrowLine2: "Cars. Boats. RVs. Fleets.",
   headline: "We bring the shop. You keep your day.",
-  subheadline: "Mobile oil changes, tires, brakes, marine, and RV service across Apollo Beach and Tampa. Factory-trained team. 12-month warranty on every job.",
+  subheadline: "Mobile oil changes, tires, brakes, marine, and RV service across Apollo Beach and Tampa. Factory-trained team.",
 };
 
 const HERO_MOBILE_SUBHEADLINE = "Mobile service for cars, boats, RVs, and fleets. We come to wherever your vehicle lives.";
@@ -254,7 +254,8 @@ export default function Home() {
               <p className="text-[11px] uppercase font-semibold text-[#D9A441] tracking-[2px] opacity-90">{heroCopy.eyebrowLine2}</p>
             </div>
             <h1 className="text-[34px] font-extrabold leading-[1.06] text-white tracking-[-0.8px] mb-3">{heroCopy.headline}</h1>
-            <p className="text-[15px] leading-[1.55] text-white/[0.68] max-w-[320px] mx-auto mb-5">{HERO_MOBILE_SUBHEADLINE}</p>
+            <p className="text-[15px] leading-[1.55] text-white/[0.68] max-w-[320px] mx-auto mb-3">{HERO_MOBILE_SUBHEADLINE}</p>
+            <p className="text-[13px] leading-[1.4] font-bold text-[#E07B2D] mb-4">24-hour emergency service in the Apollo Beach area.</p>
             {/* CTAs stacked */}
             <div className="flex flex-col gap-[10px] max-w-[300px] mx-auto">
               <button onClick={openBooking} className="w-full min-h-[48px] bg-[#E07B2D] text-white px-7 py-3.5 rounded-[8px] font-semibold shadow-[0_2px_12px_rgba(224,123,45,0.35)]">Book Service</button>
@@ -275,7 +276,7 @@ export default function Home() {
               </div>
               <div className="flex-1 flex flex-col items-center justify-center gap-[5px] p-[12px_6px_10px] rounded-[12px] bg-white/[0.04] border border-white/[0.1]">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D9A441" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                <span className="text-white/60 text-[10.5px]">12-month warranty</span>
+                <span className="text-white/60 text-[10.5px]">24-hr emergency · Apollo Beach</span>
               </div>
             </div>
           </div>
@@ -289,7 +290,8 @@ export default function Home() {
                 <p className="text-[12px] uppercase font-semibold text-[#D9A441] tracking-[2.5px] opacity-90">{heroCopy.eyebrowLine2}</p>
               </div>
               <h1 className="text-[58px] font-extrabold leading-[1.04] text-white tracking-[-1px] mb-5 text-left">{heroCopy.headline}</h1>
-              <p className="text-[19px] leading-[1.55] text-white/[0.68] max-w-[520px] mb-8 text-left">{heroCopy.subheadline}</p>
+              <p className="text-[19px] leading-[1.55] text-white/[0.68] max-w-[520px] mb-4 text-left">{heroCopy.subheadline}</p>
+              <p className="text-[15px] leading-[1.4] font-bold text-[#E07B2D] mb-7 text-left">24-hour emergency service in the Apollo Beach area.</p>
               {/* CTA row */}
               <div className="flex justify-start gap-3 mb-7">
                 <button onClick={openBooking} className="bg-[#E07B2D] text-white px-7 py-3.5 rounded-[8px] font-semibold shadow-[0_2px_12px_rgba(224,123,45,0.35)]">Book Service</button>
@@ -313,7 +315,7 @@ export default function Home() {
                   <div className="w-px h-4 bg-white/10" />
                   <div className="flex items-center gap-[5px] px-[14px] py-1">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D9A441" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                    <span className="text-white/55 text-[12.5px] font-semibold">12-month warranty</span>
+                    <span className="text-white/55 text-[12.5px] font-semibold">24-hr emergency · Apollo Beach</span>
                   </div>
                 </div>
               </div>
@@ -399,7 +401,7 @@ export default function Home() {
               {
                 num: "3",
                 title: "You never left your day.",
-                desc: "Most jobs done in under an hour. Digital invoice in your inbox. 12-month warranty included. Your vehicle never moved. Neither did you.",
+                desc: "Most jobs done in under an hour. Digital invoice in your inbox. Your vehicle never moved. Neither did you.",
                 iconPath: <><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></>,
               },
             ];
@@ -464,7 +466,7 @@ export default function Home() {
             <div className="bg-white border border-[#E2DBCE] rounded-[12px] p-6">
               <p className="text-[11px] font-semibold tracking-widest text-[#E07B2D] uppercase mb-2">FACTORY-TRAINED</p>
               <h3 className="text-[18px] font-bold text-[#0B2040] mb-3">Every tech, trained by Jason.</h3>
-              <p className="text-[14px] text-[#555] leading-[1.65]">Coastal isn&apos;t an app. It isn&apos;t a gig-worker network. It&apos;s a local team, hired and personally trained by Jason Binder to the same standards he set running dealership service departments for 30 years. Same vacuum extraction. Same parts. Same warranty. Whichever van shows up.</p>
+              <p className="text-[14px] text-[#555] leading-[1.65]">Coastal isn&apos;t an app. It isn&apos;t a gig-worker network. It&apos;s a local team, hired and personally trained by Jason Binder to the same standards he set running dealership service departments for 30 years. Same vacuum extraction. Same parts. Same standards. Whichever van shows up.</p>
             </div>
             {/* Card 3: Multi-vertical */}
             <div className="bg-white border border-[#E2DBCE] rounded-[12px] p-6">
@@ -691,7 +693,7 @@ export default function Home() {
             {[
               { Icon: Shield, stat: "30+", descriptor: "Years in dealership service. Licensed and insured." },
               { Icon: Clock, stat: "<1hr", descriptor: "Most services, start to finish." },
-              { Icon: Award, stat: "12mo", descriptor: "Warranty on every job we do." },
+              { Icon: Clock, stat: "24/7", descriptor: "Emergency service in Apollo Beach." },
               { Icon: Tag, stat: "$0", descriptor: "Hidden fees. Flat pricing, always." },
             ].map(({ Icon, stat, descriptor }) => (
               <div key={stat} className="flex flex-col items-center">

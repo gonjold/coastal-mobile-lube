@@ -24,7 +24,7 @@ const valueProps = [
   },
   {
     title: "Same quality, your location",
-    desc: "Factory-grade parts, certified technicians, and a 12-month service warranty on every job.",
+    desc: "Factory-grade parts and ASE-certified technicians. Same shop standards, your driveway or storage lot.",
   },
   {
     title: "Seasonal prep",
@@ -352,7 +352,7 @@ export default function RVContent() {
             {[
               { label: "Fully Licensed", sub: "& Insured" },
               { label: "ASE-Certified", sub: "Technicians" },
-              { label: "12-Month Warranty", sub: "On Every Job" },
+              { label: "Factory-Trained", sub: "On Every Brand" },
               { label: "Transparent Pricing", sub: "No Hidden Fees" },
             ].map((badge) => (
               <div key={badge.label}>

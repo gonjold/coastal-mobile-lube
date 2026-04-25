@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { MapPin, ArrowRight } from "lucide-react";
+import { MapPin, ArrowRight, Clock } from "lucide-react";
 import { BookServiceLink } from "@/components/BookServiceButton";
 
 export const metadata: Metadata = {
@@ -102,6 +102,37 @@ export default function ServiceAreasPage() {
           </div>
         </div>
 
+      </section>
+
+      {/* Apollo Beach 24-hour emergency callout */}
+      <section className="bg-white">
+        <div className="section-inner px-4 lg:px-6 py-8 md:py-10">
+          <div className="max-w-[920px] mx-auto rounded-[14px] border-l-[4px] border-[#E07B2D] bg-[#FFF9F4] px-5 py-5 md:px-7 md:py-6">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-[#E07B2D]/12 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Clock size={20} className="text-[#E07B2D]" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-[18px] md:text-[20px] font-extrabold text-[#0B2040] mb-2 tracking-[-0.3px]">
+                  24-Hour Emergency Service in Apollo Beach
+                </h2>
+                <p className="text-[14px] md:text-[15px] text-[#444] leading-[1.65]">
+                  Living in or near Apollo Beach? Coastal offers 24-hour
+                  emergency service in your area. Whether it is a dead battery
+                  in the middle of the night, a flat tire on the way to work,
+                  or a no-start situation, call{" "}
+                  <a
+                    href="tel:8137225823"
+                    className="font-bold text-[#E07B2D] hover:underline"
+                  >
+                    813-722-LUBE
+                  </a>{" "}
+                  anytime.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Service Area Cards - Group 1 */}

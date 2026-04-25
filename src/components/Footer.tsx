@@ -48,6 +48,9 @@ export default function Footer() {
               <Phone size={18} />
               813-722-LUBE
             </a>
+            <p className="text-sm font-semibold text-[#E07B2D]/90">
+              24-hour emergency service available in Apollo Beach.
+            </p>
           </div>
 
           {/* Column 2 - Services */}

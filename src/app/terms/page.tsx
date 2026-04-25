@@ -111,22 +111,11 @@ export default function TermsPage() {
           <h2 className="text-[22px] md:text-[26px] font-extrabold text-[#0B2040] tracking-[-0.5px] mt-10 mb-4">
             6. Warranty
           </h2>
-          <p className="text-[15px] leading-[1.7] text-[#444] mb-4">
-            Coastal warranties its labor for 30 days or 1,000 miles, whichever
-            comes first. Parts are covered by the manufacturer&rsquo;s warranty.
-            This warranty does not cover:
-          </p>
-          <ul className="list-disc pl-6 space-y-2 text-[15px] leading-[1.7] text-[#444] mb-4">
-            <li>Damage or wear caused by normal use after service</li>
-            <li>Damage from accidents, misuse, or modifications</li>
-            <li>Pre-existing conditions noted on the service invoice</li>
-            <li>
-              Fleet accounts, which are governed by the fleet service agreement
-            </li>
-          </ul>
           <p className="text-[15px] leading-[1.7] text-[#444]">
-            To make a warranty claim, contact us within the warranty period at
-            info@coastalmobilelube.com with your invoice number.
+            Warranty terms for individual services are provided at the time of
+            service and may vary by job type. For specifics on the warranty
+            applicable to your service, contact us at 813-722-LUBE before
+            scheduling.
           </p>
 
           <h2 className="text-[22px] md:text-[26px] font-extrabold text-[#0B2040] tracking-[-0.5px] mt-10 mb-4">

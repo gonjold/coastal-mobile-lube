@@ -165,7 +165,7 @@ export default function AboutPage() {
                 When he started Coastal Mobile Lube & Tire, the idea was simple: take everything he learned inside the shop and bring it to the people who don&apos;t have time to visit one. A fully equipped van, factory-grade tools, and the same vacuum extraction system used in high-volume dealerships. No drain plugs, no drips, no mess at any location.
               </p>
               <p className="text-[15px] leading-[1.7] text-[#444]">
-                What started as one van is now a growing local team. Jason hires and trains every technician personally. Same standards, same vacuum extraction, same honest pricing, same warranty, regardless of which Coastal van rolls up at your location.
+                What started as one van is now a growing local team. Jason hires and trains every technician personally. Same standards, same vacuum extraction, same honest pricing, regardless of which Coastal van rolls up at your location.
               </p>
               <p className="text-[15px] leading-[1.7] text-[#444] font-semibold">
                 Multiple vans. One standard. Wherever you need us.

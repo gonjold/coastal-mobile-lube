@@ -167,7 +167,7 @@ export default function MarineContent() {
               Dealership-grade marine service. At the dock.
             </h1>
             <p className="text-[16px] leading-[1.7] text-white/60 mb-8 max-w-[520px]">
-              Outboard, inboard, and sterndrive service from a factory-trained team. Written 12-month warranty, honest flat pricing, straight billing. Apollo Beach and Tampa marinas.
+              Outboard, inboard, and sterndrive service from a factory-trained team. Honest flat pricing, straight billing. Apollo Beach and Tampa marinas.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Button variant="primary" size="lg" className="whitespace-nowrap shadow-[0_4px_24px_rgba(224,123,45,0.35)]" onClick={openBooking}>

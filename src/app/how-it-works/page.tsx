@@ -42,7 +42,7 @@ const FAQS = [
   },
   {
     q: 'Are you licensed and insured?',
-    a: 'Yes. Fully licensed, bonded, and insured. Our techs are ASE-certified with 30 plus years of combined experience. All work is backed by a 12-month service warranty.',
+    a: 'Yes. Fully licensed, bonded, and insured. Our techs are ASE-certified with 30 plus years of combined experience.',
   },
   {
     q: 'How far in advance should I book?',
@@ -89,10 +89,10 @@ export default function HowItWorksPage() {
             },
             {
               "@type": "Question",
-              "name": "What's included in the 12-month warranty?",
+              "name": "Do you offer a warranty?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "If the work we performed isn't holding, we come back at no charge and make it right. Parts and labor covered for 12 months or 12,000 miles, whichever comes first."
+                "text": "Coastal stands behind every job done by our factory-trained, ASE-certified team. Warranty terms specific to your service are provided at the time of your appointment. For details on a particular service, ask when you book or call 813-722-LUBE."
               }
             }
           ]
@@ -547,11 +547,11 @@ export default function HowItWorksPage() {
               Most services complete in under an hour. You get an itemized digital invoice and pay securely online. No cash, no paperwork, no shop visit.
             </p>
             <p className="text-lg text-slate-600 leading-relaxed">
-              Every service is backed by a 12-month warranty. If anything is not right, we come back and make it right. Your vehicle never moved an inch. Neither did your schedule.
+              Every service is performed by a factory-trained, ASE-certified team. If anything is not right, we come back and make it right. Your vehicle never moved an inch. Neither did your schedule.
             </p>
           </div>
 
-          {/* Illustration: Car with receipt + stars + warranty badge */}
+          {/* Illustration: Car with receipt + stars + credentials badge */}
           <div
             className="relative rounded-3xl p-8 flex items-center justify-center min-h-[440px]"
             style={{
@@ -643,7 +643,7 @@ export default function HowItWorksPage() {
                 </text>
               </g>
 
-              {/* Warranty badge */}
+              {/* Credentials badge */}
               <g transform="translate(280, 30) rotate(8 50 50)">
                 <circle cx="50" cy="50" r="40" fill="#0B2040" />
                 <circle cx="50" cy="50" r="34" fill="none" stroke="#E07B2D" strokeWidth="2" strokeDasharray="3 3" />
@@ -656,7 +656,7 @@ export default function HowItWorksPage() {
                   fontWeight="800"
                   fontFamily="Plus Jakarta Sans, sans-serif"
                 >
-                  12 MO
+                  30 YR
                 </text>
                 <text
                   x="50"
@@ -667,7 +667,7 @@ export default function HowItWorksPage() {
                   fontWeight="700"
                   fontFamily="Plus Jakarta Sans, sans-serif"
                 >
-                  WARRANTY
+                  DEALERSHIP
                 </text>
                 <text
                   x="50"
@@ -677,7 +677,7 @@ export default function HowItWorksPage() {
                   fontSize="6"
                   fontFamily="Plus Jakarta Sans, sans-serif"
                 >
-                  ALL SERVICE
+                  EXPERIENCE
                 </text>
               </g>
 

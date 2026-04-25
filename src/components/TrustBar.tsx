@@ -1,9 +1,9 @@
-import { Shield, Wrench, Award, Tag } from "lucide-react";
+import { Shield, Wrench, Clock, Tag } from "lucide-react";
 
 const trustItems = [
   { icon: Shield, text: "Fully Licensed & Insured" },
   { icon: Wrench, text: "ASE-Certified Technicians" },
-  { icon: Award, text: "12-Month Service Warranty" },
+  { icon: Clock, text: "24-Hour Emergency · Apollo Beach" },
   { icon: Tag, text: "Transparent Pricing, No Surprises" },
 ];
 

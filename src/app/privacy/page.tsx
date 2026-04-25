@@ -99,7 +99,7 @@ export default function PrivacyPage() {
               arrival notifications, and status updates)
             </li>
             <li>Process payment and send receipts</li>
-            <li>Track your service history for warranty and follow-up</li>
+            <li>Track your service history for follow-up and recall notices</li>
             <li>Improve the site and our operations</li>
             <li>
               Meet legal and regulatory requirements, including Florida
