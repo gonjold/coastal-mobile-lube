@@ -22,9 +22,9 @@ const locations = [
 ];
 
 /* ─── Category → image mapping ─── */
+/* Oil/engine/outboard/inboard/diesel sections render text-only — the marine hero is the only image needed at the top of the page. */
 function getCategoryImage(category: string): string | null {
   const lower = category.toLowerCase();
-  if (lower.includes("engine") || lower.includes("oil") || lower.includes("outboard") || lower.includes("inboard") || lower.includes("diesel")) return cloudinaryUrl(images.marinaBoats, { width: 800, height: 600 });
   if (lower.includes("lower unit") || lower.includes("impeller") || lower.includes("generator") || lower.includes("add-on")) return cloudinaryUrl(images.marinaBoatsAlt, { width: 800, height: 600 });
   if (lower.includes("trailer") || lower.includes("bearing") || lower.includes("tire")) return cloudinaryUrl(images.fleetVehicles, { width: 800, height: 600 });
   return null;

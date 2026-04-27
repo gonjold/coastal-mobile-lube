@@ -147,7 +147,7 @@ export default function AboutPage() {
             </div>
             <div className="relative rounded-[14px] overflow-hidden shadow-[0_4px_20px_rgba(11,32,64,0.1)] border border-[#f0ede6]">
               <img
-                src={cld(images.vansResidentialDriveway, 'card43')}
+                src={cld(images.vansResidentialDriveway, 'gridTile')}
                 alt="Coastal vans on a Tampa Bay driveway"
                 className="w-full h-auto block"
               />
