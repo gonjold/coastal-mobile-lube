@@ -9,7 +9,7 @@ import { useServices } from "@/hooks/useServices";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { BrandLogo } from "@/components/brand/BrandLogo";
-import { BRAND_LOGOS } from "@/lib/brand/logos";
+import { cld, images } from "@/lib/cloudinary";
 
 /* ── Homepage category configs per division ── */
 
@@ -19,15 +19,16 @@ interface CategoryConfig {
   firestoreCategories: string[]; // matched against service.category for min price
   ctaLabel?: string;
   ctaAction?: "fleet-quote";
+  image?: { key: keyof typeof images; alt: string };
 }
 
 const DIVISION_CATEGORIES: Record<TabKey, CategoryConfig[]> = {
   automotive: [
-    { displayName: "Oil Changes", description: "Conventional, synthetic blend, full synthetic, and diesel oil changes. Factory-grade service at your location.", firestoreCategories: ["Oil Changes"] },
-    { displayName: "Tires & Wheels", description: "Tire rotation, flat repair, mount and balance, TPMS service, and new tire installation.", firestoreCategories: ["Tire/Wheel"] },
-    { displayName: "Brakes", description: "Front and rear brake pads, full brake jobs, and brake fluid flush.", firestoreCategories: ["Brakes"] },
-    { displayName: "Basic Maintenance", description: "Wiper blades, air filters, cabin filters, batteries, coolant flush, belts, and more.", firestoreCategories: ["Basic Maintenance"] },
-    { displayName: "A/C & Heating", description: "A/C diagnostic, EVAC and recharge, and heating system service.", firestoreCategories: ["HVAC"] },
+    { displayName: "Oil Changes", description: "Conventional, synthetic blend, full synthetic, and diesel oil changes. Factory-grade service at your location.", firestoreCategories: ["Oil Changes"], image: { key: "vanVacuumExtraction", alt: "Vacuum extraction equipment" } },
+    { displayName: "Tires & Wheels", description: "Tire rotation, flat repair, mount and balance, TPMS service, and new tire installation.", firestoreCategories: ["Tire/Wheel"], image: { key: "vanTireEquipment", alt: "Snap-on tire changer" } },
+    { displayName: "Brakes", description: "Front and rear brake pads, full brake jobs, and brake fluid flush.", firestoreCategories: ["Brakes"], image: { key: "vanTireBay", alt: "Tire bay equipment" } },
+    { displayName: "Basic Maintenance", description: "Wiper blades, air filters, cabin filters, batteries, coolant flush, belts, and more.", firestoreCategories: ["Basic Maintenance"], image: { key: "vanEquipmentWide", alt: "Mobile shop equipment" } },
+    { displayName: "A/C & Heating", description: "A/C diagnostic, EVAC and recharge, and heating system service.", firestoreCategories: ["HVAC"], image: { key: "vanEquipmentSquare", alt: "Mobile shop interior" } },
   ],
   fleet: [
     { displayName: "Custom Fleet Maintenance Programs", description: "Scheduled maintenance for your entire fleet. Volume pricing available.", firestoreCategories: ["Preventive Maintenance Tiers"], ctaLabel: "Request Fleet Quote", ctaAction: "fleet-quote" },
@@ -232,19 +233,21 @@ export default function Home() {
       <section
         id="hero-section"
         className="relative overflow-clip -mt-14 pt-14 lg:-mt-16 lg:pt-16"
-        style={{ background: "linear-gradient(135deg, #0F2847 0%, #0B2040 100%)" }}
+        style={{ backgroundColor: "#0B2040" }}
       >
-        {/* Logo watermark */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none" style={{ opacity: 0.06 }}>
-          <div
-            className="w-full h-full bg-no-repeat bg-center"
-            style={{
-              backgroundImage: `url('${BRAND_LOGOS.primary}')`,
-              backgroundSize: "360px",
-            }}
-          />
-        </div>
-
+        {/* Hero background photo */}
+        <div
+          className="absolute inset-0 bg-cover bg-center pointer-events-none select-none"
+          style={{ backgroundImage: `url('${cld(images.heroHome, 'hero')}')` }}
+        />
+        {/* Navy gradient overlay (left → right fade) */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(90deg, rgba(11,32,64,0.85) 0%, rgba(11,32,64,0.55) 50%, rgba(11,32,64,0.35) 100%)",
+          }}
+        />
         <div className="section-inner px-4 lg:px-12 relative z-10">
 
           {/* ══ MOBILE HERO ══ */}
@@ -364,12 +367,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Desktop watermark bg-size override */}
-        <style>{`
-          @media (min-width: 1024px) {
-            #hero-section > div:first-child > div { background-size: 600px !important; }
-          }
-        `}</style>
       </section>
 
       {/* ── How It Works ── */}
@@ -578,8 +575,19 @@ export default function Home() {
                 return (
                   <div
                     key={cat.displayName}
-                    className="bg-white rounded-[14px] p-5 shadow-[0_2px_20px_rgba(11,32,64,0.06)] border border-[#f0ede6] flex flex-col"
+                    className="bg-white rounded-[14px] shadow-[0_2px_20px_rgba(11,32,64,0.06)] border border-[#f0ede6] flex flex-col overflow-hidden"
                   >
+                    {cat.image && (
+                      <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#f0ede6]">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={cld(images[cat.image.key], 'card43')}
+                          alt={cat.image.alt}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    <div className="p-5 flex flex-col flex-1">
                     <h3 className="text-[18px] font-bold text-[#0B2040] mb-1">
                       {cat.displayName}
                     </h3>
@@ -604,6 +612,7 @@ export default function Home() {
                     >
                       {cat.ctaLabel ?? "Book This Service"}
                     </button>
+                    </div>
                   </div>
                 );
               })}

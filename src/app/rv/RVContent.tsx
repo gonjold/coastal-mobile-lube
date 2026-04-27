@@ -8,6 +8,7 @@ import { useServices } from "@/hooks/useServices";
 import { groupByCategory } from "@/lib/serviceHelpers";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { cld, images } from "@/lib/cloudinary";
 
 const valueProps = [
   {
@@ -176,7 +177,20 @@ export default function RVContent() {
   return (
     <>
       {/* ─── Hero ─── */}
-      <section className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #0A1C38 0%, #0B2040 40%, #0F2847 70%, #132E54 100%)" }}>
+      <section className="relative overflow-hidden" style={{ backgroundColor: "#0B2040" }}>
+        {/* Hero photo (improved tone) */}
+        <div
+          className="absolute inset-0 bg-cover bg-center pointer-events-none"
+          style={{ backgroundImage: `url('${cld(images.heroRV, 'heroImproved')}')` }}
+        />
+        {/* Navy gradient overlay 65% (drift mitigation) */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(90deg, rgba(11,32,64,0.85) 0%, rgba(11,32,64,0.65) 60%, rgba(11,32,64,0.6) 100%)",
+          }}
+        />
 
         <div className="section-inner px-4 lg:px-6 pt-10 pb-6 md:pt-14 md:pb-10 relative z-10">
           <div>

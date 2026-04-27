@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Phone, Check } from "lucide-react";
 import BookServiceButton from "@/components/BookServiceButton";
-import { cloudinaryUrl, images } from "@/lib/cloudinary";
+import { cld, cloudinaryUrl, images } from "@/lib/cloudinary";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 
 export const metadata: Metadata = {
@@ -115,10 +115,8 @@ export default function AboutPage() {
             </div>
             <div className="relative rounded-[14px] overflow-hidden shadow-[0_8px_40px_rgba(0,0,0,0.3)]">
               <img
-                src={cloudinaryUrl(images.heroVanDrivewayAlt, {
-                  width: 800,
-                })}
-                alt="Coastal Mobile Lube service van in a driveway"
+                src={cld(images.familyMarina, 'card43')}
+                alt="Jason Binder and family — Coastal Mobile Lube"
                 className="w-full h-auto"
               />
               <div className="absolute inset-0 rounded-[14px] pointer-events-none" style={{ boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)" }} />
@@ -126,25 +124,6 @@ export default function AboutPage() {
           </div>
         </div>
 
-      </section>
-
-      {/* Section 2 - Van Wrap Showcase */}
-      <section className="relative bg-[#FAFBFC]">
-        <div className="max-w-[1100px] mx-auto px-4 lg:px-6 pt-10 pb-4 md:pt-14 md:pb-6">
-          <div className="text-center mb-8">
-            <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
-              Our Rig
-            </p>
-            <h2 className="text-[28px] md:text-[34px] font-extrabold leading-[1.1] text-[#0B2040] tracking-[-0.5px]">
-              The shop on wheels
-            </h2>
-          </div>
-          <div className="relative rounded-[14px] overflow-hidden shadow-[0_8px_40px_rgba(11,32,64,0.12),0_2px_10px_rgba(11,32,64,0.06)] border border-[#f0ede6] bg-white p-4 md:p-6">
-            <div className="w-full rounded-[10px] bg-[#F0EDE6] flex items-center justify-center py-20">
-              <p className="text-[15px] text-[#999] font-medium italic">Van photos coming soon</p>
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* Section 3 - The Story */}
@@ -173,11 +152,9 @@ export default function AboutPage() {
             </div>
             <div className="relative rounded-[14px] overflow-hidden shadow-[0_8px_36px_rgba(11,32,64,0.12),0_2px_8px_rgba(11,32,64,0.06)]">
               <img
-                src={cloudinaryUrl(images.vanInteriorEquipment, {
-                  width: 800,
-                })}
+                src={cld(images.vanEquipmentWide, 'card43')}
                 alt="Interior of the Coastal Mobile service van with professional equipment"
-                className="w-full h-auto"
+                className="w-full h-auto block"
               />
               <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-5 py-4 bg-white">
                 <span className="text-[14px] font-semibold text-[#0B2040]">

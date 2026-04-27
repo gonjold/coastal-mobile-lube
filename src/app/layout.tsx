@@ -21,7 +21,7 @@ export const viewport: Viewport = {
 
 const BASE_URL = "https://coastalmobilelube.com";
 const OG_IMAGE =
-  "https://res.cloudinary.com/dgcdcqjrz/image/upload/w_1200,h_630,c_fill,q_auto:good,f_jpg/v1774318456/hero-van-driveway_nag1pq.jpg";
+  "https://res.cloudinary.com/dgcdcqjrz/image/upload/w_1200,h_630,c_fill,q_auto:good,f_jpg/v1777313741/01-hero-home-sunset-vans-wide_e1mmkz.png";
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),

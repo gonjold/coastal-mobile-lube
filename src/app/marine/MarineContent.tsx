@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Phone } from "lucide-react";
 import Button from "@/components/Button";
 import { useBooking } from "@/contexts/BookingContext";
-import { cloudinaryUrl, images } from "@/lib/cloudinary";
+import { cld, cloudinaryUrl, images } from "@/lib/cloudinary";
 import { useServices } from "@/hooks/useServices";
 import { groupByCategory } from "@/lib/serviceHelpers";
 import { db } from "@/lib/firebase";
@@ -22,9 +22,9 @@ const locations = [
 ];
 
 /* ─── Category → image mapping ─── */
+/* Oil/engine/outboard/inboard/diesel sections render text-only — the marine hero is the only image needed at the top of the page. */
 function getCategoryImage(category: string): string | null {
   const lower = category.toLowerCase();
-  if (lower.includes("engine") || lower.includes("oil") || lower.includes("outboard") || lower.includes("inboard") || lower.includes("diesel")) return cloudinaryUrl(images.marinaBoats, { width: 800, height: 600 });
   if (lower.includes("lower unit") || lower.includes("impeller") || lower.includes("generator") || lower.includes("add-on")) return cloudinaryUrl(images.marinaBoatsAlt, { width: 800, height: 600 });
   if (lower.includes("trailer") || lower.includes("bearing") || lower.includes("tire")) return cloudinaryUrl(images.fleetVehicles, { width: 800, height: 600 });
   return null;
@@ -156,7 +156,20 @@ export default function MarineContent() {
   return (
     <>
       {/* ─── Hero ─── */}
-      <section className="relative overflow-hidden" style={{ background: "linear-gradient(180deg, #0A1C38 0%, #0B2040 40%, #0F2847 70%, #132E54 100%)" }}>
+      <section className="relative overflow-hidden" style={{ backgroundColor: "#0B2040" }}>
+        {/* Hero photo (sunset wide — water in frame) */}
+        <div
+          className="absolute inset-0 bg-cover bg-center pointer-events-none"
+          style={{ backgroundImage: `url('${cld(images.heroMarine, 'hero')}')` }}
+        />
+        {/* Navy gradient overlay 60% */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(90deg, rgba(11,32,64,0.85) 0%, rgba(11,32,64,0.55) 50%, rgba(11,32,64,0.5) 100%)",
+          }}
+        />
 
         <div className="section-inner px-4 lg:px-6 pt-10 pb-6 md:pt-14 md:pb-10 relative z-10">
           <div>

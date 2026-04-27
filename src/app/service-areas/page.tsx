@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { MapPin, ArrowRight, Clock } from "lucide-react";
 import { BookServiceLink } from "@/components/BookServiceButton";
+import { cld, images } from "@/lib/cloudinary";
 
 export const metadata: Metadata = {
   title: "Service Areas | Coastal Mobile Lube & Tire",
@@ -79,11 +80,21 @@ export default function ServiceAreasPage() {
       {/* Hero */}
       <section
         className="relative overflow-hidden"
-        style={{
-          background:
-            "linear-gradient(180deg, #0A1C38 0%, #0B2040 40%, #0F2847 70%, #132E54 100%)",
-        }}
+        style={{ backgroundColor: "#0B2040" }}
       >
+        {/* Hero photo */}
+        <div
+          className="absolute inset-0 bg-cover bg-center pointer-events-none"
+          style={{ backgroundImage: `url('${cld(images.vansResidentialDriveway, 'hero')}')` }}
+        />
+        {/* Navy gradient overlay 70% */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(11,32,64,0.8) 0%, rgba(11,32,64,0.7) 50%, rgba(11,32,64,0.8) 100%)",
+          }}
+        />
 
         <div className="section-inner px-4 lg:px-6 pt-10 pb-6 md:pt-14 md:pb-10 relative z-10">
           <div className="max-w-[680px] mx-auto text-center">
