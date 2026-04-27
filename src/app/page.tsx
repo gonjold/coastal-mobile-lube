@@ -9,7 +9,6 @@ import { useServices } from "@/hooks/useServices";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { BrandLogo } from "@/components/brand/BrandLogo";
-import { BRAND_LOGOS } from "@/lib/brand/logos";
 import { cld, images } from "@/lib/cloudinary";
 
 /* ── Homepage category configs per division ── */
@@ -249,17 +248,6 @@ export default function Home() {
               "linear-gradient(90deg, rgba(11,32,64,0.85) 0%, rgba(11,32,64,0.55) 50%, rgba(11,32,64,0.35) 100%)",
           }}
         />
-        {/* Logo watermark */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none" style={{ opacity: 0.03 }}>
-          <div
-            className="w-full h-full bg-no-repeat bg-center"
-            style={{
-              backgroundImage: `url('${BRAND_LOGOS.primary}')`,
-              backgroundSize: "360px",
-            }}
-          />
-        </div>
-
         <div className="section-inner px-4 lg:px-12 relative z-10">
 
           {/* ══ MOBILE HERO ══ */}
@@ -379,12 +367,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Desktop watermark bg-size override */}
-        <style>{`
-          @media (min-width: 1024px) {
-            #hero-section > div:first-child > div { background-size: 600px !important; }
-          }
-        `}</style>
       </section>
 
       {/* ── How It Works ── */}
