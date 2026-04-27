@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { cld, images } from '@/lib/cloudinary';
 
 export const metadata: Metadata = {
   title: 'How Mobile Service Works | Coastal Mobile Lube',
@@ -101,16 +102,21 @@ export default function HowItWorksPage() {
       {/* HERO */}
       <section
         className="relative text-white pt-32 pb-24 px-6 overflow-hidden"
-        style={{
-          backgroundColor: NAVY,
-          backgroundImage: `
-            radial-gradient(circle at 20% 30%, rgba(224, 123, 45, 0.08) 0%, transparent 50%),
-            radial-gradient(circle at 80% 70%, rgba(224, 123, 45, 0.05) 0%, transparent 50%),
-            radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px)
-          `,
-          backgroundSize: 'auto, auto, 24px 24px',
-        }}
+        style={{ backgroundColor: NAVY }}
       >
+        {/* Hero photo */}
+        <div
+          className="absolute inset-0 bg-cover bg-center pointer-events-none"
+          style={{ backgroundImage: `url('${cld(images.heroHowItWorks, 'hero')}')` }}
+        />
+        {/* Navy gradient overlay (55%) */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              'linear-gradient(180deg, rgba(11,32,64,0.7) 0%, rgba(11,32,64,0.55) 60%, rgba(11,32,64,0.7) 100%)',
+          }}
+        />
         {/* Diagonal accent lines overlay */}
         <div
           className="absolute inset-0 pointer-events-none"

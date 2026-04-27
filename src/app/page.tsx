@@ -10,6 +10,7 @@ import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { BRAND_LOGOS } from "@/lib/brand/logos";
+import { cld, images } from "@/lib/cloudinary";
 
 /* ── Homepage category configs per division ── */
 
@@ -232,8 +233,21 @@ export default function Home() {
       <section
         id="hero-section"
         className="relative overflow-clip -mt-14 pt-14 lg:-mt-16 lg:pt-16"
-        style={{ background: "linear-gradient(135deg, #0F2847 0%, #0B2040 100%)" }}
+        style={{ backgroundColor: "#0B2040" }}
       >
+        {/* Hero background photo */}
+        <div
+          className="absolute inset-0 bg-cover bg-center pointer-events-none select-none"
+          style={{ backgroundImage: `url('${cld(images.heroHome, 'hero')}')` }}
+        />
+        {/* Navy gradient overlay (left → right fade) */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(90deg, rgba(11,32,64,0.85) 0%, rgba(11,32,64,0.55) 50%, rgba(11,32,64,0.35) 100%)",
+          }}
+        />
         {/* Logo watermark */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none" style={{ opacity: 0.06 }}>
           <div
@@ -457,10 +471,17 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Card 1: Vacuum extraction */}
-            <div className="bg-white border border-[#E2DBCE] rounded-[12px] p-6">
-              <p className="text-[11px] font-semibold tracking-widest text-[#E07B2D] uppercase mb-2">OIL SERVICE</p>
-              <h3 className="text-[18px] font-bold text-[#0B2040] mb-3">Vacuum extraction. No mess.</h3>
-              <p className="text-[14px] text-[#555] leading-[1.65]">We pull oil through the dipstick tube using the same vacuum extraction system high-end dealerships use. No drain plug, no crawling underneath, no drips on your driveway, your marina dock, or your fleet yard. Faster than conventional drain. Cleaner every time.</p>
+            <div className="bg-white border border-[#E2DBCE] rounded-[12px] overflow-hidden">
+              <img
+                src={cld(images.vanVacuumExtraction, 'card43')}
+                alt="Vacuum extraction equipment in a Coastal van"
+                className="w-full h-auto block"
+              />
+              <div className="p-6">
+                <p className="text-[11px] font-semibold tracking-widest text-[#E07B2D] uppercase mb-2">OIL SERVICE</p>
+                <h3 className="text-[18px] font-bold text-[#0B2040] mb-3">Vacuum extraction. No mess.</h3>
+                <p className="text-[14px] text-[#555] leading-[1.65]">We pull oil through the dipstick tube using the same vacuum extraction system high-end dealerships use. No drain plug, no crawling underneath, no drips on your driveway, your marina dock, or your fleet yard. Faster than conventional drain. Cleaner every time.</p>
+              </div>
             </div>
             {/* Card 2: Factory-trained team */}
             <div className="bg-white border border-[#E2DBCE] rounded-[12px] p-6">
