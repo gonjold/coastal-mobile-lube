@@ -101,7 +101,7 @@ export default function HowItWorksPage() {
       />
       {/* HERO */}
       <section
-        className="relative text-white pt-32 pb-24 px-6 overflow-hidden"
+        className="relative text-white px-6 overflow-hidden"
         style={{ backgroundColor: NAVY }}
       >
         {/* Hero photo */}
@@ -136,7 +136,7 @@ export default function HowItWorksPage() {
           style={{ backgroundColor: ORANGE, opacity: 0.06 }}
         />
 
-        <div className="relative max-w-5xl mx-auto text-center">
+        <div className="relative max-w-5xl mx-auto text-center pt-10 pb-6 md:pt-14 md:pb-10">
           <div className="inline-flex items-center gap-2 mb-6">
             <span className="h-px w-8" style={{ backgroundColor: ORANGE }} />
             <span
