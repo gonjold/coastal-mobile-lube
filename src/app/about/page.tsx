@@ -115,8 +115,8 @@ export default function AboutPage() {
             </div>
             <div className="relative rounded-[14px] overflow-hidden shadow-[0_8px_40px_rgba(0,0,0,0.3)]">
               <img
-                src={cld(images.heroAbout, 'card43')}
-                alt="Coastal Mobile Lube service vans at sunset"
+                src={cld(images.familyMarina, 'card43')}
+                alt="Jason Binder and family — Coastal Mobile Lube"
                 className="w-full h-auto"
               />
               <div className="absolute inset-0 rounded-[14px] pointer-events-none" style={{ boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)" }} />
@@ -124,46 +124,6 @@ export default function AboutPage() {
           </div>
         </div>
 
-      </section>
-
-      {/* Section 2 - Van Wrap Showcase */}
-      <section className="relative bg-[#FAFBFC]">
-        <div className="max-w-[1100px] mx-auto px-4 lg:px-6 pt-10 pb-8 md:pt-14 md:pb-12">
-          <div className="text-center mb-8">
-            <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px] mb-3">
-              Our Rig
-            </p>
-            <h2 className="text-[28px] md:text-[34px] font-extrabold leading-[1.1] text-[#0B2040] tracking-[-0.5px]">
-              The shop on wheels
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
-            <div className="relative rounded-[14px] overflow-hidden shadow-[0_4px_20px_rgba(11,32,64,0.1)] border border-[#f0ede6]">
-              <img
-                src={cld(images.vansPosedPortrait, 'gridTile')}
-                alt="Two Coastal vans, residential service"
-                className="w-full h-auto block"
-              />
-            </div>
-            <div className="relative rounded-[14px] overflow-hidden shadow-[0_4px_20px_rgba(11,32,64,0.1)] border border-[#f0ede6]">
-              <img
-                src={cld(images.vansResidentialDriveway, 'gridTile')}
-                alt="Coastal vans on a Tampa Bay driveway"
-                className="w-full h-auto block"
-              />
-            </div>
-            <div className="relative rounded-[14px] overflow-hidden shadow-[0_4px_20px_rgba(11,32,64,0.1)] border border-[#f0ede6]">
-              <img
-                src={cld(images.daughterVan, 'gridTile')}
-                alt="Family-run service"
-                className="w-full h-auto block"
-              />
-            </div>
-          </div>
-          <p className="text-center text-[14px] text-[#666] mt-6 italic">
-            Family-owned. Locally trusted. Tampa Bay born.
-          </p>
-        </div>
       </section>
 
       {/* Section 3 - The Story */}
@@ -201,36 +161,6 @@ export default function AboutPage() {
                   Fully equipped mobile shop
                 </span>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-
-      {/* Section 3.5 - Built by a family */}
-      <section className="relative bg-[#FAFBFC]">
-        <div className="max-w-[1100px] mx-auto px-4 lg:px-6 py-10 md:py-14">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
-            <div className="space-y-5">
-              <p className="text-[13px] uppercase font-bold text-[#1A5FAC] tracking-[1.5px]">
-                Family-Run
-              </p>
-              <h2 className="text-[28px] md:text-[34px] font-extrabold leading-[1.1] text-[#0B2040] tracking-[-0.5px]">
-                Built by a family. Trusted by yours.
-              </h2>
-              <p className="text-[15px] leading-[1.7] text-[#444]">
-                Coastal Mobile Lube &amp; Tire is a family-run operation. Jason started this business with a simple promise: bring dealership-grade service to your driveway, and treat every customer the way he&apos;d want his own family treated.
-              </p>
-              <p className="text-[15px] leading-[1.7] text-[#444]">
-                That promise still drives every job, every day. Whether it&apos;s a routine oil change in your driveway, an emergency tire repair at the marina, or scheduled maintenance on your work fleet, we show up the same way every time.
-              </p>
-            </div>
-            <div className="relative rounded-[14px] overflow-hidden shadow-[0_8px_36px_rgba(11,32,64,0.12),0_2px_8px_rgba(11,32,64,0.06)]">
-              <img
-                src={cld(images.familyMarina, 'card43')}
-                alt="Jason and family at the marina"
-                className="w-full h-auto block"
-              />
             </div>
           </div>
         </div>
