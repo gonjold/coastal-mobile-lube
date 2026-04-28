@@ -11,7 +11,6 @@ import {
   doc,
   updateDoc,
   addDoc,
-  deleteDoc,
   getDoc,
   serverTimestamp,
 } from "firebase/firestore";
@@ -67,6 +66,9 @@ interface Invoice {
   createdAt?: { toDate: () => Date };
   updatedAt?: { toDate: () => Date };
   isTest?: boolean;
+  deleted?: boolean;
+  deletedAt?: { toDate: () => Date };
+  deletedBy?: string;
 }
 
 type InvoiceFormData = Omit<Invoice, "id" | "createdAt" | "updatedAt">;
@@ -486,11 +488,14 @@ function InvoicingPageInner() {
   /* ── Test data visibility ── */
   const showTest = searchParams.get("showTest") === "1";
   const visibleInvoices = useMemo(
-    () => (showTest ? invoices : invoices.filter((i) => i.isTest !== true)),
+    () => {
+      const live = invoices.filter((i) => i.deleted !== true);
+      return showTest ? live : live.filter((i) => i.isTest !== true);
+    },
     [invoices, showTest],
   );
   const testInvoiceCount = useMemo(
-    () => invoices.filter((i) => i.isTest === true).length,
+    () => invoices.filter((i) => i.isTest === true && i.deleted !== true).length,
     [invoices],
   );
 
@@ -981,8 +986,13 @@ function InvoicingPageInner() {
   }
 
   /* ── Send / Resend invoice email ── */
-  async function handleSendInvoice(inv: Invoice | InvoiceForPanel) {
-    if (!inv.customerEmail) {
+  // overrideEmail: optional one-time recipient. Currently always undefined
+  // — UI override is feature-flagged off in InvoiceDetailPanel until the
+  // cloud functions accept a `recipientEmail` param distinct from
+  // `customerEmail` (the QB path syncs `customerEmail` back to QuickBooks).
+  async function handleSendInvoice(inv: Invoice | InvoiceForPanel, overrideEmail?: string) {
+    const recipient = overrideEmail || inv.customerEmail;
+    if (!recipient) {
       addToast("No customer email on this invoice", "info");
       return;
     }
@@ -1008,7 +1018,7 @@ function InvoicingPageInner() {
             invoiceId: inv.id,
             invoiceNumber: inv.invoiceNumber,
             customerName: inv.customerName,
-            customerEmail: inv.customerEmail,
+            customerEmail: recipient,
             customerPhone: inv.customerPhone || "",
             customerAddress: "",
             customerId: "",
@@ -1021,7 +1031,7 @@ function InvoicingPageInner() {
             dueDate: inv.dueDate || "",
           }
         : {
-            customerEmail: inv.customerEmail,
+            customerEmail: recipient,
             customerName: inv.customerName,
             customerPhone: inv.customerPhone || "",
             invoiceNumber: inv.invoiceNumber,
@@ -1043,17 +1053,23 @@ function InvoicingPageInner() {
         },
         body: JSON.stringify(body),
       });
-      addToast(`Invoice email sent to ${inv.customerEmail}`, "success");
+      addToast(`Invoice email sent to ${recipient}`, "success");
     } catch {
       addToast("Invoice saved but email failed to send", "info");
     }
   }
 
-  /* ── Delete ── */
+  /* ── Soft delete (audit trail preserved) ── */
   async function handleDelete(id: string) {
-    await deleteDoc(doc(db, "invoices", id));
+    const inv = invoices.find((i) => i.id === id);
+    await updateDoc(doc(db, "invoices", id), {
+      deleted: true,
+      deletedAt: serverTimestamp(),
+      deletedBy: auth.currentUser?.uid || "unknown",
+      updatedAt: serverTimestamp(),
+    });
     setDeleteConfirm(null);
-    addToast("Invoice deleted");
+    addToast(`Invoice ${inv?.invoiceNumber || ""} deleted`);
   }
 
   /* ── Print ── */
@@ -1331,7 +1347,7 @@ function InvoicingPageInner() {
                       <span className="text-lg text-gray-400 leading-none">&#8942;</span>
                     </button>
                     {actionMenuId === inv.id && (
-                      <div className="absolute right-full top-0 mr-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[160px] z-[50]" onMouseDown={(e) => e.stopPropagation()}>
+                      <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[160px] z-[50]" onMouseDown={(e) => e.stopPropagation()}>
                         <button onMouseDown={(e) => { e.preventDefault(); setSelectedInvoice(inv); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">View Details</button>
                         <button onMouseDown={(e) => { e.preventDefault(); openEdit(inv); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Edit Invoice</button>
                         {(inv.status === "sent" || inv.status === "overdue") && (
@@ -1345,7 +1361,35 @@ function InvoicingPageInner() {
                         )}
                         <button onMouseDown={(e) => { e.preventDefault(); handlePrint(inv); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Print / PDF</button>
                         <div className="h-px bg-gray-100 my-1" />
-                        <button onMouseDown={(e) => { e.preventDefault(); setDeleteConfirm(inv.id); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-red-600 cursor-pointer hover:bg-gray-50 transition">Delete Invoice</button>
+                        {(() => {
+                          const qbSynced = !!inv.qbInvoiceId;
+                          const isPaid = inv.status === "paid";
+                          const disabled = qbSynced || isPaid;
+                          const tooltip = qbSynced
+                            ? "Synced to QuickBooks. Void in QB first, then delete here."
+                            : isPaid
+                            ? "Cannot delete a paid invoice."
+                            : "";
+                          return (
+                            <button
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                if (disabled) return;
+                                setDeleteConfirm(inv.id);
+                                setActionMenuId(null);
+                              }}
+                              disabled={disabled}
+                              title={tooltip}
+                              className={`block w-full text-left px-4 py-2 text-sm transition ${
+                                disabled
+                                  ? "text-gray-300 cursor-not-allowed"
+                                  : "text-red-600 cursor-pointer hover:bg-gray-50"
+                              }`}
+                            >
+                              Delete Invoice
+                            </button>
+                          );
+                        })()}
                       </div>
                     )}
                   </div>
@@ -1368,38 +1412,39 @@ function InvoicingPageInner() {
       )}
 
       {/* ── Delete confirmation modal ── */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-[12px] p-6 max-w-[420px] w-full shadow-xl">
-            <h3 className="text-[16px] font-bold text-[#0B2040] mb-2">Delete this invoice?</h3>
-            <p className="text-[14px] text-gray-500 mb-3">
-              This will permanently remove invoice{" "}
-              <strong className="text-[#0B2040]">
-                {invoices.find((i) => i.id === deleteConfirm)?.invoiceNumber || ""}
-              </strong>{" "}
-              from your records.
-            </p>
-            <p className="text-[14px] text-gray-500 mb-3">
-              If this invoice was synced to QuickBooks, you&apos;ll need to delete it in QuickBooks separately (accountant portal → Sales → Invoices).
-            </p>
-            <p className="text-[14px] text-gray-500 mb-5">This cannot be undone.</p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="px-4 py-2 text-[13px] font-medium text-gray-500 bg-gray-50 rounded-[8px] hover:bg-gray-100 transition cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleDelete(deleteConfirm)}
-                className="px-4 py-2 text-[13px] font-medium text-white bg-[#dc2626] rounded-[8px] hover:bg-[#b91c1c] transition cursor-pointer"
-              >
-                Delete invoice
-              </button>
+      {deleteConfirm && (() => {
+        const target = invoices.find((i) => i.id === deleteConfirm);
+        const number = target?.invoiceNumber || "";
+        const customer = target?.customerName || "";
+        return (
+          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-[12px] p-6 max-w-[440px] w-full shadow-xl">
+              <h3 className="text-[16px] font-bold text-[#0B2040] mb-2">
+                Delete invoice {number}{customer ? ` for ${customer}` : ""}?
+              </h3>
+              <p className="text-[14px] text-gray-500 mb-3">
+                This invoice will be removed from your active list. The record stays in
+                the system for audit but won&apos;t appear in your invoicing view.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  autoFocus
+                  onClick={() => setDeleteConfirm(null)}
+                  className="px-4 py-2 text-[13px] font-medium text-gray-500 bg-gray-50 rounded-[8px] hover:bg-gray-100 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDelete(deleteConfirm)}
+                  className="px-4 py-2 text-[13px] font-medium text-white bg-[#dc2626] rounded-[8px] hover:bg-[#b91c1c] transition cursor-pointer"
+                >
+                  Delete Invoice
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── Create / Edit invoice modal ── */}
       {showForm && (

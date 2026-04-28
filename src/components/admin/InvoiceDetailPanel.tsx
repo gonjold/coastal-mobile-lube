@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import AdminBadge from "./AdminBadge";
 import { formatCurrency } from "@/lib/formatCurrency";
+
+// TODO: enable email override once cloud functions accept a `recipientEmail`
+// param distinct from `customerEmail` (the QB-sync path currently writes
+// customerEmail back to the QuickBooks customer record).
+const ENABLE_EMAIL_OVERRIDE = false;
 
 /* ── Types ── */
 
@@ -76,7 +81,7 @@ export default function InvoiceDetailPanel({
   onClose: () => void;
   onMarkPaid: (invoiceId: string) => void;
   onPrint: (invoice: InvoiceForPanel) => void;
-  onSendInvoice?: (invoice: InvoiceForPanel) => void;
+  onSendInvoice?: (invoice: InvoiceForPanel, overrideEmail?: string) => void;
 }) {
   /* Escape key handler */
   useEffect(() => {
@@ -87,7 +92,16 @@ export default function InvoiceDetailPanel({
     return () => document.removeEventListener('keydown', handleEsc);
   }, [onClose]);
 
+  const [showEmailOverride, setShowEmailOverride] = useState(false);
+  const [overrideEmail, setOverrideEmail] = useState("");
+
   if (!invoice) return null;
+
+  const handleSendClick = () => {
+    const trimmed = overrideEmail.trim();
+    const useOverride = ENABLE_EMAIL_OVERRIDE && showEmailOverride && trimmed.length > 0;
+    onSendInvoice?.(invoice, useOverride ? trimmed : undefined);
+  };
 
   const handleDownloadPDF = () => {
     const inv = invoice;
@@ -431,80 +445,110 @@ export default function InvoiceDetailPanel({
         </div>
 
         {/* Bottom action bar */}
-        <div className="border-t border-gray-200 px-6 py-4 flex gap-2.5">
-          {inv.status === "draft" && (
-            <>
-              <button
-                onClick={() => onSendInvoice?.(inv)}
-                className="flex-1 bg-[#1A5FAC] text-white rounded-[10px] py-2.5 font-semibold text-[13px] cursor-pointer hover:bg-[#174f94] transition"
-              >
-                Send Invoice
-              </button>
-              <button
-                onClick={handleDownloadPDF}
-                className="px-5 border border-gray-200 rounded-[10px] py-2.5 text-[#0B2040] font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
-              >
-                Download PDF
-              </button>
-              <button
-                onClick={() => onPrint(inv)}
-                className="px-5 border border-gray-200 rounded-[10px] py-2.5 text-gray-500 font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
-              >
-                Print / PDF
-              </button>
-            </>
-          )}
+        <div className="border-t border-gray-200 px-6 py-4 flex flex-col gap-2.5">
+          <div className="flex gap-2.5">
+            {inv.status === "draft" && (
+              <>
+                <button
+                  onClick={handleSendClick}
+                  className="flex-1 bg-[#1A5FAC] text-white rounded-[10px] py-2.5 font-semibold text-[13px] cursor-pointer hover:bg-[#174f94] transition"
+                >
+                  Send Invoice
+                </button>
+                <button
+                  onClick={handleDownloadPDF}
+                  className="px-5 border border-gray-200 rounded-[10px] py-2.5 text-[#0B2040] font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
+                >
+                  Download PDF
+                </button>
+                <button
+                  onClick={() => onPrint(inv)}
+                  className="px-5 border border-gray-200 rounded-[10px] py-2.5 text-gray-500 font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
+                >
+                  Print / PDF
+                </button>
+              </>
+            )}
 
-          {(inv.status === "sent" || inv.status === "overdue") && (
-            <>
-              <button
-                onClick={() => onMarkPaid(inv.id)}
-                className="flex-1 bg-[#16A34A] text-white rounded-[10px] py-2.5 font-semibold text-[13px] cursor-pointer hover:bg-[#15803d] transition"
-              >
-                Mark as Paid
-              </button>
-              <button
-                onClick={() => onSendInvoice?.(inv)}
-                className="px-5 border border-gray-200 rounded-[10px] py-2.5 text-[#1A5FAC] font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
-              >
-                Resend
-              </button>
-              <button
-                onClick={handleDownloadPDF}
-                className="px-5 border border-gray-200 rounded-[10px] py-2.5 text-[#0B2040] font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
-              >
-                Download PDF
-              </button>
-              <button
-                onClick={() => onPrint(inv)}
-                className="px-5 border border-gray-200 rounded-[10px] py-2.5 text-gray-500 font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
-              >
-                Print / PDF
-              </button>
-            </>
-          )}
+            {(inv.status === "sent" || inv.status === "overdue") && (
+              <>
+                <button
+                  onClick={() => onMarkPaid(inv.id)}
+                  className="flex-1 bg-[#16A34A] text-white rounded-[10px] py-2.5 font-semibold text-[13px] cursor-pointer hover:bg-[#15803d] transition"
+                >
+                  Mark as Paid
+                </button>
+                <button
+                  onClick={handleSendClick}
+                  className="px-5 border border-gray-200 rounded-[10px] py-2.5 text-[#1A5FAC] font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
+                >
+                  Resend Invoice
+                </button>
+                <button
+                  onClick={handleDownloadPDF}
+                  className="px-5 border border-gray-200 rounded-[10px] py-2.5 text-[#0B2040] font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
+                >
+                  Download PDF
+                </button>
+                <button
+                  onClick={() => onPrint(inv)}
+                  className="px-5 border border-gray-200 rounded-[10px] py-2.5 text-gray-500 font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
+                >
+                  Print / PDF
+                </button>
+              </>
+            )}
 
-          {inv.status === "paid" && (
-            <>
+            {inv.status === "paid" && (
+              <>
+                <button
+                  onClick={handleDownloadPDF}
+                  className="flex-1 border border-gray-200 rounded-[10px] py-2.5 text-[#0B2040] font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
+                >
+                  Download PDF
+                </button>
+                <button
+                  onClick={() => onPrint(inv)}
+                  className="flex-1 border border-gray-200 rounded-[10px] py-2.5 text-gray-500 font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
+                >
+                  Print / PDF
+                </button>
+                <button
+                  onClick={handleSendClick}
+                  className="flex-1 border border-gray-200 rounded-[10px] py-2.5 text-[#1A5FAC] font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
+                >
+                  Resend Invoice
+                </button>
+              </>
+            )}
+          </div>
+
+          {ENABLE_EMAIL_OVERRIDE && inv.status !== "paid" && (
+            <div className="flex flex-col">
               <button
-                onClick={handleDownloadPDF}
-                className="flex-1 border border-gray-200 rounded-[10px] py-2.5 text-[#0B2040] font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
+                onClick={() => setShowEmailOverride((v) => !v)}
+                className="text-xs text-[#1A5FAC] hover:underline self-start cursor-pointer"
               >
-                Download PDF
+                {showEmailOverride ? "Cancel different email" : "Send to a different email"}
               </button>
-              <button
-                onClick={() => onPrint(inv)}
-                className="flex-1 border border-gray-200 rounded-[10px] py-2.5 text-gray-500 font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
-              >
-                Print / PDF
-              </button>
-              <button
-                onClick={() => onSendInvoice?.(inv)}
-                className="flex-1 border border-gray-200 rounded-[10px] py-2.5 text-[#1A5FAC] font-semibold text-[13px] cursor-pointer hover:bg-gray-50 transition"
-              >
-                Resend
-              </button>
-            </>
+              {showEmailOverride && (
+                <div className="mt-2">
+                  <label className="text-[11px] font-semibold text-gray-500 uppercase">
+                    Override email (one-time)
+                  </label>
+                  <input
+                    type="email"
+                    value={overrideEmail}
+                    onChange={(e) => setOverrideEmail(e.target.value)}
+                    placeholder={inv.customerEmail}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-[8px] mt-1 text-[13px] outline-none focus:border-[#1A5FAC] transition"
+                  />
+                  <p className="text-[11px] text-gray-500 mt-1">
+                    Sends to this address only. Does not update the customer&apos;s saved email.
+                  </p>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
