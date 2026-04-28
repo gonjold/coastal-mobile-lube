@@ -94,20 +94,36 @@ function getPrimaryVehicle(bookings: Booking[]): string {
   return best;
 }
 
-function deriveCustomerStatus(bookings: Booking[]): "Active" | "Lead" | "Inactive" {
+function deriveCustomerStatus(
+  bookings: Booking[],
+  invoices: PanelInvoice[],
+): "Active" | "Lead" | "Inactive" {
+  const twelveMonthsAgo = new Date();
+  twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
+
+  const hasMeaningfulInvoice = invoices.some(
+    (i) => i.status === "sent" || i.status === "paid" || i.status === "overdue",
+  );
+
+  const hasConfirmedOrServicedBooking = bookings.some((b) => {
+    if (!b.status) return false;
+    if (
+      b.status !== "confirmed" &&
+      b.status !== "in-progress" &&
+      b.status !== "completed" &&
+      b.status !== "invoiced"
+    ) return false;
+    const created = b.createdAt?.toDate?.();
+    return created ? created > twelveMonthsAgo : true;
+  });
+
+  if (hasMeaningfulInvoice || hasConfirmedOrServicedBooking) return "Active";
+
   const latest = bookings[0];
-  if (!latest) return "Inactive";
-  if (latest.status === "pending" || latest.status === "new-lead") return "Lead";
-  if (
-    latest.status === "confirmed" ||
-    latest.status === "in-progress" ||
-    latest.status === "completed" ||
-    latest.status === "invoiced"
-  )
-    return "Active";
-  if (latest.status === "cancelled") {
-    return bookings.some((b) => b.status !== "cancelled") ? "Active" : "Inactive";
+  if (latest && (latest.status === "pending" || latest.status === "new-lead")) {
+    return "Lead";
   }
+
   return "Inactive";
 }
 
@@ -305,7 +321,7 @@ export default function CustomersPage() {
       const matched = matchInvoicesToCustomer(c, scopedInvoices);
       // TODO: Add "type" field (Residential/Commercial) to customer documents
       const type = "Residential";
-      const customerStatus = deriveCustomerStatus(c.bookings);
+      const customerStatus = deriveCustomerStatus(c.bookings, matched);
       const totalSpent = getCustomerTotalSpent(matched, c.bookings);
       const jobCount = c.totalBookings;
       const lastVisit = getLastVisit(c.bookings);

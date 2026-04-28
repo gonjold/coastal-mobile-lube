@@ -640,14 +640,20 @@ function SchedulePageInner() {
                           >
                             View Details
                           </button>
-                          {(b.status === "pending" || b.status === "new-lead" || b.type === "lead") && (
-                            <button
-                              onMouseDown={(e) => { e.preventDefault(); handleAdvance(b.id, "confirmed"); setActionMenuId(null); }}
-                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition"
-                            >
-                              Confirm
-                            </button>
-                          )}
+                          {(() => {
+                            const canConfirm = b.status === "pending" || b.status === "new-lead" || b.type === "lead";
+                            const tooltip = canConfirm ? "" : `Already ${b.status || "advanced"}.`;
+                            return (
+                              <button
+                                onMouseDown={(e) => { e.preventDefault(); if (!canConfirm) return; handleAdvance(b.id, "confirmed"); setActionMenuId(null); }}
+                                disabled={!canConfirm}
+                                title={tooltip}
+                                className={`block w-full text-left px-4 py-2 text-sm transition ${canConfirm ? "text-gray-700 cursor-pointer hover:bg-gray-50" : "text-gray-300 cursor-not-allowed"}`}
+                              >
+                                Confirm
+                              </button>
+                            );
+                          })()}
                           <div className="relative">
                             <button
                               onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setDeadReasonMenuId(deadReasonMenuId === b.id ? null : b.id); }}
@@ -669,17 +675,21 @@ function SchedulePageInner() {
                               </div>
                             )}
                           </div>
-                          {b.status !== "cancelled" && b.status !== "dead" && (
-                            <>
-                              <div className="h-px bg-gray-100 my-1" />
+                          <div className="h-px bg-gray-100 my-1" />
+                          {(() => {
+                            const canCancel = b.status !== "cancelled" && b.status !== "dead";
+                            const tooltip = canCancel ? "" : `Booking is already ${b.status}.`;
+                            return (
                               <button
-                                onMouseDown={(e) => { e.preventDefault(); if (!confirm('Cancel this booking? This cannot be undone. The customer will need to rebook.')) return; handleAdvance(b.id, "cancelled"); setActionMenuId(null); }}
-                                className="block w-full text-left px-4 py-2 text-sm text-red-600 cursor-pointer hover:bg-gray-50 transition"
+                                onMouseDown={(e) => { e.preventDefault(); if (!canCancel) return; if (!confirm('Cancel this booking? This cannot be undone. The customer will need to rebook.')) return; handleAdvance(b.id, "cancelled"); setActionMenuId(null); }}
+                                disabled={!canCancel}
+                                title={tooltip}
+                                className={`block w-full text-left px-4 py-2 text-sm transition ${canCancel ? "text-red-600 cursor-pointer hover:bg-gray-50" : "text-gray-300 cursor-not-allowed"}`}
                               >
                                 Cancel
                               </button>
-                            </>
-                          )}
+                            );
+                          })()}
                           <div className="h-px bg-gray-100 my-1" />
                           <button
                             onMouseDown={(e) => { e.preventDefault(); setDeleteConfirmId(b.id); setActionMenuId(null); }}

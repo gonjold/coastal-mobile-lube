@@ -1346,52 +1346,57 @@ function InvoicingPageInner() {
                     >
                       <span className="text-lg text-gray-400 leading-none">&#8942;</span>
                     </button>
-                    {actionMenuId === inv.id && (
-                      <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[160px] z-[50]" onMouseDown={(e) => e.stopPropagation()}>
-                        <button onMouseDown={(e) => { e.preventDefault(); setSelectedInvoice(inv); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">View Details</button>
-                        <button onMouseDown={(e) => { e.preventDefault(); openEdit(inv); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Edit Invoice</button>
-                        {(inv.status === "sent" || inv.status === "overdue") && (
-                          <button onMouseDown={(e) => { e.preventDefault(); handleMarkPaid(inv.id); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Mark as Paid</button>
-                        )}
-                        {inv.status === "paid" && (
-                          <button onMouseDown={(e) => { e.preventDefault(); handleRevertToSent(inv.id); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Revert to Sent</button>
-                        )}
-                        {(inv.status === "sent" || inv.status === "overdue") && (
-                          <button onMouseDown={(e) => { e.preventDefault(); handleSendInvoice(inv); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Resend</button>
-                        )}
-                        <button onMouseDown={(e) => { e.preventDefault(); handlePrint(inv); setActionMenuId(null); }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition">Print / PDF</button>
-                        <div className="h-px bg-gray-100 my-1" />
-                        {(() => {
-                          const qbSynced = !!inv.qbInvoiceId;
-                          const isPaid = inv.status === "paid";
-                          const disabled = qbSynced || isPaid;
-                          const tooltip = qbSynced
-                            ? "Synced to QuickBooks. Void in QB first, then delete here."
-                            : isPaid
-                            ? "Cannot delete a paid invoice."
-                            : "";
-                          return (
-                            <button
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                if (disabled) return;
-                                setDeleteConfirm(inv.id);
-                                setActionMenuId(null);
-                              }}
-                              disabled={disabled}
-                              title={tooltip}
-                              className={`block w-full text-left px-4 py-2 text-sm transition ${
-                                disabled
-                                  ? "text-gray-300 cursor-not-allowed"
-                                  : "text-red-600 cursor-pointer hover:bg-gray-50"
-                              }`}
-                            >
-                              Delete Invoice
-                            </button>
-                          );
-                        })()}
-                      </div>
-                    )}
+                    {actionMenuId === inv.id && (() => {
+                      const qbSynced = !!inv.qbInvoiceId;
+                      const isPaid = inv.status === "paid";
+                      const editDisabled = isPaid && qbSynced;
+                      const editTooltip = editDisabled
+                        ? "This invoice is paid and synced to QuickBooks. Changes must be made in QB."
+                        : "";
+                      const markPaidDisabled = isPaid;
+                      const markPaidTooltip = isPaid ? "Already marked paid." : "";
+                      const deleteDisabled = qbSynced || isPaid;
+                      const deleteTooltip = qbSynced
+                        ? "Synced to QuickBooks. Void in QB first, then delete here."
+                        : isPaid
+                        ? "Cannot delete a paid invoice. Change status first."
+                        : "";
+                      const baseItem = "block w-full text-left px-4 py-2 text-sm transition";
+                      return (
+                        <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[160px] z-[50]" onMouseDown={(e) => e.stopPropagation()}>
+                          <button
+                            onMouseDown={(e) => { e.preventDefault(); setSelectedInvoice(inv); setActionMenuId(null); }}
+                            className={`${baseItem} text-gray-700 cursor-pointer hover:bg-gray-50`}
+                          >
+                            View Details
+                          </button>
+                          <button
+                            onMouseDown={(e) => { e.preventDefault(); if (editDisabled) return; openEdit(inv); setActionMenuId(null); }}
+                            disabled={editDisabled}
+                            title={editTooltip}
+                            className={`${baseItem} ${editDisabled ? "text-gray-300 cursor-not-allowed" : "text-gray-700 cursor-pointer hover:bg-gray-50"}`}
+                          >
+                            Edit Invoice
+                          </button>
+                          <button
+                            onMouseDown={(e) => { e.preventDefault(); if (markPaidDisabled) return; handleMarkPaid(inv.id); setActionMenuId(null); }}
+                            disabled={markPaidDisabled}
+                            title={markPaidTooltip}
+                            className={`${baseItem} ${markPaidDisabled ? "text-gray-300 cursor-not-allowed" : "text-gray-700 cursor-pointer hover:bg-gray-50"}`}
+                          >
+                            Mark as Paid
+                          </button>
+                          <button
+                            onMouseDown={(e) => { e.preventDefault(); if (deleteDisabled) return; setDeleteConfirm(inv.id); setActionMenuId(null); }}
+                            disabled={deleteDisabled}
+                            title={deleteTooltip}
+                            className={`${baseItem} ${deleteDisabled ? "text-gray-300 cursor-not-allowed" : "text-red-600 cursor-pointer hover:bg-gray-50"}`}
+                          >
+                            Delete Invoice
+                          </button>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </AdminTableRow>
               );
