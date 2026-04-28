@@ -896,6 +896,36 @@ function VehiclesTab({
     }
   }
 
+  async function handleRemoveVehicle(vehicleName: string) {
+    try {
+      const matching = bookings.filter((b) => getVehicleName(b) === vehicleName);
+      if (matching.length === 0) return;
+      const batch = writeBatch(db);
+      for (const b of matching) {
+        const ref = doc(db, "bookings", b.id);
+        const isSynthetic = b.notes === "Vehicle added from customer profile";
+        if (isSynthetic) {
+          batch.delete(ref);
+        } else {
+          batch.update(ref, {
+            vehicleMake: null,
+            vehicleModel: null,
+            vehicleYear: null,
+            vesselMake: null,
+            vesselModel: null,
+            vesselYear: null,
+            updatedAt: serverTimestamp(),
+          });
+        }
+      }
+      await batch.commit();
+    } catch (err) {
+      console.error("Vehicle delete failed:", err);
+    } finally {
+      setRemovingVehicle(null);
+    }
+  }
+
   return (
     <>
       {vehicles.map((v) => (
@@ -923,7 +953,7 @@ function VehiclesTab({
                   No
                 </button>
                 <button
-                  onClick={() => setRemovingVehicle(null)}
+                  onClick={() => handleRemoveVehicle(v.name)}
                   className="text-xs text-red-600 font-semibold cursor-pointer"
                 >
                   Yes

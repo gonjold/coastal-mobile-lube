@@ -1347,20 +1347,13 @@ function InvoicingPageInner() {
                       <span className="text-lg text-gray-400 leading-none">&#8942;</span>
                     </button>
                     {actionMenuId === inv.id && (() => {
-                      const qbSynced = !!inv.qbInvoiceId;
                       const isPaid = inv.status === "paid";
-                      const editDisabled = isPaid && qbSynced;
-                      const editTooltip = editDisabled
-                        ? "This invoice is paid and synced to QuickBooks. Changes must be made in QB."
-                        : "";
+                      const editDisabled = isPaid;
+                      const editTooltip = editDisabled ? "Cannot edit a paid invoice." : "";
                       const markPaidDisabled = isPaid;
                       const markPaidTooltip = isPaid ? "Already marked paid." : "";
-                      const deleteDisabled = qbSynced || isPaid;
-                      const deleteTooltip = qbSynced
-                        ? "Synced to QuickBooks. Void in QB first, then delete here."
-                        : isPaid
-                        ? "Cannot delete a paid invoice. Change status first."
-                        : "";
+                      const deleteDisabled = false;
+                      const deleteTooltip = "";
                       const baseItem = "block w-full text-left px-4 py-2 text-sm transition";
                       return (
                         <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[160px] z-[50]" onMouseDown={(e) => e.stopPropagation()}>
