@@ -40,6 +40,8 @@ interface LineItem {
   quantity: number;
   unitPrice: number;
   lineTotal: number;
+  // Sent to QB as TaxCodeRef "TAX"/"NON". Missing → false (safe default).
+  taxable: boolean;
 }
 
 interface Invoice {
@@ -50,7 +52,6 @@ interface Invoice {
   customerEmail: string;
   lineItems: LineItem[];
   subtotal: number;
-  taxRate: number;
   taxAmount: number;
   total: number;
   status: "draft" | "sent" | "paid" | "overdue";
@@ -63,7 +64,13 @@ interface Invoice {
   jobReference?: string;
   vehicle?: string;
   qbInvoiceId?: string;
+  qbDocNumber?: string;
   qbPaymentLink?: string;
+  // QB-authoritative totals after Automated Sales Tax computes. Take precedence
+  // over local subtotal/taxAmount/total when displaying.
+  qbTotalAmount?: number;
+  qbTaxAmount?: number;
+  qbSubtotal?: number;
   createdAt?: { toDate: () => Date };
   updatedAt?: { toDate: () => Date };
   isTest?: boolean;
@@ -90,7 +97,17 @@ function generateInvoiceNumber(existing: Invoice[]): string {
 }
 
 function emptyLineItem(): LineItem {
-  return { serviceName: "", quantity: 1, unitPrice: 0, lineTotal: 0 };
+  return { serviceName: "", quantity: 1, unitPrice: 0, lineTotal: 0, taxable: false };
+}
+
+// Default per-line taxability inference. "labor" → never taxable; common parts
+// keywords → taxable; everything else → safe default (false). User can override
+// via the Tax checkbox.
+function inferTaxable(description: string): boolean {
+  const lower = description.toLowerCase();
+  if (lower.includes("labor")) return false;
+  const taxableKeywords = ["parts", "rotor", "pad", "fluid", "filter", "oil"];
+  return taxableKeywords.some((kw) => lower.includes(kw));
 }
 
 function defaultForm(invoices: Invoice[]): InvoiceFormData {
@@ -104,7 +121,6 @@ function defaultForm(invoices: Invoice[]): InvoiceFormData {
     customerEmail: "",
     lineItems: [emptyLineItem()],
     subtotal: 0,
-    taxRate: 0,
     taxAmount: 0,
     total: 0,
     status: "draft",
@@ -114,15 +130,16 @@ function defaultForm(invoices: Invoice[]): InvoiceFormData {
   };
 }
 
+// Pre-send totals are admin-side only; QB recomputes tax authoritatively when
+// the invoice is created and writes qbSubtotal/qbTaxAmount/qbTotalAmount back
+// to Firestore. Display layer prefers those when present.
 function recalcTotals(form: InvoiceFormData): InvoiceFormData {
   const lineItems = form.lineItems.map((li) => ({
     ...li,
     lineTotal: Math.round(li.quantity * li.unitPrice * 100) / 100,
   }));
   const subtotal = Math.round(lineItems.reduce((s, li) => s + li.lineTotal, 0) * 100) / 100;
-  const taxAmount = Math.round(subtotal * (form.taxRate / 100) * 100) / 100;
-  const total = Math.round((subtotal + taxAmount) * 100) / 100;
-  return { ...form, lineItems, subtotal, taxAmount, total };
+  return { ...form, lineItems, subtotal, taxAmount: 0, total: subtotal };
 }
 
 function formatDateAbbr(dateStr: string): string {
@@ -286,15 +303,15 @@ function generatePrintHtml(inv: Invoice): string {
   <div style="width:260px;font-size:14px">
     <div style="display:flex;justify-content:space-between;padding:8px 0;color:#555">
       <span>Subtotal</span>
-      <span style="font-weight:500">$${inv.subtotal.toFixed(2)}</span>
+      <span style="font-weight:500">$${(inv.qbSubtotal ?? inv.subtotal).toFixed(2)}</span>
     </div>
-    <div style="display:flex;justify-content:space-between;padding:8px 0;color:#555;border-bottom:1px solid #ddd">
-      <span>Tax (${inv.taxRate}%)</span>
-      <span style="font-weight:500">$${inv.taxAmount.toFixed(2)}</span>
-    </div>
+    ${(inv.qbTaxAmount ?? inv.taxAmount) > 0 ? `<div style="display:flex;justify-content:space-between;padding:8px 0;color:#555;border-bottom:1px solid #ddd">
+      <span>Tax</span>
+      <span style="font-weight:500">$${(inv.qbTaxAmount ?? inv.taxAmount).toFixed(2)}</span>
+    </div>` : `<div style="border-bottom:1px solid #ddd"></div>`}
     <div style="display:flex;justify-content:space-between;padding:10px 0;font-weight:800;font-size:18px;color:#0B2040">
       <span>Total</span>
-      <span>$${inv.total.toFixed(2)}</span>
+      <span>$${(inv.qbTotalAmount ?? inv.total).toFixed(2)}</span>
     </div>
   </div>
 </div>
@@ -649,6 +666,7 @@ function InvoicingPageInner() {
               quantity: 1,
               unitPrice: match?.price ?? 0,
               lineTotal: match?.price ?? 0,
+              taxable: inferTaxable(serviceName),
             },
           ];
         }
@@ -686,6 +704,7 @@ function InvoicingPageInner() {
         quantity: 1,
         unitPrice: s.price || 0,
         lineTotal: s.price || 0,
+        taxable: inferTaxable(s.name),
       }));
     } else if (b.service) {
       const match = catalogItems.find((s) => s.name.toLowerCase() === b.service!.toLowerCase());
@@ -695,11 +714,12 @@ function InvoicingPageInner() {
           quantity: 1,
           unitPrice: match?.price ?? 0,
           lineTotal: match?.price ?? 0,
+          taxable: inferTaxable(b.service),
         },
       ];
     }
 
-    // Add convenience fee if not waived
+    // Add convenience fee if not waived. Service charges are non-taxable in FL.
     const fee = (b as unknown as Record<string, unknown>).convenienceFee as { amount: number; waived: boolean } | undefined;
     if (fee && !fee.waived && fee.amount > 0) {
       f.lineItems.push({
@@ -707,6 +727,7 @@ function InvoicingPageInner() {
         quantity: 1,
         unitPrice: fee.amount,
         lineTotal: fee.amount,
+        taxable: false,
       });
     }
 
@@ -784,9 +805,14 @@ function InvoicingPageInner() {
       customerName: inv.customerName,
       customerPhone: inv.customerPhone,
       customerEmail: inv.customerEmail,
-      lineItems: inv.lineItems.map((li) => ({ ...li })),
+      lineItems: inv.lineItems.map((li) => ({
+        serviceName: li.serviceName,
+        quantity: li.quantity,
+        unitPrice: li.unitPrice,
+        lineTotal: li.lineTotal,
+        taxable: li.taxable ?? false,
+      })),
       subtotal: inv.subtotal,
-      taxRate: inv.taxRate,
       taxAmount: inv.taxAmount,
       total: inv.total,
       status: inv.status,
@@ -810,13 +836,31 @@ function InvoicingPageInner() {
     setShowCustomerDropdown(false);
   }
 
-  function updateLineItem(idx: number, field: keyof LineItem, value: string | number) {
+  function updateLineItem(
+    idx: number,
+    field: keyof LineItem,
+    value: string | number | boolean
+  ) {
     setForm((prev) => {
       const items = [...prev.lineItems];
-      items[idx] = { ...items[idx], [field]: value };
+      const prior = items[idx];
+      const updated = { ...prior, [field]: value } as LineItem;
       if (field === "quantity" || field === "unitPrice") {
-        items[idx].lineTotal = Math.round(items[idx].quantity * items[idx].unitPrice * 100) / 100;
+        updated.lineTotal =
+          Math.round(Number(updated.quantity) * Number(updated.unitPrice) * 100) / 100;
       }
+      // Auto-infer taxable on first non-empty serviceName entry. Once set, the
+      // user's checkbox toggle is authoritative — we don't keep re-inferring on
+      // every keystroke.
+      if (
+        field === "serviceName" &&
+        !prior.serviceName &&
+        typeof value === "string" &&
+        value.trim()
+      ) {
+        updated.taxable = inferTaxable(value);
+      }
+      items[idx] = updated;
       return recalcTotals({ ...prev, lineItems: items });
     });
   }
@@ -829,6 +873,7 @@ function InvoicingPageInner() {
         quantity: 1,
         unitPrice: item.price,
         lineTotal: item.price,
+        taxable: inferTaxable(item.name),
       };
       return recalcTotals({ ...prev, lineItems: items });
     });
@@ -844,10 +889,6 @@ function InvoicingPageInner() {
       if (items.length === 0) items.push(emptyLineItem());
       return recalcTotals({ ...prev, lineItems: items });
     });
-  }
-
-  function updateTaxRate(rate: number) {
-    setForm((prev) => recalcTotals({ ...prev, taxRate: rate }));
   }
 
   /* ── Save ── */
@@ -1607,6 +1648,7 @@ function InvoicingPageInner() {
                   <div className="w-[60px] text-center">Qty</div>
                   <div className="w-[90px] text-right">Price</div>
                   <div className="w-[80px] text-right">Total</div>
+                  <div className="w-[40px] text-center" title="Charge sales tax on this line">Tax</div>
                   <div className="w-[28px]" />
                 </div>
                 <div className="space-y-2">
@@ -1634,32 +1676,22 @@ function InvoicingPageInner() {
                 </button>
               </div>
 
-              {/* Totals */}
+              {/* Totals — pre-send subtotal only. QB recomputes tax on send
+                  using the per-line Tax checkboxes and writes the authoritative
+                  total back to Firestore. */}
               <div className="flex justify-end">
                 <div className="w-[260px] space-y-2 text-[14px]">
                   <div className="flex justify-between">
                     <span className="text-gray-500">Subtotal</span>
                     <span className="font-medium">{formatCurrency(form.subtotal)}</span>
                   </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-gray-500">Tax</span>
-                    <div className="flex items-center gap-1">
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.5"
-                        value={form.taxRate}
-                        onChange={(e) => updateTaxRate(parseFloat(e.target.value) || 0)}
-                        className="w-[56px] px-2 py-1 text-[13px] text-right border border-gray-200 rounded-[6px] focus:outline-none focus:border-[#1A5FAC]"
-                      />
-                      <span className="text-[13px] text-gray-500">%</span>
-                      <span className="ml-2 font-medium">{formatCurrency(form.taxAmount)}</span>
-                    </div>
+                  <div className="flex items-center justify-between text-[12px] text-gray-400">
+                    <span>Sales tax</span>
+                    <span className="italic">Calculated by QuickBooks on send</span>
                   </div>
                   <div className="flex justify-between items-center pt-3 border-t-2 border-[#0B2040]">
-                    <span className="font-bold text-[16px] text-[#0B2040]">Total</span>
-                    <span className="font-bold text-[24px] text-[#0B2040]">{formatCurrency(form.total)}</span>
+                    <span className="font-bold text-[16px] text-[#0B2040]">Total (pre-tax)</span>
+                    <span className="font-bold text-[24px] text-[#0B2040]">{formatCurrency(form.subtotal)}</span>
                   </div>
                 </div>
               </div>
@@ -1735,7 +1767,7 @@ function LineItemRow({
 }: {
   item: LineItem;
   catalogItems: Service[];
-  onChange: (field: keyof LineItem, value: string | number) => void;
+  onChange: (field: keyof LineItem, value: string | number | boolean) => void;
   onSelectService: (s: Service) => void;
   onRemove: () => void;
   canRemove: boolean;
@@ -1823,6 +1855,17 @@ function LineItemRow({
       {/* Line total */}
       <div className="w-[80px] py-2 text-[13px] font-semibold text-right text-[#0B2040]">
         {formatCurrency(item.lineTotal)}
+      </div>
+
+      {/* Tax checkbox — sent to QB as TaxCodeRef "TAX"/"NON". */}
+      <div className="w-[40px] flex items-center justify-center py-2">
+        <input
+          type="checkbox"
+          checked={item.taxable}
+          onChange={(e) => onChange("taxable", e.target.checked)}
+          className="h-4 w-4 cursor-pointer accent-[#1A5FAC]"
+          title={item.taxable ? "Sales tax will be applied" : "No sales tax on this line"}
+        />
       </div>
 
       {/* Remove */}

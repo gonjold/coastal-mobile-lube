@@ -16,6 +16,7 @@ interface LineItem {
   quantity: number;
   unitPrice: number;
   lineTotal: number;
+  taxable?: boolean;
 }
 
 export interface InvoiceForPanel {
@@ -26,7 +27,7 @@ export interface InvoiceForPanel {
   customerEmail: string;
   lineItems: LineItem[];
   subtotal: number;
-  taxRate: number;
+  // Legacy/fallback values. New invoices have qb* fields populated by AST.
   taxAmount: number;
   total: number;
   status: "draft" | "sent" | "paid" | "overdue";
@@ -39,7 +40,11 @@ export interface InvoiceForPanel {
   jobReference?: string;
   vehicle?: string;
   qbInvoiceId?: string;
+  qbDocNumber?: string;
   qbPaymentLink?: string;
+  qbTotalAmount?: number;
+  qbTaxAmount?: number;
+  qbSubtotal?: number;
 }
 
 /* ── Helpers ── */
@@ -120,9 +125,13 @@ export default function InvoiceDetailPanel({
     }).join('');
 
     const customerName = inv.customerName || '';
-    const total = (inv.total || 0).toFixed(2);
-    const subtotal = inv.subtotal != null ? inv.subtotal.toFixed(2) : null;
-    const taxAmount = inv.taxAmount != null && inv.taxAmount > 0 ? inv.taxAmount.toFixed(2) : null;
+    const displayTotal = inv.qbTotalAmount ?? inv.total ?? 0;
+    const displaySubtotalRaw = inv.qbSubtotal ?? inv.subtotal;
+    const displayTaxRaw = inv.qbTaxAmount ?? inv.taxAmount;
+    const total = displayTotal.toFixed(2);
+    const subtotal = displaySubtotalRaw != null ? displaySubtotalRaw.toFixed(2) : null;
+    const taxAmount =
+      displayTaxRaw != null && displayTaxRaw > 0 ? displayTaxRaw.toFixed(2) : null;
 
     const printHTML = `
 <!DOCTYPE html>
@@ -368,29 +377,40 @@ export default function InvoiceDetailPanel({
               ))}
             </div>
 
-            {/* Totals block */}
-            <div className="flex flex-col items-end gap-1.5 mt-3">
-              <div className="flex items-center gap-4">
-                <span className="text-[13px] text-gray-500">Subtotal</span>
-                <span className="text-[13px] font-medium min-w-[80px] text-right">
-                  {formatCurrency(inv.subtotal)}
-                </span>
-              </div>
-              {inv.taxRate > 0 && (
-                <div className="flex items-center gap-4">
-                  <span className="text-[13px] text-gray-500">Tax ({inv.taxRate}%)</span>
-                  <span className="text-[13px] font-medium min-w-[80px] text-right">
-                    {formatCurrency(inv.taxAmount)}
-                  </span>
+            {/* Totals block — QB-authoritative values when present, else
+                legacy locally-computed fallback. */}
+            {(() => {
+              const showSubtotal = inv.qbSubtotal ?? inv.subtotal ?? 0;
+              const showTax = inv.qbTaxAmount ?? inv.taxAmount ?? 0;
+              const showTotal = inv.qbTotalAmount ?? inv.total ?? 0;
+              return (
+                <div className="flex flex-col items-end gap-1.5 mt-3">
+                  <div className="flex items-center gap-4">
+                    <span className="text-[13px] text-gray-500">Subtotal</span>
+                    <span className="text-[13px] font-medium min-w-[80px] text-right">
+                      {formatCurrency(showSubtotal)}
+                    </span>
+                  </div>
+                  {showTax > 0 && (
+                    <div className="flex items-center gap-4">
+                      <span className="text-[13px] text-gray-500">Tax</span>
+                      <span className="text-[13px] font-medium min-w-[80px] text-right">
+                        {formatCurrency(showTax)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="w-[180px] h-px bg-gray-200 my-1" />
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-bold text-[#0B2040]">Total</span>
+                    <span className="text-base font-bold min-w-[80px] text-right text-[#0B2040]">
+                      {formatCurrency(showTotal)}
+                    </span>
+                  </div>
                 </div>
-              )}
-              <div className="w-[180px] h-px bg-gray-200 my-1" />
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-bold text-[#0B2040]">Total</span>
-                <span className="text-base font-bold min-w-[80px] text-right text-[#0B2040]">
-                  {formatCurrency(inv.total)}
-                </span>
-              </div>
+              );
+            })()}
+            <div className="flex flex-col items-end gap-1.5">
+              {/* spacer; partiallyPaid block continues below */}
               {partiallyPaid && (
                 <>
                   <div className="flex items-center gap-4">

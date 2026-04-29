@@ -1315,7 +1315,7 @@ async function getOrCreateQBServiceItem(accessToken, realmId) {
     body: JSON.stringify({
       Name: "Service",
       Type: "Service",
-      IncomeAccountRef: { name: "Services", value: "1" },
+      IncomeAccountRef: { name: "Services", value: "7" },
     }),
   });
   const created = await createResponse.json();
@@ -1439,6 +1439,9 @@ exports.sendInvoiceWithQBPayment = onRequest(
       // 2. Create QB invoice
       const serviceItemId = await getOrCreateQBServiceItem(accessToken, realmId);
 
+      // Per-line TaxCodeRef drives Automated Sales Tax in Coastal's QB:
+      // "TAX" → AST applies the customer-address rate; "NON" → excluded from tax.
+      // Default missing item.taxable to false (safe — never tax labor unintentionally).
       const qbLineItems = (lineItems || []).map((item) => ({
         DetailType: "SalesItemLineDetail",
         Amount: (item.quantity || 1) * parseFloat(item.unitPrice || item.price || 0),
@@ -1447,10 +1450,11 @@ exports.sendInvoiceWithQBPayment = onRequest(
           ItemRef: { value: serviceItemId },
           UnitPrice: parseFloat(item.unitPrice || item.price || 0),
           Qty: item.quantity || 1,
+          TaxCodeRef: { value: item.taxable ? "TAX" : "NON" },
         },
       }));
 
-      // Add convenience fee as a line item if present
+      // Convenience fee is a service charge — non-taxable in FL.
       if (convenienceFee && parseFloat(convenienceFee) > 0) {
         qbLineItems.push({
           DetailType: "SalesItemLineDetail",
@@ -1460,6 +1464,7 @@ exports.sendInvoiceWithQBPayment = onRequest(
             ItemRef: { value: serviceItemId },
             UnitPrice: parseFloat(convenienceFee),
             Qty: 1,
+            TaxCodeRef: { value: "NON" },
           },
         });
       }
@@ -1467,7 +1472,9 @@ exports.sendInvoiceWithQBPayment = onRequest(
       const qbInvoice = {
         CustomerRef: { value: qbCustomerId },
         Line: qbLineItems,
-        // DocNumber omitted — QBO assigns sequentially when "Custom transaction numbers" is OFF
+        // Coastal QB has Custom Transaction Numbers ON, so admin's CMLT-YYYY-NNN
+        // takes precedence and customers see the same number across all systems.
+        DocNumber: invoiceNumber,
         BillEmail: { Address: customerEmail },
         AllowOnlineCreditCardPayment: true,
         AllowOnlineACHPayment: true,
@@ -1491,8 +1498,24 @@ exports.sendInvoiceWithQBPayment = onRequest(
         throw new Error(`QB invoice create failed: ${JSON.stringify(invoiceResult.Fault)}`);
       }
 
-      const qbInvoiceId = invoiceResult.Invoice.Id;
-      const qbDocNumber = invoiceResult.Invoice.DocNumber;
+      const qbInvoiceId = invoiceResult.Invoice?.Id;
+      const qbDocNumber = invoiceResult.Invoice?.DocNumber;
+
+      // QB-authoritative totals after AST has computed tax.
+      // TotalAmt is the grand total; TxnTaxDetail.TotalTax is the calculated tax;
+      // subtotal = TotalAmt - TotalTax (rounded to cents to avoid float drift).
+      const qbTotalAmount =
+        invoiceResult.Invoice?.TotalAmt != null
+          ? parseFloat(invoiceResult.Invoice.TotalAmt)
+          : null;
+      const qbTaxAmount =
+        invoiceResult.Invoice?.TxnTaxDetail?.TotalTax != null
+          ? parseFloat(invoiceResult.Invoice.TxnTaxDetail.TotalTax)
+          : 0;
+      const qbSubtotal =
+        qbTotalAmount != null
+          ? Math.round((qbTotalAmount - qbTaxAmount) * 100) / 100
+          : null;
 
       // 3. Get the payment link
       const linkResponse = await fetch(
@@ -1503,15 +1526,21 @@ exports.sendInvoiceWithQBPayment = onRequest(
       const linkResult = await linkResponse.json();
       const paymentLink = linkResult.Invoice?.InvoiceLink || "";
 
-      // 4. Save QB invoice ID, DocNumber, and payment link to Coastal invoice doc
+      // 4. Save QB invoice ID, DocNumber, payment link, and authoritative totals
+      // to Coastal invoice doc. Firestore rejects undefined values, so omit any
+      // field QB didn't return.
       if (invoiceId) {
-        await firestoreDb.collection("invoices").doc(invoiceId).update({
-          qbInvoiceId,
-          qbDocNumber,
+        const update = {
           qbPaymentLink: paymentLink,
           status: "sent",
           sentDate: new Date().toISOString(),
-        });
+        };
+        if (qbInvoiceId !== undefined) update.qbInvoiceId = qbInvoiceId;
+        if (qbDocNumber !== undefined) update.qbDocNumber = qbDocNumber;
+        if (qbTotalAmount != null) update.qbTotalAmount = qbTotalAmount;
+        if (qbSubtotal != null) update.qbSubtotal = qbSubtotal;
+        update.qbTaxAmount = qbTaxAmount;
+        await firestoreDb.collection("invoices").doc(invoiceId).update(update);
       }
 
       // 5. Send branded email with payment link
@@ -1528,6 +1557,20 @@ exports.sendInvoiceWithQBPayment = onRequest(
         </tr>`;
         })
         .join("");
+
+      // Email totals pull from QB authoritative values when present, else fall
+      // back to admin-computed inputs (e.g. when QB sync is disabled).
+      const emailTotal = qbTotalAmount != null ? qbTotalAmount : parseFloat(total || 0);
+      const emailSubtotal =
+        qbSubtotal != null ? qbSubtotal : parseFloat(subtotal != null ? subtotal : total || 0);
+      const emailTax = qbTaxAmount != null ? qbTaxAmount : parseFloat(tax || 0);
+      const taxRowHTML =
+        emailTax > 0
+          ? `<tr>
+              <td style="text-align:right;padding:4px 16px;font-size:13px;color:#666;">Tax</td>
+              <td style="text-align:right;padding:4px 16px;font-size:13px;width:120px;">$${emailTax.toFixed(2)}</td>
+            </tr>`
+          : "";
 
       const payButtonHTML = paymentLink
         ? `
@@ -1565,11 +1608,18 @@ exports.sendInvoiceWithQBPayment = onRequest(
           </tr>
           ${lineItemsHTML}
         </table>
-        <table width="100%" cellpadding="0" cellspacing="0">
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;">
           <tr>
-            <td style="text-align:right;padding:8px 16px;">
-              <span style="font-size:11px;color:#888;text-transform:uppercase;">Total Due</span>
-              <span style="font-size:24px;font-weight:700;color:#E07B2D;margin-left:16px;">$${parseFloat(total).toFixed(2)}</span>
+            <td style="text-align:right;padding:4px 16px;font-size:13px;color:#666;">Subtotal</td>
+            <td style="text-align:right;padding:4px 16px;font-size:13px;width:120px;">$${emailSubtotal.toFixed(2)}</td>
+          </tr>
+          ${taxRowHTML}
+          <tr>
+            <td style="text-align:right;padding:10px 16px 0 16px;border-top:1px solid #ddd;">
+              <span style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Total Due</span>
+            </td>
+            <td style="text-align:right;padding:10px 16px 0 16px;border-top:1px solid #ddd;">
+              <span style="font-size:24px;font-weight:700;color:#E07B2D;">$${emailTotal.toFixed(2)}</span>
             </td>
           </tr>
         </table>
@@ -1622,6 +1672,10 @@ exports.sendInvoiceWithQBPayment = onRequest(
       res.status(200).json({
         success: true,
         qbInvoiceId,
+        qbDocNumber,
+        qbTotalAmount,
+        qbTaxAmount,
+        qbSubtotal,
         paymentLink,
       });
     } catch (err) {
