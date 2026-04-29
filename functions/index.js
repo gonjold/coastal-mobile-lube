@@ -11,6 +11,7 @@ const gmailUser = defineSecret("GMAIL_USER");
 const gmailAppPassword = defineSecret("GMAIL_APP_PASSWORD");
 const qbClientId = defineSecret("QB_CLIENT_ID");
 const qbClientSecret = defineSecret("QB_CLIENT_SECRET");
+const qbWebhookVerifierToken = defineSecret("QB_WEBHOOK_VERIFIER_TOKEN");
 
 // Email sent to ADMIN when a new booking comes in
 exports.onNewBooking = onDocumentCreated(
@@ -1085,15 +1086,39 @@ exports.qbOAuthCallback = onRequest(
 // ─── QuickBooks: Token refresh helper ─────────────────────────────
 
 async function getQBAccessToken() {
-  const qbDoc = await firestoreDb.collection("settings").doc("quickbooks").get();
-  if (!qbDoc.exists) throw new Error("QuickBooks not connected");
+  const tokenRef = firestoreDb.collection("settings").doc("quickbooks");
 
-  const qbData = qbDoc.data();
-  const now = new Date();
-  const expiresAt = new Date(qbData.accessTokenExpiresAt);
+  // First read outside the transaction — if token is fresh, no transaction needed.
+  const initialSnap = await tokenRef.get();
+  if (!initialSnap.exists) throw new Error("QuickBooks not connected");
 
-  // If token expires within 5 minutes, refresh it
-  if (now >= new Date(expiresAt.getTime() - 5 * 60 * 1000)) {
+  const initialData = initialSnap.data();
+  const initialExpiresAt = new Date(initialData.accessTokenExpiresAt);
+  const fiveMinFromNow = new Date(Date.now() + 5 * 60 * 1000);
+
+  if (initialExpiresAt > fiveMinFromNow) {
+    return { accessToken: initialData.accessToken, realmId: initialData.realmId };
+  }
+
+  // Token needs refresh — do it inside a transaction so concurrent invocations
+  // don't both call Intuit and rotate the refresh token out from under each other.
+  // Note: the HTTP call lives inside the transaction. Firestore retries the txn
+  // body on contention, which could double-call Intuit. In practice Intuit's
+  // rotation is idempotent enough that a duplicate refresh just produces another
+  // valid token — the "lose the refresh token" failure mode this fixes is much
+  // worse. Revisit if we see retry storms.
+  return await firestoreDb.runTransaction(async (tx) => {
+    const snap = await tx.get(tokenRef);
+    if (!snap.exists) throw new Error("QuickBooks not connected during refresh");
+
+    const fresh = snap.data();
+    const freshExpiresAt = new Date(fresh.accessTokenExpiresAt);
+
+    // Another invocation may have already refreshed while we were waiting.
+    if (freshExpiresAt > fiveMinFromNow) {
+      return { accessToken: fresh.accessToken, realmId: fresh.realmId };
+    }
+
     const tokenResponse = await fetch("https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer", {
       method: "POST",
       headers: {
@@ -1102,29 +1127,33 @@ async function getQBAccessToken() {
       },
       body: new URLSearchParams({
         grant_type: "refresh_token",
-        refresh_token: qbData.refreshToken,
+        refresh_token: fresh.refreshToken,
       }),
     });
+
+    if (!tokenResponse.ok) {
+      const errBody = await tokenResponse.text();
+      throw new Error(`QB token refresh failed: ${tokenResponse.status} ${errBody}`);
+    }
 
     const tokens = await tokenResponse.json();
     if (tokens.error) throw new Error(`Token refresh failed: ${tokens.error}`);
 
-    await firestoreDb.collection("settings").doc("quickbooks").update({
+    tx.update(tokenRef, {
       accessToken: tokens.access_token,
       refreshToken: tokens.refresh_token,
       accessTokenExpiresAt: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
       refreshTokenExpiresAt: new Date(Date.now() + tokens.x_refresh_token_expires_in * 1000).toISOString(),
+      lastRefreshedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    return { accessToken: tokens.access_token, realmId: qbData.realmId };
-  }
-
-  return { accessToken: qbData.accessToken, realmId: qbData.realmId };
+    return { accessToken: tokens.access_token, realmId: fresh.realmId };
+  });
 }
 
 // ─── QuickBooks: Customer sync helper ─────────────────────────────
 
-const QB_BASE = "sandbox-quickbooks.api.intuit.com";
+const QB_BASE = process.env.QB_BASE || "quickbooks.api.intuit.com";
 
 async function syncCustomerToQB(customerData) {
   const { accessToken, realmId } = await getQBAccessToken();
@@ -1337,6 +1366,45 @@ exports.sendInvoiceWithQBPayment = onRequest(
       const { accessToken, realmId } = await getQBAccessToken();
       const baseUrl = `https://${QB_BASE}/v3/company/${realmId}`;
 
+      // 0. Resend path: if this Coastal invoice already has a QB invoice,
+      //    use QB's /invoice/{Id}/send endpoint instead of creating a duplicate.
+      if (invoiceId) {
+        const existingSnap = await firestoreDb.collection("invoices").doc(invoiceId).get();
+        const existingData = existingSnap.exists ? existingSnap.data() : null;
+
+        if (existingData?.qbInvoiceId) {
+          const sendTo = customerEmail || existingData.customerEmail || "";
+          const sendResponse = await fetch(
+            `${baseUrl}/invoice/${existingData.qbInvoiceId}/send?sendTo=${encodeURIComponent(sendTo)}&minorversion=75`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                Accept: "application/json",
+              },
+            }
+          );
+
+          if (!sendResponse.ok) {
+            const errBody = await sendResponse.text();
+            console.error("QB resend failed:", errBody);
+            throw new Error(`QB resend failed: ${sendResponse.status}`);
+          }
+
+          await firestoreDb.collection("invoices").doc(invoiceId).update({
+            status: "sent",
+            sentDate: new Date().toISOString(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+
+          return res.status(200).json({
+            success: true,
+            action: "resent",
+            qbInvoiceId: existingData.qbInvoiceId,
+          });
+        }
+      }
+
       // 1. Sync customer to QB (or find existing)
       // Idempotent: if invoice or customer doc already has qbCustomerId, reuse it.
       let qbCustomerId;
@@ -1399,7 +1467,7 @@ exports.sendInvoiceWithQBPayment = onRequest(
       const qbInvoice = {
         CustomerRef: { value: qbCustomerId },
         Line: qbLineItems,
-        DocNumber: invoiceNumber,
+        // DocNumber omitted — QBO assigns sequentially when "Custom transaction numbers" is OFF
         BillEmail: { Address: customerEmail },
         AllowOnlineCreditCardPayment: true,
         AllowOnlineACHPayment: true,
@@ -1424,6 +1492,7 @@ exports.sendInvoiceWithQBPayment = onRequest(
       }
 
       const qbInvoiceId = invoiceResult.Invoice.Id;
+      const qbDocNumber = invoiceResult.Invoice.DocNumber;
 
       // 3. Get the payment link
       const linkResponse = await fetch(
@@ -1434,10 +1503,11 @@ exports.sendInvoiceWithQBPayment = onRequest(
       const linkResult = await linkResponse.json();
       const paymentLink = linkResult.Invoice?.InvoiceLink || "";
 
-      // 4. Save QB invoice ID and payment link to Coastal invoice doc
+      // 4. Save QB invoice ID, DocNumber, and payment link to Coastal invoice doc
       if (invoiceId) {
         await firestoreDb.collection("invoices").doc(invoiceId).update({
           qbInvoiceId,
+          qbDocNumber,
           qbPaymentLink: paymentLink,
           status: "sent",
           sentDate: new Date().toISOString(),
@@ -1701,10 +1771,36 @@ exports.sendCancellationEmail = onRequest(
 exports.qbWebhook = onRequest(
   {
     region: "us-east1",
-    secrets: [qbClientId, qbClientSecret, gmailUser, gmailAppPassword],
+    secrets: [qbClientId, qbClientSecret, gmailUser, gmailAppPassword, qbWebhookVerifierToken],
   },
   async (req, res) => {
-    // Respond immediately
+    // Verify Intuit webhook signature against the RAW request body before
+    // trusting the payload. Intuit signs the unparsed body with HMAC-SHA256
+    // using the verifier token configured in the developer dashboard.
+    const verifier = qbWebhookVerifierToken.value();
+    if (!verifier) {
+      console.error("QB_WEBHOOK_VERIFIER_TOKEN not configured");
+      res.status(500).send("verifier not configured");
+      return;
+    }
+
+    const rawBody = req.rawBody ? req.rawBody.toString("utf8") : JSON.stringify(req.body || {});
+    const sig = req.get("intuit-signature") || "";
+    const expected = crypto.createHmac("sha256", verifier).update(rawBody).digest("base64");
+
+    const sigBuf = Buffer.from(sig);
+    const expectedBuf = Buffer.from(expected);
+
+    if (
+      sigBuf.length !== expectedBuf.length ||
+      !crypto.timingSafeEqual(sigBuf, expectedBuf)
+    ) {
+      console.error("QB webhook signature mismatch");
+      res.status(401).send("invalid signature");
+      return;
+    }
+
+    // Respond immediately after verification — Intuit retries non-2xx responses.
     res.status(200).send("OK");
 
     const notifications = req.body?.eventNotifications || [];
