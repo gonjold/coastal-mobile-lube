@@ -31,6 +31,7 @@ import {
   getServiceLabel,
   generateGCalUrl,
 } from "../shared";
+import { RowActionMenu, RowActionItem, RowActionDivider, useRowActionMenu } from "@/components/admin/RowActionMenu";
 
 /* ── Status colors for filter pills ── */
 const STATUS_PILL_COLORS: Record<string, string> = {
@@ -91,6 +92,49 @@ export default function SchedulePage() {
   );
 }
 
+function MarkAsDeadItem({
+  reasons,
+  onPick,
+}: {
+  reasons: readonly string[];
+  onPick: (reason: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const ctx = useRowActionMenu();
+  return (
+    <>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setExpanded((v) => !v);
+        }}
+        className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition"
+      >
+        Mark as Dead
+      </button>
+      {expanded && (
+        <div className="border-t border-gray-100 bg-gray-50 py-1">
+          {reasons.map((reason) => (
+            <button
+              key={reason}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onPick(reason);
+                ctx?.close();
+              }}
+              className="block w-full text-left px-6 py-1.5 text-xs text-gray-600 cursor-pointer hover:bg-gray-100 transition"
+            >
+              {reason}
+            </button>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
 function SchedulePageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -115,19 +159,8 @@ function SchedulePageInner() {
   /* Search filter */
   const [searchFilter, setSearchFilter] = useState("");
 
-  /* Action menu */
-  const [actionMenuId, setActionMenuId] = useState<string | null>(null);
-  const [deadReasonMenuId, setDeadReasonMenuId] = useState<string | null>(null);
-
   /* Delete confirmation (hard delete, distinct from Cancel status change) */
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!actionMenuId) return;
-    function handleClick() { setActionMenuId(null); setDeadReasonMenuId(null); }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [actionMenuId]);
 
   /* Sort */
   const [sortKey, setSortKey] = useState("date");
@@ -625,80 +658,48 @@ function SchedulePageInner() {
                     </div>
 
                     {/* Actions */}
-                    <div className="relative flex justify-center" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setActionMenuId(actionMenuId === b.id ? null : b.id); setDeadReasonMenuId(null); }}
-                        className="w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer hover:bg-gray-100 transition"
-                      >
-                        <span className="text-lg text-gray-400 leading-none">&#8942;</span>
-                      </button>
-                      {actionMenuId === b.id && (
-                        <div className="absolute right-full top-0 mr-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[180px] z-[50]" onMouseDown={(e) => e.stopPropagation()}>
-                          <button
-                            onMouseDown={(e) => { e.preventDefault(); setSelectedBookingId(b.id); setActionMenuId(null); }}
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition"
-                          >
-                            View Details
-                          </button>
-                          {(() => {
-                            const canConfirm = b.status === "pending" || b.status === "new-lead" || b.type === "lead";
-                            const tooltip = canConfirm ? "" : `Already ${b.status || "advanced"}.`;
-                            return (
-                              <button
-                                onMouseDown={(e) => { e.preventDefault(); if (!canConfirm) return; handleAdvance(b.id, "confirmed"); setActionMenuId(null); }}
-                                disabled={!canConfirm}
-                                title={tooltip}
-                                className={`block w-full text-left px-4 py-2 text-sm transition ${canConfirm ? "text-gray-700 cursor-pointer hover:bg-gray-50" : "text-gray-300 cursor-not-allowed"}`}
-                              >
-                                Confirm
-                              </button>
-                            );
-                          })()}
-                          <div className="relative">
-                            <button
-                              onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setDeadReasonMenuId(deadReasonMenuId === b.id ? null : b.id); }}
-                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition"
+                    <div className="flex justify-center" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+                      {(() => {
+                        const canConfirm = b.status === "pending" || b.status === "new-lead" || b.type === "lead";
+                        const canCancel = b.status !== "cancelled" && b.status !== "dead";
+                        return (
+                          <RowActionMenu>
+                            <RowActionItem onClick={() => setSelectedBookingId(b.id)}>
+                              View Details
+                            </RowActionItem>
+                            <RowActionItem
+                              onClick={() => handleAdvance(b.id, "confirmed")}
+                              disabled={!canConfirm}
+                              title={canConfirm ? undefined : `Already ${b.status || "advanced"}.`}
                             >
-                              Mark as Dead
-                            </button>
-                            {deadReasonMenuId === b.id && (
-                              <div className="border-t border-gray-100 bg-gray-50 py-1">
-                                {DEAD_REASONS.map((reason) => (
-                                  <button
-                                    key={reason}
-                                    onMouseDown={(e) => { e.preventDefault(); handleAdvance(b.id, `dead:${reason}`); setActionMenuId(null); setDeadReasonMenuId(null); }}
-                                    className="block w-full text-left px-6 py-1.5 text-xs text-gray-600 cursor-pointer hover:bg-gray-100 transition"
-                                  >
-                                    {reason}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                          <div className="h-px bg-gray-100 my-1" />
-                          {(() => {
-                            const canCancel = b.status !== "cancelled" && b.status !== "dead";
-                            const tooltip = canCancel ? "" : `Booking is already ${b.status}.`;
-                            return (
-                              <button
-                                onMouseDown={(e) => { e.preventDefault(); if (!canCancel) return; if (!confirm('Cancel this booking? This cannot be undone. The customer will need to rebook.')) return; handleAdvance(b.id, "cancelled"); setActionMenuId(null); }}
-                                disabled={!canCancel}
-                                title={tooltip}
-                                className={`block w-full text-left px-4 py-2 text-sm transition ${canCancel ? "text-red-600 cursor-pointer hover:bg-gray-50" : "text-gray-300 cursor-not-allowed"}`}
-                              >
-                                Cancel
-                              </button>
-                            );
-                          })()}
-                          <div className="h-px bg-gray-100 my-1" />
-                          <button
-                            onMouseDown={(e) => { e.preventDefault(); setDeleteConfirmId(b.id); setActionMenuId(null); }}
-                            className="block w-full text-left px-4 py-2 text-sm text-red-600 cursor-pointer hover:bg-gray-50 transition"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      )}
+                              Confirm
+                            </RowActionItem>
+                            <MarkAsDeadItem
+                              reasons={DEAD_REASONS}
+                              onPick={(reason) => handleAdvance(b.id, `dead:${reason}`)}
+                            />
+                            <RowActionDivider />
+                            <RowActionItem
+                              onClick={() => {
+                                if (!confirm('Cancel this booking? This cannot be undone. The customer will need to rebook.')) return;
+                                handleAdvance(b.id, "cancelled");
+                              }}
+                              disabled={!canCancel}
+                              destructive
+                              title={canCancel ? undefined : `Booking is already ${b.status}.`}
+                            >
+                              Cancel
+                            </RowActionItem>
+                            <RowActionDivider />
+                            <RowActionItem
+                              onClick={() => setDeleteConfirmId(b.id)}
+                              destructive
+                            >
+                              Delete
+                            </RowActionItem>
+                          </RowActionMenu>
+                        );
+                      })()}
                     </div>
                   </AdminTableRow>
                 );

@@ -1130,7 +1130,35 @@ async function syncCustomerToQB(customerData) {
   const { accessToken, realmId } = await getQBAccessToken();
   const baseUrl = `https://${QB_BASE}/v3/company/${realmId}`;
 
-  // Check if customer already exists by email
+  async function writeBack(qbCustomerId) {
+    const writes = [];
+    if (customerData.firestoreCustomerId) {
+      writes.push(
+        firestoreDb
+          .collection("customers")
+          .doc(customerData.firestoreCustomerId)
+          .set({ qbCustomerId }, { merge: true })
+      );
+    }
+    if (customerData.firestoreInvoiceId) {
+      writes.push(
+        firestoreDb
+          .collection("invoices")
+          .doc(customerData.firestoreInvoiceId)
+          .set({ qbCustomerId }, { merge: true })
+      );
+    }
+    if (writes.length) {
+      try {
+        await Promise.all(writes);
+      } catch (writeErr) {
+        console.error("Non-fatal: writeback to Firestore failed:", writeErr.message);
+      }
+    }
+    return qbCustomerId;
+  }
+
+  // 1. Check if customer already exists by email
   if (customerData.email) {
     const queryResponse = await fetch(
       `${baseUrl}/query?query=${encodeURIComponent(`SELECT * FROM Customer WHERE PrimaryEmailAddr = '${customerData.email}'`)}&minorversion=75`,
@@ -1138,13 +1166,71 @@ async function syncCustomerToQB(customerData) {
     );
     const queryResult = await queryResponse.json();
     if (queryResult.QueryResponse?.Customer?.[0]) {
-      return queryResult.QueryResponse.Customer[0].Id;
+      return await writeBack(queryResult.QueryResponse.Customer[0].Id);
     }
   }
 
-  // Create new customer
+  // 2. DisplayName fallback: if email lookup missed, try matching on customer name
+  // before creating a new QB customer (avoids "Duplicate Name Exists" code 6240).
+  const displayName = (
+    customerData.name ||
+    `${customerData.firstName || ""} ${customerData.lastName || ""}`.trim()
+  ).trim();
+
+  if (displayName) {
+    const escapedName = displayName.replace(/'/g, "\\'");
+    const nameQueryResponse = await fetch(
+      `${baseUrl}/query?query=${encodeURIComponent(
+        `SELECT * FROM Customer WHERE DisplayName = '${escapedName}'`
+      )}&minorversion=75`,
+      {
+        headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
+      }
+    );
+    const nameQueryResult = await nameQueryResponse.json();
+    const matchedByName = nameQueryResult.QueryResponse?.Customer?.[0];
+    if (matchedByName) {
+      console.log(
+        `QB customer matched by DisplayName: ${displayName} -> id ${matchedByName.Id}`
+      );
+
+      // Update QB customer's email to current invoice email if different
+      if (
+        customerData.email &&
+        matchedByName.PrimaryEmailAddr?.Address?.toLowerCase() !==
+          customerData.email.toLowerCase()
+      ) {
+        try {
+          await fetch(`${baseUrl}/customer?minorversion=75`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify({
+              Id: matchedByName.Id,
+              SyncToken: matchedByName.SyncToken,
+              sparse: true,
+              PrimaryEmailAddr: { Address: customerData.email },
+            }),
+          });
+          console.log(`QB customer email updated to ${customerData.email}`);
+        } catch (updateErr) {
+          console.error(
+            "Non-fatal: QB customer email update failed:",
+            updateErr.message
+          );
+        }
+      }
+
+      return await writeBack(matchedByName.Id);
+    }
+  }
+
+  // 3. Create new customer
   const qbCustomer = {
-    DisplayName: `${customerData.firstName || ""} ${customerData.lastName || ""}`.trim() || customerData.name || "Customer",
+    DisplayName: displayName || customerData.name || "Customer",
     GivenName: customerData.firstName || "",
     FamilyName: customerData.lastName || "",
     PrimaryEmailAddr: customerData.email ? { Address: customerData.email } : undefined,
@@ -1172,7 +1258,7 @@ async function syncCustomerToQB(customerData) {
   const created = await createResponse.json();
   if (created.Fault) throw new Error(`QB customer create failed: ${JSON.stringify(created.Fault)}`);
 
-  return created.Customer.Id;
+  return await writeBack(created.Customer.Id);
 }
 
 // ─── QuickBooks: Get or create Service item helper ────────────────
@@ -1252,9 +1338,17 @@ exports.sendInvoiceWithQBPayment = onRequest(
       const baseUrl = `https://${QB_BASE}/v3/company/${realmId}`;
 
       // 1. Sync customer to QB (or find existing)
+      // Idempotent: if invoice or customer doc already has qbCustomerId, reuse it.
       let qbCustomerId;
 
-      if (customerId) {
+      if (invoiceId) {
+        const invDoc = await firestoreDb.collection("invoices").doc(invoiceId).get();
+        if (invDoc.exists && invDoc.data().qbCustomerId) {
+          qbCustomerId = invDoc.data().qbCustomerId;
+        }
+      }
+
+      if (!qbCustomerId && customerId) {
         const customerDoc = await firestoreDb.collection("customers").doc(customerId).get();
         if (customerDoc.exists && customerDoc.data().qbCustomerId) {
           qbCustomerId = customerDoc.data().qbCustomerId;
@@ -1263,16 +1357,15 @@ exports.sendInvoiceWithQBPayment = onRequest(
 
       if (!qbCustomerId) {
         qbCustomerId = await syncCustomerToQB({
+          name: customerName,
           firstName: customerName?.split(" ")[0] || "",
           lastName: customerName?.split(" ").slice(1).join(" ") || "",
           email: customerEmail,
           phone: customerPhone,
           address: customerAddress,
+          firestoreCustomerId: customerId,
+          firestoreInvoiceId: invoiceId,
         });
-
-        if (customerId) {
-          await firestoreDb.collection("customers").doc(customerId).update({ qbCustomerId });
-        }
       }
 
       // 2. Create QB invoice

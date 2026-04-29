@@ -31,6 +31,7 @@ import { BRAND_LOGOS } from "@/lib/brand/logos";
 import NeedsInvoiceBanner, { type CompletedJob } from "@/components/admin/NeedsInvoiceBanner";
 import { useAdminModal } from "@/contexts/AdminModalContext";
 import { formatCurrency } from "@/lib/formatCurrency";
+import { RowActionMenu, RowActionItem } from "@/components/admin/RowActionMenu";
 
 /* ─── Types ───────────────────────────────────────────────── */
 
@@ -401,16 +402,6 @@ function InvoicingPageInner() {
 
   /* Detail panel */
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
-
-  /* Action menu */
-  const [actionMenuId, setActionMenuId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!actionMenuId) return;
-    function handleClick() { setActionMenuId(null); }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [actionMenuId]);
 
   /* Toasts */
   const [toasts, setToasts] = useState<ToastItem[]>([]);
@@ -1339,55 +1330,35 @@ function InvoicingPageInner() {
                   </div>
 
                   {/* Actions */}
-                  <div className="relative flex justify-center" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setActionMenuId(actionMenuId === inv.id ? null : inv.id); }}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer hover:bg-gray-100 transition"
-                    >
-                      <span className="text-lg text-gray-400 leading-none">&#8942;</span>
-                    </button>
-                    {actionMenuId === inv.id && (() => {
+                  <div className="flex justify-center" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+                    {(() => {
                       const isPaid = inv.status === "paid";
-                      const editDisabled = isPaid;
-                      const editTooltip = editDisabled ? "Cannot edit a paid invoice." : "";
-                      const markPaidDisabled = isPaid;
-                      const markPaidTooltip = isPaid ? "Already marked paid." : "";
-                      const deleteDisabled = false;
-                      const deleteTooltip = "";
-                      const baseItem = "block w-full text-left px-4 py-2 text-sm transition";
                       return (
-                        <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[160px] z-[50]" onMouseDown={(e) => e.stopPropagation()}>
-                          <button
-                            onMouseDown={(e) => { e.preventDefault(); setSelectedInvoice(inv); setActionMenuId(null); }}
-                            className={`${baseItem} text-gray-700 cursor-pointer hover:bg-gray-50`}
-                          >
+                        <RowActionMenu>
+                          <RowActionItem onClick={() => setSelectedInvoice(inv)}>
                             View Details
-                          </button>
-                          <button
-                            onMouseDown={(e) => { e.preventDefault(); if (editDisabled) return; openEdit(inv); setActionMenuId(null); }}
-                            disabled={editDisabled}
-                            title={editTooltip}
-                            className={`${baseItem} ${editDisabled ? "text-gray-300 cursor-not-allowed" : "text-gray-700 cursor-pointer hover:bg-gray-50"}`}
+                          </RowActionItem>
+                          <RowActionItem
+                            onClick={() => openEdit(inv)}
+                            disabled={isPaid}
+                            title={isPaid ? "Cannot edit a paid invoice." : undefined}
                           >
                             Edit Invoice
-                          </button>
-                          <button
-                            onMouseDown={(e) => { e.preventDefault(); if (markPaidDisabled) return; handleMarkPaid(inv.id); setActionMenuId(null); }}
-                            disabled={markPaidDisabled}
-                            title={markPaidTooltip}
-                            className={`${baseItem} ${markPaidDisabled ? "text-gray-300 cursor-not-allowed" : "text-gray-700 cursor-pointer hover:bg-gray-50"}`}
+                          </RowActionItem>
+                          <RowActionItem
+                            onClick={() => handleMarkPaid(inv.id)}
+                            disabled={isPaid}
+                            title={isPaid ? "Already marked paid." : undefined}
                           >
                             Mark as Paid
-                          </button>
-                          <button
-                            onMouseDown={(e) => { e.preventDefault(); if (deleteDisabled) return; setDeleteConfirm(inv.id); setActionMenuId(null); }}
-                            disabled={deleteDisabled}
-                            title={deleteTooltip}
-                            className={`${baseItem} ${deleteDisabled ? "text-gray-300 cursor-not-allowed" : "text-red-600 cursor-pointer hover:bg-gray-50"}`}
+                          </RowActionItem>
+                          <RowActionItem
+                            onClick={() => setDeleteConfirm(inv.id)}
+                            destructive
                           >
                             Delete Invoice
-                          </button>
-                        </div>
+                          </RowActionItem>
+                        </RowActionMenu>
                       );
                     })()}
                   </div>

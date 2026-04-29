@@ -39,6 +39,7 @@ import { useAdminModal } from "@/contexts/AdminModalContext";
 import { findDuplicates, type DuplicateGroup } from "@/lib/customerDedup";
 import CustomerMergeModal from "@/components/admin/CustomerMergeModal";
 import { formatCurrency } from "@/lib/formatCurrency";
+import { RowActionMenu, RowActionItem, RowActionDivider } from "@/components/admin/RowActionMenu";
 
 /* ── Types ── */
 
@@ -270,17 +271,7 @@ export default function CustomersPage() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }
 
-  /* Action menu */
   const { openModal } = useAdminModal();
-  const [actionMenuKey, setActionMenuKey] = useState<string | null>(null);
-
-  /* Close action menu on outside click */
-  useEffect(() => {
-    if (!actionMenuKey) return;
-    function handleClick() { setActionMenuKey(null); }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [actionMenuKey]);
 
   /* ── Firestore real-time listeners ── */
   useEffect(() => {
@@ -761,76 +752,49 @@ export default function CustomersPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="relative flex justify-center" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setActionMenuKey(actionMenuKey === c.key ? null : c.key); }}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer hover:bg-gray-100 transition"
-                    >
-                      <span className="text-lg text-gray-400 leading-none">&#8942;</span>
-                    </button>
-                    {actionMenuKey === c.key && (
-                      <div className="absolute right-full top-0 mr-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[160px] z-[50]" onMouseDown={(e) => e.stopPropagation()}>
-                        <button
-                          onMouseDown={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            setInitialEditMode(false);
-                            setSelectedCustomer(c);
-                            setActionMenuKey(null);
-                          }}
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition"
-                        >
-                          View Profile
-                        </button>
-                        <button
-                          onMouseDown={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            setInitialEditMode(true);
-                            setSelectedCustomer(c);
-                            setActionMenuKey(null);
-                          }}
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition"
-                        >
-                          Edit Customer
-                        </button>
-                        <button
-                          onMouseDown={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            openModal("booking", { customer: { name: c.name, phone: c.phone, email: c.email, address: c.address } });
-                            setActionMenuKey(null);
-                          }}
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition"
-                        >
-                          New Booking
-                        </button>
-                        <button
-                          onMouseDown={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            openModal("invoice", { customer: { name: c.name, phone: c.phone, email: c.email, address: c.address } });
-                            setActionMenuKey(null);
-                          }}
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-50 transition"
-                        >
-                          New Invoice
-                        </button>
-                        <div className="h-px bg-gray-100 my-1" />
-                        <button
-                          onMouseDown={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            setDeleteTarget(c);
-                            setShowDeleteConfirm(true);
-                            setActionMenuKey(null);
-                          }}
-                          className="block w-full text-left px-4 py-2 text-sm text-red-600 cursor-pointer hover:bg-gray-50 transition"
-                        >
-                          Delete Customer
-                        </button>
-                      </div>
-                    )}
+                  <div className="flex justify-center" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+                    <RowActionMenu>
+                      <RowActionItem
+                        onClick={() => {
+                          setInitialEditMode(false);
+                          setSelectedCustomer(c);
+                        }}
+                      >
+                        View Profile
+                      </RowActionItem>
+                      <RowActionItem
+                        onClick={() => {
+                          setInitialEditMode(true);
+                          setSelectedCustomer(c);
+                        }}
+                      >
+                        Edit Customer
+                      </RowActionItem>
+                      <RowActionItem
+                        onClick={() =>
+                          openModal("booking", { customer: { name: c.name, phone: c.phone, email: c.email, address: c.address } })
+                        }
+                      >
+                        New Booking
+                      </RowActionItem>
+                      <RowActionItem
+                        onClick={() =>
+                          openModal("invoice", { customer: { name: c.name, phone: c.phone, email: c.email, address: c.address } })
+                        }
+                      >
+                        New Invoice
+                      </RowActionItem>
+                      <RowActionDivider />
+                      <RowActionItem
+                        onClick={() => {
+                          setDeleteTarget(c);
+                          setShowDeleteConfirm(true);
+                        }}
+                        destructive
+                      >
+                        Delete Customer
+                      </RowActionItem>
+                    </RowActionMenu>
                   </div>
                 </AdminTableRow>
               );
