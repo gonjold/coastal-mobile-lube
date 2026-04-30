@@ -3,7 +3,7 @@
 export interface ToastItem {
   id: string;
   message: string;
-  type: "success" | "info";
+  type: "success" | "info" | "error";
   action?: { label: string; url: string };
 }
 
@@ -24,7 +24,11 @@ export default function ToastContainer({
             key={t.id}
             style={{ animation: "toastSlideIn 0.3s ease-out" }}
             className={`flex items-center gap-3 px-4 py-3 rounded-[8px] shadow-lg text-white text-[14px] font-medium ${
-              t.type === "success" ? "bg-[#16a34a]" : "bg-[#1A5FAC]"
+              t.type === "success"
+                ? "bg-[#16a34a]"
+                : t.type === "error"
+                ? "bg-[#dc2626]"
+                : "bg-[#1A5FAC]"
             }`}
           >
             <span>{t.message}</span>

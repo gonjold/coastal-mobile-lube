@@ -422,7 +422,7 @@ function InvoicingPageInner() {
 
   /* Toasts */
   const [toasts, setToasts] = useState<ToastItem[]>([]);
-  function addToast(message: string, type: "success" | "info" = "success") {
+  function addToast(message: string, type: "success" | "info" | "error" = "success") {
     const id = crypto.randomUUID();
     setToasts((prev) => [...prev, { id, message, type }]);
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3000);
@@ -1029,11 +1029,6 @@ function InvoicingPageInner() {
       return;
     }
 
-    // Update status to sent if currently draft
-    if (inv.status === "draft") {
-      await updateDoc(doc(db, "invoices", inv.id), { status: "sent", updatedAt: serverTimestamp() });
-    }
-
     try {
       const idToken = await auth.currentUser?.getIdToken();
 
@@ -1077,7 +1072,7 @@ function InvoicingPageInner() {
             dueDate: inv.dueDate || "",
           };
 
-      await fetch(endpoint, {
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1085,9 +1080,15 @@ function InvoicingPageInner() {
         },
         body: JSON.stringify(body),
       });
+      if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(errorBody || `HTTP ${response.status}`);
+      }
       addToast(`Invoice email sent to ${recipient}`, "success");
-    } catch {
-      addToast("Invoice saved but email failed to send", "info");
+    } catch (err) {
+      console.error("Invoice send failed:", err);
+      const message = err instanceof Error ? err.message : "Unknown error - check console";
+      addToast(`Invoice send failed: ${message}`, "error");
     }
   }
 

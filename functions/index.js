@@ -1517,30 +1517,58 @@ exports.sendInvoiceWithQBPayment = onRequest(
           ? Math.round((qbTotalAmount - qbTaxAmount) * 100) / 100
           : null;
 
-      // 3. Get the payment link
-      const linkResponse = await fetch(
-        `${baseUrl}/invoice/${qbInvoiceId}?minorversion=75&include=invoiceLink`,
-        { headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" } }
-      );
-
-      const linkResult = await linkResponse.json();
-      const paymentLink = linkResult.Invoice?.InvoiceLink || "";
-
-      // 4. Save QB invoice ID, DocNumber, payment link, and authoritative totals
-      // to Coastal invoice doc. Firestore rejects undefined values, so omit any
-      // field QB didn't return.
+      // 3. Early writeback: persist qbInvoiceId and core qb* fields IMMEDIATELY
+      // after QB create-success. Doing this BEFORE the link fetch ensures a
+      // link-fetch failure (timeout, transient 5xx) cannot leave us with a QB
+      // invoice that Firestore has no reference to. The link can be re-fetched;
+      // losing qbInvoiceId cannot be recovered automatically.
       if (invoiceId) {
-        const update = {
-          qbPaymentLink: paymentLink,
+        const earlyUpdate = {
           status: "sent",
           sentDate: new Date().toISOString(),
         };
-        if (qbInvoiceId !== undefined) update.qbInvoiceId = qbInvoiceId;
-        if (qbDocNumber !== undefined) update.qbDocNumber = qbDocNumber;
-        if (qbTotalAmount != null) update.qbTotalAmount = qbTotalAmount;
-        if (qbSubtotal != null) update.qbSubtotal = qbSubtotal;
-        update.qbTaxAmount = qbTaxAmount;
-        await firestoreDb.collection("invoices").doc(invoiceId).update(update);
+        if (qbInvoiceId !== undefined) earlyUpdate.qbInvoiceId = qbInvoiceId;
+        if (qbDocNumber !== undefined) earlyUpdate.qbDocNumber = qbDocNumber;
+        if (qbTotalAmount != null) earlyUpdate.qbTotalAmount = qbTotalAmount;
+        if (qbSubtotal != null) earlyUpdate.qbSubtotal = qbSubtotal;
+        earlyUpdate.qbTaxAmount = qbTaxAmount;
+
+        try {
+          await firestoreDb.collection("invoices").doc(invoiceId).update(earlyUpdate);
+          console.log(
+            `[QB] Early writeback success for invoice ${invoiceId}, qbInvoiceId=${qbInvoiceId}`
+          );
+        } catch (writebackErr) {
+          console.error(
+            `[QB] CRITICAL: Early writeback FAILED for invoice ${invoiceId} (qbInvoiceId=${qbInvoiceId}):`,
+            writebackErr
+          );
+          throw writebackErr;
+        }
+      }
+
+      // 4. Best-effort link fetch — qbInvoiceId is already saved, so a failure
+      // here is recoverable separately. Never throw from this block.
+      let paymentLink = "";
+      try {
+        const linkResponse = await fetch(
+          `${baseUrl}/invoice/${qbInvoiceId}?minorversion=75&include=invoiceLink`,
+          { headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" } }
+        );
+        const linkResult = await linkResponse.json();
+        paymentLink = linkResult.Invoice?.InvoiceLink || "";
+
+        if (invoiceId && paymentLink) {
+          await firestoreDb
+            .collection("invoices")
+            .doc(invoiceId)
+            .update({ qbPaymentLink: paymentLink });
+        }
+      } catch (linkErr) {
+        console.error(
+          `[QB] Link fetch failed for invoice ${invoiceId} (qbInvoiceId=${qbInvoiceId}, but core fields ARE saved):`,
+          linkErr
+        );
       }
 
       // 5. Send branded email with payment link
