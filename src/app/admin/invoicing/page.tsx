@@ -507,6 +507,21 @@ function InvoicingPageInner() {
     [invoices],
   );
 
+  /* ── Pre-send tax estimate ──
+     Sums taxable lines and applies 7.5% so Jason can sanity-check what QB
+     will compute on send. Reads the per-line `taxable` checkbox state — never
+     re-runs the inferTaxable heuristic, since that's only a default for new
+     lines. Hidden once qbInvoiceId is set; the QB-authoritative display takes
+     over. */
+  const estimateTax = useMemo(() => {
+    const taxableSubtotal = form.lineItems
+      .filter((li) => li.taxable === true)
+      .reduce((sum, li) => sum + li.unitPrice * (li.quantity || 1), 0);
+    return Math.round(taxableSubtotal * 0.075 * 100) / 100;
+  }, [form.lineItems]);
+  const estimateTotal = Math.round((form.subtotal + estimateTax) * 100) / 100;
+  const isPreSend = !(editingId && invoices.find((i) => i.id === editingId)?.qbInvoiceId);
+
   /* ── Filtered & sorted invoices ── */
   const filtered = useMemo(() => {
     let list = statusFilter === "all" ? visibleInvoices : visibleInvoices.filter((i) => i.status === statusFilter);
@@ -1677,23 +1692,43 @@ function InvoicingPageInner() {
                 </button>
               </div>
 
-              {/* Totals — pre-send subtotal only. QB recomputes tax on send
-                  using the per-line Tax checkboxes and writes the authoritative
-                  total back to Firestore. */}
+              {/* Totals — pre-send shows local subtotal + 7.5% tax estimate so
+                  Jason can sanity-check the math before sending. QB recomputes
+                  tax authoritatively on send via the per-line Tax checkboxes
+                  and writes qbSubtotal/qbTaxAmount/qbTotalAmount back; the
+                  detail panel (B3) takes over from there for post-send display. */}
               <div className="flex justify-end">
                 <div className="w-[260px] space-y-2 text-[14px]">
                   <div className="flex justify-between">
                     <span className="text-gray-500">Subtotal</span>
                     <span className="font-medium">{formatCurrency(form.subtotal)}</span>
                   </div>
-                  <div className="flex items-center justify-between text-[12px] text-gray-400">
-                    <span>Sales tax</span>
-                    <span className="italic">Calculated by QuickBooks on send</span>
-                  </div>
-                  <div className="flex justify-between items-center pt-3 border-t-2 border-[#0B2040]">
-                    <span className="font-bold text-[16px] text-[#0B2040]">Total (pre-tax)</span>
-                    <span className="font-bold text-[24px] text-[#0B2040]">{formatCurrency(form.subtotal)}</span>
-                  </div>
+                  {isPreSend ? (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Estimated tax (7.5% on parts)</span>
+                        <span className="font-medium">{formatCurrency(estimateTax)}</span>
+                      </div>
+                      <div className="flex justify-between items-center pt-3 border-t-2 border-[#0B2040]">
+                        <span className="font-bold text-[16px] text-[#0B2040]">Total estimate</span>
+                        <span className="font-bold text-[24px] text-[#0B2040]">{formatCurrency(estimateTotal)}</span>
+                      </div>
+                      <div className="text-[11px] text-gray-400 italic pt-1">
+                        * Final tax calculated by QuickBooks on send
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between text-[12px] text-gray-400">
+                        <span>Sales tax</span>
+                        <span className="italic">Calculated by QuickBooks on send</span>
+                      </div>
+                      <div className="flex justify-between items-center pt-3 border-t-2 border-[#0B2040]">
+                        <span className="font-bold text-[16px] text-[#0B2040]">Total (pre-tax)</span>
+                        <span className="font-bold text-[24px] text-[#0B2040]">{formatCurrency(form.subtotal)}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
