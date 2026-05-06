@@ -36,6 +36,12 @@ const db = getFirestore();
 const COLLECTION = "services";
 
 async function seedPricing() {
+  if (process.env.CONFIRM_OVERWRITE_PRICES !== "yes") {
+    console.error("⚠️  This script overwrites admin-edited prices in Firestore.");
+    console.error("    To proceed, re-run with: CONFIRM_OVERWRITE_PRICES=yes node src/scripts/seedPricing.ts");
+    process.exit(1);
+  }
+
   console.log(`Seeding ${pricingCatalog.length} categories into "${COLLECTION}" collection...\n`);
 
   const batch = db.batch();
