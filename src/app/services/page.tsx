@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import { getServices, getServiceCategories } from "@/lib/firebase-admin";
 import ServicesContent from "./ServicesContent";
+
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Mobile Oil Change, Tires & Brakes | Coastal Mobile Lube",
@@ -15,7 +18,14 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://coastalmobilelube.com/services" },
 };
 
-export default function ServicesPage() {
+export default async function ServicesPage() {
+  const [allServices, allCategories] = await Promise.all([
+    getServices(),
+    getServiceCategories(),
+  ]);
+  const services = allServices.filter((s) => s.division === "auto");
+  const serviceCategories = allCategories.filter((c) => c.division === "auto");
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Service",
@@ -30,7 +40,7 @@ export default function ServicesPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <ServicesContent />
+      <ServicesContent services={services} serviceCategories={serviceCategories} />
     </>
   );
 }

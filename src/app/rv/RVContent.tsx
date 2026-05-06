@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Phone, ChevronDown } from "lucide-react";
 import Button from "@/components/Button";
 import { useBooking } from "@/contexts/BookingContext";
-import { useServices } from "@/hooks/useServices";
+import type { Service, ServiceCategory } from "@/lib/services";
 import { groupByCategory } from "@/lib/serviceHelpers";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
@@ -127,9 +127,14 @@ function CategorySection({
 /* ================================================================
    Main component
    ================================================================ */
-export default function RVContent() {
+export default function RVContent({
+  services,
+  serviceCategories: firestoreCategories,
+}: {
+  services: Service[];
+  serviceCategories: ServiceCategory[];
+}) {
   const { openBooking } = useBooking();
-  const { services, categories: firestoreCategories, loading } = useServices({ division: "rv", activeOnly: true });
   const rvPriority = ["oil", "tire", "wheel"];
   const grouped = groupByCategory(services)
     .filter((g) => !/labor\s*rate/i.test(g.category))
@@ -157,15 +162,7 @@ export default function RVContent() {
     }
   }, [categories, activeCategory]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-32">
-        <div className="animate-spin w-8 h-8 border-4 border-[#E07B2D] border-t-transparent rounded-full" />
-      </div>
-    );
-  }
-
-  if (!loading && grouped.length === 0) {
+  if (grouped.length === 0) {
     return (
       <div className="text-center py-32 text-[#888]">
         <p className="text-lg font-semibold">RV services coming soon</p>

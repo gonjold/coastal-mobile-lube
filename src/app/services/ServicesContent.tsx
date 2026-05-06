@@ -6,7 +6,7 @@ import { Phone, ArrowRight } from "lucide-react";
 import Button from "@/components/Button";
 import { useBooking } from "@/contexts/BookingContext";
 import { cld, cloudinaryUrl, images } from "@/lib/cloudinary";
-import { useServices, type Service } from "@/hooks/useServices";
+import type { Service, ServiceCategory } from "@/lib/services";
 import { groupByCategory } from "@/lib/serviceHelpers";
 
 /* ─── Category → image mapping ─── */
@@ -93,9 +93,13 @@ function CategorySection({
 /* ================================================================
    Main component
    ================================================================ */
-export default function ServicesContent() {
-  const { services, categories: firestoreCategories, loading } = useServices({ division: "auto", activeOnly: true });
-
+export default function ServicesContent({
+  services,
+  serviceCategories: firestoreCategories,
+}: {
+  services: Service[];
+  serviceCategories: ServiceCategory[];
+}) {
   // Separate packages from regular services
   const packages = services.filter((s) => s.type === "package").sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   const regularServices = services.filter((s) => s.type !== "package");
@@ -136,14 +140,6 @@ export default function ServicesContent() {
     }
   }, [categories, activeCategory]);
 
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-32">
-        <div className="animate-spin w-8 h-8 border-4 border-[#E07B2D] border-t-transparent rounded-full" />
-      </div>
-    );
-  }
 
   if (grouped.length === 0) {
     return (

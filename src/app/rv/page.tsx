@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import { getServices, getServiceCategories } from "@/lib/firebase-admin";
 import RVContent from "./RVContent";
+
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Mobile RV Service | Coastal Mobile Lube",
@@ -15,7 +18,14 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://coastalmobilelube.com/rv" },
 };
 
-export default function RVPage() {
+export default async function RVPage() {
+  const [allServices, allCategories] = await Promise.all([
+    getServices(),
+    getServiceCategories(),
+  ]);
+  const services = allServices.filter((s) => s.division === "rv");
+  const serviceCategories = allCategories.filter((c) => c.division === "rv");
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Service",
@@ -30,7 +40,7 @@ export default function RVPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <RVContent />
+      <RVContent services={services} serviceCategories={serviceCategories} />
     </>
   );
 }
