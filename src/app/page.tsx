@@ -121,6 +121,9 @@ export default function Home() {
       });
   }, []);
 
+  // Sentence-per-line split for the H1. Edge: abbreviations like "Mr. Smith" mis-split — acceptable for marketing copy.
+  const headlineSentences = (heroCopy.headline ?? "").split(/(?<=[.!?])\s+/).filter(Boolean);
+
   /* ── Hero quote form state ── */
   const [hqFirst, setHqFirst] = useState("");
   const [hqLast, setHqLast] = useState("");
@@ -248,16 +251,22 @@ export default function Home() {
               "linear-gradient(90deg, rgba(11,32,64,0.85) 0%, rgba(11,32,64,0.55) 50%, rgba(11,32,64,0.35) 100%)",
           }}
         />
+        {/* Mobile-only contrast bump over busy background photo */}
+        <div className="absolute inset-0 bg-black/15 lg:hidden pointer-events-none" />
         <div className="section-inner px-4 lg:px-12 relative z-10">
 
           {/* ══ MOBILE HERO ══ */}
           <div className="lg:hidden text-center px-4 pt-6 pb-7">
             <div className="flex flex-col items-center gap-[5px] mb-3">
-              <p className="text-[11px] uppercase font-extrabold text-white tracking-[4px]">{heroCopy.eyebrowLine1}</p>
+              <p className="text-[10px] uppercase font-extrabold text-white tracking-[4px] [text-wrap:balance]">{heroCopy.eyebrowLine1}</p>
               <p className="text-[11px] uppercase font-semibold text-[#D9A441] tracking-[2px] opacity-90">{heroCopy.eyebrowLine2}</p>
             </div>
-            <h1 className="text-[34px] font-extrabold leading-[1.06] text-white tracking-[-0.8px] mb-3">{heroCopy.headline}</h1>
-            <p className="text-[15px] leading-[1.55] text-white/[0.68] max-w-[320px] mx-auto mb-3">{HERO_MOBILE_SUBHEADLINE}</p>
+            <h1 className="text-[28px] font-extrabold leading-[1.06] text-white tracking-[-0.8px] mb-3">
+              {headlineSentences.map((sentence, i) => (
+                <span key={i} className="block [text-wrap:balance]">{sentence}</span>
+              ))}
+            </h1>
+            <p className="text-[15px] leading-[1.55] text-white/[0.68] max-w-[320px] mx-auto mb-3 [text-wrap:balance]">{HERO_MOBILE_SUBHEADLINE}</p>
             <p className="text-[13px] leading-[1.4] font-bold text-[#E07B2D] mb-4">24-hour emergency service in the Apollo Beach area.</p>
             {/* CTAs stacked */}
             <div className="flex flex-col gap-[10px] max-w-[300px] mx-auto">
@@ -289,11 +298,15 @@ export default function Home() {
             {/* Left column — copy */}
             <div className="flex-1 pt-4">
               <div className="flex flex-col items-start gap-[5px] mb-6 text-left">
-                <p className="text-[13px] uppercase font-extrabold text-white tracking-[4px]">{heroCopy.eyebrowLine1}</p>
+                <p className="text-[13px] uppercase font-extrabold text-white tracking-[4px] [text-wrap:balance]">{heroCopy.eyebrowLine1}</p>
                 <p className="text-[12px] uppercase font-semibold text-[#D9A441] tracking-[2.5px] opacity-90">{heroCopy.eyebrowLine2}</p>
               </div>
-              <h1 className="text-[58px] font-extrabold leading-[1.04] text-white tracking-[-1px] mb-5 text-left">{heroCopy.headline}</h1>
-              <p className="text-[19px] leading-[1.55] text-white/[0.68] max-w-[520px] mb-4 text-left">{heroCopy.subheadline}</p>
+              <h1 className="text-[42px] font-extrabold leading-[1.04] text-white tracking-[-1px] mb-5 text-left">
+                {headlineSentences.map((sentence, i) => (
+                  <span key={i} className="block [text-wrap:balance]">{sentence}</span>
+                ))}
+              </h1>
+              <p className="text-[19px] leading-[1.55] text-white/[0.68] max-w-[520px] mb-4 text-left [text-wrap:balance]">{heroCopy.subheadline}</p>
               <p className="text-[15px] leading-[1.4] font-bold text-[#E07B2D] mb-7 text-left">24-hour emergency service in the Apollo Beach area.</p>
               {/* CTA row */}
               <div className="flex justify-start gap-3 mb-7">
