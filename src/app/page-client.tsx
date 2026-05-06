@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Phone, Clock, MapPin, Wrench, Shield, Tag, ChevronRight, ChevronDown } from "lucide-react";
 import { useBooking } from "@/contexts/BookingContext";
 import Button from "@/components/Button";
-import { useServices } from "@/hooks/useServices";
+import type { Service, ServiceCategory } from "@/lib/services";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { BrandLogo } from "@/components/brand/BrandLogo";
@@ -88,7 +88,15 @@ function formatHeroPhone(value: string): string {
   return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
 }
 
-export default function PageClient({ heroCopy = HERO_DEFAULTS }: { heroCopy?: HeroCopy }) {
+export default function PageClient({
+  heroCopy = HERO_DEFAULTS,
+  services = [],
+  serviceCategories = [],
+}: {
+  heroCopy?: HeroCopy;
+  services?: Service[];
+  serviceCategories?: ServiceCategory[];
+}) {
   const { openBooking } = useBooking();
   const [servicesTab, setServicesTab] = useState<TabKey>("automotive");
   const [expandedService, setExpandedService] = useState<string | null>(null);
@@ -134,7 +142,10 @@ export default function PageClient({ heroCopy = HERO_DEFAULTS }: { heroCopy?: He
     }
   }
 
-  const { services: allServices, categories: allFirestoreCategories } = useServices({ activeOnly: true });
+  // Pre-fetched server-side via getServices/getServiceCategories (ISR 300s).
+  // Eliminates the FOUC flash from default → real categories on cold cache.
+  const allServices = services;
+  const allFirestoreCategories = serviceCategories;
 
   /* Build categories dynamically from Firestore serviceCategories for ALL divisions */
   const effectiveCategories = useMemo((): Record<TabKey, CategoryConfig[]> => {

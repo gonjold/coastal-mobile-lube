@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 import BookingWizardModal from "@/components/BookingWizardModal";
 import QuoteModal from "@/components/QuoteModal";
+import type { Service, ServiceCategory } from "@/lib/services";
 
 export interface BookingPreselect {
   division?: string;
@@ -28,7 +29,13 @@ export function useBooking() {
   return useContext(BookingContext);
 }
 
-export function BookingProvider({ children }: { children: ReactNode }) {
+interface BookingProviderProps {
+  children: ReactNode;
+  services?: Service[];
+  serviceCategories?: ServiceCategory[];
+}
+
+export function BookingProvider({ children, services = [], serviceCategories = [] }: BookingProviderProps) {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [quoteOpen, setQuoteOpen] = useState(false);
   const [preselect, setPreselect] = useState<BookingPreselect | undefined>();
@@ -47,6 +54,8 @@ export function BookingProvider({ children }: { children: ReactNode }) {
         isOpen={bookingOpen}
         onClose={() => { setBookingOpen(false); setPreselect(undefined); }}
         preselect={preselect}
+        services={services}
+        serviceCategories={serviceCategories}
       />
       <QuoteModal isOpen={quoteOpen} onClose={() => setQuoteOpen(false)} />
     </BookingContext.Provider>

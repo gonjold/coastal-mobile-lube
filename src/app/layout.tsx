@@ -7,6 +7,7 @@ import { BookingProvider } from "@/contexts/BookingContext";
 import StickyBottomBar from "@/components/StickyBottomBar";
 import QuoteFAB from "@/components/QuoteFAB";
 import { BRAND_LOGOS } from "@/lib/brand/logos";
+import { getServices, getServiceCategories } from "@/lib/firebase-admin";
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -69,11 +70,19 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export const revalidate = 300;
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Pre-fetched here (root layout) so the booking modal — rendered globally
+  // by BookingProvider — has services available without a client-side flash.
+  const [services, serviceCategories] = await Promise.all([
+    getServices(),
+    getServiceCategories(),
+  ]);
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -194,7 +203,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           />
         </noscript>
         {/* End Google Tag Manager (noscript) */}
-        <BookingProvider>
+        <BookingProvider services={services} serviceCategories={serviceCategories}>
           <Header />
           <main className="flex-1 pb-20 lg:pb-0">{children}</main>
           <Footer />

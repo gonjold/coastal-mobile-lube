@@ -9,51 +9,11 @@ import {
   type QueryConstraint,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import type { Service, ServiceCategory, BookingVisibility } from "@/lib/services";
 
-// ── Types ──────────────────────────────────────────────────
-
-export type BookingVisibility = "inline" | "searchable" | "hidden";
-
-export interface Service {
-  id: string;
-  name: string;
-  displayName?: string;
-  description: string;
-  price: number;
-  priceLabel: string;
-  category: string;
-  subcategory: string;
-  division: "auto" | "marine" | "fleet" | "rv";
-  type?: string;
-  sortOrder: number;
-  isActive: boolean;
-  showOnBooking: boolean;
-  showOnPricing: boolean;
-  bundleItems: string[];
-  featured?: boolean;
-  notes: string;
-  laborHours: number;
-  bookingVisibility?: BookingVisibility;
-  createdAt: unknown;
-  updatedAt: unknown;
-}
-
-export interface ServiceCategory {
-  id: string;
-  name: string;
-  division: "auto" | "marine" | "fleet" | "rv";
-  description: string;
-  startingAt: number;
-  sortOrder: number;
-  isActive: boolean;
-  tabLabel?: string;
-  showOnHomepage?: boolean;
-  isFeatured?: boolean;
-  featuredSubtitle?: string;
-  bookingVisibility?: BookingVisibility;
-  createdAt: unknown;
-  updatedAt: unknown;
-}
+// Re-export for backward compat — existing callers import these types from
+// "@/hooks/useServices". Source of truth lives in @/lib/services.
+export type { Service, ServiceCategory, BookingVisibility };
 
 // bookingVisibility is authoritative when present; showOnBooking is a legacy
 // shadow boolean kept in sync for pre-WO-40b consumers. Only fall back to the

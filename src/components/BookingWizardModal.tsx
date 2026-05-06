@@ -4,7 +4,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp, getDocs, query, where, limit as firestoreLimit, getDoc, doc, setDoc } from "firebase/firestore";
-import { useServices, resolveBookingVisibility, type Service, type ServiceCategory, type BookingVisibility } from "@/hooks/useServices";
+import { resolveBookingVisibility } from "@/hooks/useServices";
+import type { Service, ServiceCategory, BookingVisibility } from "@/lib/services";
 import { groupByCategory } from "@/lib/serviceHelpers";
 import { decodeVIN as decodeVINApi, getFuelCategory } from "@/lib/vehicleApi";
 import SearchableSelect from "./SearchableSelect";
@@ -46,6 +47,8 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   preselect?: PreselectionData;
+  services?: Service[];
+  serviceCategories?: ServiceCategory[];
 }
 
 interface LookupBooking {
@@ -107,39 +110,6 @@ const POPULAR_MAKES = [
 
 const FUEL_TYPES = ["Gas", "Diesel", "Hybrid", "Electric"] as const;
 
-/* ─── Fallback service data ───────────────────────────────── */
-
-const FALLBACK: Record<DivisionKey, { category: string; services: { name: string; price: number | null }[] }[]> = {
-  auto: [
-    { category: "Oil Change", services: [{ name: "Synthetic Blend", price: 79.95 }, { name: "Full Synthetic", price: 99.95 }, { name: "High Mileage Synthetic", price: 109.95 }, { name: "Diesel Oil Change", price: 129.95 }] },
-    { category: "Tires", services: [{ name: "Mount and Balance Single", price: 35 }, { name: "Mount and Balance 4 Tires", price: 120 }, { name: "Tire Rotation", price: 29.95 }, { name: "Flat Repair", price: 25 }] },
-    { category: "Brakes", services: [{ name: "Front Brake Job", price: 249.95 }, { name: "Rear Brake Job", price: 249.95 }, { name: "Front and Rear Brake Job", price: 449.95 }] },
-    { category: "Maintenance", services: [{ name: "Coolant Flush", price: 129.95 }, { name: "Transmission Flush", price: 179.95 }, { name: "Power Steering Flush", price: 99.95 }] },
-    { category: "A/C & Heating", services: [{ name: "EVAC and Recharge", price: 179.95 }, { name: "Cabin Air Filter", price: 39.95 }] },
-    { category: "Electrical", services: [{ name: "Battery Replacement", price: 149.95 }, { name: "Battery Service", price: 39.95 }] },
-    { category: "Something Else", services: [] },
-  ],
-  marine: [
-    { category: "Oil Change", services: [{ name: "Inboard Oil Change", price: 149.95 }, { name: "Outboard Oil Change", price: 99.95 }, { name: "Stern Drive Oil Change", price: 129.95 }] },
-    { category: "Engine Service", services: [{ name: "Impeller Replacement", price: 199.95 }, { name: "Fuel Filter", price: 79.95 }] },
-    { category: "Winterization", services: [{ name: "Winterization", price: 249.95 }, { name: "De-Winterization", price: 199.95 }] },
-    { category: "Something Else", services: [] },
-  ],
-  rv: [
-    { category: "Oil Change", services: [{ name: "RV Oil Change", price: 129.95 }, { name: "Generator Oil Change", price: 89.95 }] },
-    { category: "Tires", services: [{ name: "Mount and Balance", price: 45 }, { name: "Tire Rotation", price: 39.95 }] },
-    { category: "Maintenance", services: [{ name: "Generator Service", price: 149.95 }, { name: "Generator Tune-Up", price: 99.95 }] },
-    { category: "Something Else", services: [] },
-  ],
-  fleet: [
-    { category: "Oil Change", services: [{ name: "Fleet Synthetic Blend", price: null }, { name: "Fleet Full Synthetic", price: null }] },
-    { category: "Tires", services: [{ name: "Mount and Balance", price: null }, { name: "Tire Rotation", price: null }] },
-    { category: "Brakes", services: [{ name: "Front Brake Job", price: null }, { name: "Rear Brake Job", price: null }] },
-    { category: "Maintenance", services: [{ name: "Fluid Flush", price: null }, { name: "Filter Service", price: null }] },
-    { category: "Something Else", services: [] },
-  ],
-};
-
 /* ─── Fee config type ─────────────────────────────────────── */
 
 interface FeeConfig {
@@ -155,7 +125,13 @@ interface FeeConfig {
    COMPONENT
    ═══════════════════════════════════════════════════════════════ */
 
-export default function BookingWizardModal({ isOpen, onClose, preselect }: Props) {
+export default function BookingWizardModal({
+  isOpen,
+  onClose,
+  preselect,
+  services = [],
+  serviceCategories = [],
+}: Props) {
   /* ── Wizard state ── */
   const [step, setStep] = useState(1);
   const [division, setDivision] = useState<Division>("Automotive");
@@ -243,9 +219,10 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  /* ── Firestore services ── */
+  /* ── Services data (pre-fetched server-side via firebase-admin) ── */
   const divKey = DIVISION_KEY_MAP[division];
-  const { services: allServices, categories: allCategoriesRaw, loading: servicesLoading } = useServices({ activeOnly: true });
+  const allServices = services;
+  const allCategoriesRaw = serviceCategories;
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -300,26 +277,10 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
       });
       return groups;
     }
-    // Fallback (no Firestore data)
-    const fb = FALLBACK[divKey] || [];
-    return fb.map((g) => ({
-      category: g.category,
-      services: g.services.map((s, i) => ({
-        id: `${g.category}-${i}`,
-        name: s.name,
-        price: s.price,
-        category: g.category,
-        description: "",
-        bookingVisibility: "inline" as BookingVisibility,
-        sortOrder: i,
-      })),
-      hasSubServices: g.services.length > 0,
-      isFeatured: false,
-      featuredSubtitle: "",
-      bookingVisibility: "inline" as BookingVisibility,
-      startingAt: undefined,
-      sortOrder: 0,
-    }));
+    // No services for this division (Firestore unavailable at build/revalidate time
+    // or empty catalog). Surface the empty-state CTA in the render block instead of
+    // fabricating fallback prices that would silently drift from real data.
+    return [];
   })();
 
   /* ── All services flat (for search) ── */
@@ -1345,9 +1306,20 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                 ))}
               </div>
 
-              {servicesLoading ? (
-                <div style={{ textAlign: "center", padding: "40px 0" }}>
-                  <div style={{ width: 32, height: 32, border: "3px solid #E2E8F0", borderTopColor: "#0B2447", borderRadius: "50%", animation: "spin 0.7s linear infinite", margin: "0 auto" }} />
+              {categoryGroups.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "32px 16px", background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 12 }}>
+                  <p style={{ fontSize: 15, fontWeight: 600, color: "#0B2447", marginBottom: 8 }}>
+                    We&apos;re updating our service catalog.
+                  </p>
+                  <p style={{ fontSize: 14, color: "#475569", marginBottom: 16 }}>
+                    Please call to book — we&apos;ll get you on the schedule right away.
+                  </p>
+                  <a
+                    href="tel:8137225823"
+                    style={{ display: "inline-block", padding: "10px 20px", background: "#F97316", color: "#fff", borderRadius: 10, fontWeight: 700, fontSize: 14, textDecoration: "none" }}
+                  >
+                    Call 813-722-LUBE
+                  </a>
                 </div>
               ) : (() => {
                 const isDieselCat = (cat: string) => /diesel/i.test(cat);
@@ -2348,26 +2320,40 @@ export default function BookingWizardModal({ isOpen, onClose, preselect }: Props
                 </button>
               ) : <div className="wizard-nav-spacer" />}
 
-              <button
-                type="button"
-                disabled={!canNext() || submitting}
-                onClick={() => {
-                  if (step === 1 && !isMarine && (!vehicleYear || !vehicleMake)) {
-                    setNeedsConfirmation(true);
-                  }
-                  if (step < 4) setStep(step + 1);
-                  else handleSubmit();
-                }}
-                style={{
-                  padding: "10px 24px", minHeight: 44, borderRadius: 10, border: "none",
-                  background: !canNext() || submitting ? "#E2E8F0" : "#F97316",
-                  color: "#fff", fontSize: 14, fontWeight: 700, cursor: !canNext() || submitting ? "not-allowed" : "pointer",
-                  boxShadow: canNext() && !submitting && step === 4 ? "0 0 20px rgba(249,115,22,0.4)" : "none",
-                  transition: "background 0.15s", flexShrink: 0,
-                }}
-              >
-                {submitting ? "Submitting..." : step === 4 ? (division === "Fleet" ? "Request a Quote" : "Submit Booking") : "Next"}
-              </button>
+              {(() => {
+                // Block step-4 submit until convenience fee loads, so users
+                // never click Submit on a total that's missing the fee.
+                const feeNotReady = step === 4 && feeConfig === null;
+                const isDisabled = !canNext() || submitting || feeNotReady;
+                return (
+                  <button
+                    type="button"
+                    disabled={isDisabled}
+                    onClick={() => {
+                      if (step === 1 && !isMarine && (!vehicleYear || !vehicleMake)) {
+                        setNeedsConfirmation(true);
+                      }
+                      if (step < 4) setStep(step + 1);
+                      else handleSubmit();
+                    }}
+                    style={{
+                      padding: "10px 24px", minHeight: 44, borderRadius: 10, border: "none",
+                      background: isDisabled ? "#E2E8F0" : "#F97316",
+                      color: "#fff", fontSize: 14, fontWeight: 700, cursor: isDisabled ? "not-allowed" : "pointer",
+                      boxShadow: !isDisabled && step === 4 ? "0 0 20px rgba(249,115,22,0.4)" : "none",
+                      transition: "background 0.15s", flexShrink: 0,
+                    }}
+                  >
+                    {submitting
+                      ? "Submitting..."
+                      : feeNotReady
+                        ? "Loading…"
+                        : step === 4
+                          ? (division === "Fleet" ? "Request a Quote" : "Submit Booking")
+                          : "Next"}
+                  </button>
+                );
+              })()}
             </div>
           );
         })()}
