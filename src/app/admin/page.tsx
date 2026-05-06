@@ -32,6 +32,7 @@ interface Invoice {
   status: "draft" | "sent" | "paid" | "overdue";
   createdAt?: { toDate: () => Date };
   isTest?: boolean;
+  deleted?: boolean;
 }
 
 /* ─── Time formatting for schedule display ────────────────── */
@@ -140,7 +141,8 @@ function AdminHomeInner() {
 
   /* ── Test-data visibility (mirrors /admin/schedule, /customers, /invoicing) ── */
   const visibleBookings = showTest ? bookings : bookings.filter((b) => b.isTest !== true);
-  const visibleInvoices = showTest ? invoices : invoices.filter((i) => i.isTest !== true);
+  const liveInvoices = invoices.filter((i) => i.deleted !== true);
+  const visibleInvoices = showTest ? liveInvoices : liveInvoices.filter((i) => i.isTest !== true);
 
   /* ── Pipeline counts (exclude dead leads) ── */
   const activeBookings = visibleBookings.filter((b) => b.status !== "dead");

@@ -150,10 +150,11 @@ exports.onNewBooking = onDocumentCreated(
     `;
 
     try {
+      // TODO: Customer SMS notifications removed 2026-05-06 - email-to-SMS gateways are dead.
+      // Replacing with proper Twilio integration in T2 work order.
       await transporter.sendMail({
         from: `"Coastal Mobile Lube" <${gmailUser.value()}>`,
         to: "jon@jgoldco.com",
-        bcc: "9492926686@txt.att.net",
         subject: `New ${categoryLabel} Booking — ${booking.name || formattedPhone}`,
         text: `New booking: ${booking.name || "Unknown"} - ${booking.service || "General"}. ${formattedPhone}. Check admin.${booking.needsConfirmation ? ' Heads up: some details to confirm on the call.' : ''}`,
         html: adminHtml,
@@ -1830,11 +1831,12 @@ exports.sendCancellationEmail = onRequest(
     });
 
     try {
+      // TODO: Customer SMS notifications removed 2026-05-06 - email-to-SMS gateways are dead.
+      // Replacing with proper Twilio integration in T2 work order.
       await transporter.sendMail({
         from: `"Coastal Mobile Lube" <${gmailUser.value()}>`,
         to: customerEmail,
         cc: "info@coastalmobilelube.com",
-        bcc: "9492926686@txt.att.net",
         subject: "Your Coastal Mobile Lube appointment has been cancelled",
         text: `Cancelled: ${customerName} - ${serviceName}. Check admin dashboard.`,
         html: cancellationHtml,
@@ -1987,10 +1989,11 @@ exports.qbWebhook = onRequest(
                     },
                   });
 
+                  // TODO: Customer SMS notifications removed 2026-05-06 - email-to-SMS gateways are dead.
+                  // Replacing with proper Twilio integration in T2 work order.
                   await transporter.sendMail({
                     from: `"Coastal Mobile Lube" <${gmailUser.value()}>`,
                     to: "info@coastalmobilelube.com",
-                    bcc: "9492926686@txt.att.net",
                     subject: `Payment received — ${invoiceNumber}`,
                     text: `Payment: $${paidAmount} from ${customerName}. Invoice ${invoiceNumber}. Check admin.`,
                     html: paymentHtml,
