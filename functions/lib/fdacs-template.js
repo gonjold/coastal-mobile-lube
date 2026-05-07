@@ -135,8 +135,33 @@ function buildFdacsHtml(invoice, business, disclosures, options = {}) {
     }
     .business-block { font-size: 9pt; line-height: 1.5; }
     .meta-block { font-size: 9pt; text-align: right; line-height: 1.6; }
-    .meta-block strong { display: inline-block; min-width: 110px; text-align: left; }
+    .meta-table {
+      margin-left: auto;
+      border-collapse: collapse;
+      font-size: 9pt;
+    }
+    .meta-table th, .meta-table td {
+      padding: 2px 0;
+      border: none;
+      vertical-align: baseline;
+    }
+    .meta-table th {
+      text-align: right;
+      padding-right: 10px;
+      font-weight: 600;
+      color: #0B2040;
+    }
+    .meta-table td {
+      text-align: left;
+      font-weight: normal;
+    }
     section { margin-bottom: 16px; }
+    .signature-section,
+    .consent,
+    .mv-line,
+    section { page-break-inside: avoid; }
+    h2, h3 { page-break-after: avoid; }
+    .disclosure { page-break-inside: avoid; }
     .two-col {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -242,15 +267,20 @@ function buildFdacsHtml(invoice, business, disclosures, options = {}) {
 <body>
   <header>
     <div class="business-block">
+      <img src="https://res.cloudinary.com/dgcdcqjrz/image/upload/f_png,h_192,q_auto/v1775916096/Coastal_logo_bh3biu.png"
+           alt="Coastal Mobile Lube &amp; Tire"
+           style="height: 48px; width: auto; margin-bottom: 8px;" />
       <h1>${esc(business.businessName)}</h1>
       <div>${esc(business.businessAddress)}</div>
       <div>${esc(business.businessPhone)} | ${esc(business.businessEmail)}</div>
     </div>
     <div class="meta-block">
       <div class="doc-type">${esc(docType)}</div>
-      <div><strong>Number:</strong> ${esc(invoice.invoiceNumber || '')}</div>
-      <div><strong>Date:</strong> ${esc(invoice.invoiceDate || '')}</div>
-      ${invoice.dueDate ? `<div><strong>Due:</strong> ${esc(invoice.dueDate)}</div>` : ''}
+      <table class="meta-table">
+        <tr><th>Number:</th><td>${esc(invoice.invoiceNumber || '')}</td></tr>
+        <tr><th>Date:</th><td>${esc(invoice.invoiceDate || '')}</td></tr>
+        ${invoice.dueDate ? `<tr><th>Due:</th><td>${esc(invoice.dueDate)}</td></tr>` : ''}
+      </table>
     </div>
   </header>
 
