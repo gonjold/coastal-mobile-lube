@@ -3,14 +3,47 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // === HELPER FUNCTIONS ===
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    function userExists() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+    function isAdmin() {
+      return isSignedIn() && userExists() && userDoc().role == 'admin' && userDoc().isActive == true;
+    }
+    function isTech() {
+      return isSignedIn() && userExists() && userDoc().role == 'tech' && userDoc().isActive == true;
+    }
+
+    // === USERS COLLECTION ===
+    // Self-read: users can read their own doc (needed to determine role).
+    // Self-create: any signed-in user can create their OWN doc (needed for
+    //   admin-allowlist auto-provisioning on first Google sign-in).
+    // Admin: read all + update/delete any user.
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update, delete: if isAdmin();
+    }
+
     // BOOKINGS COLLECTION
     // Public: can CREATE new bookings (form submissions)
-    // Admin only: can READ, UPDATE, DELETE
+    // Public phone-lookup: list with limit ≤ 10
+    // Admin: full access
+    // Tech: read/update only bookings assigned to them
     match /bookings/{bookingId} {
       allow create: if true;
-      // Public phone-lookup: allow list queries with a limit (used by "Been here before?" feature)
-      allow list: if request.query.limit != null && request.query.limit <= 10;
-      allow get, update, delete: if request.auth != null;
+      allow list: if (request.query.limit != null && request.query.limit <= 10) || isAdmin() || isTech();
+      allow get: if isAdmin() ||
+                    (isTech() && resource.data.assignedTechId == request.auth.uid);
+      allow update: if isAdmin() ||
+                       (isTech() && resource.data.assignedTechId == request.auth.uid);
+      allow delete: if isAdmin();
     }
 
     // SERVICES COLLECTION (pricing map)
@@ -18,7 +51,7 @@ service cloud.firestore {
     // Admin only: can CREATE, UPDATE, DELETE
     match /services/{serviceId} {
       allow read: if true;
-      allow create, update, delete: if request.auth != null;
+      allow create, update, delete: if isAdmin();
     }
 
     // SERVICE CATEGORIES COLLECTION
@@ -26,7 +59,7 @@ service cloud.firestore {
     // Admin only: can CREATE, UPDATE, DELETE
     match /serviceCategories/{categoryId} {
       allow read: if true;
-      allow create, update, delete: if request.auth != null;
+      allow create, update, delete: if isAdmin();
     }
 
     // QR CODES COLLECTION
@@ -34,7 +67,7 @@ service cloud.firestore {
     // Admin only: can WRITE
     match /qrCodes/{id} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
 
     // QR SCANS COLLECTION
@@ -43,7 +76,7 @@ service cloud.firestore {
     // Immutable: no update or delete
     match /qrScans/{id} {
       allow create: if true;
-      allow read: if request.auth != null;
+      allow read: if isAdmin();
       allow update, delete: if false;
     }
 
@@ -52,18 +85,17 @@ service cloud.firestore {
     // Admin only: can WRITE
     match /settings/fees {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
 
     // CUSTOMERS COLLECTION
     // Public: can CREATE (booking wizard creates new customer on submit)
-    // Public phone/email lookup: allow list queries with a limit (first-time
-    // customer detection for fee waiver; uses where(phone|email, ==, val) + limit(1))
-    // Admin only: can get-by-id, update, delete
+    // Public phone/email lookup: list ≤ 10
+    // Admin only: get/update/delete
     match /customers/{customerId} {
       allow create: if true;
-      allow list: if request.query.limit != null && request.query.limit <= 10;
-      allow get, update, delete: if request.auth != null;
+      allow list: if (request.query.limit != null && request.query.limit <= 10) || isAdmin();
+      allow get, update, delete: if isAdmin();
     }
 
     // SITE CONFIG COLLECTION
@@ -71,13 +103,13 @@ service cloud.firestore {
     // Admin only: can WRITE
     match /siteConfig/{docId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
 
-    // CATCH-ALL: deny everything else
-    // Any collection not explicitly defined above is locked down
+    // CATCH-ALL: any collection not explicitly defined above is admin-only.
+    // Cloud functions use Admin SDK and bypass these rules entirely.
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if isAdmin();
     }
   }
 }

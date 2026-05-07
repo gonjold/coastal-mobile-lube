@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import AdminBadge from "./AdminBadge";
 import {
   type Booking,
+  type AppUser,
   formatPhone,
   formatTimestamp,
   getServiceLabel,
@@ -12,7 +13,15 @@ import {
 } from "@/app/admin/shared";
 import { useAdminModal } from "@/contexts/AdminModalContext";
 import { formatCurrency } from "@/lib/formatCurrency";
-import { doc, updateDoc } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  onSnapshot,
+  query,
+  serverTimestamp,
+  updateDoc,
+  where,
+} from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 const STATUS_STEPS = ["pending", "confirmed", "in-progress", "completed", "invoiced"];
@@ -71,6 +80,26 @@ export default function ScheduleDetailPanel({
   const [confirmTime, setConfirmTime] = useState('');
   const [confirmDuration, setConfirmDuration] = useState('60');
   const [confirmSending, setConfirmSending] = useState(false);
+  const [activeTechs, setActiveTechs] = useState<AppUser[]>([]);
+
+  /* Load active techs for assignment dropdown */
+  useEffect(() => {
+    const q = query(
+      collection(db, 'users'),
+      where('role', '==', 'tech'),
+      where('isActive', '==', true)
+    );
+    return onSnapshot(q, (snap) => {
+      setActiveTechs(snap.docs.map((d) => d.data() as AppUser));
+    });
+  }, []);
+
+  async function handleAssignTech(bookingId: string, techUid: string | null) {
+    await updateDoc(doc(db, 'bookings', bookingId), {
+      assignedTechId: techUid,
+      updatedAt: serverTimestamp(),
+    });
+  }
 
   /* Escape key handler */
   useEffect(() => {
@@ -250,6 +279,26 @@ export default function ScheduleDetailPanel({
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto px-6 py-5">
+          {/* Assigned Tech */}
+          <p className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.06em] mb-2">Assigned Tech</p>
+          <div className="mb-6">
+            <select
+              value={b.assignedTechId ?? ''}
+              onChange={(e) => handleAssignTech(b.id, e.target.value || null)}
+              className="w-full rounded border border-gray-300 px-3 py-2 text-[13px] text-[#0B2040]"
+            >
+              <option value="">Unassigned</option>
+              {activeTechs.map((t) => (
+                <option key={t.uid} value={t.uid}>{t.displayName}</option>
+              ))}
+            </select>
+            {b.assignedTechId && !activeTechs.find((t) => t.uid === b.assignedTechId) && (
+              <p className="mt-1 text-[11px] text-amber-700">
+                Currently assigned tech is inactive or removed.
+              </p>
+            )}
+          </div>
+
           {/* Job Details */}
           <p className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.06em] mb-3">Job Details</p>
           {([

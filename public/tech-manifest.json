@@ -1,0 +1,23 @@
+{
+  "name": "Coastal Tech",
+  "short_name": "Coastal Tech",
+  "description": "Coastal Mobile Lube & Tire — technician app for managing assigned jobs.",
+  "start_url": "/tech",
+  "scope": "/tech",
+  "display": "standalone",
+  "background_color": "#0B2040",
+  "theme_color": "#0B2040",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

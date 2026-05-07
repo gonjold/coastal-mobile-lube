@@ -4,6 +4,19 @@ export interface FirestoreTimestamp {
   toDate: () => Date;
 }
 
+export type UserRole = 'admin' | 'tech';
+
+export interface AppUser {
+  uid: string;
+  email: string;
+  displayName: string;
+  role: UserRole;
+  isActive: boolean;
+  createdAt?: FirestoreTimestamp;
+  createdBy: string;
+  lastLoginAt?: FirestoreTimestamp | null;
+}
+
 export interface Booking {
   id: string;
   name?: string;

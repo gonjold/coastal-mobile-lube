@@ -31,6 +31,14 @@ const NAV_ICONS: Record<string, React.ReactNode> = {
       <path d="M2.5 17c0-3.5 2.9-6.5 6.5-6.5s6.5 3 6.5 6.5"/>
     </svg>
   ),
+  Team: (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="6.5" cy="6" r="2.5"/>
+      <circle cx="13" cy="7" r="2"/>
+      <path d="M1.5 16c0-2.8 2.2-5 5-5s5 2.2 5 5"/>
+      <path d="M11.5 12c2 0 4 1.5 4 4"/>
+    </svg>
+  ),
   Invoicing: (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="1" width="12" height="16" rx="2"/>
@@ -83,6 +91,7 @@ const SECTIONS = [
       { label: "Dashboard", href: "/admin" },
       { label: "Schedule", href: "/admin/schedule" },
       { label: "Customers", href: "/admin/customers" },
+      { label: "Team", href: "/admin/team" },
     ],
   },
   {

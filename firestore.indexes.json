@@ -7,6 +7,15 @@
         { "fieldPath": "slug", "order": "ASCENDING" },
         { "fieldPath": "scannedAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "bookings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "assignedTechId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "confirmedDate", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
