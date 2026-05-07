@@ -2012,3 +2012,57 @@ exports.qbWebhook = onRequest(
     }
   }
 );
+
+// =============================================================================
+// TEMPORARY: smoke test for puppeteer toolchain validation (WO-FDACS-A2-A3)
+// REMOVE in step 2e of the same WO. Do not leave deployed.
+// =============================================================================
+const { generatePdfFromHtml } = require('./lib/pdf');
+
+exports._smokeTestFdacsPdf = onRequest(
+  {
+    region: 'us-east1',
+    cors: allowedOrigins,
+    memory: '2GiB',
+    timeoutSeconds: 60,
+  },
+  async (req, res) => {
+    // Auth gate: require Bearer token (any signed-in Firebase user is fine for
+    // a smoke test — production functions tighten this further).
+    const authHeader = req.get('Authorization') || '';
+    const match = authHeader.match(/^Bearer\s+(.+)$/);
+    if (!match) {
+      res.status(401).json({ error: 'missing bearer token' });
+      return;
+    }
+    try {
+      await admin.auth().verifyIdToken(match[1]);
+    } catch (err) {
+      res.status(401).json({ error: 'invalid bearer token' });
+      return;
+    }
+
+    try {
+      const html = `<!doctype html><html><head><meta charset="utf-8"><title>FDACS smoke test</title>
+        <style>body{font-family:system-ui;padding:48px}h1{color:#0B2040}</style>
+        </head><body><h1>FDACS PDF toolchain smoke test</h1>
+        <p>Generated at ${new Date().toISOString()}</p>
+        <p>If you are reading this as a PDF, puppeteer-core + @sparticuz/chromium are working.</p>
+        </body></html>`;
+
+      const t0 = Date.now();
+      const pdf = await generatePdfFromHtml(html);
+      const ms = Date.now() - t0;
+
+      res.status(200).json({
+        ok: true,
+        pdfBytes: pdf.length,
+        durationMs: ms,
+        runtime: process.version,
+      });
+    } catch (err) {
+      console.error('smoke test failed:', err);
+      res.status(500).json({ ok: false, error: String(err && err.message || err) });
+    }
+  }
+);
