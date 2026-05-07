@@ -2019,7 +2019,7 @@ exports.qbWebhook = onRequest(
 // =============================================================================
 const { generatePdfFromHtml } = require('./lib/pdf');
 
-exports._smokeTestFdacsPdf = onRequest(
+exports.smokeTestFdacsPdf = onRequest(
   {
     region: 'us-east1',
     cors: allowedOrigins,
