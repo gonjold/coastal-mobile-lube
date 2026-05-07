@@ -1,0 +1,16 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // FDACS-required PDFs: 7-year retention via GCS lifecycle (set separately).
+    // Cloud Functions write via Admin SDK (bypasses these rules).
+    // Reads gated by Firestore-stored signed URLs; direct Storage reads disallowed.
+    match /fdacs-pdfs/{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // Default deny for everything else. Add specific match blocks above as needed.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
