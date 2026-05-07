@@ -80,17 +80,22 @@ export default function ScheduleDetailPanel({
   const [confirmTime, setConfirmTime] = useState('');
   const [confirmDuration, setConfirmDuration] = useState('60');
   const [confirmSending, setConfirmSending] = useState(false);
-  const [activeTechs, setActiveTechs] = useState<AppUser[]>([]);
+  const [assignableUsers, setAssignableUsers] = useState<AppUser[]>([]);
 
-  /* Load active techs for assignment dropdown */
+  /* Load all active users (admin + tech) for assignment dropdown */
   useEffect(() => {
     const q = query(
       collection(db, 'users'),
-      where('role', '==', 'tech'),
       where('isActive', '==', true)
     );
     return onSnapshot(q, (snap) => {
-      setActiveTechs(snap.docs.map((d) => d.data() as AppUser));
+      const list = snap.docs.map((d) => d.data() as AppUser);
+      // Sort: techs first, then admins; alphabetical within each
+      list.sort((a, b) => {
+        if (a.role !== b.role) return a.role === 'tech' ? -1 : 1;
+        return a.displayName.localeCompare(b.displayName);
+      });
+      setAssignableUsers(list);
     });
   }, []);
 
@@ -279,8 +284,8 @@ export default function ScheduleDetailPanel({
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto px-6 py-5">
-          {/* Assigned Tech */}
-          <p className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.06em] mb-2">Assigned Tech</p>
+          {/* Assigned To */}
+          <p className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.06em] mb-2">Assigned To</p>
           <div className="mb-6">
             <select
               value={b.assignedTechId ?? ''}
@@ -288,13 +293,15 @@ export default function ScheduleDetailPanel({
               className="w-full rounded border border-gray-300 px-3 py-2 text-[13px] text-[#0B2040]"
             >
               <option value="">Unassigned</option>
-              {activeTechs.map((t) => (
-                <option key={t.uid} value={t.uid}>{t.displayName}</option>
+              {assignableUsers.map((u) => (
+                <option key={u.uid} value={u.uid}>
+                  {u.displayName} ({u.role})
+                </option>
               ))}
             </select>
-            {b.assignedTechId && !activeTechs.find((t) => t.uid === b.assignedTechId) && (
+            {b.assignedTechId && !assignableUsers.find((u) => u.uid === b.assignedTechId) && (
               <p className="mt-1 text-[11px] text-amber-700">
-                Currently assigned tech is inactive or removed.
+                Currently assigned user is inactive or removed.
               </p>
             )}
           </div>

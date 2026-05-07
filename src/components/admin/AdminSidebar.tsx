@@ -25,6 +25,12 @@ const NAV_ICONS: Record<string, React.ReactNode> = {
       <line x1="12" y1="1" x2="12" y2="5"/>
     </svg>
   ),
+  "Field View": (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 2.5l4.5 4.5-7.5 7.5L3.5 15l.5-4.5L11 2.5z"/>
+      <line x1="9" y1="4.5" x2="13.5" y2="9"/>
+    </svg>
+  ),
   Customers: (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="9" cy="6" r="3.5"/>
@@ -90,6 +96,7 @@ const SECTIONS = [
     items: [
       { label: "Dashboard", href: "/admin" },
       { label: "Schedule", href: "/admin/schedule" },
+      { label: "Field View", href: "/tech/jobs" },
       { label: "Customers", href: "/admin/customers" },
       { label: "Team", href: "/admin/team" },
     ],

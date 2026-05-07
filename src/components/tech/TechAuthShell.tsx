@@ -47,15 +47,12 @@ export default function TechAuthShell({ children }: { children: React.ReactNode 
           setUser(data);
           setLoading(false);
 
-          if (data.role === "admin" && !isLoginRoute) {
-            router.replace("/admin");
-          } else if (data.role === "tech" && !data.isActive && !isLoginRoute) {
+          if (data.role === "tech" && !data.isActive && !isLoginRoute) {
             signOut(auth);
             router.replace("/tech/login");
-          } else if (isLoginRoute && data.role === "tech" && data.isActive) {
+          } else if (isLoginRoute && data.isActive) {
+            // Active user (admin or tech) hitting login → go straight to jobs
             router.replace("/tech/jobs");
-          } else if (isLoginRoute && data.role === "admin") {
-            router.replace("/admin");
           }
         },
         (err) => {
@@ -81,7 +78,7 @@ export default function TechAuthShell({ children }: { children: React.ReactNode 
 
   if (isLoginRoute) return <>{children}</>;
 
-  if (!user || user.role !== "tech" || !user.isActive) {
+  if (!user || !user.isActive) {
     return null;
   }
 
