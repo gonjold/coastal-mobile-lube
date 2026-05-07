@@ -5,7 +5,6 @@ import {
   collection,
   query,
   where,
-  orderBy,
   onSnapshot,
 } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
@@ -32,17 +31,26 @@ export default function TechJobsPage() {
       return;
     }
 
+    // No orderBy — Firestore would exclude docs missing the sorted field.
+    // Sort client-side by confirmedDate || preferredDate.
     const q = query(
       collection(db, "bookings"),
       where("assignedTechId", "==", uid),
-      where("status", "in", ["confirmed", "in-progress"]),
-      orderBy("confirmedDate", "asc")
+      where("status", "in", ["confirmed", "in-progress"])
     );
 
     return onSnapshot(
       q,
       (snap) => {
-        setJobs(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Booking));
+        const list = snap.docs.map(
+          (d) => ({ id: d.id, ...d.data() }) as Booking
+        );
+        list.sort((a, b) => {
+          const aKey = a.confirmedDate || a.preferredDate || "";
+          const bKey = b.confirmedDate || b.preferredDate || "";
+          return aKey.localeCompare(bKey);
+        });
+        setJobs(list);
         setLoading(false);
       },
       (err) => {
