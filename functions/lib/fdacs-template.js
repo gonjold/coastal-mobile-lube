@@ -115,7 +115,6 @@ function buildFdacsHtml(invoice, business, disclosures, options = {}) {
       padding: 0;
       line-height: 1.4;
     }
-    h1 { font-size: 18pt; margin: 0; color: #0B2040; }
     h2 { font-size: 12pt; margin: 12px 0 6px; color: #0B2040; }
     h3 { font-size: 11pt; margin: 12px 0 6px; color: #0B2040; }
     .doc-type {
@@ -269,8 +268,7 @@ function buildFdacsHtml(invoice, business, disclosures, options = {}) {
     <div class="business-block">
       <img src="https://res.cloudinary.com/dgcdcqjrz/image/upload/f_png,h_192,q_auto/v1775916096/Coastal_logo_bh3biu.png"
            alt="Coastal Mobile Lube &amp; Tire"
-           style="height: 48px; width: auto; margin-bottom: 8px;" />
-      <h1>${esc(business.businessName)}</h1>
+           style="height: 64px; width: auto; margin-bottom: 6px;" />
       <div>${esc(business.businessAddress)}</div>
       <div>${esc(business.businessPhone)} | ${esc(business.businessEmail)}</div>
     </div>
