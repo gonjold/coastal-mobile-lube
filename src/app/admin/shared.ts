@@ -82,6 +82,16 @@ export interface Booking {
   jobCompletedAt?: FirestoreTimestamp | null;
   photos?: string[];
   customerSignatureUrl?: string | null;
+  vehicleInfo?: {
+    year?: number | null;
+    make?: string | null;
+    model?: string | null;
+    trim?: string | null;
+    vin?: string | null;
+    licenseTag?: string | null;
+    odometerIn?: number | null;
+    odometerOut?: number | null;
+  } | null;
 }
 
 export interface Customer {
