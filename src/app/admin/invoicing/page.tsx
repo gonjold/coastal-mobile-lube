@@ -77,6 +77,25 @@ interface Invoice {
   deleted?: boolean;
   deletedAt?: { toDate: () => Date };
   deletedBy?: string;
+
+  // FDACS Phase B — copied from parent booking at invoice creation
+  bookingId?: string | null;
+  vehicleInfo?: {
+    year?: string | number | null;
+    make?: string | null;
+    model?: string | null;
+    trim?: string | null;
+    vin?: string | null;
+    licenseTag?: string | null;
+    odometerIn?: number | null;
+    odometerOut?: number | null;
+  } | null;
+  customerComplaint?: string | null;
+  photos?: string[];
+  customerSignatureUrl?: string | null;
+  techCheckInAt?: { toDate: () => Date } | null;
+  jobCompletedAt?: { toDate: () => Date } | null;
+  assignedTechId?: string | null;
 }
 
 type InvoiceFormData = Omit<Invoice, "id" | "createdAt" | "updatedAt">;
@@ -127,6 +146,54 @@ function defaultForm(invoices: Invoice[]): InvoiceFormData {
     notes: "",
     invoiceDate: today,
     dueDate: toISODate(due),
+    // FDACS Phase B — null defaults for from-scratch invoices (no booking source).
+    // Pre-fill paths overwrite these from booking data.
+    bookingId: null,
+    vehicleInfo: null,
+    customerComplaint: null,
+    photos: [],
+    customerSignatureUrl: null,
+    techCheckInAt: null,
+    jobCompletedAt: null,
+    assignedTechId: null,
+  };
+}
+
+// FDACS Phase B — construct invoice's nested vehicleInfo + flat FDACS fields
+// from a source booking. Existing flat vehicleYear/Make/Model/Trim/vin on the
+// booking become the structured vehicleInfo on the invoice (matches PDF
+// template shape). Tech-captured fields (licenseTag, odometers, complaint,
+// photos, signature, lifecycle) read from the booking's new flat fields,
+// which are null/empty until Phase C populates them.
+function fdacsFieldsFromBooking(b: Booking): Pick<
+  InvoiceFormData,
+  | "bookingId"
+  | "vehicleInfo"
+  | "customerComplaint"
+  | "photos"
+  | "customerSignatureUrl"
+  | "techCheckInAt"
+  | "jobCompletedAt"
+  | "assignedTechId"
+> {
+  return {
+    bookingId: b.id,
+    vehicleInfo: {
+      year: b.vehicleYear ?? null,
+      make: b.vehicleMake ?? null,
+      model: b.vehicleModel ?? null,
+      trim: b.vehicleTrim ?? null,
+      vin: b.vin ?? null,
+      licenseTag: b.licenseTag ?? null,
+      odometerIn: b.odometerIn ?? null,
+      odometerOut: b.odometerOut ?? null,
+    },
+    customerComplaint: b.customerComplaint ?? null,
+    photos: b.photos ?? [],
+    customerSignatureUrl: b.customerSignatureUrl ?? null,
+    techCheckInAt: b.techCheckInAt ?? null,
+    jobCompletedAt: b.jobCompletedAt ?? null,
+    assignedTechId: b.assignedTechId ?? null,
   };
 }
 
@@ -669,6 +736,9 @@ function InvoicingPageInner() {
         f.customerPhone = b.phone || "";
         f.customerEmail = b.email || "";
 
+        // FDACS Phase B — copy bookingId + vehicleInfo + tech-captured fields
+        Object.assign(f, fdacsFieldsFromBooking(b));
+
         // Build line items from service field, looking up price from catalog
         const serviceName = b.service || "";
         if (serviceName) {
@@ -711,6 +781,9 @@ function InvoicingPageInner() {
     f.customerName = b.name || b.customerName || "";
     f.customerPhone = b.phone || b.customerPhone || "";
     f.customerEmail = b.email || b.customerEmail || "";
+
+    // FDACS Phase B — copy bookingId + vehicleInfo + tech-captured fields
+    Object.assign(f, fdacsFieldsFromBooking(b));
 
     // Build line items from the booking's services
     if (b.selectedServices?.length) {
@@ -834,6 +907,15 @@ function InvoicingPageInner() {
       notes: inv.notes,
       invoiceDate: inv.invoiceDate,
       dueDate: inv.dueDate,
+      // FDACS Phase B — preserve through edit roundtrip so handleSave doesn't drop them
+      bookingId: inv.bookingId ?? null,
+      vehicleInfo: inv.vehicleInfo ?? null,
+      customerComplaint: inv.customerComplaint ?? null,
+      photos: inv.photos ?? [],
+      customerSignatureUrl: inv.customerSignatureUrl ?? null,
+      techCheckInAt: inv.techCheckInAt ?? null,
+      jobCompletedAt: inv.jobCompletedAt ?? null,
+      assignedTechId: inv.assignedTechId ?? null,
     });
     setEditingId(inv.id);
     setCustomerQuery(inv.customerName);

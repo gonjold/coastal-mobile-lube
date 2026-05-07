@@ -32,7 +32,9 @@ export interface Booking {
   vehicleYear?: string;
   vehicleMake?: string;
   vehicleModel?: string;
+  vehicleTrim?: string;
   fuelType?: string;
+  vin?: string;
   vinOrHull?: string;
   needsConfirmation?: boolean;
   vesselYear?: string;
@@ -54,6 +56,19 @@ export interface Booking {
   isTest?: boolean;
   isTestFlaggedAt?: FirestoreTimestamp;
   isTestFlaggedBy?: string;
+
+  // FDACS Phase B — flat additions; populated by tech app (Phase C).
+  // Existing flat vehicleYear/Make/Model/Trim/vin remain the vehicle identity source.
+  licenseTag?: string | null;
+  odometerIn?: number | null;
+  odometerOut?: number | null;
+  customerComplaint?: string | null;
+  assignedTechId?: string | null;
+  techCheckInAt?: FirestoreTimestamp | null;
+  jobStartedAt?: FirestoreTimestamp | null;
+  jobCompletedAt?: FirestoreTimestamp | null;
+  photos?: string[];
+  customerSignatureUrl?: string | null;
 }
 
 export interface Customer {

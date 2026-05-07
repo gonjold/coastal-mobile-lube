@@ -33,6 +33,25 @@ interface Invoice {
   createdAt?: { toDate: () => Date };
   isTest?: boolean;
   deleted?: boolean;
+
+  // FDACS Phase B — copied from parent booking at invoice creation
+  bookingId?: string | null;
+  vehicleInfo?: {
+    year?: string | number | null;
+    make?: string | null;
+    model?: string | null;
+    trim?: string | null;
+    vin?: string | null;
+    licenseTag?: string | null;
+    odometerIn?: number | null;
+    odometerOut?: number | null;
+  } | null;
+  customerComplaint?: string | null;
+  photos?: string[];
+  customerSignatureUrl?: string | null;
+  techCheckInAt?: { toDate: () => Date } | null;
+  jobCompletedAt?: { toDate: () => Date } | null;
+  assignedTechId?: string | null;
 }
 
 /* ─── Time formatting for schedule display ────────────────── */

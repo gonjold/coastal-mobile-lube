@@ -5,6 +5,7 @@ import AdminBadge from "./AdminBadge";
 import {
   type Booking,
   formatPhone,
+  formatTimestamp,
   getServiceLabel,
   getBookingCalendarDate,
   formatTimeWindow,
@@ -289,6 +290,99 @@ export default function ScheduleDetailPanel({
             <p className={`text-[13px] ${b.notes || b.adminNotes ? "text-[#0B2040]" : "italic text-gray-400"}`}>
               {b.adminNotes || b.notes || "No notes"}
             </p>
+          </div>
+
+          {/* FDACS Phase B — read-only display of tech-captured data.
+              Vehicle identity reads from existing flat booking fields;
+              tech-captured fields show empty states until Phase C populates. */}
+          <p className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.06em] mb-3 mt-6">Vehicle &amp; Service Detail</p>
+          <div className="rounded-[10px] border border-gray-200 p-4">
+            {/* Vehicle identity */}
+            <div className="mb-4">
+              <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-500">Vehicle</div>
+              {(b.vehicleYear || b.vehicleMake || b.vehicleModel || b.vehicleTrim || b.vin) ? (
+                <div className="text-[13px] text-[#0B2040]">
+                  <div>
+                    {[b.vehicleYear, b.vehicleMake, b.vehicleModel, b.vehicleTrim].filter(Boolean).join(" ") || "—"}
+                  </div>
+                  {b.vin && <div className="mt-0.5">VIN: <span className="font-mono">{b.vin}</span></div>}
+                  {b.licenseTag ? (
+                    <div className="mt-0.5">Tag: {b.licenseTag}</div>
+                  ) : (
+                    <div className="mt-0.5 italic text-gray-400">Tag: not yet captured</div>
+                  )}
+                  {(b.odometerIn !== null && b.odometerIn !== undefined) ? (
+                    <div className="mt-0.5">
+                      Odometer In: {b.odometerIn.toLocaleString()} mi
+                      {(b.odometerOut !== null && b.odometerOut !== undefined) && (
+                        <> &nbsp;|&nbsp; Out: {b.odometerOut.toLocaleString()} mi</>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="mt-0.5 italic text-gray-400">Odometer: not yet captured</div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-[13px] italic text-gray-400">Not yet captured</div>
+              )}
+            </div>
+
+            {/* Customer Concern */}
+            <div className="mb-4">
+              <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-500">Customer Concern</div>
+              {b.customerComplaint ? (
+                <div className="rounded border border-gray-200 bg-[#F7F8FA] p-2 text-[13px] italic text-[#0B2040]">
+                  {b.customerComplaint}
+                </div>
+              ) : (
+                <div className="text-[13px] italic text-gray-400">Not yet captured</div>
+              )}
+            </div>
+
+            {/* Job Lifecycle */}
+            <div className="mb-4">
+              <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-500">Job Lifecycle</div>
+              <div className="grid grid-cols-3 gap-2 text-[13px]">
+                <div>
+                  <div className="text-[11px] text-gray-500">Tech Check-in</div>
+                  <div className={b.techCheckInAt ? "text-[#0B2040]" : "italic text-gray-400"}>
+                    {b.techCheckInAt ? formatTimestamp(b.techCheckInAt) : "—"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-gray-500">Job Started</div>
+                  <div className={b.jobStartedAt ? "text-[#0B2040]" : "italic text-gray-400"}>
+                    {b.jobStartedAt ? formatTimestamp(b.jobStartedAt) : "—"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-gray-500">Job Completed</div>
+                  <div className={b.jobCompletedAt ? "text-[#0B2040]" : "italic text-gray-400"}>
+                    {b.jobCompletedAt ? formatTimestamp(b.jobCompletedAt) : "—"}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Photos */}
+            <div className="mb-4">
+              <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-500">Photos</div>
+              {b.photos && b.photos.length > 0 ? (
+                <div className="text-[13px] text-[#0B2040]">{b.photos.length} photo{b.photos.length === 1 ? "" : "s"}</div>
+              ) : (
+                <div className="text-[13px] italic text-gray-400">None</div>
+              )}
+            </div>
+
+            {/* Customer Signature */}
+            <div>
+              <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-500">Customer Signature</div>
+              {b.customerSignatureUrl ? (
+                <div className="text-[13px] text-[#0B2040]">Captured</div>
+              ) : (
+                <div className="text-[13px] italic text-gray-400">Not yet captured</div>
+              )}
+            </div>
           </div>
 
           {/* Progress Timeline */}
