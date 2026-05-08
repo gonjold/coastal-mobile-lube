@@ -1,11 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import { BookingProvider } from "@/contexts/BookingContext";
-import StickyBottomBar from "@/components/StickyBottomBar";
-import QuoteFAB from "@/components/QuoteFAB";
+import SiteChrome from "@/components/SiteChrome";
 import { BRAND_LOGOS } from "@/lib/brand/logos";
 import { getServices, getServiceCategories } from "@/lib/firebase-admin";
 
@@ -204,11 +201,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         </noscript>
         {/* End Google Tag Manager (noscript) */}
         <BookingProvider services={services} serviceCategories={serviceCategories}>
-          <Header />
-          <main className="flex-1 pb-20 lg:pb-0">{children}</main>
-          <Footer />
-          <StickyBottomBar />
-          <QuoteFAB />
+          <SiteChrome>{children}</SiteChrome>
         </BookingProvider>
       </body>
     </html>

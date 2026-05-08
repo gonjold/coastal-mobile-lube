@@ -7,6 +7,7 @@ import { db } from '@/lib/firebase';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import type { Booking, FirestoreTimestamp } from '@/app/admin/shared';
+import { decodeVIN } from '@/lib/vehicleApi';
 
 // Dynamically import VinScanner so the @zxing libraries don't bloat the initial page bundle.
 const VinScanner = dynamic(() => import('@/components/tech/VinScanner'), { ssr: false });
@@ -37,6 +38,8 @@ export default function JobDetailPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [decodeStatus, setDecodeStatus] = useState<'idle' | 'decoding' | 'success' | 'failed'>('idle');
+  const [decodeMessage, setDecodeMessage] = useState<string>('');
 
   useEffect(() => {
     if (!jobId) return;
@@ -78,6 +81,62 @@ export default function JobDetailPage() {
     );
     return unsub;
   }, [jobId]);
+
+  useEffect(() => {
+    const VIN_REGEX = /^[A-HJ-NPR-Z0-9]{17}$/i;
+    const vin = vehicle.vin;
+    if (!vin || !VIN_REGEX.test(vin)) {
+      setDecodeStatus('idle');
+      setDecodeMessage('');
+      return;
+    }
+
+    let cancelled = false;
+    let dismissTimer: ReturnType<typeof setTimeout> | null = null;
+    const t = setTimeout(async () => {
+      setDecodeStatus('decoding');
+      setDecodeMessage('Decoding VIN…');
+      try {
+        const result = await decodeVIN(vin);
+        if (cancelled) return;
+        if (!result || !result.vinDecoded) {
+          console.warn('VIN decode returned no match:', vin);
+          setDecodeStatus('failed');
+          setDecodeMessage('');
+          return;
+        }
+        setVehicle((prev) => {
+          const next = { ...prev };
+          if (result.year && result.year !== prev.year) next.year = result.year;
+          if (result.make && result.make !== prev.make) next.make = result.make;
+          if (result.model && result.model !== prev.model) next.model = result.model;
+          if (result.trim && result.trim !== prev.trim) next.trim = result.trim;
+          return next;
+        });
+        setDecodeStatus('success');
+        setDecodeMessage(
+          `Decoded: ${result.year} ${(result.make || '').toUpperCase()} ${result.model || ''}`.trim()
+        );
+        dismissTimer = setTimeout(() => {
+          if (!cancelled) {
+            setDecodeStatus('idle');
+            setDecodeMessage('');
+          }
+        }, 2000);
+      } catch (err) {
+        if (cancelled) return;
+        console.error('VIN decode failed:', err);
+        setDecodeStatus('failed');
+        setDecodeMessage('');
+      }
+    }, 500);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+      if (dismissTimer) clearTimeout(dismissTimer);
+    };
+  }, [vehicle.vin]);
 
   if (loading) {
     return <div className="p-4 text-slate-500">Loading job…</div>;
@@ -207,6 +266,12 @@ export default function JobDetailPage() {
               </button>
             )}
           </div>
+          {decodeStatus === 'decoding' && (
+            <p className="mt-1 text-sm text-slate-500">Decoding VIN…</p>
+          )}
+          {decodeStatus === 'success' && decodeMessage && (
+            <p className="mt-1 text-sm text-green-600">{decodeMessage}</p>
+          )}
         </div>
 
         <div className="mt-3">
