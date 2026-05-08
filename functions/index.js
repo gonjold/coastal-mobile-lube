@@ -1,8 +1,13 @@
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { defineSecret } = require("firebase-functions/params");
 const nodemailer = require("nodemailer");
 const admin = require("firebase-admin");
 const crypto = require("crypto");
+
+const { buildFdacsHtml } = require("./lib/fdacs-template");
+const { buildDisclosures } = require("./lib/disclosures");
+const { generatePdfFromHtml } = require("./lib/pdf");
 
 admin.initializeApp();
 const firestoreDb = admin.firestore();
@@ -2012,3 +2017,150 @@ exports.qbWebhook = onRequest(
     }
   }
 );
+
+// ─── WO-FDACS-D3: PDF generation on tech_completion invoice creation ─────────
+
+function fmtSignedAt(ts) {
+  if (!ts) return '';
+  if (ts.toDate) return ts.toDate().toISOString();
+  if (ts._seconds != null) return new Date(ts._seconds * 1000).toISOString();
+  return String(ts);
+}
+
+async function buildAndStoreFdacsPdf(invoiceId, invoice) {
+  if (!invoice.bookingId) {
+    throw new Error('tech_completion invoice missing bookingId');
+  }
+  const bookingSnap = await firestoreDb.collection('bookings').doc(invoice.bookingId).get();
+  if (!bookingSnap.exists) {
+    throw new Error(`booking ${invoice.bookingId} not found`);
+  }
+
+  const businessSnap = await firestoreDb.doc('settings/business').get();
+  if (!businessSnap.exists) {
+    throw new Error('settings/business doc not found — run scripts/seed-fdacs-business-settings.js');
+  }
+  const business = businessSnap.data();
+
+  const disclosures = buildDisclosures(invoice, business);
+  const html = buildFdacsHtml(invoice, business, disclosures, {
+    documentType: 'INVOICE',
+    signatureBase64:
+      invoice.customerCompletionSignatureUrl ||
+      invoice.customerSignatureUrl ||
+      null,
+    signedAt: fmtSignedAt(invoice.customerCompletionSignedAt),
+  });
+
+  const pdfBuffer = await generatePdfFromHtml(html);
+
+  const path = `fdacs-pdfs/${invoiceId}/${Date.now()}.pdf`;
+  const token = crypto.randomUUID();
+  const bucket = admin.storage().bucket();
+  await bucket.file(path).save(pdfBuffer, {
+    contentType: 'application/pdf',
+    metadata: {
+      metadata: {
+        firebaseStorageDownloadTokens: token,
+        invoiceId,
+        generatedBy: 'D3',
+      },
+    },
+  });
+
+  const url = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(path)}?alt=media&token=${token}`;
+  return { url, path };
+}
+
+exports.generateFdacsInvoicePdfOnCreate = onDocumentCreated(
+  {
+    document: 'invoices/{invoiceId}',
+    region: 'us-east1',
+    memory: '1GiB',
+    timeoutSeconds: 120,
+  },
+  async (event) => {
+    const invoiceId = event.params.invoiceId;
+    const invoice = event.data.data();
+
+    if (invoice.source !== 'tech_completion') {
+      console.log(`[D3] skip ${invoiceId}: source=${invoice.source} (not tech_completion)`);
+      return;
+    }
+    if (invoice.customerInvoicePdfUrl) {
+      console.log(`[D3] skip ${invoiceId}: customerInvoicePdfUrl already present`);
+      return;
+    }
+
+    try {
+      const { url, path } = await buildAndStoreFdacsPdf(invoiceId, invoice);
+      await event.data.ref.update({
+        customerInvoicePdfUrl: url,
+        customerInvoicePdfPath: path,
+        customerInvoicePdfGeneratedAt: admin.firestore.FieldValue.serverTimestamp(),
+        customerInvoicePdfError: admin.firestore.FieldValue.delete(),
+      });
+      console.log(`[D3] generated PDF for ${invoiceId} at ${path}`);
+    } catch (err) {
+      console.error(`[D3] failed for ${invoiceId}:`, err);
+      await event.data.ref
+        .update({
+          customerInvoicePdfError: err.message || String(err),
+        })
+        .catch((e) => console.error('[D3] failed to write error field:', e));
+      // Do NOT re-throw — retry-loop on a structurally bad invoice is worse than a silent skip.
+    }
+  }
+);
+
+exports.regenerateFdacsInvoicePdf = onCall(
+  {
+    region: 'us-east1',
+    memory: '1GiB',
+    timeoutSeconds: 120,
+  },
+  async (request) => {
+    if (!request.auth?.uid) {
+      throw new HttpsError('unauthenticated', 'Sign in required');
+    }
+    const userSnap = await firestoreDb.collection('users').doc(request.auth.uid).get();
+    if (!userSnap.exists) {
+      throw new HttpsError('permission-denied', 'Admin role required');
+    }
+    const userData = userSnap.data() || {};
+    if (userData.role !== 'admin' || userData.isActive !== true) {
+      throw new HttpsError('permission-denied', 'Admin role required');
+    }
+
+    const invoiceId = request.data?.invoiceId;
+    if (!invoiceId || typeof invoiceId !== 'string') {
+      throw new HttpsError('invalid-argument', 'invoiceId required');
+    }
+
+    const invoiceRef = firestoreDb.collection('invoices').doc(invoiceId);
+    const invoiceSnap = await invoiceRef.get();
+    if (!invoiceSnap.exists) {
+      throw new HttpsError('not-found', 'Invoice not found');
+    }
+    const invoice = invoiceSnap.data();
+
+    if (invoice.source !== 'tech_completion') {
+      throw new HttpsError(
+        'failed-precondition',
+        'Only tech_completion invoices have FDACS PDFs'
+      );
+    }
+
+    const { url, path } = await buildAndStoreFdacsPdf(invoiceId, invoice);
+    await invoiceRef.update({
+      customerInvoicePdfUrl: url,
+      customerInvoicePdfPath: path,
+      customerInvoicePdfGeneratedAt: admin.firestore.FieldValue.serverTimestamp(),
+      customerInvoicePdfError: admin.firestore.FieldValue.delete(),
+    });
+
+    return { ok: true, customerInvoicePdfUrl: url, customerInvoicePdfPath: path };
+  }
+);
+
+module.exports.buildAndStoreFdacsPdf = buildAndStoreFdacsPdf;
