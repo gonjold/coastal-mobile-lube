@@ -1454,11 +1454,24 @@ exports.sendInvoiceWithQBPayment = onRequest(
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           });
 
+          // WO-FDACS-E — upload Attachable on resend if the QB invoice is
+          // missing it (covers invoices created before E shipped).
+          const resendInvoiceRef = firestoreDb.collection("invoices").doc(invoiceId);
+          const resendAttach = await uploadFdacsPdfToQb({
+            invoice: fdacsResendInvoice,
+            invoiceId,
+            qbInvoiceId: existingData.qbInvoiceId,
+            accessToken,
+            realmId,
+            invoiceRef: resendInvoiceRef,
+          });
+
           return res.status(200).json({
             success: true,
             action: "resent",
             mode: "fdacs",
             qbInvoiceId: existingData.qbInvoiceId,
+            qbAttachableId: resendAttach?.attachableId || existingData.qbAttachableId,
           });
         }
 
@@ -1556,6 +1569,65 @@ exports.sendInvoiceWithQBPayment = onRequest(
         });
       }
 
+      // WO-FDACS-E — FDACS-gated QB metadata: Vehicle Custom Field, CustomerMemo
+      // (regulatory disclosures), PrivateNote (customer complaint).
+      // DefinitionId '1' = SalesCustomName1 "Vehicle" (confirmed via QB Preferences).
+      const VEHICLE_CUSTOM_FIELD_ID = "1";
+      let fdacsCustomFields = null;
+      let fdacsCustomerMemo = null;
+      let fdacsPrivateNote = null;
+      let fdacsBooking = null;
+
+      if (isFdacs) {
+        const v = existingData?.vehicleInfo || {};
+        let vehicleString = [v.year, v.make, v.model].filter(Boolean).map(String).join(" ").trim();
+        if (!vehicleString) {
+          vehicleString = [existingData?.vehicleYear, existingData?.vehicleMake, existingData?.vehicleModel]
+            .filter(Boolean).map(String).join(" ").trim();
+        }
+        if (vehicleString) {
+          fdacsCustomFields = [{
+            DefinitionId: VEHICLE_CUSTOM_FIELD_ID,
+            Type: "StringType",
+            Name: "Vehicle",
+            StringValue: vehicleString.substring(0, 31), // QB string custom-field hard limit
+          }];
+        }
+
+        try {
+          const businessSnap = await firestoreDb.doc("settings/business").get();
+          const businessSettings = businessSnap.exists ? businessSnap.data() : {};
+          const disclosureInvoice = existingData?.lineItems
+            ? existingData
+            : { lineItems: lineItems || [] };
+          const d = buildDisclosures(disclosureInvoice, businessSettings);
+          const memoText = [d.warranty, d.shopSupplies, d.tireFee, d.batteryFee]
+            .filter(Boolean)
+            .join("\n\n");
+          if (memoText) {
+            fdacsCustomerMemo = memoText.length > 950
+              ? memoText.substring(0, 947) + "..."
+              : memoText;
+          }
+        } catch (memoErr) {
+          console.warn("[E] disclosure build failed; falling back to legacy memo:", memoErr.message || memoErr);
+        }
+
+        if (existingData?.bookingId) {
+          try {
+            const bSnap = await firestoreDb.collection("bookings").doc(existingData.bookingId).get();
+            fdacsBooking = bSnap.exists ? bSnap.data() : null;
+            if (fdacsBooking?.customerComplaint) {
+              fdacsPrivateNote = `Customer complaint: ${String(fdacsBooking.customerComplaint).substring(0, 950)}`;
+            }
+          } catch (e) {
+            console.warn("[E] booking fetch for PrivateNote failed:", e.message || e);
+          }
+        }
+      }
+
+      const legacyMemoText = vehicle ? `Vehicle: ${vehicle}` : "Thank you for your business!";
+
       const qbInvoice = {
         CustomerRef: { value: qbCustomerId },
         Line: qbLineItems,
@@ -1566,21 +1638,38 @@ exports.sendInvoiceWithQBPayment = onRequest(
         AllowOnlineCreditCardPayment: true,
         AllowOnlineACHPayment: true,
         DueDate: dueDate || undefined,
-        CustomerMemo: { value: vehicle ? `Vehicle: ${vehicle}` : "Thank you for your business!" },
+        CustomerMemo: { value: fdacsCustomerMemo || legacyMemoText },
         EmailStatus: "NotSet",
+        ...(fdacsCustomFields ? { CustomField: fdacsCustomFields } : {}),
+        ...(fdacsPrivateNote ? { PrivateNote: fdacsPrivateNote } : {}),
       };
 
-      const invoiceResponse = await fetch(`${baseUrl}/invoice?minorversion=75`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(qbInvoice),
-      });
+      async function postInvoice(payload) {
+        const r = await fetch(`${baseUrl}/invoice?minorversion=75`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+        return await r.json();
+      }
 
-      const invoiceResult = await invoiceResponse.json();
+      let invoiceResult = await postInvoice(qbInvoice);
+      // WO-FDACS-E points 16/17: if QB rejects the payload, retry once with FDACS
+      // metadata stripped (Custom Field, FDACS memo, PrivateNote). Don't block the
+      // send for a metadata field.
+      if (invoiceResult.Fault && isFdacs && (fdacsCustomFields || fdacsCustomerMemo || fdacsPrivateNote)) {
+        console.warn("[E] QB rejected FDACS metadata; retrying without:",
+          JSON.stringify(invoiceResult.Fault));
+        const retryPayload = { ...qbInvoice };
+        delete retryPayload.CustomField;
+        delete retryPayload.PrivateNote;
+        retryPayload.CustomerMemo = { value: legacyMemoText };
+        invoiceResult = await postInvoice(retryPayload);
+      }
       if (invoiceResult.Fault) {
         throw new Error(`QB invoice create failed: ${JSON.stringify(invoiceResult.Fault)}`);
       }
@@ -1777,6 +1866,7 @@ exports.sendInvoiceWithQBPayment = onRequest(
       });
       const fromAddr = `"Coastal Mobile Lube" <${gmailUser.value()}>`;
 
+      let createdAttachableId = null;
       if (isFdacs && invoiceId) {
         // FDACS first-send: re-fetch invoice so the email body sees the just-written
         // qb totals + invoiceId (early writeback above happened on this same doc).
@@ -1793,6 +1883,19 @@ exports.sendInvoiceWithQBPayment = onRequest(
           transporter,
           fromAddr,
         });
+
+        // WO-FDACS-E — upload the FDACS PDF as a QB Attachable. Best-effort:
+        // QB invoice is already created and customer email is already sent.
+        const createInvoiceRef = firestoreDb.collection("invoices").doc(invoiceId);
+        const attachRes = await uploadFdacsPdfToQb({
+          invoice: freshInvoice,
+          invoiceId,
+          qbInvoiceId,
+          accessToken,
+          realmId,
+          invoiceRef: createInvoiceRef,
+        });
+        createdAttachableId = attachRes?.attachableId || null;
       } else {
         await transporter.sendMail({
           from: fromAddr,
@@ -1813,6 +1916,7 @@ exports.sendInvoiceWithQBPayment = onRequest(
         qbTaxAmount,
         qbSubtotal,
         paymentLink,
+        ...(createdAttachableId ? { qbAttachableId: createdAttachableId } : {}),
       });
     } catch (err) {
       console.error("QB invoice error:", err);
@@ -2312,6 +2416,111 @@ async function attachFdacsPdf(invoiceId, invoice, invoiceRef) {
     }
   }
 }
+
+// WO-FDACS-E — Upload the FDACS PDF as a QB Attachable on a tech_completion
+// invoice's QB record. Idempotent (skips if invoice.qbAttachableId is set).
+// Failure is logged + persisted to invoice.qbAttachableError but never thrown
+// — the QB invoice and customer email path must not block on metadata.
+async function uploadFdacsPdfToQb({
+  invoice,
+  invoiceId,
+  qbInvoiceId,
+  accessToken,
+  realmId,
+  invoiceRef,
+}) {
+  if (!qbInvoiceId) return { skipped: true, reason: "missing qbInvoiceId" };
+  if (invoice?.qbAttachableId) {
+    return { skipped: true, reason: "already attached", attachableId: invoice.qbAttachableId };
+  }
+  try {
+    const bucket = admin.storage().bucket();
+    let pdfBuffer;
+    try {
+      if (!invoice.customerInvoicePdfPath) throw new Error("customerInvoicePdfPath missing");
+      [pdfBuffer] = await bucket.file(invoice.customerInvoicePdfPath).download();
+    } catch (downloadErr) {
+      console.warn("[E] PDF download failed, attempting regen:", downloadErr.message || downloadErr);
+      const { path } = await buildAndStoreFdacsPdf(invoiceId, invoice);
+      [pdfBuffer] = await bucket.file(path).download();
+    }
+
+    const filename = `Coastal-Invoice-${invoice.invoiceNumber || invoiceId}.pdf`;
+    const metadataJson = JSON.stringify({
+      AttachableRef: [{
+        EntityRef: { type: "Invoice", value: String(qbInvoiceId) },
+        // Customer already gets the PDF via our D-EMAIL path; don't duplicate
+        // by letting QB attach it on its own send too.
+        IncludeOnSend: false,
+      }],
+      FileName: filename,
+      ContentType: "application/pdf",
+    });
+
+    // Build the multipart body manually as a Buffer. The form-data library +
+    // global fetch combo trips QB's parser ("Could find no Content-Disposition
+    // header within part"); a hand-rolled body with a fixed Content-Length is
+    // more reliable for QB's strict /upload endpoint.
+    const boundary = `----CoastalFDACSAttach${Date.now()}${Math.random().toString(36).slice(2, 10)}`;
+    const CRLF = "\r\n";
+    const part1 = Buffer.from(
+      `--${boundary}${CRLF}` +
+      `Content-Disposition: form-data; name="file_metadata_0"${CRLF}` +
+      `Content-Type: application/json${CRLF}${CRLF}` +
+      metadataJson + CRLF
+    );
+    const part2Header = Buffer.from(
+      `--${boundary}${CRLF}` +
+      `Content-Disposition: form-data; name="file_content_0"; filename="${filename}"${CRLF}` +
+      `Content-Type: application/pdf${CRLF}${CRLF}`
+    );
+    const part2Footer = Buffer.from(`${CRLF}--${boundary}--${CRLF}`);
+    const multipartBody = Buffer.concat([part1, part2Header, pdfBuffer, part2Footer]);
+
+    const uploadRes = await fetch(
+      `https://${QB_BASE}/v3/company/${realmId}/upload?minorversion=75`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: "application/json",
+          "Content-Type": `multipart/form-data; boundary=${boundary}`,
+          "Content-Length": String(multipartBody.length),
+        },
+        body: multipartBody,
+      }
+    );
+
+    if (!uploadRes.ok) {
+      const errBody = await uploadRes.text();
+      throw new Error(`QB Attachable upload failed: ${uploadRes.status} ${errBody}`);
+    }
+
+    const uploadJson = await uploadRes.json();
+    const attachableId = uploadJson.AttachableResponse?.[0]?.Attachable?.Id;
+    if (!attachableId) {
+      throw new Error(`QB Attachable response missing ID: ${JSON.stringify(uploadJson)}`);
+    }
+
+    await invoiceRef.update({
+      qbAttachableId: attachableId,
+      qbAttachableUploadedAt: admin.firestore.FieldValue.serverTimestamp(),
+      qbAttachableError: admin.firestore.FieldValue.delete(),
+    });
+    console.log(`[E] Attached PDF to QB invoice ${qbInvoiceId} as Attachable ${attachableId}`);
+    return { ok: true, attachableId };
+  } catch (err) {
+    console.error("[E] Attachable upload failed:", err);
+    try {
+      await invoiceRef.update({ qbAttachableError: err.message || String(err) });
+    } catch (writeErr) {
+      console.error("[E] Failed to write qbAttachableError:", writeErr);
+    }
+    return { ok: false, error: err.message || String(err) };
+  }
+}
+
+module.exports.uploadFdacsPdfToQb = uploadFdacsPdfToQb;
 
 // Build + send the FDACS-compliant customer invoice email (HTML body + PDF
 // attachment). Used by both QB and non-QB send paths whenever
