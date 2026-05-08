@@ -544,7 +544,7 @@ exports.sendBookingConfirmation = onRequest(
         </table>
         <p style="font-size:14px;color:#666;line-height:1.6;margin:0;">
           Need to reschedule or have questions? Call us at
-          <a href="tel:+18132775500" style="color:#1A5FAC;font-weight:600;text-decoration:none;">(813) 277-5500</a>
+          <a href="tel:+18137225823" style="color:#1A5FAC;font-weight:600;text-decoration:none;">(813) 722-5823</a>
           or reply to this email.
         </p>
       </td>
@@ -805,7 +805,7 @@ function generateInvoicePDF(invoiceData) {
       .text('Payment Instructions', 66, y + 12);
     doc.font('Helvetica').fontSize(10).fillColor(gray)
       .text('We accept cash, check, Venmo, Zelle, and all major credit cards.', 66, y + 28);
-    doc.text('For questions about this invoice, call or text us at (813) 277-5500.', 66, y + 42);
+    doc.text('For questions about this invoice, call or text us at (813) 722-5823.', 66, y + 42);
 
     // --- FOOTER ---
     const footerY = 720;
@@ -1748,7 +1748,7 @@ exports.sendInvoiceWithQBPayment = onRequest(
             <td style="padding:16px 20px;">
               <p style="font-size:13px;font-weight:700;color:#0B2040;margin:0 0 6px 0;">Payment Instructions</p>
               <p style="font-size:13px;color:#666;margin:2px 0;">We accept cash, check, Venmo, Zelle, and all major credit cards.</p>
-              <p style="font-size:13px;color:#666;margin:2px 0;">For questions, call or text us at <a href="tel:+18132775500" style="color:#1A5FAC;text-decoration:none;font-weight:600;">(813) 277-5500</a>.</p>
+              <p style="font-size:13px;color:#666;margin:2px 0;">For questions, call or text us at <a href="tel:+18137225823" style="color:#1A5FAC;text-decoration:none;font-weight:600;">(813) 722-5823</a>.</p>
             </td>
           </tr>
         </table>

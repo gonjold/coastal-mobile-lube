@@ -240,7 +240,7 @@ export default function InvoiceDetailPanel({
   <div class="payment-box">
     <h3>Payment Instructions</h3>
     <p>We accept cash, check, Venmo, Zelle, and all major credit cards.</p>
-    <p>For questions, call or text us at (813) 277-5500.</p>
+    <p>For questions, call or text us at (813) 722-5823.</p>
   </div>
 
   <div class="footer">
