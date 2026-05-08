@@ -80,7 +80,20 @@ export interface Booking {
   techCheckInAt?: FirestoreTimestamp | null;
   jobStartedAt?: FirestoreTimestamp | null;
   jobCompletedAt?: FirestoreTimestamp | null;
-  photos?: string[];
+  photos?: Array<{
+    url: string;
+    capturedAt: FirestoreTimestamp;
+    caption?: string;
+  }>;
+  reAuthEvents?: Array<{
+    id: string;
+    timestamp: FirestoreTimestamp;
+    method: 'in_person_signature' | 'phone';
+    customerName: string;
+    signatureUrl?: string;
+    note?: string;
+    lineItemIds: string[];
+  }>;
   customerSignatureUrl?: string | null;
   vehicleInfo?: {
     year?: number | null;
@@ -102,6 +115,8 @@ export interface Booking {
     taxable: boolean;
     partsCondition?: 'New' | 'Used' | 'Rebuilt' | 'Reconditioned' | null;
     sourceServiceId?: string | null;
+    addedDuringWork?: boolean;
+    reAuthEventId?: string;
   }>;
   estimateSubtotal?: number;
   estimateTaxableSubtotal?: number;

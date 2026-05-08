@@ -189,7 +189,7 @@ function fdacsFieldsFromBooking(b: Booking): Pick<
       odometerOut: b.odometerOut ?? null,
     },
     customerComplaint: b.customerComplaint ?? null,
-    photos: b.photos ?? [],
+    photos: (b.photos ?? []).map((p) => p.url),
     customerSignatureUrl: b.customerSignatureUrl ?? null,
     techCheckInAt: b.techCheckInAt ?? null,
     jobCompletedAt: b.jobCompletedAt ?? null,

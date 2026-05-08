@@ -3,6 +3,7 @@
 import { doc, updateDoc, serverTimestamp, deleteField } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { Booking, FirestoreTimestamp } from "@/app/admin/shared";
+import WorkInProgress from "./WorkInProgress";
 
 interface Props {
   booking: Booking;
@@ -195,16 +196,7 @@ export default function EstimateLocked({ booking }: Props) {
         </button>
       </div>
 
-      <div className="rounded-lg border border-slate-200 bg-white p-6 text-center">
-        <div className="text-base font-semibold text-[#0B2040]">
-          Work in progress
-        </div>
-        <div className="mt-1 text-sm text-slate-600">
-          Line item updates during work, photo capture, and odometer-out will
-          ship in WO-FDACS-C-WORK. Mark complete + final signature ship in
-          WO-FDACS-C-COMPLETE.
-        </div>
-      </div>
+      <WorkInProgress booking={booking} />
     </div>
   );
 }

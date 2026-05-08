@@ -16,6 +16,14 @@ service firebase.storage {
         && request.resource.contentType.matches('image/png');
     }
 
+    // Mid-job photos captured by the tech app (before/after/diagnostic). 5MB cap, image/* only.
+    match /photos/{bookingId}/{filename} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
     // Default deny for everything else. Add specific match blocks above as needed.
     match /{allPaths=**} {
       allow read, write: if false;
