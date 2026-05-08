@@ -8,6 +8,7 @@ const crypto = require("crypto");
 const { buildFdacsHtml } = require("./lib/fdacs-template");
 const { buildDisclosures } = require("./lib/disclosures");
 const { generatePdfFromHtml } = require("./lib/pdf");
+const { renderFdacsEmailHtml } = require("./lib/fdacs-email-template");
 
 admin.initializeApp();
 const firestoreDb = admin.firestore();
@@ -846,6 +847,7 @@ exports.sendInvoiceEmail = onRequest(
     }
 
     const {
+      invoiceId,
       customerEmail, customerName, customerPhone, customerAddress,
       invoiceNumber, lineItems, subtotal, taxAmount, total, notes,
       vehicle, invoiceDate, dueDate,
@@ -860,6 +862,22 @@ exports.sendInvoiceEmail = onRequest(
       return;
     }
 
+    // Source-branch lookup: if an invoiceId is provided AND the invoice doc has
+    // source === 'tech_completion', deliver the FDACS-compliant email body +
+    // attached FDACS PDF instead of the legacy template. Missing invoiceId or
+    // any other source value falls through to the legacy path unchanged.
+    let fdacsInvoice = null;
+    if (invoiceId) {
+      try {
+        const snap = await firestoreDb.collection("invoices").doc(invoiceId).get();
+        if (snap.exists && snap.data().source === 'tech_completion') {
+          fdacsInvoice = snap.data();
+        }
+      } catch (lookupErr) {
+        console.error('[D-EMAIL] sendInvoiceEmail invoice lookup failed; falling back to legacy:', lookupErr);
+      }
+    }
+
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -867,6 +885,30 @@ exports.sendInvoiceEmail = onRequest(
         pass: gmailAppPassword.value(),
       },
     });
+
+    if (fdacsInvoice) {
+      try {
+        await sendFdacsCustomerEmail({
+          invoiceId,
+          invoice: { ...fdacsInvoice, customerEmail },
+          paymentLink: fdacsInvoice.qbPaymentLink || "",
+          recipientEmail: customerEmail,
+          transporter,
+          fromAddr: `"Coastal Mobile Lube" <${gmailUser.value()}>`,
+        });
+        await firestoreDb.collection("invoices").doc(invoiceId).update({
+          status: "sent",
+          sentDate: new Date().toISOString(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        console.log(`[D-EMAIL] FDACS email sent (non-QB path) to ${customerEmail} for ${invoiceNumber}`);
+        res.json({ success: true, mode: "fdacs" });
+      } catch (err) {
+        console.error(`[D-EMAIL] FDACS send failed for ${customerEmail}:`, err);
+        res.status(500).json({ success: false, error: err.message });
+      }
+      return;
+    }
 
     // Build line items table rows
     const items = Array.isArray(lineItems) ? lineItems : [];
@@ -980,6 +1022,7 @@ exports.sendInvoiceEmail = onRequest(
       await transporter.sendMail({
         from: `"Coastal Mobile Lube" <${gmailUser.value()}>`,
         to: customerEmail,
+        replyTo: "info@coastalmobilelube.com",
         subject: `Invoice ${invoiceNumber} — Coastal Mobile Lube & Tire`,
         html: invoiceHtml,
         attachments: [
@@ -1372,30 +1415,38 @@ exports.sendInvoiceWithQBPayment = onRequest(
       const { accessToken, realmId } = await getQBAccessToken();
       const baseUrl = `https://${QB_BASE}/v3/company/${realmId}`;
 
-      // 0. Resend path: if this Coastal invoice already has a QB invoice,
-      //    use QB's /invoice/{Id}/send endpoint instead of creating a duplicate.
+      // Fetch existing invoice doc once (used by resend path AND by source-branch
+      // logic at the email step). May be null for create-only flows that don't
+      // have an invoiceId yet.
+      let existingData = null;
       if (invoiceId) {
         const existingSnap = await firestoreDb.collection("invoices").doc(invoiceId).get();
-        const existingData = existingSnap.exists ? existingSnap.data() : null;
+        existingData = existingSnap.exists ? existingSnap.data() : null;
+      }
+      const isFdacs = existingData?.source === 'tech_completion';
 
-        if (existingData?.qbInvoiceId) {
+      // 0. Resend path: if this Coastal invoice already has a QB invoice...
+      if (invoiceId && existingData?.qbInvoiceId) {
+        // FDACS resend: bypass QB's /invoice/{Id}/send (which would deliver QB's
+        // generic template). Re-render the FDACS body + PDF and deliver via our
+        // own SMTP path using the stored qbPaymentLink.
+        if (isFdacs) {
           const sendTo = customerEmail || existingData.customerEmail || "";
-          const sendResponse = await fetch(
-            `${baseUrl}/invoice/${existingData.qbInvoiceId}/send?sendTo=${encodeURIComponent(sendTo)}&minorversion=75`,
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-                Accept: "application/json",
-              },
-            }
-          );
+          const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: { user: gmailUser.value(), pass: gmailAppPassword.value() },
+          });
+          const fromAddr = `"Coastal Mobile Lube" <${gmailUser.value()}>`;
+          const fdacsResendInvoice = { ...existingData, customerEmail: sendTo };
 
-          if (!sendResponse.ok) {
-            const errBody = await sendResponse.text();
-            console.error("QB resend failed:", errBody);
-            throw new Error(`QB resend failed: ${sendResponse.status}`);
-          }
+          await sendFdacsCustomerEmail({
+            invoiceId,
+            invoice: fdacsResendInvoice,
+            paymentLink: existingData.qbPaymentLink || "",
+            recipientEmail: sendTo,
+            transporter,
+            fromAddr,
+          });
 
           await firestoreDb.collection("invoices").doc(invoiceId).update({
             status: "sent",
@@ -1406,20 +1457,50 @@ exports.sendInvoiceWithQBPayment = onRequest(
           return res.status(200).json({
             success: true,
             action: "resent",
+            mode: "fdacs",
             qbInvoiceId: existingData.qbInvoiceId,
           });
         }
+
+        // Legacy resend: keep QB's /invoice/{Id}/send (preserves existing
+        // manual_admin behavior — generic QB template, no PDF attachment).
+        const sendTo = customerEmail || existingData.customerEmail || "";
+        const sendResponse = await fetch(
+          `${baseUrl}/invoice/${existingData.qbInvoiceId}/send?sendTo=${encodeURIComponent(sendTo)}&minorversion=75`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              Accept: "application/json",
+            },
+          }
+        );
+
+        if (!sendResponse.ok) {
+          const errBody = await sendResponse.text();
+          console.error("QB resend failed:", errBody);
+          throw new Error(`QB resend failed: ${sendResponse.status}`);
+        }
+
+        await firestoreDb.collection("invoices").doc(invoiceId).update({
+          status: "sent",
+          sentDate: new Date().toISOString(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        return res.status(200).json({
+          success: true,
+          action: "resent",
+          qbInvoiceId: existingData.qbInvoiceId,
+        });
       }
 
       // 1. Sync customer to QB (or find existing)
       // Idempotent: if invoice or customer doc already has qbCustomerId, reuse it.
       let qbCustomerId;
 
-      if (invoiceId) {
-        const invDoc = await firestoreDb.collection("invoices").doc(invoiceId).get();
-        if (invDoc.exists && invDoc.data().qbCustomerId) {
-          qbCustomerId = invDoc.data().qbCustomerId;
-        }
+      if (existingData?.qbCustomerId) {
+        qbCustomerId = existingData.qbCustomerId;
       }
 
       if (!qbCustomerId && customerId) {
@@ -1694,17 +1775,38 @@ exports.sendInvoiceWithQBPayment = onRequest(
         service: "gmail",
         auth: { user: gmailUser.value(), pass: gmailAppPassword.value() },
       });
+      const fromAddr = `"Coastal Mobile Lube" <${gmailUser.value()}>`;
 
-      await transporter.sendMail({
-        from: `"Coastal Mobile Lube" <${gmailUser.value()}>`,
-        to: customerEmail,
-        cc: "info@coastalmobilelube.com",
-        subject: `Invoice ${invoiceNumber} - Coastal Mobile Lube & Tire`,
-        html: htmlEmail,
-      });
+      if (isFdacs && invoiceId) {
+        // FDACS first-send: re-fetch invoice so the email body sees the just-written
+        // qb totals + invoiceId (early writeback above happened on this same doc).
+        const freshSnap = await firestoreDb.collection("invoices").doc(invoiceId).get();
+        const freshInvoice = freshSnap.exists
+          ? { ...freshSnap.data(), customerEmail }
+          : { ...existingData, customerEmail, invoiceNumber, qbTotalAmount, qbTaxAmount, qbSubtotal };
+
+        await sendFdacsCustomerEmail({
+          invoiceId,
+          invoice: freshInvoice,
+          paymentLink,
+          recipientEmail: customerEmail,
+          transporter,
+          fromAddr,
+        });
+      } else {
+        await transporter.sendMail({
+          from: fromAddr,
+          to: customerEmail,
+          cc: "info@coastalmobilelube.com",
+          replyTo: "info@coastalmobilelube.com",
+          subject: `Invoice ${invoiceNumber} - Coastal Mobile Lube & Tire`,
+          html: htmlEmail,
+        });
+      }
 
       res.status(200).json({
         success: true,
+        mode: isFdacs ? "fdacs" : "legacy",
         qbInvoiceId,
         qbDocNumber,
         qbTotalAmount,
@@ -2164,3 +2266,86 @@ exports.regenerateFdacsInvoicePdf = onCall(
 );
 
 module.exports.buildAndStoreFdacsPdf = buildAndStoreFdacsPdf;
+
+// Attempt to attach the FDACS PDF to a customer invoice email.
+// Tries Storage download first; on failure (or missing path), tries one
+// regen via buildAndStoreFdacsPdf. Returns the attachments array (possibly
+// empty) plus an attach error string if the PDF could not be sourced.
+async function attachFdacsPdf(invoiceId, invoice, invoiceRef) {
+  const attachments = [];
+  const filename = `Coastal-Invoice-${invoice.invoiceNumber || invoiceId}.pdf`;
+  const bucket = admin.storage().bucket();
+
+  async function downloadAt(path) {
+    const [buf] = await bucket.file(path).download();
+    return buf;
+  }
+
+  try {
+    if (invoice.customerInvoicePdfPath) {
+      const buf = await downloadAt(invoice.customerInvoicePdfPath);
+      attachments.push({ filename, content: buf, contentType: 'application/pdf' });
+      return { attachments, pdfErr: null };
+    }
+    throw new Error('customerInvoicePdfPath missing on invoice');
+  } catch (err) {
+    console.error('[D-EMAIL] failed to download FDACS PDF, attempting regen:', err.message || err);
+    try {
+      const { path } = await buildAndStoreFdacsPdf(invoiceId, invoice);
+      const buf = await downloadAt(path);
+      attachments.push({ filename, content: buf, contentType: 'application/pdf' });
+      if (invoiceRef) {
+        await invoiceRef.update({
+          customerInvoicePdfAttachError: admin.firestore.FieldValue.delete(),
+        }).catch((e) => console.error('[D-EMAIL] failed clearing attach-error field:', e));
+      }
+      return { attachments, pdfErr: null };
+    } catch (regenErr) {
+      console.error('[D-EMAIL] regen-on-attach also failed:', regenErr.message || regenErr);
+      const msg = regenErr.message || String(regenErr);
+      if (invoiceRef) {
+        await invoiceRef.update({
+          customerInvoicePdfAttachError: msg,
+        }).catch((e) => console.error('[D-EMAIL] failed writing attach-error field:', e));
+      }
+      return { attachments: [], pdfErr: msg };
+    }
+  }
+}
+
+// Build + send the FDACS-compliant customer invoice email (HTML body + PDF
+// attachment). Used by both QB and non-QB send paths whenever
+// invoice.source === 'tech_completion'. Throws on send failure so callers can
+// surface a 500. Returns { attachments, pdfErr }.
+async function sendFdacsCustomerEmail({
+  invoiceId,
+  invoice,
+  paymentLink,
+  recipientEmail,
+  transporter,
+  fromAddr,
+}) {
+  const invoiceRef = firestoreDb.collection('invoices').doc(invoiceId);
+
+  const bookingSnap = invoice.bookingId
+    ? await firestoreDb.collection('bookings').doc(invoice.bookingId).get()
+    : null;
+  const booking = bookingSnap && bookingSnap.exists ? bookingSnap.data() : {};
+
+  const businessSnap = await firestoreDb.doc('settings/business').get();
+  const business = businessSnap.exists ? businessSnap.data() : {};
+
+  const html = renderFdacsEmailHtml(invoice, booking, business, paymentLink || '');
+  const { attachments, pdfErr } = await attachFdacsPdf(invoiceId, invoice, invoiceRef);
+
+  await transporter.sendMail({
+    from: fromAddr,
+    to: recipientEmail || invoice.customerEmail,
+    replyTo: 'info@coastalmobilelube.com',
+    subject: `Invoice ${invoice.invoiceNumber} - Coastal Mobile Lube & Tire`,
+    html,
+    attachments,
+  });
+
+  return { attachments, pdfErr };
+}

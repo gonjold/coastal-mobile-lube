@@ -1058,6 +1058,7 @@ function InvoicingPageInner() {
                 dueDate: form.dueDate || "",
               }
             : {
+                invoiceId: editingId || "",
                 customerEmail: form.customerEmail,
                 customerName: form.customerName,
                 customerPhone: form.customerPhone || "",
@@ -1167,6 +1168,7 @@ function InvoicingPageInner() {
             dueDate: inv.dueDate || "",
           }
         : {
+            invoiceId: inv.id,
             customerEmail: recipient,
             customerName: inv.customerName,
             customerPhone: inv.customerPhone || "",
