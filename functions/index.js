@@ -1,4 +1,4 @@
-const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+const { onDocumentCreated, onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { defineSecret } = require("firebase-functions/params");
 const nodemailer = require("nodemailer");
@@ -9,6 +9,7 @@ const { buildFdacsHtml } = require("./lib/fdacs-template");
 const { buildDisclosures } = require("./lib/disclosures");
 const { generatePdfFromHtml } = require("./lib/pdf");
 const { renderFdacsEmailHtml } = require("./lib/fdacs-email-template");
+const { mirrorInvoiceToDrive: mirrorInvoiceToDriveHelper } = require("./lib/drive-mirror");
 
 admin.initializeApp();
 const firestoreDb = admin.firestore();
@@ -2558,3 +2559,138 @@ async function sendFdacsCustomerEmail({
 
   return { attachments, pdfErr };
 }
+
+// WO-DRIVE-MIRROR — auto-mirror sent FDACS invoices to Coastal Operations Shared Drive.
+// Runtime SA pinned to firebase-adminsdk-fbsvc (the SA Jon added as Content Manager
+// on the Shared Drive); the project default compute SA does not have Drive access.
+const DRIVE_MIRROR_RUNTIME_SA = 'firebase-adminsdk-fbsvc@coastal-mobile-lube.iam.gserviceaccount.com';
+
+exports.mirrorInvoiceToDriveOnSent = onDocumentUpdated(
+  {
+    document: 'invoices/{invoiceId}',
+    region: 'us-east1',
+    memory: '512MiB',
+    timeoutSeconds: 180,
+    serviceAccount: DRIVE_MIRROR_RUNTIME_SA,
+  },
+  async (event) => {
+    const invoiceId = event.params.invoiceId;
+    const before = event.data.before.data();
+    const after = event.data.after.data();
+
+    if (before.status === 'sent' || after.status !== 'sent') {
+      return;
+    }
+    if (after.source !== 'tech_completion') {
+      console.log(`[DRIVE-MIRROR] skip ${invoiceId}: source=${after.source}`);
+      return;
+    }
+    if (after.driveMirrorAt) {
+      console.log(`[DRIVE-MIRROR] skip ${invoiceId}: already mirrored`);
+      return;
+    }
+
+    try {
+      let booking = null;
+      if (after.bookingId) {
+        const bkSnap = await firestoreDb.collection('bookings').doc(after.bookingId).get();
+        if (bkSnap.exists) booking = bkSnap.data();
+      }
+
+      const result = await mirrorInvoiceToDriveHelper(invoiceId, after, booking);
+
+      const update = {
+        driveJobFolderId: result.driveJobFolderId,
+        driveJobFolderUrl: result.driveJobFolderUrl,
+        drivePdfFileId: result.drivePdfFileId,
+        drivePdfUrl: result.drivePdfUrl,
+        driveMirrorAt: admin.firestore.FieldValue.serverTimestamp(),
+        driveMirrorError: admin.firestore.FieldValue.delete(),
+      };
+      if (result.partial) {
+        update.driveMirrorPartial = true;
+      } else {
+        update.driveMirrorPartial = admin.firestore.FieldValue.delete();
+      }
+      await event.data.after.ref.update(update);
+
+      console.log(`[DRIVE-MIRROR] mirrored ${invoiceId} to ${result.driveJobFolderUrl}`);
+    } catch (err) {
+      console.error(`[DRIVE-MIRROR] failed for ${invoiceId}:`, err);
+      await event.data.after.ref
+        .update({ driveMirrorError: err.message || String(err) })
+        .catch((e) => console.error('[DRIVE-MIRROR] failed to write error field:', e));
+    }
+  }
+);
+
+exports.mirrorInvoiceToDriveCallable = onCall(
+  {
+    region: 'us-east1',
+    memory: '512MiB',
+    timeoutSeconds: 180,
+    serviceAccount: DRIVE_MIRROR_RUNTIME_SA,
+  },
+  async (request) => {
+    if (!request.auth?.uid) {
+      throw new HttpsError('unauthenticated', 'Sign in required');
+    }
+    const userSnap = await firestoreDb.collection('users').doc(request.auth.uid).get();
+    if (!userSnap.exists) {
+      throw new HttpsError('permission-denied', 'Admin role required');
+    }
+    const userData = userSnap.data() || {};
+    if (userData.role !== 'admin' || userData.isActive !== true) {
+      throw new HttpsError('permission-denied', 'Admin role required');
+    }
+
+    const invoiceId = request.data?.invoiceId;
+    if (!invoiceId || typeof invoiceId !== 'string') {
+      throw new HttpsError('invalid-argument', 'invoiceId required');
+    }
+
+    const invoiceRef = firestoreDb.collection('invoices').doc(invoiceId);
+    const invoiceSnap = await invoiceRef.get();
+    if (!invoiceSnap.exists) {
+      throw new HttpsError('not-found', 'Invoice not found');
+    }
+    const invoice = invoiceSnap.data();
+
+    if (invoice.source !== 'tech_completion') {
+      throw new HttpsError(
+        'failed-precondition',
+        'Only tech_completion invoices mirror to Drive'
+      );
+    }
+
+    let booking = null;
+    if (invoice.bookingId) {
+      const bkSnap = await firestoreDb.collection('bookings').doc(invoice.bookingId).get();
+      if (bkSnap.exists) booking = bkSnap.data();
+    }
+
+    const result = await mirrorInvoiceToDriveHelper(invoiceId, invoice, booking);
+
+    const update = {
+      driveJobFolderId: result.driveJobFolderId,
+      driveJobFolderUrl: result.driveJobFolderUrl,
+      drivePdfFileId: result.drivePdfFileId,
+      drivePdfUrl: result.drivePdfUrl,
+      driveMirrorAt: admin.firestore.FieldValue.serverTimestamp(),
+      driveMirrorError: admin.firestore.FieldValue.delete(),
+    };
+    if (result.partial) {
+      update.driveMirrorPartial = true;
+    } else {
+      update.driveMirrorPartial = admin.firestore.FieldValue.delete();
+    }
+    await invoiceRef.update(update);
+
+    return {
+      ok: true,
+      driveJobFolderUrl: result.driveJobFolderUrl,
+      drivePdfUrl: result.drivePdfUrl,
+      partial: result.partial,
+    };
+  }
+);
