@@ -136,6 +136,17 @@ export function bookingStartHour(b: {
   return 99;
 }
 
+export function fmtBookingDate(dateStr?: string, now: Date = new Date()): string {
+  if (!dateStr) return 'TBD';
+  const todayISO = getTodayESTISO(now);
+  if (dateStr === todayISO) return 'Today';
+  if (dateStr === isoAddDays(todayISO, 1)) return 'Tomorrow';
+  const [y, m, d] = dateStr.split('-').map(Number);
+  if (!y || !m || !d) return dateStr;
+  const dt = new Date(Date.UTC(y, m - 1, d, 12));
+  return monthDayFmt.format(dt);
+}
+
 export function formatBookingTimeLabel(b: {
   confirmedArrivalWindow?: string;
   timeWindow?: string;

@@ -292,15 +292,20 @@ function greetingFor(d: Date): string {
 function Card({
   title,
   children,
+  action,
 }: {
   title: string;
   children: React.ReactNode;
+  action?: React.ReactNode;
 }) {
   return (
     <section className="rounded-xl bg-white shadow-sm p-4">
-      <h2 className="text-[11px] uppercase tracking-[0.06em] font-bold text-[#0B2040] mb-3">
-        {title}
-      </h2>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-[11px] uppercase tracking-[0.06em] font-bold text-[#0B2040]">
+          {title}
+        </h2>
+        {action}
+      </div>
       {children}
     </section>
   );
@@ -404,7 +409,17 @@ function TodayScheduleSection({
 }) {
   if (error) return <ErrorCard title="Today's Schedule" />;
   return (
-    <Card title="Today's Schedule">
+    <Card
+      title="Today's Schedule"
+      action={
+        <Link
+          href="/tech/schedule?time=today&status=active"
+          className="text-[11px] font-semibold text-[#0B2040] hover:underline"
+        >
+          View all →
+        </Link>
+      }
+    >
       {loading ? (
         <SkeletonList rows={3} />
       ) : groups.length === 0 ? (
