@@ -131,6 +131,12 @@ export interface Booking {
   customerEstimateSignatureUrl?: string | null;
   customerEstimateSignedAt?: FirestoreTimestamp | null;
   estimateLocked?: boolean;
+
+  // FDACS Phase C — completion (WO-FDACS-C-COMPLETE).
+  customerCompletionSignatureUrl?: string;
+  customerCompletionSignedAt?: FirestoreTimestamp;
+  invoiceId?: string;
+  invoiceNumber?: string;
 }
 
 export interface Customer {

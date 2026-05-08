@@ -106,6 +106,19 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // INVOICES COLLECTION
+    // Admin: full access (existing /admin/invoicing flow).
+    // Tech: can CREATE only — and only when paired with a booking they're
+    //   assigned to (auto-draft from Mark Complete in the tech app, FS 559.911).
+    //   No tech read/list/update/delete; admin reviews drafts before send.
+    match /invoices/{invoiceId} {
+      allow read, list, update, delete: if isAdmin();
+      allow create: if isAdmin() ||
+                       (isTech() &&
+                        request.resource.data.bookingId != null &&
+                        get(/databases/$(database)/documents/bookings/$(request.resource.data.bookingId)).data.assignedTechId == request.auth.uid);
+    }
+
     // CATCH-ALL: any collection not explicitly defined above is admin-only.
     // Cloud functions use Admin SDK and bypass these rules entirely.
     match /{document=**} {

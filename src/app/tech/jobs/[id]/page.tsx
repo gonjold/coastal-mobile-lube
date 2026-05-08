@@ -6,13 +6,14 @@ import { doc, onSnapshot, serverTimestamp, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import type { Booking, FirestoreTimestamp } from '@/app/admin/shared';
+import type { Booking } from '@/app/admin/shared';
 import { decodeVIN } from '@/lib/vehicleApi';
 
 // Dynamically import VinScanner so the @zxing libraries don't bloat the initial page bundle.
 const VinScanner = dynamic(() => import('@/components/tech/VinScanner'), { ssr: false });
 const EstimateBuilder = dynamic(() => import('@/components/tech/EstimateBuilder'), { ssr: false });
 const EstimateLocked = dynamic(() => import('@/components/tech/EstimateLocked'), { ssr: false });
+const JobCompleted = dynamic(() => import('@/components/tech/JobCompleted'), { ssr: false });
 
 interface VehicleForm {
   year: string;
@@ -172,7 +173,7 @@ export default function JobDetailPage() {
   }
 
   if (isCompleted) {
-    return <JobInProgressView booking={booking} />;
+    return <JobCompleted booking={booking} />;
   }
 
   async function handleStartJob() {
@@ -347,66 +348,6 @@ export default function JobDetailPage() {
   );
 }
 
-function JobInProgressView({ booking }: { booking: Booking }) {
-  const v = booking.vehicleInfo;
-  const customerName = booking.customerName || booking.name || 'Customer';
-  const fallbackVehicle = [booking.vehicleYear, booking.vehicleMake, booking.vehicleModel, booking.vehicleTrim]
-    .filter(Boolean).join(' ');
-  const vehicleDisplay = [v?.year, v?.make, v?.model, v?.trim].filter(Boolean).join(' ') || fallbackVehicle || 'Vehicle pending';
-
-  return (
-    <div>
-      <Link href="/tech/jobs" className="inline-flex items-center px-3 py-3 text-sm text-slate-600 hover:underline">← Back to jobs</Link>
-
-      <header className="mb-4 mt-2">
-        <div className="mb-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold uppercase text-amber-800">
-          {booking.status === 'completed' ? 'Completed' : 'In Progress'}
-        </div>
-        <h1 className="text-xl font-bold text-[#0B2040]">{customerName}</h1>
-        <div className="text-sm text-slate-700">{booking.address}</div>
-      </header>
-
-      <Section title="Vehicle">
-        <div className="text-sm">
-          <div>{vehicleDisplay}</div>
-          {(v?.vin || booking.vin) && <div className="font-mono">VIN: {v?.vin || booking.vin}</div>}
-          {(v?.licenseTag || booking.licenseTag) && <div>Tag: {v?.licenseTag || booking.licenseTag}</div>}
-          {v?.odometerIn != null && (
-            <div>Odometer In: {v.odometerIn.toLocaleString()} mi</div>
-          )}
-          {v?.odometerOut != null && (
-            <div>Odometer Out: {v.odometerOut.toLocaleString()} mi</div>
-          )}
-        </div>
-      </Section>
-
-      {booking.customerComplaint && (
-        <Section title="Customer Concern">
-          <div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm italic text-slate-700">
-            {booking.customerComplaint}
-          </div>
-        </Section>
-      )}
-
-      <Section title="Job Lifecycle">
-        <div className="text-sm">
-          <div>Started: {formatTimestamp(booking.jobStartedAt)}</div>
-          {booking.jobCompletedAt && (
-            <div>Completed: {formatTimestamp(booking.jobCompletedAt)}</div>
-          )}
-        </div>
-      </Section>
-
-      <div className="rounded-lg border border-slate-200 bg-white p-6 text-center">
-        <div className="text-base font-semibold text-[#0B2040]">Work in progress</div>
-        <div className="mt-1 text-sm text-slate-600">
-          The work flow (line items, photos, odometer out, customer signature, complete job) ships in subsequent WOs.
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mb-4 rounded-lg border border-slate-200 bg-white p-4">
@@ -453,13 +394,3 @@ function formatBookingTime(b: Booking): string {
   return window ? `${ds} · ${window}` : ds;
 }
 
-function formatTimestamp(ts: FirestoreTimestamp | null | undefined): string {
-  if (!ts) return '—';
-  const d = ts.toDate ? ts.toDate() : new Date(ts as unknown as string);
-  return d.toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-}

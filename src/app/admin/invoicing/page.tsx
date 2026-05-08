@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { db, auth } from "@/lib/firebase";
+import { nextInvoiceNumberFromList } from "@/lib/invoiceNumber";
 import {
   collection,
   onSnapshot,
@@ -96,24 +97,35 @@ interface Invoice {
   techCheckInAt?: { toDate: () => Date } | null;
   jobCompletedAt?: { toDate: () => Date } | null;
   assignedTechId?: string | null;
+
+  // FDACS Phase C — invoice draft auto-created at job completion (WO-FDACS-C-COMPLETE).
+  // 'tech_completion' invoices are auto-generated from the tech app's Mark Complete
+  // flow; 'manual' (or unset) come from /admin/invoicing's New Invoice form.
+  source?: "tech_completion" | "manual" | null;
+  customerEstimateSignatureUrl?: string | null;
+  customerEstimateSignedAt?: { toDate: () => Date } | null;
+  customerCompletionSignatureUrl?: string | null;
+  customerCompletionSignedAt?: { toDate: () => Date } | null;
+  estimateConsent?: {
+    choice: "authorize_up_to" | "contact_above" | "no_contact" | "simple_under_150";
+    authorizeUpTo?: number | null;
+    contactAbove?: number | null;
+    authorizedOtherPerson?: { name: string; relationship: string; phone: string } | null;
+  } | null;
+  reAuthEvents?: Array<{
+    id: string;
+    timestamp: { toDate: () => Date };
+    method: "in_person_signature" | "phone";
+    customerName: string;
+    signatureUrl?: string;
+    note?: string;
+    lineItemIds: string[];
+  }>;
 }
 
 type InvoiceFormData = Omit<Invoice, "id" | "createdAt" | "updatedAt">;
 
 /* ─── Helpers ─────────────────────────────────────────────── */
-
-function generateInvoiceNumber(existing: Invoice[]): string {
-  const year = new Date().getFullYear();
-  const prefix = `CMLT-${year}-`;
-  let max = 0;
-  existing.forEach((inv) => {
-    if (inv.invoiceNumber.startsWith(prefix)) {
-      const num = parseInt(inv.invoiceNumber.replace(prefix, ""), 10);
-      if (num > max) max = num;
-    }
-  });
-  return `${prefix}${String(max + 1).padStart(3, "0")}`;
-}
 
 function emptyLineItem(): LineItem {
   return { serviceName: "", quantity: 1, unitPrice: 0, lineTotal: 0, taxable: false };
@@ -134,7 +146,7 @@ function defaultForm(invoices: Invoice[]): InvoiceFormData {
   const due = new Date();
   due.setDate(due.getDate() + 30);
   return {
-    invoiceNumber: generateInvoiceNumber(invoices),
+    invoiceNumber: nextInvoiceNumberFromList(invoices),
     customerName: "",
     customerPhone: "",
     customerEmail: "",

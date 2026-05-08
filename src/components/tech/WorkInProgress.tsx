@@ -13,6 +13,8 @@ import type { Booking } from "@/app/admin/shared";
 import AddLineItemModal, { NewLineItem } from "./AddLineItemModal";
 import PhotoCapture from "./PhotoCapture";
 import ReAuthModal from "./ReAuthModal";
+import MarkCompleteModal from "./MarkCompleteModal";
+import { createInvoiceDraftFromBooking } from "@/lib/invoiceFromBooking";
 
 const TAX_RATE = 0.075;
 
@@ -88,6 +90,7 @@ export default function WorkInProgress({ booking }: Props) {
   const [pendingChange, setPendingChange] = useState<PendingChange | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
 
   // Odometer Out — local state, auto-save on blur, reverts on failure
   const odoSavedRef = useRef<string>(
@@ -257,6 +260,37 @@ export default function WorkInProgress({ booking }: Props) {
   const showOdoWarning =
     odoOutNum != null && odometerIn != null && odoOutNum < odometerIn;
 
+  // Gate Mark Complete on a persisted Odometer Out (FS 559.911 invoice
+  // requirement). We read from the persisted ref (not local state) so an
+  // unblurred typed value doesn't enable the button.
+  const odometerOutPersisted = booking.vehicleInfo?.odometerOut ?? booking.odometerOut ?? null;
+  const canMarkComplete = odometerOutPersisted != null;
+
+  async function handleCompleteConfirm({
+    completionSignatureUrl,
+  }: {
+    completionSignatureUrl: string;
+  }) {
+    // Invoice creation must succeed before we flip booking status; that way
+    // a failed sync doesn't leave the booking in 'completed' without an
+    // invoice. Signature is already in Storage at this point — orphan PNG
+    // is harmless.
+    const { invoiceId, invoiceNumber } = await createInvoiceDraftFromBooking(
+      booking,
+      completionSignatureUrl
+    );
+    await updateDoc(doc(db, "bookings", booking.id), {
+      status: "completed",
+      customerCompletionSignatureUrl: completionSignatureUrl,
+      customerCompletionSignedAt: serverTimestamp(),
+      jobCompletedAt: serverTimestamp(),
+      invoiceId,
+      invoiceNumber,
+      updatedAt: serverTimestamp(),
+    });
+    // onSnapshot in the page re-renders into <JobCompleted>; modal unmounts.
+  }
+
   const photos = booking.photos ?? [];
   const liveTotals = computeTotalsFromLines(lines);
 
@@ -371,14 +405,17 @@ export default function WorkInProgress({ booking }: Props) {
 
       <section className="rounded-lg border border-slate-200 bg-white p-6 text-center">
         <button
-          disabled
-          className="w-full min-h-[48px] rounded-lg bg-slate-300 px-4 py-3 text-base font-semibold text-white"
+          onClick={() => setShowCompleteModal(true)}
+          disabled={!canMarkComplete}
+          className="w-full min-h-[48px] rounded-lg bg-[#E07B2D] px-4 py-3 text-base font-semibold text-white shadow disabled:bg-slate-300 disabled:shadow-none"
         >
           Mark Complete
         </button>
-        <div className="mt-2 text-xs text-slate-500">
-          Mark Complete + final signature ship in WO-FDACS-C-COMPLETE.
-        </div>
+        {!canMarkComplete && (
+          <div className="mt-2 text-xs text-slate-500">
+            Odometer Out is required to mark this job complete.
+          </div>
+        )}
       </section>
 
       {showAddModal && (
@@ -412,6 +449,14 @@ export default function WorkInProgress({ booking }: Props) {
           pendingLineDescription={pendingChange.triggerLine.description}
           onConfirm={handleReAuthConfirm}
           onCancel={() => setPendingChange(null)}
+        />
+      )}
+
+      {showCompleteModal && (
+        <MarkCompleteModal
+          booking={booking}
+          onConfirm={handleCompleteConfirm}
+          onCancel={() => setShowCompleteModal(false)}
         />
       )}
 
