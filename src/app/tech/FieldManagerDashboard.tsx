@@ -211,7 +211,9 @@ export default function FieldManagerDashboard({
     return liveBookings.filter(
       (b) =>
         !b.assignedTechId &&
-        (b.status === 'confirmed' || b.status === 'in-progress'),
+        (b.status === 'pending' ||
+          b.status === 'confirmed' ||
+          b.status === 'in-progress'),
     ).length;
   }, [liveBookings]);
 
@@ -511,7 +513,7 @@ function InvoiceRow({ inv }: { inv: Invoice }) {
 function UnassignedTriageLink({ count }: { count: number }) {
   return (
     <Link
-      href="/admin/schedule"
+      href="/tech/unassigned"
       className="flex items-center justify-between min-h-[56px] rounded-xl bg-[#E07B2D] text-white px-4 py-3 active:opacity-90"
     >
       <div>

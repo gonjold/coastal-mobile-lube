@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
 import { useRouter, usePathname } from "next/navigation";
@@ -86,7 +87,12 @@ export default function TechAuthShell({ children }: { children: React.ReactNode 
     <div className="min-h-screen bg-slate-50">
       <header className="bg-[#0B2040] text-white">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
-          <div className="text-sm font-semibold">Coastal Tech</div>
+          <Link
+            href="/tech"
+            className="text-sm font-semibold hover:opacity-80 transition-opacity"
+          >
+            Coastal Tech
+          </Link>
           <div className="flex items-center gap-3 text-xs">
             <span>{user.displayName}</span>
             <button
