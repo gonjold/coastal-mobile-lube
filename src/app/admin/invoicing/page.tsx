@@ -879,6 +879,17 @@ function InvoicingPageInner() {
       openCreate();
       router.replace("/admin/invoicing", { scroll: false });
     } else {
+      // Open existing invoice detail panel by id (used by Field Manager pending-review tap target)
+      const openId = searchParams.get("openId");
+      if (openId) {
+        const target = invoices.find((i) => i.id === openId);
+        if (target) {
+          setPrefillHandled(true);
+          setSelectedInvoice(target);
+          router.replace("/admin/invoicing", { scroll: false });
+          return;
+        }
+      }
       // Check for filter param
       const filterParam = searchParams.get("filter");
       if (filterParam) {
@@ -887,7 +898,7 @@ function InvoicingPageInner() {
         router.replace("/admin/invoicing", { scroll: false });
       }
     }
-  }, [searchParams, loading, prefillHandled, openCreateFromBooking, router]);
+  }, [searchParams, loading, prefillHandled, openCreateFromBooking, invoices, router]);
 
   /* ── Form helpers ── */
   function openCreate() {
