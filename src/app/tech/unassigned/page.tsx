@@ -21,6 +21,7 @@ import {
   bookingStartHour,
   formatBookingTimeLabel,
 } from '@/lib/dashboard-helpers';
+import FmReturnPathWriter from '@/components/tech/FmReturnPathWriter';
 
 export default function UnassignedBookingsPage() {
   const router = useRouter();
@@ -106,6 +107,7 @@ export default function UnassignedBookingsPage() {
 
   return (
     <div className="space-y-3 -mx-4 px-4 py-2 sm:mx-0 sm:px-0">
+      <FmReturnPathWriter />
       <div className="px-1 pt-1">
         <Link
           href="/tech"

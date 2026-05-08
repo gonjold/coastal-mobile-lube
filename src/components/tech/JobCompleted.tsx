@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import type { Booking, FirestoreTimestamp } from "@/app/admin/shared";
+import JobDetailBackLink from "@/components/tech/JobDetailBackLink";
 
 interface Props {
   booking: Booking;
@@ -57,12 +57,7 @@ export default function JobCompleted({ booking }: Props) {
 
   return (
     <div className="pb-12">
-      <Link
-        href="/tech/jobs"
-        className="inline-flex items-center px-3 py-3 text-sm text-slate-600 hover:underline"
-      >
-        ← Back to jobs
-      </Link>
+      <JobDetailBackLink />
 
       <header className="mb-4 mt-2">
         <div className="mb-2 inline-block rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase text-emerald-800">

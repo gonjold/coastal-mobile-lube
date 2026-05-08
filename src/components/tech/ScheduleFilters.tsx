@@ -104,6 +104,10 @@ export function ScheduleFilters({
             type="search"
             inputMode="search"
             autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="none"
+            spellCheck={false}
+            enterKeyHint="search"
             value={searchInput}
             onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="Search by customer name, phone, or vehicle"

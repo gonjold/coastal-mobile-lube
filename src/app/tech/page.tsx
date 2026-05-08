@@ -7,6 +7,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import type { AppUser } from '@/app/admin/shared';
 import FieldManagerDashboard from './FieldManagerDashboard';
+import FmReturnPathWriter from '@/components/tech/FmReturnPathWriter';
 
 export default function TechRoot() {
   const router = useRouter();
@@ -53,6 +54,9 @@ export default function TechRoot() {
   if (user.role !== 'admin') return null;
 
   return (
-    <FieldManagerDashboard userId={user.uid} userName={user.displayName || ''} />
+    <>
+      <FmReturnPathWriter />
+      <FieldManagerDashboard userId={user.uid} userName={user.displayName || ''} />
+    </>
   );
 }

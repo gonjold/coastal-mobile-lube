@@ -9,6 +9,7 @@ import { auth, db } from '@/lib/firebase';
 import type { AppUser, Booking } from '@/app/admin/shared';
 import { ScheduleFilters } from '@/components/tech/ScheduleFilters';
 import { ScheduleBookingRow } from '@/components/tech/ScheduleBookingRow';
+import FmReturnPathWriter from '@/components/tech/FmReturnPathWriter';
 import { bookingStartHour } from '@/lib/dashboard-helpers';
 import {
   applyDivisionFilter,
@@ -162,6 +163,7 @@ function SchedulePageInner() {
 
   return (
     <div className="space-y-3 -mx-4 px-4 py-2 sm:mx-0 sm:px-0">
+      <FmReturnPathWriter />
       <div className="px-1 pt-1">
         <Link
           href="/tech"

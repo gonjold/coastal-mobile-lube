@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { doc, onSnapshot, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import type { Booking } from '@/app/admin/shared';
 import { decodeVIN } from '@/lib/vehicleApi';
+import JobDetailBackLink from '@/components/tech/JobDetailBackLink';
 
 // Dynamically import VinScanner so the @zxing libraries don't bloat the initial page bundle.
 const VinScanner = dynamic(() => import('@/components/tech/VinScanner'), { ssr: false });
@@ -148,7 +148,7 @@ export default function JobDetailPage() {
   if (error || !booking) {
     return (
       <div className="p-4">
-        <Link href="/tech/jobs" className="inline-flex items-center px-3 py-3 text-sm text-slate-600 hover:underline">← Back to jobs</Link>
+        <JobDetailBackLink />
         <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           {error || 'Job not found'}
         </div>
@@ -162,7 +162,7 @@ export default function JobDetailPage() {
   if (isInProgress) {
     return (
       <div className="pb-24">
-        <Link href="/tech/jobs" className="inline-flex items-center px-3 py-3 text-sm text-slate-600 hover:underline">← Back to jobs</Link>
+        <JobDetailBackLink />
         {booking.estimateLocked ? (
           <EstimateLocked booking={booking} />
         ) : (
@@ -244,7 +244,7 @@ export default function JobDetailPage() {
 
   return (
     <div className="pb-24">
-      <Link href="/tech/jobs" className="inline-flex items-center px-3 py-3 text-sm text-slate-600 hover:underline">← Back to jobs</Link>
+      <JobDetailBackLink />
 
       <header className="mb-4 mt-2">
         <h1 className="text-xl font-bold text-[#0B2040]">{customerName}</h1>
