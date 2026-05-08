@@ -401,7 +401,7 @@ export default function EstimateBuilder({ booking }: Props) {
 
       <button
         onClick={handleCancelStart}
-        className="mb-4 text-sm text-slate-500 underline hover:text-slate-700"
+        className="mb-4 inline-flex items-center px-3 py-3 text-sm text-slate-500 underline hover:text-slate-700"
       >
         ← Cancel start, return to check-in
       </button>
@@ -453,7 +453,7 @@ export default function EstimateBuilder({ booking }: Props) {
 
       <Section title="Consent">
         {!isOver150 && (
-          <label className="flex items-start gap-3 text-base">
+          <label className="flex min-h-[44px] cursor-pointer items-start gap-3 text-base">
             <input
               type="checkbox"
               checked={simpleChecked}
@@ -528,7 +528,7 @@ export default function EstimateBuilder({ booking }: Props) {
         <div className="mt-4 border-t border-slate-200 pt-3">
           <button
             onClick={() => setOtherOpen((v) => !v)}
-            className="text-sm text-slate-600 underline"
+            className="inline-flex items-center px-2 py-3 text-sm text-slate-600 underline"
           >
             {otherOpen ? "− Hide" : "+ Add"} authorized other person (optional)
           </button>
@@ -559,7 +559,7 @@ export default function EstimateBuilder({ booking }: Props) {
         <div className="mt-2 flex items-center justify-between">
           <button
             onClick={() => sigRef.current?.clear()}
-            className="text-sm text-slate-500 underline"
+            className="inline-flex items-center px-2 py-3 text-sm text-slate-500 underline"
           >
             Clear
           </button>
@@ -609,14 +609,14 @@ function LineItemRow({
   const lineTotal = line.qty * line.unitPrice;
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3">
+    <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-3">
       <input
         type="text"
         value={line.description}
         onChange={(e) => onUpdate({ description: e.target.value })}
         className="w-full rounded border border-slate-300 px-2 py-2 text-base"
       />
-      <div className="mt-2 grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <div>
           <label className="block text-xs text-slate-500">Qty</label>
           <div className="flex items-center gap-1">
@@ -664,23 +664,25 @@ function LineItemRow({
           />
         </div>
       </div>
-      <div className="mt-2 flex items-center justify-between text-sm">
-        <label className="flex items-center gap-2">
+      <div className="flex items-center justify-between">
+        <label className="flex min-h-[44px] cursor-pointer items-center gap-2 text-sm">
           <input
             type="checkbox"
             checked={line.taxable}
             onChange={(e) => onUpdate({ taxable: e.target.checked })}
             className="h-5 w-5"
           />
-          Taxable
+          <span>Taxable</span>
         </label>
-        <span className="text-slate-700">{fmt(lineTotal)}</span>
+        <span className="text-sm font-medium text-slate-700">
+          {fmt(lineTotal)}
+        </span>
       </div>
-      <div className="mt-2 flex items-center justify-between text-xs">
+      <div className="flex items-center justify-between border-t border-slate-100 pt-2">
         {!editParts && (
           <button
             onClick={() => setEditParts(true)}
-            className="text-slate-500 underline"
+            className="inline-flex items-center px-2 py-3 text-sm text-slate-500 underline"
           >
             + Parts condition
           </button>
@@ -714,7 +716,7 @@ function LineItemRow({
         )}
         <button
           onClick={onRemove}
-          className="text-red-600 underline"
+          className="inline-flex items-center px-2 py-3 text-sm text-red-600 underline"
         >
           Remove
         </button>
@@ -733,7 +735,7 @@ function ConsentRadio({
   label: React.ReactNode;
 }) {
   return (
-    <label className="flex items-start gap-3 text-base cursor-pointer">
+    <label className="flex min-h-[44px] cursor-pointer items-start gap-3 text-base">
       <input
         type="radio"
         checked={checked}

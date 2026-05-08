@@ -17,6 +17,8 @@ const SignaturePad = forwardRef<SignaturePadHandle, Props>(({ onChange }, ref) =
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const padRef = useRef<SignaturePadLib | null>(null);
   const onChangeRef = useRef(onChange);
+  const lastWidthRef = useRef<number>(0);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -26,13 +28,25 @@ const SignaturePad = forwardRef<SignaturePadHandle, Props>(({ onChange }, ref) =
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const resize = () => {
+    const performResize = () => {
+      const newWidth = canvas.offsetWidth;
+      // Width-change guard kills iOS Safari URL-bar oscillation noise.
+      if (newWidth === lastWidthRef.current) return;
+      lastWidthRef.current = newWidth;
+
+      const data = padRef.current?.toData() ?? [];
+
       const ratio = Math.max(window.devicePixelRatio || 1, 1);
       canvas.width = canvas.offsetWidth * ratio;
       canvas.height = canvas.offsetHeight * ratio;
       canvas.getContext("2d")?.scale(ratio, ratio);
-      padRef.current?.clear();
-      onChangeRef.current?.(true);
+
+      padRef.current?.fromData(data);
+    };
+
+    const debouncedResize = () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(performResize, 200);
     };
 
     const pad = new SignaturePadLib(canvas, {
@@ -47,10 +61,14 @@ const SignaturePad = forwardRef<SignaturePadHandle, Props>(({ onChange }, ref) =
       onChangeRef.current?.(pad.isEmpty());
     });
 
-    resize();
-    window.addEventListener("resize", resize);
+    performResize();
+
+    const observer = new ResizeObserver(debouncedResize);
+    observer.observe(canvas);
+
     return () => {
-      window.removeEventListener("resize", resize);
+      observer.disconnect();
+      if (debounceRef.current) clearTimeout(debounceRef.current);
       pad.off();
     };
   }, []);

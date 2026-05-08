@@ -189,7 +189,7 @@ export default function EstimateLocked({ booking }: Props) {
       <div className="mb-6 mt-2 text-center">
         <button
           onClick={handleRevise}
-          className="text-sm text-slate-500 underline hover:text-slate-700"
+          className="inline-flex items-center px-3 py-3 text-sm text-slate-500 underline hover:text-slate-700"
         >
           Revise estimate (requires new signature)
         </button>

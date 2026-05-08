@@ -147,7 +147,7 @@ export default function JobDetailPage() {
   if (error || !booking) {
     return (
       <div className="p-4">
-        <Link href="/tech/jobs" className="text-sm text-slate-600 hover:underline">← Back to jobs</Link>
+        <Link href="/tech/jobs" className="inline-flex items-center px-3 py-3 text-sm text-slate-600 hover:underline">← Back to jobs</Link>
         <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           {error || 'Job not found'}
         </div>
@@ -161,7 +161,7 @@ export default function JobDetailPage() {
   if (isInProgress) {
     return (
       <div className="pb-24">
-        <Link href="/tech/jobs" className="text-sm text-slate-600 hover:underline">← Back to jobs</Link>
+        <Link href="/tech/jobs" className="inline-flex items-center px-3 py-3 text-sm text-slate-600 hover:underline">← Back to jobs</Link>
         {booking.estimateLocked ? (
           <EstimateLocked booking={booking} />
         ) : (
@@ -243,7 +243,7 @@ export default function JobDetailPage() {
 
   return (
     <div className="pb-24">
-      <Link href="/tech/jobs" className="text-sm text-slate-600 hover:underline">← Back to jobs</Link>
+      <Link href="/tech/jobs" className="inline-flex items-center px-3 py-3 text-sm text-slate-600 hover:underline">← Back to jobs</Link>
 
       <header className="mb-4 mt-2">
         <h1 className="text-xl font-bold text-[#0B2040]">{customerName}</h1>
@@ -356,7 +356,7 @@ function JobInProgressView({ booking }: { booking: Booking }) {
 
   return (
     <div>
-      <Link href="/tech/jobs" className="text-sm text-slate-600 hover:underline">← Back to jobs</Link>
+      <Link href="/tech/jobs" className="inline-flex items-center px-3 py-3 text-sm text-slate-600 hover:underline">← Back to jobs</Link>
 
       <header className="mb-4 mt-2">
         <div className="mb-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold uppercase text-amber-800">
