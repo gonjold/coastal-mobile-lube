@@ -92,6 +92,30 @@ export interface Booking {
     odometerIn?: number | null;
     odometerOut?: number | null;
   } | null;
+
+  // FDACS Phase C — on-site estimate (WO-FDACS-C-ESTIMATE).
+  estimateLineItems?: Array<{
+    id: string;
+    description: string;
+    qty: number;
+    unitPrice: number;
+    taxable: boolean;
+    partsCondition?: 'New' | 'Used' | 'Rebuilt' | 'Reconditioned' | null;
+    sourceServiceId?: string | null;
+  }>;
+  estimateSubtotal?: number;
+  estimateTaxableSubtotal?: number;
+  estimateTax?: number;
+  estimateTotal?: number;
+  estimateConsent?: {
+    choice: 'authorize_up_to' | 'contact_above' | 'no_contact' | 'simple_under_150';
+    authorizeUpTo?: number | null;
+    contactAbove?: number | null;
+    authorizedOtherPerson?: { name: string; relationship: string; phone: string } | null;
+  };
+  customerEstimateSignatureUrl?: string | null;
+  customerEstimateSignedAt?: FirestoreTimestamp | null;
+  estimateLocked?: boolean;
 }
 
 export interface Customer {

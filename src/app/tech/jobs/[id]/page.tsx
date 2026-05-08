@@ -11,6 +11,8 @@ import { decodeVIN } from '@/lib/vehicleApi';
 
 // Dynamically import VinScanner so the @zxing libraries don't bloat the initial page bundle.
 const VinScanner = dynamic(() => import('@/components/tech/VinScanner'), { ssr: false });
+const EstimateBuilder = dynamic(() => import('@/components/tech/EstimateBuilder'), { ssr: false });
+const EstimateLocked = dynamic(() => import('@/components/tech/EstimateLocked'), { ssr: false });
 
 interface VehicleForm {
   year: string;
@@ -156,7 +158,20 @@ export default function JobDetailPage() {
   const isInProgress = booking.status === 'in-progress';
   const isCompleted = booking.status === 'completed';
 
-  if (isInProgress || isCompleted) {
+  if (isInProgress) {
+    return (
+      <div className="pb-24">
+        <Link href="/tech/jobs" className="text-sm text-slate-600 hover:underline">← Back to jobs</Link>
+        {booking.estimateLocked ? (
+          <EstimateLocked booking={booking} />
+        ) : (
+          <EstimateBuilder booking={booking} />
+        )}
+      </div>
+    );
+  }
+
+  if (isCompleted) {
     return <JobInProgressView booking={booking} />;
   }
 
