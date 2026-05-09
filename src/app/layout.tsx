@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { BookingProvider } from "@/contexts/BookingContext";
+import { AuthProvider } from "@/components/auth/AuthProvider";
 import SiteChrome from "@/components/SiteChrome";
 import { BRAND_LOGOS } from "@/lib/brand/logos";
 import { getServices, getServiceCategories } from "@/lib/firebase-admin";
@@ -201,7 +202,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         </noscript>
         {/* End Google Tag Manager (noscript) */}
         <BookingProvider services={services} serviceCategories={serviceCategories}>
-          <SiteChrome>{children}</SiteChrome>
+          <AuthProvider>
+            <SiteChrome>{children}</SiteChrome>
+          </AuthProvider>
         </BookingProvider>
       </body>
     </html>

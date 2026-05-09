@@ -18,7 +18,17 @@ export default function TechLoginPage() {
     setLoading(true);
     setError(null);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const idToken = await cred.user.getIdToken();
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
+      if (!res.ok) {
+        setError("Could not establish session. Please try again.");
+        return;
+      }
       // TechAuthShell will redirect based on role
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
