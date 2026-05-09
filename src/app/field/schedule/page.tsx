@@ -1,5 +1,5 @@
 import { getScheduleJobs } from "@/lib/jobs/queries";
-import { ScheduleClient, ScheduleHeaderActions } from "@/components/field/ScheduleClient";
+import { ScheduleClient } from "@/components/field/ScheduleClient";
 
 export const dynamic = "force-dynamic";
 
@@ -22,15 +22,5 @@ export default async function SchedulePage() {
 
   const jobs = await getScheduleJobs({ startDate, endDate });
 
-  return (
-    <div className="flex flex-col">
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background px-4">
-        <h1 className="font-display text-xl font-bold text-foreground">
-          Schedule
-        </h1>
-        <ScheduleHeaderActions />
-      </header>
-      <ScheduleClient initialJobs={jobs} today={today} />
-    </div>
-  );
+  return <ScheduleClient initialJobs={jobs} today={today} />;
 }

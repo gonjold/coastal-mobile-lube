@@ -28,51 +28,41 @@ export default function MorePage() {
   }
 
   return (
-    <div className="flex flex-col">
-      <header className="sticky top-0 z-30 flex h-14 items-center border-b border-border bg-background px-4">
-        <h1 className="font-display text-xl font-bold text-foreground">
-          More
-        </h1>
-      </header>
-
-      <div className="flex flex-col gap-8 p-4">
-        <section>
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Account
-          </h2>
-          <div className="rounded-lg border border-border bg-card p-4">
-            <p className="text-sm font-medium text-foreground">
-              {user?.email ?? "Not signed in"}
-            </p>
-            {role && (
-              <p className="text-xs capitalize text-muted-foreground">
-                {role}
-              </p>
-            )}
-            <Button
-              variant="outline"
-              className="mt-4 w-full gap-2"
-              onClick={handleSignOut}
-              disabled={signingOut}
-            >
-              <LogOut className="h-4 w-4" strokeWidth={1.75} />
-              {signingOut ? "Signing out…" : "Sign out"}
-            </Button>
-          </div>
-        </section>
-
-        <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
-          <Settings
-            className="h-10 w-10 text-muted-foreground/60"
-            strokeWidth={1.5}
-          />
-          <h3 className="mt-4 font-display text-lg font-semibold text-foreground">
-            More features coming
-          </h3>
-          <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-            Settings, support, and team tools land here next.
+    <div className="flex flex-col gap-8 p-4">
+      <section>
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Account
+        </h2>
+        <div className="rounded-lg border border-border bg-card p-4">
+          <p className="text-sm font-medium text-foreground">
+            {user?.email ?? "Not signed in"}
           </p>
+          {role && (
+            <p className="text-xs capitalize text-muted-foreground">{role}</p>
+          )}
+          <Button
+            variant="outline"
+            className="mt-4 w-full gap-2"
+            onClick={handleSignOut}
+            disabled={signingOut}
+          >
+            <LogOut className="h-4 w-4" strokeWidth={1.75} />
+            {signingOut ? "Signing out…" : "Sign out"}
+          </Button>
         </div>
+      </section>
+
+      <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+        <Settings
+          className="h-10 w-10 text-muted-foreground/60"
+          strokeWidth={1.5}
+        />
+        <h3 className="mt-4 font-display text-lg font-semibold text-foreground">
+          More features coming
+        </h3>
+        <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+          Settings, support, and team tools land here next.
+        </p>
       </div>
     </div>
   );

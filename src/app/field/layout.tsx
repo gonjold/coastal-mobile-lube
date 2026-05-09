@@ -1,18 +1,21 @@
 import type { ReactNode } from "react";
 import { TabBar } from "@/components/field/TabBar";
+import { FieldPageHeader } from "@/components/field/FieldPageHeader";
 
 export const metadata = {
   title: "Coastal Field",
 };
 
-// h-dvh (not min-h-dvh): the parent must be height-bounded so <main> can act
-// as a real scroll container for its overflow-y-auto. With min-h, content
-// taller than viewport grows the parent and main never establishes a scroll
-// context — sticky page headers inside main would silently stop sticking.
+// Fixed page header (top) + fixed tab bar (bottom). main is the scroll
+// container; pt-14 clears the top header, pb-[88px] clears the tab bar.
+// h-dvh (not min-h-dvh) so main establishes a real scroll context — with
+// min-h, content taller than viewport grows the parent and overflow-y-auto
+// would silently stop scrolling.
 export default function FieldLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-dvh flex-col bg-background text-foreground font-sans">
-      <main className="flex-1 overflow-y-auto pb-[88px]">{children}</main>
+      <FieldPageHeader />
+      <main className="flex-1 overflow-y-auto pt-14 pb-[88px]">{children}</main>
       <TabBar />
     </div>
   );

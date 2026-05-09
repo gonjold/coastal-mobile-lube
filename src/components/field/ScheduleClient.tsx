@@ -6,7 +6,6 @@ import { ScheduleDayHeader } from "./ScheduleDayHeader";
 import { ScheduleJobCard } from "./ScheduleJobCard";
 import { DateJumper } from "./DateJumper";
 import { TodayAnchor } from "./TodayAnchor";
-import { Button } from "@/components/ui/button";
 import { CalendarDays } from "lucide-react";
 
 type Props = {
@@ -117,19 +116,6 @@ export function ScheduleClient({ initialJobs, today }: Props) {
         onJump={jumpTo}
       />
     </>
-  );
-}
-
-export function ScheduleHeaderActions() {
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      aria-label="Jump to date"
-      onClick={() => window.dispatchEvent(new CustomEvent(OPEN_JUMPER_EVENT))}
-    >
-      <CalendarDays className="h-5 w-5" strokeWidth={1.75} />
-    </Button>
   );
 }
 

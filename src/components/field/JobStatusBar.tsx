@@ -1,13 +1,7 @@
-"use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { JobDetail } from "@/lib/jobs/queries";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Loader2, ChevronLeft } from "lucide-react";
-import { toast } from "sonner";
+import { ChevronLeft } from "lucide-react";
 
 const variant = (s: string) => {
   switch (s) {
@@ -44,21 +38,6 @@ const label = (s: string) => {
   }
 };
 
-const nextStateAction = (status: string) => {
-  switch (status) {
-    case "pending":
-    case "confirmed":
-    case "scheduled":
-      return { to: "in_progress", label: "Start job" };
-    case "in_progress":
-      return { to: "completed", label: "Mark complete" };
-    case "completed":
-      return { to: "in_progress", label: "Re-open" };
-    default:
-      return null;
-  }
-};
-
 function formatHeaderDate(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
   return new Date(y, m - 1, d).toLocaleDateString("en-US", {
@@ -68,64 +47,27 @@ function formatHeaderDate(iso: string): string {
   });
 }
 
+// Fixed at top:56 — directly under the field-layout's fixed page header.
+// position:fixed (not sticky) because iOS Safari URL-bar reflow during
+// scroll breaks the sticky containing block.
 export function JobStatusBar({ job }: { job: JobDetail }) {
-  const router = useRouter();
-  const [pending, setPending] = useState(false);
-  const action = nextStateAction(job.status);
-
-  async function transition(to: string) {
-    if (pending) return;
-    setPending(true);
-    try {
-      const res = await fetch(`/api/field/jobs/${job.id}/status`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ to }),
-      });
-      if (!res.ok) {
-        throw new Error((await res.text()) || `HTTP ${res.status}`);
-      }
-      toast.success(`Job ${label(to).toLowerCase()}`);
-      router.refresh();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Update failed");
-    } finally {
-      setPending(false);
-    }
-  }
-
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="flex items-center gap-2 px-4 py-3">
-        <Link
-          href="/field/today"
-          aria-label="Back"
-          className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 ease-out active:bg-muted"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Link>
-        <div className="flex flex-1 flex-col">
-          <h1 className="font-display text-lg font-bold leading-tight">
-            {formatHeaderDate(job.scheduledDate)} ·{" "}
-            {job.scheduledWindow ?? "Anytime"}
-          </h1>
-          <Badge variant={variant(job.status)} className="mt-1 self-start">
-            {label(job.status)}
-          </Badge>
-        </div>
-      </div>
-      {action && job.status !== "cancelled" && (
-        <div className="px-4 pb-3">
-          <Button
-            className="w-full"
-            disabled={pending}
-            onClick={() => transition(action.to)}
-          >
-            {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            {action.label}
-          </Button>
-        </div>
-      )}
+    <header
+      data-job-status-bar
+      className="fixed inset-x-0 top-14 z-30 flex h-14 items-center gap-2 border-b border-border bg-background px-4"
+    >
+      <Link
+        href="/field/today"
+        aria-label="Back"
+        className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 ease-out active:bg-muted"
+      >
+        <ChevronLeft className="h-5 w-5" />
+      </Link>
+      <h1 className="flex-1 truncate font-display text-base font-bold leading-tight">
+        {formatHeaderDate(job.scheduledDate)} ·{" "}
+        {job.scheduledWindow ?? "Anytime"}
+      </h1>
+      <Badge variant={variant(job.status)}>{label(job.status)}</Badge>
     </header>
   );
 }
