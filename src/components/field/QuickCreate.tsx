@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   Sheet,
   SheetContent,
@@ -8,7 +9,6 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Briefcase, UserPlus } from "lucide-react";
-import { toast } from "sonner";
 
 export function QuickCreate({
   open,
@@ -17,11 +17,6 @@ export function QuickCreate({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
-  function handleStub() {
-    toast.info("Coming soon — create from admin for now");
-    setTimeout(() => onOpenChange(false), 400);
-  }
-
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="rounded-t-2xl">
@@ -30,22 +25,28 @@ export function QuickCreate({
         </SheetHeader>
         <div className="mt-4 grid gap-2 px-4 pb-6">
           <Button
+            asChild
             variant="outline"
             size="lg"
             className="justify-start gap-3"
-            onClick={handleStub}
+            onClick={() => onOpenChange(false)}
           >
-            <Briefcase className="h-5 w-5" strokeWidth={1.75} />
-            New job
+            <Link href="/field/jobs/new">
+              <Briefcase className="h-5 w-5" strokeWidth={1.75} />
+              New job
+            </Link>
           </Button>
           <Button
+            asChild
             variant="outline"
             size="lg"
             className="justify-start gap-3"
-            onClick={handleStub}
+            onClick={() => onOpenChange(false)}
           >
-            <UserPlus className="h-5 w-5" strokeWidth={1.75} />
-            New customer
+            <Link href="/field/customers/new">
+              <UserPlus className="h-5 w-5" strokeWidth={1.75} />
+              New customer
+            </Link>
           </Button>
         </div>
       </SheetContent>
