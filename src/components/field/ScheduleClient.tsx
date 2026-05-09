@@ -73,38 +73,42 @@ export function ScheduleClient({ initialJobs, today }: Props) {
 
   return (
     <>
-      <div className="relative">
-        {days.length === 0 ? (
-          <EmptyState />
-        ) : (
-          days.map((date) => {
-            const jobs = grouped.get(date)!;
-            return (
-              <section
-                key={date}
-                ref={(el) => {
-                  if (el) {
-                    dayRefs.current.set(date, el);
-                    if (date === today) todayRef.current = el;
-                  }
-                }}
-                aria-label={date}
-              >
-                <ScheduleDayHeader
-                  date={date}
-                  today={today}
-                  count={jobs.length}
-                />
-                <div className="divide-y divide-border">
-                  {jobs.map((job) => (
-                    <ScheduleJobCard key={job.id} job={job} />
-                  ))}
-                </div>
-              </section>
-            );
-          })
-        )}
-      </div>
+      {days.length === 0 ? (
+        <EmptyState />
+      ) : (
+        days.map((date) => {
+          const jobs = grouped.get(date)!;
+          // position:relative on each section is what makes sticky day
+          // headers hand off properly: the section becomes the sticky's
+          // containing block so its bottom edge constrains the header.
+          // Without it, all day headers share an outer container and pile
+          // up at top:56 simultaneously on iOS Safari.
+          return (
+            <section
+              key={date}
+              ref={(el) => {
+                if (el) {
+                  dayRefs.current.set(date, el);
+                  if (date === today) todayRef.current = el;
+                }
+              }}
+              aria-label={date}
+              className="relative"
+            >
+              <ScheduleDayHeader
+                date={date}
+                today={today}
+                count={jobs.length}
+              />
+              <div className="divide-y divide-border">
+                {jobs.map((job) => (
+                  <ScheduleJobCard key={job.id} job={job} />
+                ))}
+              </div>
+            </section>
+          );
+        })
+      )}
 
       <TodayAnchor todayRef={todayRef} />
 
