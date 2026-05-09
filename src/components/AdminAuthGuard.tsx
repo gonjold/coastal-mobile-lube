@@ -10,6 +10,7 @@ const ALLOWED_ADMIN_EMAILS = [
   'jon@jgoldco.com',
   'coastalmobilelube@gmail.com',
   'jonrgold@gmail.com',
+  'info@coastalmobilelube.com',
 ];
 
 /**
