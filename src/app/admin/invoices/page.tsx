@@ -243,7 +243,7 @@ export default function InvoicesPage() {
                     key={inv.id}
                     className="border-t border-border hover:bg-muted/30 transition-colors duration-150"
                   >
-                    <td className="px-4 py-2 align-middle font-medium text-foreground">
+                    <td className="px-4 py-2 align-middle font-semibold text-foreground">
                       {inv.invoiceNumber}
                       {inv.qbDocNumber && (
                         <div className="text-[11px] text-muted-foreground">

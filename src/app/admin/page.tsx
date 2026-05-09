@@ -195,7 +195,7 @@ export default function AdminDashboard() {
                       className="flex items-center justify-between px-6 py-2.5 hover:bg-muted/30 transition-colors duration-150"
                     >
                       <div className="min-w-0 flex-1">
-                        <div className="text-[13px] font-medium text-foreground truncate">
+                        <div className="text-[13px] font-semibold text-foreground truncate">
                           {b.name || b.customerName || "(no name)"}
                         </div>
                         <div className="text-xs text-muted-foreground">
@@ -249,7 +249,7 @@ export default function AdminDashboard() {
                     className="flex items-center justify-between px-6 py-2.5 hover:bg-muted/30 transition-colors duration-150"
                   >
                     <div className="min-w-0 flex-1">
-                      <div className="text-[13px] font-medium text-foreground">
+                      <div className="text-[13px] font-semibold text-foreground">
                         {i.invoiceNumber}
                       </div>
                       <div className="text-xs text-muted-foreground truncate">

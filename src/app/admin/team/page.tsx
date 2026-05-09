@@ -166,7 +166,7 @@ export default function TeamPage() {
                     className="border-t border-border hover:bg-muted/30 transition-colors duration-150"
                   >
                     <td className="px-4 py-2 align-middle">
-                      <span className="font-medium text-foreground">
+                      <span className="font-semibold text-foreground">
                         {u.displayName || "(no name)"}
                       </span>
                     </td>

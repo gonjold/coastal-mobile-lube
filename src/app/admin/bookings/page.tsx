@@ -231,7 +231,7 @@ export default function BookingsPage() {
                     className="border-t border-border hover:bg-muted/30 transition-colors duration-150"
                   >
                     <td className="px-4 py-2 align-middle">
-                      <div className="font-medium text-foreground">
+                      <div className="font-semibold text-foreground">
                         {b.name || b.customerName || "(no name)"}
                       </div>
                       <div className="text-xs text-muted-foreground">

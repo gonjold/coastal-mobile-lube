@@ -97,9 +97,9 @@ export default function FixInvoiceDialog({
           <div className="space-y-4 text-[13px]">
             <div className="grid grid-cols-[100px_1fr] gap-y-2 gap-x-3 text-foreground">
               <div className="text-muted-foreground">Invoice</div>
-              <div className="font-medium">{invoice.invoiceNumber}</div>
+              <div className="font-semibold">{invoice.invoiceNumber}</div>
               <div className="text-muted-foreground">Customer</div>
-              <div className="font-medium">
+              <div className="font-semibold">
                 {invoice.customerName || "(no name)"}
               </div>
               {invoice.attemptedAt?.toDate && (

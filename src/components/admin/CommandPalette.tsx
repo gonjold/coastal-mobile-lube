@@ -504,7 +504,7 @@ export default function CommandPalette() {
                   }}
                 >
                   <Users className="h-4 w-4 mr-2 text-muted-foreground" strokeWidth={1.75} />
-                  <span className="font-medium">{c.name || "(no name)"}</span>
+                  <span className="font-semibold">{c.name || "(no name)"}</span>
                   {(c.email || c.phone) && (
                     <span className="ml-2 text-xs text-muted-foreground truncate">
                       {c.email || c.phone}
@@ -531,7 +531,7 @@ export default function CommandPalette() {
                   }}
                 >
                   <CalendarCheck className="h-4 w-4 mr-2 text-muted-foreground" strokeWidth={1.75} />
-                  <span className="font-medium">{b.name}</span>
+                  <span className="font-semibold">{b.name}</span>
                   {b.date && (
                     <span className="ml-2 text-xs text-muted-foreground">
                       {b.date}
@@ -558,7 +558,7 @@ export default function CommandPalette() {
                   }}
                 >
                   <Receipt className="h-4 w-4 mr-2 text-muted-foreground" strokeWidth={1.75} />
-                  <span className="font-medium">{i.number}</span>
+                  <span className="font-semibold">{i.number}</span>
                   {i.customerName && (
                     <span className="ml-2 text-xs text-muted-foreground truncate">
                       {i.customerName}
