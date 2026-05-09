@@ -20,6 +20,27 @@ service cloud.firestore {
       return isSignedIn() && userExists() && userDoc().role == 'tech' && userDoc().isActive == true;
     }
 
+    // === CUSTOM-CLAIM ROLE HELPERS (Phase 1, WO-P1-1A/1B) ===
+    // These read the Firebase Auth custom claim `role` (set by /lib/auth).
+    // They are intentionally namespaced (claim*/has*Claim) to avoid colliding
+    // with the existing user-doc helpers above, which continue to drive the
+    // legacy FDACS-critical access checks for users/bookings/invoices/etc.
+    function claimRole() {
+      return request.auth.token.role;
+    }
+    function hasOwnerClaim() {
+      return isSignedIn() && claimRole() == 'owner';
+    }
+    function hasTechClaim() {
+      return isSignedIn() && claimRole() == 'tech';
+    }
+    function hasAdminOnlyClaim() {
+      return isSignedIn() && claimRole() == 'admin_only';
+    }
+    function hasOwnerOrAdminClaim() {
+      return hasOwnerClaim() || hasAdminOnlyClaim();
+    }
+
     // === USERS COLLECTION ===
     // Self-read: users can read their own doc (needed to determine role).
     // Self-create: any signed-in user can create their OWN doc (needed for
@@ -117,6 +138,48 @@ service cloud.firestore {
                        (isTech() &&
                         request.resource.data.bookingId != null &&
                         get(/databases/$(database)/documents/bookings/$(request.resource.data.bookingId)).data.assignedTechId == request.auth.uid);
+    }
+
+    // === PHASE 1 NEW COLLECTIONS (WO-P1-1A) ===
+    //
+    // These rules layer custom-claim access on top of the catch-all isAdmin()
+    // grant below. Existing user-doc admins keep full access; Phase 1 owner/
+    // admin_only custom-claim users also gain access. Server-side writes via
+    // the Admin SDK bypass rules entirely.
+
+    // TEAM COLLECTION (singleton at team/coastal)
+    // Read: any authenticated user (techs need team membership for UI gating).
+    // Write: owner only — manages members.
+    match /team/{teamId} {
+      allow read: if isSignedIn();
+      allow write: if hasOwnerClaim();
+    }
+
+    // CLOVER PAYMENTS — server-only writes; owner/admin can read.
+    match /cloverPayments/{paymentId} {
+      allow read: if hasOwnerOrAdminClaim();
+      allow write: if false; // Admin SDK only
+    }
+
+    // INVOICE DELIVERIES — server-only writes; owner/admin can read.
+    match /invoiceDeliveries/{deliveryId} {
+      allow read: if hasOwnerOrAdminClaim();
+      allow write: if false; // Admin SDK only
+    }
+
+    // ASSETS COLLECTION (Phase 1, WO-P1-1C migration target)
+    // Owner/admin-claim full access; tech-claim users can read assets linked
+    // to jobs they're assigned to (enforced at app layer for now). Server
+    // writes via Admin SDK during migration.
+    match /assets/{assetId} {
+      allow read: if hasOwnerOrAdminClaim() || hasTechClaim();
+      allow write: if hasOwnerOrAdminClaim();
+    }
+
+    // MIGRATIONS TRACKING — Admin SDK only.
+    match /_migrations/{migrationId} {
+      allow read: if hasOwnerClaim();
+      allow write: if false;
     }
 
     // CATCH-ALL: any collection not explicitly defined above is admin-only.
