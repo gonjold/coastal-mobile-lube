@@ -9,6 +9,7 @@ import {
 } from "firebase/firestore";
 import { toast } from "sonner";
 import {
+  AlertTriangle,
   ArrowDown,
   ArrowUp,
   ChevronsUpDown,
@@ -18,6 +19,9 @@ import {
 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import EditableCell from "@/components/admin/EditableCell";
+import FixInvoiceDialog, {
+  type ErroredInvoice,
+} from "@/components/admin/FixInvoiceDialog";
 import { useAdminModal } from "@/contexts/AdminModalContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,6 +45,8 @@ type Invoice = {
   qboFinalizeStatus?: "error" | string;
   lastError?: string | null;
   lastErrorAt?: { toDate: () => Date } | null;
+  qboResponseSnippet?: string | null;
+  attemptedAt?: { toDate: () => Date } | null;
   deleted?: boolean;
   isTest?: boolean;
   createdAt?: { toDate: () => Date };
@@ -60,6 +66,7 @@ export default function InvoicesPage() {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("due");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [fixTarget, setFixTarget] = useState<ErroredInvoice | null>(null);
   const { openModal } = useAdminModal();
 
   useEffect(() => {
@@ -171,6 +178,12 @@ export default function InvoicesPage() {
         </div>
       </header>
 
+      <FixInvoiceDialog
+        invoice={fixTarget}
+        open={fixTarget !== null}
+        onOpenChange={(o) => !o && setFixTarget(null)}
+      />
+
       <div className="rounded-lg border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
@@ -261,19 +274,48 @@ export default function InvoicesPage() {
                       </Badge>
                     </td>
                     <td className="px-4 py-2 align-middle text-right">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() =>
-                          window.open(
-                            `/admin/invoicing?id=${inv.id}`,
-                            "_self",
-                          )
-                        }
-                      >
-                        <ExternalLink className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.75} />
-                        Open
-                      </Button>
+                      <div className="inline-flex items-center gap-1 justify-end">
+                        {inv.qboFinalizeStatus === "error" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-warning/40 text-warning hover:bg-warning/10"
+                            onClick={() =>
+                              setFixTarget({
+                                id: inv.id,
+                                invoiceNumber: inv.invoiceNumber,
+                                customerName: inv.customerName,
+                                lastError: inv.lastError ?? null,
+                                qboResponseSnippet:
+                                  inv.qboResponseSnippet ?? null,
+                                attemptedAt: inv.attemptedAt ?? null,
+                              })
+                            }
+                          >
+                            <AlertTriangle
+                              className="h-3.5 w-3.5 mr-1.5"
+                              strokeWidth={1.75}
+                            />
+                            Fix
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            window.open(
+                              `/admin/invoicing?id=${inv.id}`,
+                              "_self",
+                            )
+                          }
+                        >
+                          <ExternalLink
+                            className="h-3.5 w-3.5 mr-1.5"
+                            strokeWidth={1.75}
+                          />
+                          Open
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))
