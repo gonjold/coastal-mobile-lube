@@ -362,8 +362,12 @@ async function main(): Promise<void> {
   const proposed = decisions.filter(
     (d): d is Proposal => d.kind === 'propose',
   );
-  const manualReview = decisions.filter((d) => d.kind === 'skip-multi');
-  const unmatched = decisions.filter((d) => d.kind === 'unmatched');
+  const manualReview = decisions.filter(
+    (d): d is Skip => d.kind === 'skip-multi',
+  );
+  const unmatched = decisions.filter(
+    (d): d is Skip => d.kind === 'unmatched',
+  );
 
   // Build markdown report
   const ts = new Date()
