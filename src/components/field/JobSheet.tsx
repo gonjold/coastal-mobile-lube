@@ -21,7 +21,7 @@ export function JobSheet({ job }: { job: JobDetail }) {
       <div className="flex flex-col gap-3 px-4 pb-4">
         <JobActionButton job={job} />
         <JobCustomerCard jobId={job.id} customer={job.customer} locked={locked} />
-        <JobAssetCard asset={job.asset} />
+        <JobAssetCard jobId={job.id} asset={job.asset} locked={locked} />
         <JobServicesSection job={job} locked={locked} />
         <JobPhotosSection job={job} />
         <JobNotesSection jobId={job.id} initialNotes={job.notes ?? ""} />
