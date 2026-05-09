@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Plus_Jakarta_Sans, Inter } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 import { BookingProvider } from "@/contexts/BookingContext";
 import { AuthProvider } from "@/components/auth/AuthProvider";
@@ -12,6 +13,12 @@ const plusJakarta = Plus_Jakarta_Sans({
   weight: ["400", "500", "600", "700", "800"],
   display: "swap",
   variable: "--font-jakarta",
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
 });
 
 export const viewport: Viewport = {
@@ -169,7 +176,7 @@ export default async function RootLayout({
   };
 
   return (
-    <html lang="en" className={`${plusJakarta.variable} antialiased`}>
+    <html lang="en" className={`${plusJakarta.variable} ${inter.variable} antialiased`}>
       <head>
         {/* Google Tag Manager */}
         <script
@@ -206,6 +213,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             <SiteChrome>{children}</SiteChrome>
           </AuthProvider>
         </BookingProvider>
+        <Toaster position="top-center" richColors closeButton />
       </body>
     </html>
   );
