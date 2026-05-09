@@ -20,7 +20,7 @@ export function JobSheet({ job }: { job: JobDetail }) {
       <JobStatusBar job={job} />
       <div className="flex flex-col gap-3 px-4 pb-4">
         <JobActionButton job={job} />
-        <JobCustomerCard customer={job.customer} />
+        <JobCustomerCard jobId={job.id} customer={job.customer} locked={locked} />
         <JobAssetCard asset={job.asset} />
         <JobServicesSection job={job} locked={locked} />
         <JobPhotosSection job={job} />

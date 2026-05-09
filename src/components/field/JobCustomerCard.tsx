@@ -1,14 +1,33 @@
 import { JobSection } from "./JobSection";
 import type { JobDetail } from "@/lib/jobs/queries";
 import { Phone, Mail, MapPin, ExternalLink } from "lucide-react";
+import { CustomerEditSheet } from "./edit/CustomerEditSheet";
 
 export function JobCustomerCard({
+  jobId,
   customer,
+  locked,
 }: {
+  jobId: string;
   customer: JobDetail["customer"];
+  locked: boolean;
 }) {
   return (
-    <JobSection title="Customer">
+    <JobSection
+      title="Customer"
+      action={
+        <CustomerEditSheet
+          jobId={jobId}
+          locked={locked}
+          initial={{
+            name: customer.name ?? "",
+            phone: customer.phone ?? "",
+            email: customer.email ?? "",
+            address: customer.address ?? "",
+          }}
+        />
+      }
+    >
       <div className="flex flex-col gap-2">
         <span className="font-display text-base font-semibold">
           {customer.name}
