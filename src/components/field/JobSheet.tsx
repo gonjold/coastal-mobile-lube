@@ -9,15 +9,16 @@ import { JobNotesSection } from "./JobNotesSection";
 import { JobPaymentSection } from "./JobPaymentSection";
 import { JobSignaturesSection } from "./JobSignaturesSection";
 
-// pt-14 on body clears the fixed JobStatusBar (top:56, h-14). Combined
-// with main's pt-14 for the field page header, content starts at 112px.
+// JobStatusBar is fixed top:0 h-20. The field layout's <main> already
+// adds pt-20 on /field/jobs/*, so the body wrapper here uses no extra top
+// padding — first content (JobActionButton) lands at viewport y=80px.
 export function JobSheet({ job }: { job: JobDetail }) {
   const locked = job.qboInvoiceFinalized;
 
   return (
     <>
       <JobStatusBar job={job} />
-      <div className="flex flex-col gap-3 p-4 pt-14">
+      <div className="flex flex-col gap-3 px-4 pb-4">
         <JobActionButton job={job} />
         <JobCustomerCard customer={job.customer} />
         <JobAssetCard asset={job.asset} />
