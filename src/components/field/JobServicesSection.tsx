@@ -1,7 +1,8 @@
 import { JobSection } from "./JobSection";
 import type { JobDetail } from "@/lib/jobs/queries";
-import { Button } from "@/components/ui/button";
-import { Plus, Lock } from "lucide-react";
+import { Lock } from "lucide-react";
+import { AddServiceDialog } from "./edit/AddServiceDialog";
+import { RemoveServiceButton } from "./edit/RemoveServiceButton";
 
 export function JobServicesSection({
   job,
@@ -22,9 +23,7 @@ export function JobServicesSection({
             <Lock className="h-3 w-3" strokeWidth={1.75} /> Finalized
           </span>
         ) : (
-          <Button size="sm" variant="outline" disabled>
-            <Plus className="mr-1 h-3 w-3" strokeWidth={2} /> Add
-          </Button>
+          <AddServiceDialog jobId={job.id} />
         )
       }
     >
@@ -46,23 +45,30 @@ export function JobServicesSection({
                   {it.taxable ? "" : " (no tax)"}
                 </span>
               </div>
-              <span className="text-sm font-semibold">
+              <span className="text-sm font-semibold tabular-nums">
                 ${it.totalPrice.toFixed(2)}
               </span>
+              {!locked && (
+                <RemoveServiceButton
+                  jobId={job.id}
+                  itemId={it.id}
+                  description={it.description}
+                />
+              )}
             </div>
           ))}
           <div className="mt-2 border-t border-border pt-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Subtotal</span>
-              <span>${totals.subtotal.toFixed(2)}</span>
+              <span className="tabular-nums">${totals.subtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Tax</span>
-              <span>${totals.tax.toFixed(2)}</span>
+              <span className="tabular-nums">${totals.tax.toFixed(2)}</span>
             </div>
             <div className="mt-1 flex justify-between font-display font-bold">
               <span>Total</span>
-              <span>${totals.total.toFixed(2)}</span>
+              <span className="tabular-nums">${totals.total.toFixed(2)}</span>
             </div>
           </div>
         </div>
