@@ -9,6 +9,11 @@ export default function AdminSignOutButton() {
 
   async function handleSignOut() {
     await signOut(auth);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // Cookie clear is best-effort; client signOut already happened.
+    }
     router.push("/admin/login");
   }
 

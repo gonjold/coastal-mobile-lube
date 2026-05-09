@@ -17,7 +17,17 @@ function LoginForm() {
     setSubmitting(true);
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      const cred = await signInWithPopup(auth, provider);
+      const idToken = await cred.user.getIdToken();
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
+      if (!res.ok) {
+        setError("Could not establish session. Please try again.");
+        return;
+      }
       router.push("/admin");
     } catch {
       setError("Sign in failed. Please try again.");

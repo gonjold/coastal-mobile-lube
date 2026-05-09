@@ -8,6 +8,15 @@ import { useRouter, usePathname } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import type { AppUser } from "@/app/admin/shared";
 
+async function signOutFull() {
+  await signOut(auth);
+  try {
+    await fetch("/api/auth/logout", { method: "POST" });
+  } catch {
+    // Cookie clear is best-effort; the Firebase client signOut already happened.
+  }
+}
+
 export default function TechAuthShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -40,7 +49,7 @@ export default function TechAuthShell({ children }: { children: React.ReactNode 
             setUser(null);
             setLoading(false);
             // Auth user without users doc — sign out, send to login
-            signOut(auth);
+            signOutFull();
             router.replace("/tech/login");
             return;
           }
@@ -49,7 +58,7 @@ export default function TechAuthShell({ children }: { children: React.ReactNode 
           setLoading(false);
 
           if (data.role === "tech" && !data.isActive && !isLoginRoute) {
-            signOut(auth);
+            signOutFull();
             router.replace("/tech/login");
           } else if (isLoginRoute && data.isActive) {
             // Active user (admin or tech) hitting login → go straight to jobs
@@ -96,7 +105,7 @@ export default function TechAuthShell({ children }: { children: React.ReactNode 
           <div className="flex items-center gap-3 text-xs">
             <span>{user.displayName}</span>
             <button
-              onClick={() => signOut(auth)}
+              onClick={() => signOutFull()}
               className="rounded border border-white/30 px-2 py-1 hover:bg-white/10"
             >
               Sign out

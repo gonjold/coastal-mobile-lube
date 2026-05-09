@@ -1,57 +1,55 @@
-import { authMiddleware } from 'next-firebase-auth-edge';
 import { NextResponse, type NextRequest } from 'next/server';
 
-const PROTECTED_ADMIN = /^\/admin/;
-const PROTECTED_TECH = /^\/tech/;
-const PROTECTED_API_ADMIN = /^\/api\/admin/;
+/**
+ * Edge-safe middleware: presence-check the `__session` Firebase session
+ * cookie minted by /api/auth/login. Deeper verification (signature, expiry,
+ * custom-claim role) happens at the page/API level via getCurrentUser() and
+ * requireRole() in `@/lib/auth/server` — those use firebase-admin's
+ * verifySessionCookie(), which is not available in the Edge runtime.
+ *
+ * Why presence-check rather than full verification: firebase-admin can't run
+ * in the Edge runtime, and full session-cookie verification on every request
+ * would require either (a) a JWKS-based JWT verifier (Firebase session
+ * cookies are not standard JWTs and aren't designed for client verification)
+ * or (b) switching middleware to the Node runtime. Presence-check is the
+ * pragmatic choice; the existing `AdminAuthGuard` and `TechAuthShell` plus
+ * server-side `requireRole()` still enforce real auth on the inside.
+ */
 
-export async function middleware(req: NextRequest) {
+const ADMIN_RE = /^\/admin/;
+const TECH_RE = /^\/tech/;
+const API_ADMIN_RE = /^\/api\/admin/;
+const ADMIN_LOGIN_PATH = '/admin/login';
+const TECH_LOGIN_PATH = '/tech/login';
+
+export function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
-  const isAdmin =
-    PROTECTED_ADMIN.test(path) || PROTECTED_API_ADMIN.test(path);
-  const isTech = PROTECTED_TECH.test(path);
+
+  // Login pages themselves are public (the login UIs that mint the cookie).
+  if (path === ADMIN_LOGIN_PATH || path === TECH_LOGIN_PATH) {
+    return NextResponse.next();
+  }
+
+  const isAdmin = ADMIN_RE.test(path) || API_ADMIN_RE.test(path);
+  const isTech = TECH_RE.test(path);
   if (!isAdmin && !isTech) return NextResponse.next();
 
-  return authMiddleware(req, {
-    loginPath: '/api/auth/login',
-    logoutPath: '/api/auth/logout',
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
-    cookieName: '__session',
-    cookieSerializeOptions: {
-      path: '/',
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
-      domain:
-        process.env.NODE_ENV === 'production'
-          ? '.coastalmobilelube.com'
-          : undefined,
-    },
-    cookieSignatureKeys: [
-      process.env.AUTH_COOKIE_SIGNATURE_KEY_1!,
-      process.env.AUTH_COOKIE_SIGNATURE_KEY_2!,
-    ],
-    serviceAccount: {
-      projectId: process.env.FIREBASE_PROJECT_ID!,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL!,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY!.replace(/\\n/g, '\n'),
-    },
-    handleValidToken: async ({ decodedToken }, headers) => {
-      const role = (decodedToken.role as string) || 'tech';
-      if (isAdmin && !['owner', 'admin_only'].includes(role)) {
-        return NextResponse.redirect(new URL('/tech', req.url));
-      }
-      return NextResponse.next({ request: { headers } });
-    },
-    handleInvalidToken: async () => {
-      return NextResponse.redirect(new URL('/login', req.url));
-    },
-    handleError: async (error) => {
-      console.error('Auth middleware error:', error);
-      return NextResponse.redirect(new URL('/login', req.url));
-    },
-  });
+  const session = req.cookies.get('__session')?.value;
+  if (session) return NextResponse.next();
+
+  // No session — redirect to the appropriate login. JSON 401 for API routes
+  // so callers see a clean error, not a redirect-with-HTML body.
+  if (API_ADMIN_RE.test(path)) {
+    return NextResponse.json(
+      { error: 'UNAUTHENTICATED' },
+      { status: 401 },
+    );
+  }
+  const loginUrl = new URL(
+    isTech ? TECH_LOGIN_PATH : ADMIN_LOGIN_PATH,
+    req.url,
+  );
+  return NextResponse.redirect(loginUrl);
 }
 
 export const config = {
