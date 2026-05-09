@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { requireRole } from "@/lib/auth";
 import { getAdminDb } from "@/lib/firebase-admin";
+import { ensureBookingAsset } from "@/lib/jobs/ensureBookingAsset";
 
 export const dynamic = "force-dynamic";
 
@@ -76,6 +77,20 @@ export async function POST(
   }
 
   await ref.update(update);
+
+  // Forward-only asset linkage: best-effort, never blocks check-in.
+  try {
+    const result = await ensureBookingAsset(db, id);
+    if (result.assetId) {
+      console.log(
+        `[check-in] booking=${id} asset=${result.assetId} ${result.created ? "created" : "linked"} (${result.reason})`,
+      );
+    } else {
+      console.log(`[check-in] booking=${id} asset skipped: ${result.reason}`);
+    }
+  } catch (err) {
+    console.error("[check-in] ensureBookingAsset failed:", err);
+  }
 
   return NextResponse.json({ ok: true });
 }

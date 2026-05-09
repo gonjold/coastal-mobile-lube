@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { requireRole } from "@/lib/auth";
 import { getAdminDb } from "@/lib/firebase-admin";
+import { ensureBookingAsset } from "@/lib/jobs/ensureBookingAsset";
 
 export const dynamic = "force-dynamic";
 
@@ -73,5 +74,21 @@ export async function POST(
   }
 
   await ref.update(update);
+
+  if (to === "in_progress") {
+    try {
+      const result = await ensureBookingAsset(db, id);
+      if (result.assetId) {
+        console.log(
+          `[status] booking=${id} asset=${result.assetId} ${result.created ? "created" : "linked"} (${result.reason})`,
+        );
+      } else {
+        console.log(`[status] booking=${id} asset skipped: ${result.reason}`);
+      }
+    } catch (err) {
+      console.error("[status] ensureBookingAsset failed:", err);
+    }
+  }
+
   return NextResponse.json({ ok: true });
 }

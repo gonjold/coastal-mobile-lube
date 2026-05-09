@@ -10,6 +10,7 @@
 import type { Booking } from "@/app/admin/shared";
 import { getBookingCalendarDate, formatTimeWindow } from "@/app/admin/shared";
 import { getAdminDb } from "@/lib/firebase-admin";
+import type { Firestore } from "firebase-admin/firestore";
 
 export type ScheduleJobStatus =
   | "pending"
@@ -78,6 +79,67 @@ function assetView(b: Booking): ScheduleJob["asset"] {
     };
   }
   return { type: "unknown", displayName: null };
+}
+
+type LinkedAssetDoc = {
+  id: string;
+  type?: string;
+  year?: number | string;
+  make?: string;
+  model?: string;
+  nickname?: string;
+};
+
+function assetViewFromLinked(a: LinkedAssetDoc): ScheduleJob["asset"] {
+  const type: ScheduleJob["asset"]["type"] =
+    a.type === "vehicle" ||
+    a.type === "boat" ||
+    a.type === "trailer" ||
+    a.type === "fleet_vehicle"
+      ? a.type
+      : "unknown";
+  const parts = [a.year, a.make, a.model].filter(Boolean);
+  const displayName = a.nickname || parts.join(" ") || null;
+  return { type, displayName };
+}
+
+function bookingAssetId(b: Booking): string | null {
+  const aid = (b as { assetId?: unknown }).assetId;
+  return typeof aid === "string" && aid.length > 0 ? aid : null;
+}
+
+async function hydrateLinkedAssets(
+  db: Firestore,
+  bookings: Booking[],
+): Promise<Map<string, LinkedAssetDoc>> {
+  const ids = new Set<string>();
+  for (const b of bookings) {
+    const aid = bookingAssetId(b);
+    if (aid) ids.add(aid);
+  }
+  if (ids.size === 0) return new Map();
+  const snaps = await Promise.all(
+    [...ids].map((id) => db.collection("assets").doc(id).get()),
+  );
+  const map = new Map<string, LinkedAssetDoc>();
+  for (const snap of snaps) {
+    if (!snap.exists) continue;
+    const data = snap.data() as Omit<LinkedAssetDoc, "id">;
+    map.set(snap.id, { id: snap.id, ...data });
+  }
+  return map;
+}
+
+function applyLinkedAsset(
+  job: ScheduleJob,
+  booking: Booking,
+  assetMap: Map<string, LinkedAssetDoc>,
+): ScheduleJob {
+  const aid = bookingAssetId(booking);
+  if (!aid) return job;
+  const linked = assetMap.get(aid);
+  if (!linked) return job;
+  return { ...job, asset: assetViewFromLinked(linked) };
 }
 
 function serviceLabelFor(b: Booking): string {
@@ -198,11 +260,18 @@ export async function getScheduleJobs(opts: {
       }
     }
 
-    const jobs = hydrateJobs([...seen.values()]);
+    const allBookings = [...seen.values()];
+    const jobs = hydrateJobs(allBookings);
+    const assetMap = await hydrateLinkedAssets(db, allBookings);
+    const bookingById = new Map(allBookings.map((b) => [b.id, b] as const));
+    const hydrated = jobs.map((j) => {
+      const b = bookingById.get(j.id);
+      return b ? applyLinkedAsset(j, b, assetMap) : j;
+    });
     // Final filter: confirmedDate may be in window but preferredDate older —
     // hydrateJobs picks getBookingCalendarDate which prefers confirmedDate,
     // so filter again on the resolved scheduledDate.
-    return jobs.filter(
+    return hydrated.filter(
       (j) => j.scheduledDate >= opts.startDate && j.scheduledDate <= opts.endDate,
     );
   } catch (err) {
@@ -222,7 +291,10 @@ export async function getScheduleJob(id: string): Promise<ScheduleJob | null> {
     const snap = await db.collection("bookings").doc(id).get();
     if (!snap.exists) return null;
     const booking = { id: snap.id, ...(snap.data() as Omit<Booking, "id">) };
-    return bookingToScheduleJob(booking);
+    const job = bookingToScheduleJob(booking);
+    if (!job) return null;
+    const assetMap = await hydrateLinkedAssets(db, [booking]);
+    return applyLinkedAsset(job, booking, assetMap);
   } catch (err) {
     console.error("[jobs.queries] getScheduleJob failed:", err);
     return null;
@@ -337,8 +409,11 @@ export async function getJobDetail(id: string): Promise<JobDetail | null> {
     const snap = await db.collection("bookings").doc(id).get();
     if (!snap.exists) return null;
     const booking = { id: snap.id, ...(snap.data() as Omit<Booking, "id">) };
-    const detail = bookingToJobDetail(booking);
-    if (!detail) return null;
+    const baseDetail = bookingToJobDetail(booking);
+    if (!baseDetail) return null;
+    const assetMap = await hydrateLinkedAssets(db, [booking]);
+    const linkedAsset = applyLinkedAsset(baseDetail, booking, assetMap).asset;
+    const detail: JobDetail = { ...baseDetail, asset: linkedAsset };
 
     // Bidirectional invoice link is asymmetric: the tech-app Mark Complete
     // flow writes booking.invoiceId, but invoices created via the legacy
@@ -407,7 +482,15 @@ export async function getTodayJobs(date: string): Promise<TodayJobs> {
     const inProgressBookings: Booking[] = inProgressSnap.docs.map(
       (d) => ({ id: d.id, ...(d.data() as Omit<Booking, "id">) }),
     );
-    const inProgress = hydrateJobs(inProgressBookings);
+    const inProgressJobs = hydrateJobs(inProgressBookings);
+    const inProgressAssetMap = await hydrateLinkedAssets(db, inProgressBookings);
+    const inProgressBookingById = new Map(
+      inProgressBookings.map((b) => [b.id, b] as const),
+    );
+    const inProgress = inProgressJobs.map((j) => {
+      const b = inProgressBookingById.get(j.id);
+      return b ? applyLinkedAsset(j, b, inProgressAssetMap) : j;
+    });
 
     const inProgressIds = new Set(inProgress.map((j) => j.id));
     const upcoming = todayJobs.filter((j) => {
