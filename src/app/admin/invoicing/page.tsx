@@ -1029,10 +1029,25 @@ function InvoicingPageInner() {
         await updateDoc(doc(db, "invoices", editingId), data);
         addToast("Invoice updated");
       } else {
-        await addDoc(collection(db, "invoices"), {
+        const newRef = await addDoc(collection(db, "invoices"), {
           ...data,
           createdAt: serverTimestamp(),
         });
+        // Best-effort: when creating from a booking context, also write
+        // bookings/{bookingId}.invoiceId so the field UI's bidirectional
+        // lookup doesn't have to fall back. Standalone invoices (no
+        // bookingId) leave the booking side untouched.
+        if (data.bookingId) {
+          try {
+            await updateDoc(doc(db, "bookings", data.bookingId), {
+              invoiceId: newRef.id,
+              ...(data.invoiceNumber ? { invoiceNumber: data.invoiceNumber } : {}),
+              updatedAt: serverTimestamp(),
+            });
+          } catch (e) {
+            console.error("[invoicing] booking writeback failed:", e);
+          }
+        }
         addToast(statusOverride === "sent" ? "Invoice created and marked as sent" : "Invoice saved as draft");
       }
 
