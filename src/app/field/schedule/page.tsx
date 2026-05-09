@@ -23,7 +23,7 @@ export default async function SchedulePage() {
   const jobs = await getScheduleJobs({ startDate, endDate });
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex flex-col">
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background px-4">
         <h1 className="font-display text-xl font-bold text-foreground">
           Schedule

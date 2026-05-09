@@ -337,7 +337,45 @@ export async function getJobDetail(id: string): Promise<JobDetail | null> {
     const snap = await db.collection("bookings").doc(id).get();
     if (!snap.exists) return null;
     const booking = { id: snap.id, ...(snap.data() as Omit<Booking, "id">) };
-    return bookingToJobDetail(booking);
+    const detail = bookingToJobDetail(booking);
+    if (!detail) return null;
+
+    // Bidirectional invoice link is asymmetric: the tech-app Mark Complete
+    // flow writes booking.invoiceId, but invoices created via the legacy
+    // admin "New Invoice" form only set invoice.bookingId — they never
+    // write back to the booking. Fall back to a lookup by bookingId so the
+    // field UI's Email-link button surfaces those invoices too.
+    if (!detail.qboInvoiceId) {
+      const invSnap = await db
+        .collection("invoices")
+        .where("bookingId", "==", id)
+        .limit(5)
+        .get();
+      type InvoiceLite = {
+        id: string;
+        invoiceNumber?: string;
+        deleted?: boolean;
+        createdAt?: { toMillis?: () => number };
+      };
+      const live: InvoiceLite[] = invSnap.docs
+        .map((d) => ({ id: d.id, ...(d.data() as Omit<InvoiceLite, "id">) }))
+        .filter((d) => d.deleted !== true);
+      if (live.length > 0) {
+        live.sort((a, b) => {
+          const at = a.createdAt?.toMillis?.() ?? 0;
+          const bt = b.createdAt?.toMillis?.() ?? 0;
+          return bt - at;
+        });
+        const inv = live[0];
+        return {
+          ...detail,
+          qboInvoiceId: inv.id,
+          qboInvoiceNumber: inv.invoiceNumber ?? null,
+          qboInvoiceFinalized: true,
+        };
+      }
+    }
+    return detail;
   } catch (err) {
     console.error("[jobs.queries] getJobDetail failed:", err);
     return null;
