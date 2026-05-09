@@ -228,3 +228,51 @@ export async function getScheduleJob(id: string): Promise<ScheduleJob | null> {
     return null;
   }
 }
+
+export type TodayJobs = {
+  inProgress: ScheduleJob[];
+  upcoming: ScheduleJob[];
+};
+
+/**
+ * Today tab data: in-progress jobs (any date) + upcoming-today jobs (today,
+ * not yet started/completed/cancelled). Bookings status mapping:
+ *   - in-progress: status === "in_progress"
+ *   - upcoming   : scheduledDate === today AND status NOT IN
+ *                  ("in_progress", "completed", "cancelled", "new-lead")
+ */
+export async function getTodayJobs(date: string): Promise<TodayJobs> {
+  const db = getAdminDb();
+  if (!db) return { inProgress: [], upcoming: [] };
+
+  try {
+    const [inProgressSnap, todayJobs] = await Promise.all([
+      db.collection("bookings").where("status", "==", "in_progress").get(),
+      getScheduleJobs({ startDate: date, endDate: date }),
+    ]);
+
+    const inProgressBookings: Booking[] = inProgressSnap.docs.map(
+      (d) => ({ id: d.id, ...(d.data() as Omit<Booking, "id">) }),
+    );
+    const inProgress = hydrateJobs(inProgressBookings);
+
+    const inProgressIds = new Set(inProgress.map((j) => j.id));
+    const upcoming = todayJobs.filter((j) => {
+      if (inProgressIds.has(j.id)) return false;
+      if (
+        j.status === "in_progress" ||
+        j.status === "completed" ||
+        j.status === "cancelled" ||
+        j.status === "new-lead"
+      ) {
+        return false;
+      }
+      return true;
+    });
+
+    return { inProgress, upcoming };
+  } catch (err) {
+    console.error("[jobs.queries] getTodayJobs failed:", err);
+    return { inProgress: [], upcoming: [] };
+  }
+}
