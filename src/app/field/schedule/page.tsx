@@ -24,13 +24,11 @@ export default async function SchedulePage() {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="flex items-center justify-between px-4 py-3">
-          <h1 className="font-display text-xl font-bold text-foreground">
-            Schedule
-          </h1>
-          <ScheduleHeaderActions />
-        </div>
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background px-4">
+        <h1 className="font-display text-xl font-bold text-foreground">
+          Schedule
+        </h1>
+        <ScheduleHeaderActions />
       </header>
       <ScheduleClient initialJobs={jobs} today={today} />
     </div>

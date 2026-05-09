@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Briefcase, UserPlus } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function QuickCreate({
   open,
@@ -17,11 +17,9 @@ export function QuickCreate({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
-  const router = useRouter();
-
-  function go(path: string) {
-    onOpenChange(false);
-    router.push(path);
+  function handleStub() {
+    toast.info("Coming soon — create from admin for now");
+    setTimeout(() => onOpenChange(false), 400);
   }
 
   return (
@@ -35,7 +33,7 @@ export function QuickCreate({
             variant="outline"
             size="lg"
             className="justify-start gap-3"
-            onClick={() => go("/field/jobs/new")}
+            onClick={handleStub}
           >
             <Briefcase className="h-5 w-5" strokeWidth={1.75} />
             New job
@@ -44,7 +42,7 @@ export function QuickCreate({
             variant="outline"
             size="lg"
             className="justify-start gap-3"
-            onClick={() => go("/field/customers/new")}
+            onClick={handleStub}
           >
             <UserPlus className="h-5 w-5" strokeWidth={1.75} />
             New customer

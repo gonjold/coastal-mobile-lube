@@ -20,13 +20,11 @@ export default async function TodayPage() {
 
   return (
     <div className="flex flex-col">
-      <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="px-4 py-3">
-          <h1 className="font-display text-xl font-bold text-foreground">
-            Today
-          </h1>
-          <p className="text-xs text-muted-foreground">{niceDate}</p>
-        </div>
+      <header className="sticky top-0 z-30 border-b border-border bg-background px-4 py-3">
+        <h1 className="font-display text-xl font-bold text-foreground">
+          Today
+        </h1>
+        <p className="text-xs text-muted-foreground">{niceDate}</p>
       </header>
       <TodayClient initial={data} />
     </div>

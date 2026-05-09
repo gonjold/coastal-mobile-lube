@@ -26,7 +26,7 @@ export function ScheduleDayHeader({
   const isPast = date < today;
   return (
     <div
-      className={`sticky top-[52px] z-20 flex items-baseline justify-between border-y border-border bg-muted px-4 py-2 text-xs font-semibold uppercase tracking-wide ${
+      className={`sticky top-14 z-20 flex items-baseline justify-between border-y border-border bg-muted px-4 py-2 text-xs font-semibold uppercase tracking-wide ${
         isPast ? "text-muted-foreground" : "text-foreground"
       }`}
     >
