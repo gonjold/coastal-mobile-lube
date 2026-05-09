@@ -229,6 +229,121 @@ export async function getScheduleJob(id: string): Promise<ScheduleJob | null> {
   }
 }
 
+export type JobLineItem = {
+  id: string;
+  description: string;
+  qty: number;
+  unitPrice: number;
+  totalPrice: number;
+  taxable: boolean;
+};
+
+export type JobPhoto = {
+  id: string;
+  url: string;
+  capturedAt: string | null;
+  caption?: string;
+};
+
+export type JobSignature = {
+  url: string;
+  signedAt: string | null;
+};
+
+export type JobDetail = ScheduleJob & {
+  notes: string | null;
+  lineItems: JobLineItem[];
+  photos: JobPhoto[];
+  signatures: {
+    estimate: JobSignature | null;
+    completion: JobSignature | null;
+  };
+  totals: {
+    subtotal: number;
+    tax: number;
+    total: number;
+  };
+  // QB invoice surface — read-only display in 2D; finalize itself is a future
+  // FDACS WO. qboInvoiceFinalized is true when a QB invoice id is present.
+  qboInvoiceId: string | null;
+  qboInvoiceNumber: string | null;
+  qboInvoiceFinalized: boolean;
+  customer: ScheduleJob["customer"] & {
+    email: string | null;
+  };
+};
+
+function bookingToJobDetail(b: Booking): JobDetail | null {
+  const base = bookingToScheduleJob(b);
+  if (!base) return null;
+
+  const lineItems: JobLineItem[] = (b.estimateLineItems ?? []).map((it) => ({
+    id: it.id,
+    description: it.description,
+    qty: it.qty,
+    unitPrice: it.unitPrice,
+    totalPrice: it.qty * it.unitPrice,
+    taxable: it.taxable,
+  }));
+
+  const photos: JobPhoto[] = (b.photos ?? []).map((p, idx) => ({
+    id: `photo-${idx}`,
+    url: p.url,
+    capturedAt: tsToISO(p.capturedAt),
+    caption: p.caption,
+  }));
+
+  const estimateSig = b.customerEstimateSignatureUrl
+    ? {
+        url: b.customerEstimateSignatureUrl,
+        signedAt: tsToISO(b.customerEstimateSignedAt),
+      }
+    : null;
+  const completionSig = b.customerCompletionSignatureUrl
+    ? {
+        url: b.customerCompletionSignatureUrl,
+        signedAt: tsToISO(b.customerCompletionSignedAt),
+      }
+    : null;
+
+  return {
+    ...base,
+    customer: {
+      ...base.customer,
+      email: b.email ?? b.customerEmail ?? null,
+    },
+    notes: b.notes ?? null,
+    lineItems,
+    photos,
+    signatures: {
+      estimate: estimateSig,
+      completion: completionSig,
+    },
+    totals: {
+      subtotal: b.estimateSubtotal ?? 0,
+      tax: b.estimateTax ?? 0,
+      total: b.estimateTotal ?? 0,
+    },
+    qboInvoiceId: b.invoiceId ?? null,
+    qboInvoiceNumber: b.invoiceNumber ?? null,
+    qboInvoiceFinalized: Boolean(b.invoiceId),
+  };
+}
+
+export async function getJobDetail(id: string): Promise<JobDetail | null> {
+  const db = getAdminDb();
+  if (!db) return null;
+  try {
+    const snap = await db.collection("bookings").doc(id).get();
+    if (!snap.exists) return null;
+    const booking = { id: snap.id, ...(snap.data() as Omit<Booking, "id">) };
+    return bookingToJobDetail(booking);
+  } catch (err) {
+    console.error("[jobs.queries] getJobDetail failed:", err);
+    return null;
+  }
+}
+
 export type TodayJobs = {
   inProgress: ScheduleJob[];
   upcoming: ScheduleJob[];
