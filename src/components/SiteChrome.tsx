@@ -14,8 +14,9 @@ interface SiteChromeProps {
 export default function SiteChrome({ children }: SiteChromeProps) {
   const pathname = usePathname() || "";
   const isTechRoute = pathname.startsWith("/tech");
+  const isFieldRoute = pathname.startsWith("/field");
 
-  if (isTechRoute) {
+  if (isTechRoute || isFieldRoute) {
     return <main className="flex-1">{children}</main>;
   }
 

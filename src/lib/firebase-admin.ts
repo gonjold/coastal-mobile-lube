@@ -5,7 +5,7 @@ import type { Service, ServiceCategory } from "./services";
 
 let cachedDb: Firestore | null = null;
 
-function getAdminDb(): Firestore | null {
+export function getAdminDb(): Firestore | null {
   if (cachedDb) return cachedDb;
 
   const projectId = process.env.FIREBASE_PROJECT_ID;
