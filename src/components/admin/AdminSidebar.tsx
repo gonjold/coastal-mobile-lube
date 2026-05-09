@@ -1,130 +1,118 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
+import {
+  Anchor,
+  CalendarCheck,
+  CalendarDays,
+  ChevronDown,
+  ChevronsLeft,
+  ChevronsRight,
+  ExternalLink,
+  FileCheck,
+  FileText,
+  ImageIcon,
+  LayoutGrid,
+  LogOut,
+  Menu,
+  Percent,
+  Plug,
+  Plus,
+  QrCode,
+  Receipt,
+  Settings,
+  Sparkles,
+  Type,
+  UserCog,
+  Users,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
 import { auth } from "@/lib/firebase";
+import { cn } from "@/lib/utils";
 import { useAdminModal } from "@/contexts/AdminModalContext";
+import { useCommandPalette } from "@/components/admin/CommandPalette";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
-/* ── SVG Icons for each nav item ── */
-const NAV_ICONS: Record<string, React.ReactNode> = {
-  Dashboard: (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="1" y="1" width="7" height="7" rx="1.5"/>
-      <rect x="10" y="1" width="7" height="3" rx="1.5"/>
-      <rect x="1" y="10" width="7" height="7" rx="1.5"/>
-      <rect x="10" y="6" width="7" height="11" rx="1.5"/>
-    </svg>
-  ),
-  Schedule: (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="3" width="14" height="13" rx="2"/>
-      <line x1="2" y1="7" x2="16" y2="7"/>
-      <line x1="6" y1="1" x2="6" y2="5"/>
-      <line x1="12" y1="1" x2="12" y2="5"/>
-    </svg>
-  ),
-  "Field View": (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M11 2.5l4.5 4.5-7.5 7.5L3.5 15l.5-4.5L11 2.5z"/>
-      <line x1="9" y1="4.5" x2="13.5" y2="9"/>
-    </svg>
-  ),
-  Customers: (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="9" cy="6" r="3.5"/>
-      <path d="M2.5 17c0-3.5 2.9-6.5 6.5-6.5s6.5 3 6.5 6.5"/>
-    </svg>
-  ),
-  Team: (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="6.5" cy="6" r="2.5"/>
-      <circle cx="13" cy="7" r="2"/>
-      <path d="M1.5 16c0-2.8 2.2-5 5-5s5 2.2 5 5"/>
-      <path d="M11.5 12c2 0 4 1.5 4 4"/>
-    </svg>
-  ),
-  Invoicing: (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="1" width="12" height="16" rx="2"/>
-      <line x1="6" y1="6" x2="12" y2="6"/>
-      <line x1="6" y1="9" x2="12" y2="9"/>
-      <line x1="6" y1="12" x2="9" y2="12"/>
-    </svg>
-  ),
-  Integrations: (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="7" cy="9" r="4.5"/>
-      <circle cx="11" cy="9" r="4.5"/>
-    </svg>
-  ),
-  "Hero Copy": (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M13 2l3 3-10 10H3v-3L13 2z"/>
-    </svg>
-  ),
-  "Services & Pricing": (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12.5 2.5c-2 0-3.5 1.5-3.5 3.5 0 .5.1 1 .3 1.5L3 13.5l1.5 1.5 6-6.3c.5.2 1 .3 1.5.3 2 0 3.5-1.5 3.5-3.5l-2 2-1.5-1.5 2-2z"/>
-    </svg>
-  ),
-  "Fees & Promos": (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="14" y1="4" x2="4" y2="14"/>
-      <circle cx="5.5" cy="5.5" r="2"/>
-      <circle cx="12.5" cy="12.5" r="2"/>
-    </svg>
-  ),
-  "QR Codes": (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="2" width="5" height="5" rx="0.5"/>
-      <rect x="11" y="2" width="5" height="5" rx="0.5"/>
-      <rect x="2" y="11" width="5" height="5" rx="0.5"/>
-      <line x1="11" y1="11" x2="11" y2="16"/>
-      <line x1="14" y1="11" x2="16" y2="11"/>
-      <line x1="16" y1="13" x2="13" y2="13"/>
-      <line x1="13" y1="16" x2="16" y2="16"/>
-    </svg>
-  ),
+type NavItem = {
+  label: string;
+  href: string;
+  icon: LucideIcon;
 };
 
-/* ── Navigation structure ── */
-const SECTIONS = [
+type NavSection = { label: string; items: NavItem[] };
+
+const SECTIONS: NavSection[] = [
   {
-    label: "OPERATIONS",
+    label: "CRM",
     items: [
-      { label: "Dashboard", href: "/admin" },
-      { label: "Schedule", href: "/admin/schedule" },
-      { label: "Field View", href: "/tech/jobs" },
-      { label: "Customers", href: "/admin/customers" },
-      { label: "Team", href: "/admin/team" },
+      { label: "Dashboard", href: "/admin", icon: LayoutGrid },
+      { label: "Schedule", href: "/admin/schedule", icon: CalendarDays },
+      { label: "Bookings", href: "/admin/bookings", icon: CalendarCheck },
+      { label: "Customers", href: "/admin/customers", icon: Users },
     ],
   },
   {
-    label: "FINANCIAL",
+    label: "ACCOUNTING",
     items: [
-      { label: "Invoicing", href: "/admin/invoicing" },
-      { label: "Integrations", href: "/admin/integrations" },
-    ],
-  },
-  {
-    label: "MARKETING",
-    items: [
-      { label: "QR Codes", href: "/admin/qr" },
+      { label: "Invoices", href: "/admin/invoices", icon: Receipt },
+      { label: "Invoicing (legacy)", href: "/admin/invoicing", icon: FileText },
+      { label: "Fees", href: "/admin/fees", icon: Percent },
+      { label: "Integrations", href: "/admin/integrations", icon: Plug },
     ],
   },
   {
     label: "WEBSITE",
     items: [
-      { label: "Hero Copy", href: "/admin/hero-editor" },
-      { label: "Services & Pricing", href: "/admin/services" },
-      { label: "Fees & Promos", href: "/admin/fees" },
+      { label: "Services CMS", href: "/admin/services", icon: Settings },
+      { label: "Photos", href: "/admin/photos", icon: ImageIcon },
+      { label: "Copy editor", href: "/admin/copy", icon: Type },
+      { label: "Hero editor", href: "/admin/hero-editor", icon: Sparkles },
+      { label: "QR codes", href: "/admin/qr", icon: QrCode },
+    ],
+  },
+  {
+    label: "FIELD",
+    items: [
+      { label: "Team", href: "/admin/team", icon: UserCog },
+      { label: "Jobs", href: "/tech/jobs", icon: Wrench },
+      { label: "FDACS settings", href: "/admin/fdacs", icon: FileCheck },
     ],
   },
 ];
 
-const CREATE_ITEMS = ["New Booking", "New Customer", "New Invoice"];
+const SIDEBAR_OPEN_SECTIONS_KEY = "admin-sidebar-open-sections";
+
+function findContainingSection(pathname: string): string {
+  for (const section of SECTIONS) {
+    if (
+      section.items.some((item) =>
+        item.href === "/admin"
+          ? pathname === "/admin"
+          : pathname.startsWith(item.href),
+      )
+    ) {
+      return section.label;
+    }
+  }
+  return SECTIONS[0].label;
+}
 
 export default function AdminSidebar({
   collapsed,
@@ -133,249 +121,350 @@ export default function AdminSidebar({
   collapsed: boolean;
   onToggle: () => void;
 }) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  return (
+    <TooltipProvider delayDuration={150}>
+      <aside
+        className="hidden md:flex fixed inset-y-0 left-0 z-40 flex-col bg-primary text-primary-foreground border-r border-white/10"
+        style={{
+          width: collapsed ? 56 : 240,
+          transition: "width 200ms cubic-bezier(0.4, 0, 0.2, 1)",
+          fontFamily: "var(--font-sans)",
+        }}
+      >
+        <SidebarBody collapsed={collapsed} onToggle={onToggle} />
+      </aside>
+
+      <button
+        type="button"
+        aria-label="Open navigation"
+        onClick={() => setMobileOpen(true)}
+        className="md:hidden fixed top-3 left-3 z-30 inline-flex h-10 w-10 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-md transition hover:opacity-90"
+      >
+        <Menu className="h-5 w-5" strokeWidth={1.75} />
+      </button>
+
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent
+          side="left"
+          className="w-[260px] bg-primary text-primary-foreground border-r-0 p-0"
+          style={{ fontFamily: "var(--font-sans)" }}
+        >
+          <SheetTitle className="sr-only">Admin navigation</SheetTitle>
+          <SidebarBody
+            collapsed={false}
+            onToggle={() => setMobileOpen(false)}
+            mobile
+          />
+        </SheetContent>
+      </Sheet>
+    </TooltipProvider>
+  );
+}
+
+function SidebarBody({
+  collapsed,
+  onToggle,
+  mobile = false,
+}: {
+  collapsed: boolean;
+  onToggle: () => void;
+  mobile?: boolean;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const { openModal } = useAdminModal();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const palette = useCommandPalette();
 
-  /* Close dropdown on outside click */
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
-        setDropdownOpen(false);
+  const [openSections, setOpenSections] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const raw = localStorage.getItem(SIDEBAR_OPEN_SECTIONS_KEY);
+      if (raw) {
+        const arr = JSON.parse(raw) as string[];
+        if (Array.isArray(arr)) return new Set(arr);
       }
-    }
-    if (dropdownOpen) document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [dropdownOpen]);
+    } catch {}
+    return new Set([findContainingSection(pathname)]);
+  });
+
+  useEffect(() => {
+    setOpenSections((prev) => {
+      const containing = findContainingSection(pathname);
+      if (prev.has(containing)) return prev;
+      const next = new Set(prev);
+      next.add(containing);
+      return next;
+    });
+  }, [pathname]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        SIDEBAR_OPEN_SECTIONS_KEY,
+        JSON.stringify(Array.from(openSections)),
+      );
+    } catch {}
+  }, [openSections]);
+
+  function toggleSection(label: string) {
+    setOpenSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      return next;
+    });
+  }
 
   function isActive(href: string) {
-    return href === "/admin"
-      ? pathname === "/admin"
-      : pathname.startsWith(href);
+    return href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
   }
 
   async function handleSignOut() {
     await signOut(auth);
     try {
       await fetch("/api/auth/logout", { method: "POST" });
-    } catch {
-      // Cookie clear is best-effort; client signOut already happened.
-    }
+    } catch {}
     router.push("/admin/login");
   }
 
   return (
-    <aside
-      className="fixed inset-y-0 left-0 bg-[#0B2040] text-white flex flex-col z-50"
-      style={{ width: collapsed ? 56 : 230, transition: "width 200ms ease" }}
-    >
-      {/* ── Toggle button + Logo area ── */}
+    <>
       <div
-        className={
-          collapsed
-            ? "flex justify-center py-4"
-            : "px-5 py-5 flex items-center justify-between"
-        }
-        style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
+        className={cn(
+          "flex items-center border-b border-white/10",
+          collapsed ? "justify-center py-3" : "px-4 py-4 justify-between",
+        )}
       >
         {!collapsed && (
           <div>
-            <div className="text-[15px] font-bold text-white">
+            <div className="text-[14px] font-semibold tracking-tight leading-tight">
               Coastal Mobile
             </div>
-            <div className="text-[11px] text-white/45 font-medium mt-0.5">
+            <div className="text-[11px] text-white/55 mt-0.5">
               Lube &amp; Tire Admin
             </div>
           </div>
         )}
-        <button
-          onClick={onToggle}
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className="w-[32px] h-[32px] flex items-center justify-center rounded-md hover:bg-white/[0.08] text-white/40 transition cursor-pointer shrink-0"
-        >
-          {collapsed ? (
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="6,3 11,8 6,13"/>
-            </svg>
-          ) : (
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="10,3 5,8 10,13"/>
-            </svg>
-          )}
-        </button>
+        {!mobile && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={onToggle}
+                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-white/60 hover:bg-white/10 hover:text-white transition-colors duration-150"
+              >
+                {collapsed ? (
+                  <ChevronsRight className="h-4 w-4" strokeWidth={1.75} />
+                ) : (
+                  <ChevronsLeft className="h-4 w-4" strokeWidth={1.75} />
+                )}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              {collapsed ? "Expand" : "Collapse"}
+            </TooltipContent>
+          </Tooltip>
+        )}
       </div>
 
-      {/* ── Create New button ── */}
       <div
-        className={
-          collapsed
-            ? "px-2 pt-3 pb-2 relative flex justify-center"
-            : "px-4 pt-4 pb-2 relative"
-        }
-        ref={dropdownRef}
+        className={cn(
+          "border-b border-white/10",
+          collapsed ? "px-2 py-2.5 flex justify-center" : "px-3 py-3 space-y-2",
+        )}
       >
         {collapsed ? (
-          <button
-            onClick={() => setDropdownOpen((prev) => !prev)}
-            title="Create New"
-            className="w-[34px] h-[34px] flex items-center justify-center bg-[#E07B2D] hover:bg-[#CC6A1F] transition rounded-lg text-white cursor-pointer"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <line x1="8" y1="3" x2="8" y2="13"/>
-              <line x1="3" y1="8" x2="13" y2="8"/>
-            </svg>
-          </button>
-        ) : (
-          <button
-            onClick={() => setDropdownOpen((prev) => !prev)}
-            className="w-full bg-[#E07B2D] hover:bg-[#CC6A1F] transition rounded-[10px] text-[13px] font-semibold text-white py-2.5 cursor-pointer"
-          >
-            + Create New
-          </button>
-        )}
-
-        {dropdownOpen && (
-          <div
-            className={
-              collapsed
-                ? "absolute left-full top-0 ml-1 bg-white rounded-[10px] shadow-lg z-50 overflow-hidden w-[160px]"
-                : "absolute left-4 right-4 top-full mt-1 bg-white rounded-[10px] shadow-lg z-50 overflow-hidden"
-            }
-          >
-            {CREATE_ITEMS.map((item, i) => (
+          <Tooltip>
+            <TooltipTrigger asChild>
               <button
-                key={item}
-                onClick={() => {
-                  setDropdownOpen(false);
-                  if (item === "New Booking") openModal("booking");
-                  else if (item === "New Customer") openModal("customer");
-                  else if (item === "New Invoice") openModal("invoice");
-                }}
-                className={`block w-full text-left px-4 py-2.5 text-[13px] font-medium text-gray-900 hover:bg-gray-50 cursor-pointer ${
-                  i < CREATE_ITEMS.length - 1
-                    ? "border-b border-gray-200"
-                    : ""
-                }`}
+                type="button"
+                onClick={() => palette.open()}
+                aria-label="Open command palette"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-accent text-accent-foreground hover:opacity-90 transition-opacity duration-150"
               >
-                {item}
+                <Plus className="h-4 w-4" strokeWidth={2} />
               </button>
-            ))}
-          </div>
+            </TooltipTrigger>
+            <TooltipContent side="right">Search &amp; create (⌘K)</TooltipContent>
+          </Tooltip>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => palette.open()}
+              className="w-full inline-flex items-center justify-between gap-2 rounded-md bg-white/5 hover:bg-white/10 transition-colors duration-150 text-[13px] text-white/75 px-3 py-2"
+            >
+              <span className="inline-flex items-center gap-2">
+                <Plus className="h-4 w-4 text-accent" strokeWidth={2} />
+                Search &amp; create
+              </span>
+              <kbd className="text-[10px] font-mono text-white/45 border border-white/15 rounded px-1.5 py-0.5">
+                ⌘K
+              </kbd>
+            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-semibold"
+                >
+                  <Plus className="h-4 w-4 mr-1.5" strokeWidth={2} />
+                  Create new
+                  <ChevronDown
+                    className="h-3.5 w-3.5 ml-auto opacity-70"
+                    strokeWidth={1.75}
+                  />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-[200px]">
+                <DropdownMenuItem onClick={() => openModal("booking")}>
+                  <CalendarCheck className="h-4 w-4 mr-2" strokeWidth={1.75} />
+                  New booking
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => openModal("customer")}>
+                  <Users className="h-4 w-4 mr-2" strokeWidth={1.75} />
+                  New customer
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => openModal("invoice")}>
+                  <Receipt className="h-4 w-4 mr-2" strokeWidth={1.75} />
+                  New invoice
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
         )}
       </div>
 
-      {/* ── Navigation sections ── */}
-      <nav className="flex-1 overflow-y-auto pt-2">
-        {SECTIONS.map((section, sectionIdx) => (
-          <div key={section.label}>
-            {collapsed ? (
-              sectionIdx > 0 && (
-                <div className="flex justify-center py-2">
-                  <div className="w-[24px] h-px bg-white/10" />
-                </div>
-              )
-            ) : (
-              <div className="px-5 py-3 pb-1.5 text-[10px] font-bold text-white/35 uppercase tracking-[0.08em]">
-                {section.label}
-              </div>
-            )}
-            {section.items.map((item) => {
-              const active = isActive(item.href);
-              const icon = NAV_ICONS[item.label];
-
-              if (collapsed) {
-                return (
-                  <div key={item.href} className="flex justify-center py-1">
-                    <Link
-                      href={item.href}
-                      title={item.label}
-                      className={`w-[34px] h-[34px] flex items-center justify-center rounded-md transition-all ${
-                        active
-                          ? "bg-white/[0.1] text-white"
-                          : "text-white/40 hover:bg-white/[0.06] hover:text-white/70"
-                      }`}
-                    >
-                      {icon}
-                    </Link>
-                  </div>
-                );
-              }
-
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`block px-5 py-2.5 text-sm cursor-pointer transition-all ${
-                    active
-                      ? "text-white font-semibold bg-white/[0.08] border-l-[3px] border-[#E07B2D]"
-                      : "text-white/60 font-normal border-l-[3px] border-transparent hover:bg-white/[0.04] hover:text-white/85"
-                  }`}
+      <nav className="flex-1 overflow-y-auto py-2">
+        {SECTIONS.map((section) => {
+          const open = openSections.has(section.label);
+          return (
+            <div key={section.label} className="mb-0.5">
+              {!collapsed && (
+                <button
+                  type="button"
+                  onClick={() => toggleSection(section.label)}
+                  className="w-full flex items-center justify-between px-4 py-1.5 text-[10px] font-semibold tracking-[0.08em] text-white/45 hover:text-white/75 transition-colors duration-150"
                 >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
-        ))}
+                  <span>{section.label}</span>
+                  <ChevronDown
+                    className={cn(
+                      "h-3 w-3 transition-transform duration-200",
+                      open ? "rotate-0" : "-rotate-90",
+                    )}
+                    strokeWidth={2}
+                  />
+                </button>
+              )}
+              {(collapsed || open) && (
+                <div className={cn("space-y-px", collapsed ? "" : "px-2")}>
+                  {section.items.map((item) => {
+                    const Icon = item.icon;
+                    const active = isActive(item.href);
+                    if (collapsed) {
+                      return (
+                        <div key={item.href} className="flex justify-center py-0.5">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Link
+                                href={item.href}
+                                aria-label={item.label}
+                                aria-current={active ? "page" : undefined}
+                                className={cn(
+                                  "inline-flex h-9 w-9 items-center justify-center rounded-md transition-colors duration-150",
+                                  active
+                                    ? "bg-white/15 text-white"
+                                    : "text-white/55 hover:bg-white/10 hover:text-white",
+                                )}
+                              >
+                                <Icon className="h-4 w-4" strokeWidth={1.75} />
+                              </Link>
+                            </TooltipTrigger>
+                            <TooltipContent side="right">{item.label}</TooltipContent>
+                          </Tooltip>
+                        </div>
+                      );
+                    }
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        aria-current={active ? "page" : undefined}
+                        className={cn(
+                          "flex items-center gap-2.5 rounded-md px-3 py-1.5 text-[13px] transition-colors duration-150",
+                          active
+                            ? "bg-white/10 text-white font-semibold ring-1 ring-inset ring-accent/40"
+                            : "text-white/70 hover:bg-white/5 hover:text-white",
+                        )}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                        <span className="truncate">{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </nav>
 
-      {/* ── Bottom actions ── */}
-      <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+      <div className={cn("border-t border-white/10", collapsed ? "py-2" : "p-3")}>
         {collapsed ? (
-          <>
-            <div className="flex justify-center py-2">
-              <a
-                href="/"
-                target="_blank"
-                rel="noopener noreferrer"
-                title="View Site"
-                className="w-[34px] h-[34px] flex items-center justify-center rounded-md text-white/40 hover:bg-white/[0.06] hover:text-white/70 transition"
-              >
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14 10v5a1 1 0 01-1 1H3a1 1 0 01-1-1V5a1 1 0 011-1h5"/>
-                  <polyline points="10,2 16,2 16,8"/>
-                  <line x1="16" y1="2" x2="8" y2="10"/>
-                </svg>
-              </a>
-            </div>
-            <div className="flex justify-center pb-3">
-              <button
-                onClick={handleSignOut}
-                title="Sign Out"
-                className="w-[34px] h-[34px] flex items-center justify-center rounded-md text-white/40 hover:bg-white/[0.06] hover:text-white/70 transition cursor-pointer"
-              >
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M7 16H3a1 1 0 01-1-1V3a1 1 0 011-1h4"/>
-                  <polyline points="11,5 16,9 11,13"/>
-                  <line x1="16" y1="9" x2="7" y2="9"/>
-                </svg>
-              </button>
-            </div>
-          </>
+          <div className="flex flex-col items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <a
+                  href="/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="View site"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-white/55 hover:bg-white/10 hover:text-white transition-colors duration-150"
+                >
+                  <ExternalLink className="h-4 w-4" strokeWidth={1.75} />
+                </a>
+              </TooltipTrigger>
+              <TooltipContent side="right">View site</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  aria-label="Sign out"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-white/55 hover:bg-white/10 hover:text-white transition-colors duration-150"
+                >
+                  <LogOut className="h-4 w-4" strokeWidth={1.75} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Sign out</TooltipContent>
+            </Tooltip>
+          </div>
         ) : (
-          <>
+          <div className="flex items-center justify-between gap-2">
             <a
               href="/"
               target="_blank"
               rel="noopener noreferrer"
-              className="block px-5 py-2.5 text-[13px] text-white/55 hover:text-white/85 cursor-pointer transition"
+              className="inline-flex items-center gap-1.5 text-[12px] text-white/65 hover:text-white transition-colors duration-150"
             >
-              View Site
+              <Anchor className="h-3.5 w-3.5" strokeWidth={1.75} />
+              View site
             </a>
             <button
+              type="button"
               onClick={handleSignOut}
-              className="block w-full text-left px-5 py-2.5 text-[13px] text-white/40 hover:text-white/85 cursor-pointer transition"
+              className="inline-flex items-center gap-1.5 text-[12px] text-white/65 hover:text-white transition-colors duration-150"
             >
-              Sign Out
+              <LogOut className="h-3.5 w-3.5" strokeWidth={1.75} />
+              Sign out
             </button>
-          </>
+          </div>
         )}
       </div>
-    </aside>
+    </>
   );
 }
