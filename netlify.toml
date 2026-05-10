@@ -1,10 +1,15 @@
-# Marketing site (existing). Operates from apps/marketing/.
+# Marketing site (existing). npm-workspaces monorepo.
+# Install runs from root so workspaces resolve. Build targets the marketing
+# workspace. Publish points at marketing's .next dir. The @netlify/plugin-nextjs
+# v5 receives packagePath so it knows which workspace to operate on.
 # The ops site has its own Netlify project linked from apps/ops/.
 
 [build]
-  base = "apps/marketing"
-  command = "npm run build"
+  base = "."
+  command = "npm install && npm run build:marketing"
   publish = "apps/marketing/.next"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+  [plugins.inputs]
+    packagePath = "apps/marketing"
