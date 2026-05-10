@@ -52,3 +52,10 @@ firebase-debug.*.log
 /_reports
 /_backups
 *-firebase-admin.json
+
+# Monorepo
+node_modules/
+**/node_modules/
+**/.next/
+**/dist/
+**/.turbo/
