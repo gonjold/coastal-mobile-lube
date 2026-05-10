@@ -2694,3 +2694,78 @@ exports.mirrorInvoiceToDriveCallable = onCall(
     };
   }
 );
+
+// =====================================================================
+// A1 — syncTeamConsistency (scheduled job)
+// Daily reconciliation between users/{uid}.role + team/coastal.members[]
+// =====================================================================
+
+const { onSchedule } = require('firebase-functions/v2/scheduler');
+
+exports.syncTeamConsistency = onSchedule(
+  {
+    schedule: 'every 24 hours',
+    region: 'us-east1',
+    timeZone: 'America/New_York',
+  },
+  async () => {
+    const db = admin.firestore();
+
+    const usersSnap = await db.collection('users').get();
+    const usersByUid = new Map();
+    usersSnap.forEach((doc) => {
+      const data = doc.data();
+      if (data.isActive !== false) {
+        usersByUid.set(doc.id, {
+          uid: doc.id,
+          email: data.email || null,
+          displayName: data.displayName || null,
+          role: data.role || null,
+          isActive: data.isActive !== false,
+        });
+      }
+    });
+
+    const teamRef = db.collection('team').doc('coastal');
+    const teamSnap = await teamRef.get();
+    const currentMembers = (teamSnap.data() && teamSnap.data().members) || [];
+
+    const canonicalMembers = Array.from(usersByUid.values()).map((u) => ({
+      uid: u.uid,
+      email: u.email,
+      displayName: u.displayName,
+      role: u.role,
+      active: u.isActive,
+    }));
+
+    const drift = [];
+    const currentByUid = new Map(currentMembers.map((m) => [m.uid, m]));
+    for (const c of canonicalMembers) {
+      const existing = currentByUid.get(c.uid);
+      if (!existing) drift.push({ uid: c.uid, type: 'missing_from_team' });
+      else if (existing.role !== c.role)
+        drift.push({ uid: c.uid, type: 'role_mismatch', current: existing.role, canonical: c.role });
+      else if (existing.active !== c.active)
+        drift.push({ uid: c.uid, type: 'active_mismatch' });
+    }
+    for (const m of currentMembers) {
+      if (!usersByUid.has(m.uid) && m.active !== false) {
+        drift.push({ uid: m.uid, type: 'orphan_in_team' });
+      }
+    }
+
+    await teamRef.set(
+      {
+        members: canonicalMembers,
+        lastConsistencyCheckAt: admin.firestore.FieldValue.serverTimestamp(),
+        lastConsistencyDrift: drift,
+      },
+      { merge: true }
+    );
+
+    console.log(
+      `syncTeamConsistency: ${canonicalMembers.length} members, ${drift.length} drift entries`
+    );
+    return null;
+  }
+);

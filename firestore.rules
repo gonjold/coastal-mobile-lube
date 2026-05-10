@@ -161,12 +161,6 @@ service cloud.firestore {
       allow write: if false; // Admin SDK only
     }
 
-    // INVOICE DELIVERIES — server-only writes; owner/admin can read.
-    match /invoiceDeliveries/{deliveryId} {
-      allow read: if hasOwnerOrAdminClaim();
-      allow write: if false; // Admin SDK only
-    }
-
     // ASSETS COLLECTION (Phase 1, WO-P1-1C migration target)
     // Owner/admin-claim full access; tech-claim users can read assets linked
     // to jobs they're assigned to (enforced at app layer for now). Server

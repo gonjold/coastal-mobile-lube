@@ -1,0 +1,4 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "@coastal/shared-ui/src/styles/tokens.css";
+@import "@coastal/shared-ui/src/styles/theme.css";

@@ -1,0 +1,12 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[[redirects]]
+  from = "https://coastal-mobile-lube.netlify.app/*"
+  to = "https://coastalmobilelube.com/:splat"
+  status = 301
+  force = true
