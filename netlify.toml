@@ -1,0 +1,10 @@
+# Marketing site (existing). Operates from apps/marketing/.
+# The ops site has its own Netlify project linked from apps/ops/.
+
+[build]
+  base = "apps/marketing"
+  command = "npm run build"
+  publish = "apps/marketing/.next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
