@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Camera, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const CLOUD_NAME = "dgcdcqjrz";
+const CLOUD_NAME = "duy2qmmkh";
 const UPLOAD_PRESET = "coastal_field_photos";
 const UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
 
