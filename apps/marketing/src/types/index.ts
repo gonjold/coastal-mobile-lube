@@ -14,8 +14,6 @@ export type {
 
 export type { CloverPayment } from './clover';
 
-export type { InvoiceDelivery } from './delivery';
-
 export type { Job, ServiceCategory } from './job';
 export { SERVICE_CATEGORIES } from './job';
 
