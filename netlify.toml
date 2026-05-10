@@ -1,0 +1,11 @@
+# Marketing site root config. base = apps/marketing so Netlify finds Next.
+# This file replaces the old root netlify.toml that pointed at the (now moved)
+# src/ tree. Per-branch only — main still has src/ at root and uses no root toml.
+
+[build]
+  base = "apps/marketing"
+  command = "npm install && npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
