@@ -210,7 +210,7 @@ Same pattern. Typed Intuit OAuth + Estimate/Invoice/Payment/CreditMemo wrappers 
 | 12 | `regenerateFdacsInvoicePdf` | onCall | 2323 | Admin-only manual regen for FDACS PDFs. Verifies caller via `users/{uid}.role === 'admin' && isActive`. |
 | 13 | `mirrorInvoiceToDriveOnSent` | Firestore `onDocumentUpdated invoices/{id}` | 2568 | When a `tech_completion` invoice flips to `status === 'sent'`, mirrors PDF to the Coastal Operations Shared Drive. Skips if already mirrored. Runs as `DRIVE_MIRROR_RUNTIME_SA`. 512 MiB / 180 s. |
 | 14 | `mirrorInvoiceToDriveCallable` | onCall | 2627 | Admin-only manual re-mirror entry point. |
-| 15 | `syncTeamConsistency` | onSchedule (NEW in A1) | 2705 | **Daily** at the implicit schedule hour, `every 24 hours`, timezone `America/New_York`. Reads `users/` collection, computes canonical `team/coastal.members[]` from active users, detects drift (`missing_from_team`, `role_mismatch`, `active_mismatch`, `orphan_in_team`), writes back `members + lastConsistencyCheckAt + lastConsistencyDrift`. |
+| 15 | `syncTeamConsistency` | onSchedule (NEW in A1) | 2705 | Schedule: every 24 hours from first invocation. Non-deterministic wall-clock anchor (not pinned to a specific hour). To pin to a specific time, edit `functions/index.js` to use a cron expression (e.g., `'0 9 * * *'` for 9 am ET) and redeploy. Timezone `America/New_York`. Reads `users/` collection, computes canonical `team/coastal.members[]` from active users, detects drift (`missing_from_team`, `role_mismatch`, `active_mismatch`, `orphan_in_team`), writes back `members + lastConsistencyCheckAt + lastConsistencyDrift`. |
 
 ### 6a. Helpers in `functions/lib/`
 - `auth.js` — admin SDK init / role checks for callable functions
@@ -386,9 +386,13 @@ Just `auth/login/route.ts` and `auth/logout/route.ts` so far. Real ops API route
 
 | Role | Accounts |
 |---|---|
-| `owner` | `jon@jgoldco.com`, `info@coastalmobilelube.com`, `coastalmobilelube@gmail.com`, `jonrgold@gmail.com` |
-| `admin_only` | (none currently — legacy `'admin'` users were either promoted to `owner` via the allowlist or remained `admin_only` if they existed; verify with `m-a1-01-audit.ts` for a current snapshot) |
+| `owner` | `jon@jgoldco.com` (Jon Gold), `info@coastalmobilelube.com` (Jason Binder), `coastalmobilelube@gmail.com` (Coastal Mobile Lube & Tire), `jonrgold@gmail.com` (Jon Gold) |
+| `admin_only` | 0 accounts (verified via `m-a1-01-audit.ts` against prod at 2026-05-10T21:52:24Z) |
 | `tech` | `jgoldaht@gmail.com` |
+
+Total accounts: 5. All five are already canonical — `claim=role` matches `users/{uid}.role` for every user. The `m-a1-01-role-canonicalize` migration is a no-op against current prod state; re-running would produce 5 × `SKIP_ALREADY_CANONICAL` with 0 claim writes and 0 doc writes.
+
+Note: `info@coastalmobilelube.com` is bound to **Jason Binder's** Auth account (not a shared mailbox login). Be aware when reasoning about who "owner" actually maps to in operational terms.
 
 Canonical enum: `'owner' | 'admin_only' | 'tech'` (defined in `packages/shared-types/src/role.ts:1`).
 
