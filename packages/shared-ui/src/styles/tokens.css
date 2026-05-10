@@ -1,0 +1,92 @@
+/* Coastal — Light (default) */
+:root,
+:root[data-theme="light"] {
+  --background: 38 30% 98%;
+  --foreground: 220 25% 12%;
+  --muted: 38 18% 94%;
+  --muted-foreground: 220 10% 45%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 25% 12%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 25% 12%;
+  --border: 38 15% 88%;
+  --input: 38 15% 88%;
+  --ring: var(--primary);
+
+  --primary: 220 60% 14%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 23 73% 53%;
+  --accent-foreground: 0 0% 100%;
+  --accent-text: 23 73% 38%;
+  --secondary: 38 18% 94%;
+  --secondary-foreground: 220 25% 12%;
+
+  --destructive: 0 70% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 145 50% 40%;
+  --warning: 35 90% 50%;
+  --info: 210 70% 50%;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius: var(--radius-md);
+
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+  --duration-slow: 250ms;
+  --ease-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.6, 1);
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --shadow-md: 0 2px 8px -2px rgb(0 0 0 / 0.06), 0 1px 3px 0 rgb(0 0 0 / 0.04);
+  --shadow-lg: 0 8px 24px -4px rgb(0 0 0 / 0.08), 0 2px 6px -1px rgb(0 0 0 / 0.05);
+  --shadow-xl: 0 16px 48px -8px rgb(0 0 0 / 0.12), 0 4px 12px -2px rgb(0 0 0 / 0.06);
+}
+
+/* Coastal — Dark (evening / outdoor) */
+:root[data-theme="dark"] {
+  --background: 220 20% 8%;
+  --foreground: 38 15% 95%;
+  --muted: 220 15% 14%;
+  --muted-foreground: 38 10% 65%;
+  --card: 220 20% 11%;
+  --card-foreground: 38 15% 95%;
+  --popover: 220 20% 11%;
+  --popover-foreground: 38 15% 95%;
+  --border: 220 12% 22%;
+  --input: 220 12% 22%;
+  --ring: var(--primary);
+
+  --primary: 220 60% 22%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 23 73% 53%;
+  --accent-foreground: 0 0% 100%;
+  --accent-text: 23 80% 70%;
+  --secondary: 220 15% 14%;
+  --secondary-foreground: 38 15% 95%;
+}
+
+/* Coastal — Vivid (more orange + blue presence) */
+:root[data-theme="vivid"] {
+  --background: 38 30% 98%;
+  --foreground: 220 25% 12%;
+  --muted: 38 18% 94%;
+  --muted-foreground: 220 10% 45%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 25% 12%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 25% 12%;
+  --border: 23 30% 84%;
+  --input: 38 15% 88%;
+  --ring: var(--primary);
+
+  --primary: 215 75% 28%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 23 80% 50%;
+  --accent-foreground: 0 0% 100%;
+  --accent-text: 23 80% 38%;
+  --secondary: 38 25% 92%;
+  --secondary-foreground: 220 25% 12%;
+}
