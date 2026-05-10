@@ -1,67 +1,70 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { Suspense, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Button } from '@coastal/shared-ui';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const searchParams = useSearchParams();
+  const unauthorized = searchParams.get('error') === 'unauthorized';
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleGoogleSignIn() {
     setError(null);
     setPending(true);
     try {
-      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const provider = new GoogleAuthProvider();
+      const cred = await signInWithPopup(auth, provider);
       const idToken = await cred.user.getIdToken();
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idToken }),
       });
-      if (!res.ok) throw new Error('Session mint failed');
+      if (!res.ok) {
+        setError('Could not establish session. Please try again.');
+        return;
+      }
       router.replace('/home');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+    } catch {
+      setError('Sign in failed. Please try again.');
     } finally {
       setPending(false);
     }
   }
 
   return (
+    <div className="w-full max-w-sm space-y-4 p-6 bg-card rounded-lg border">
+      <h1 className="text-xl font-semibold">Coastal Ops</h1>
+      <p className="text-sm text-muted-foreground">Sign in to continue.</p>
+      {unauthorized && (
+        <div className="text-sm text-destructive">
+          Access denied. This account is not authorized.
+        </div>
+      )}
+      {error && <div className="text-sm text-destructive">{error}</div>}
+      <Button
+        type="button"
+        onClick={handleGoogleSignIn}
+        disabled={pending}
+        className="w-full"
+      >
+        {pending ? 'Signing in...' : 'Sign in with Google'}
+      </Button>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
     <div className="min-h-screen flex items-center justify-center px-4">
-      <form onSubmit={onSubmit} className="w-full max-w-sm space-y-4 p-6 bg-card rounded-lg border">
-        <h1 className="text-xl font-semibold">Coastal Ops</h1>
-        <p className="text-sm text-muted-foreground">Sign in to continue.</p>
-        <input
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email"
-          className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm"
-          autoComplete="email"
-        />
-        <input
-          type="password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-          className="w-full px-3 py-2 bg-background border border-input rounded-md text-sm"
-          autoComplete="current-password"
-        />
-        {error && <div className="text-sm text-destructive">{error}</div>}
-        <Button type="submit" disabled={pending} className="w-full">
-          {pending ? 'Signing in...' : 'Sign in'}
-        </Button>
-      </form>
+      <Suspense>
+        <LoginForm />
+      </Suspense>
     </div>
   );
 }
