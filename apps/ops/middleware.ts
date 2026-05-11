@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/auth/logout'];
+// PWA assets — must be publicly accessible for browser SW registration, manifest parsing, and icon fetches during install. Do not gate behind auth.
+const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/auth/logout', '/sw.js', '/manifest.webmanifest', '/icons'];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
