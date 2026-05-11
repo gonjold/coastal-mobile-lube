@@ -59,3 +59,8 @@ node_modules/
 **/.next/
 **/dist/
 **/.turbo/
+
+# A2: Serwist-generated service worker artifacts (source is apps/ops/app/sw.ts)
+apps/ops/public/sw.js
+apps/ops/public/workbox-*.js
+apps/ops/public/swe-worker-*.js
