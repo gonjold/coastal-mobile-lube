@@ -14,17 +14,23 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/users/$(request.auth.uid));
     }
     function isAdmin() {
-      return isSignedIn() && userExists() && userDoc().role == 'admin' && userDoc().isActive == true;
+      return isSignedIn() && userExists() && (userDoc().role == 'admin' || userDoc().role == 'owner') && userDoc().isActive == true;
     }
     function isTech() {
       return isSignedIn() && userExists() && userDoc().role == 'tech' && userDoc().isActive == true;
     }
 
     // === CUSTOM-CLAIM ROLE HELPERS (Phase 1, WO-P1-1A/1B) ===
-    // These read the Firebase Auth custom claim `role` (set by /lib/auth).
-    // They are intentionally namespaced (claim*/has*Claim) to avoid colliding
-    // with the existing user-doc helpers above, which continue to drive the
-    // legacy FDACS-critical access checks for users/bookings/invoices/etc.
+    // Two role systems coexist:
+    //   isAdmin()/isTech() — read user-doc role (Firestore field).
+    //     isAdmin() accepts both 'admin' (legacy) and 'owner'
+    //     (canonical post-m-a1-01). isTech() is exact match.
+    //   hasOwnerClaim()/hasTechClaim()/hasAdminOnlyClaim() —
+    //     read Firebase Auth custom claim. Gates new Phase 1
+    //     collections (team, assets, cloverPayments, _migrations).
+    // Legacy collections (bookings, invoices, customers, qrScans)
+    // remain gated on the user-doc helpers. Full unification
+    // ships in A3's route cutover.
     function claimRole() {
       return request.auth.token.role;
     }
