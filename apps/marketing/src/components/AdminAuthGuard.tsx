@@ -26,7 +26,7 @@ async function resolveAdminAccess(
 
   if (snap.exists()) {
     const data = snap.data();
-    if (data.role === 'admin' && data.isActive === true) return 'admin';
+    if ((data.role === 'admin' || data.role === 'owner') && data.isActive === true) return 'admin';
     if (data.role === 'tech') return 'tech';
     return 'denied';
   }
