@@ -4,3 +4,11 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+# Firebase Auth signInWithPopup needs same-origin-allow-popups to call window.close
+# on the auth popup after the redirect. Applied to all routes — _headers only
+# covers static assets in publish output, not Next.js Lambda-served routes.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cross-Origin-Opener-Policy = "same-origin-allow-popups"
