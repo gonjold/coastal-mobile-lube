@@ -1,6 +1,6 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
+import { Input } from "@coastal/shared-ui";
 import { Label } from "@/components/ui/label";
 import type { AssetType } from "@/types";
 

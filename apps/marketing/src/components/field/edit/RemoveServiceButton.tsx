@@ -11,8 +11,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+} from "@coastal/shared-ui";
+import { Button } from "@coastal/shared-ui";
 
 export function RemoveServiceButton({
   jobId,

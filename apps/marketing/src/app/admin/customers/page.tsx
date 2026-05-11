@@ -19,8 +19,8 @@ import { db } from "@/lib/firebase";
 import EditableCell from "@/components/admin/EditableCell";
 import { getOrCreateCustomerId } from "@/lib/customers/getOrCreateCustomerId";
 import { useAdminModal } from "@/contexts/AdminModalContext";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@coastal/shared-ui";
+import { Input } from "@coastal/shared-ui";
 import { cn } from "@/lib/utils";
 import {
   type Booking,

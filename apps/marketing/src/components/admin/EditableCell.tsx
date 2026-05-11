@@ -9,7 +9,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
+import { Input } from "@coastal/shared-ui";
 import {
   Select,
   SelectContent,

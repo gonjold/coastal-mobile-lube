@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { JobDetail } from "@/lib/jobs/queries";
-import { Button } from "@/components/ui/button";
+import { Button } from "@coastal/shared-ui";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 

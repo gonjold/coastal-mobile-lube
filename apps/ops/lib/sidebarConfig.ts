@@ -1,0 +1,63 @@
+// A3a: route-to-availability mapping. Items marked `available: false` render
+// as disabled in the sidebar with a tooltip indicating which sprint they
+// land in. A3b/A3c flip these to true as features migrate.
+
+import {
+  Home as HomeIcon,
+  Calendar,
+  Wrench,
+  Users,
+  FileText,
+  Receipt,
+  Clock,
+  BarChart3,
+  Settings,
+  type LucideIcon,
+} from 'lucide-react';
+
+export type SidebarItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  available: boolean;
+  availableIn?: string;
+  badge?: string;
+};
+
+export type SidebarSection = {
+  label: string;
+  items: SidebarItem[];
+};
+
+export const SIDEBAR_SECTIONS: SidebarSection[] = [
+  {
+    label: 'Operations',
+    items: [
+      { href: '/home', label: 'Home', icon: HomeIcon, available: true },
+      { href: '/schedule', label: 'Schedule', icon: Calendar, available: false, availableIn: 'A3b' },
+      { href: '/jobs', label: 'Jobs', icon: Wrench, available: false, availableIn: 'A3b' },
+      { href: '/customers', label: 'Customers', icon: Users, available: false, availableIn: 'A3b' },
+    ],
+  },
+  {
+    label: 'Sales',
+    items: [
+      { href: '/estimates', label: 'Estimates', icon: FileText, available: false, availableIn: 'A5' },
+      { href: '/invoices', label: 'Invoices', icon: Receipt, available: false, availableIn: 'A3b' },
+      { href: '/quotes', label: 'Quick Quotes', icon: Clock, available: false, availableIn: 'A5' },
+    ],
+  },
+  {
+    label: 'Insights',
+    items: [
+      { href: '/reports', label: 'Reports', icon: BarChart3, available: false, availableIn: 'A7' },
+    ],
+  },
+  {
+    label: 'Admin',
+    items: [
+      { href: '/team', label: 'Team', icon: Users, available: false, availableIn: 'A3b' },
+      { href: '/settings', label: 'Settings', icon: Settings, available: false, availableIn: 'A4' },
+    ],
+  },
+];

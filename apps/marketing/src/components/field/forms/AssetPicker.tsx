@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Loader2, Car, Anchor, Container as TrailerIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@coastal/shared-ui";
 import { AssetForm, EMPTY_ASSET, type AssetFormValues } from "./AssetForm";
 import type { AssetSummary } from "./types";
 import type { AssetType } from "@/types";

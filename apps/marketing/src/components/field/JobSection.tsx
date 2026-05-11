@@ -3,7 +3,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@coastal/shared-ui";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 

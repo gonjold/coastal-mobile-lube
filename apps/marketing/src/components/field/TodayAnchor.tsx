@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type RefObject } from "react";
 import { Sun } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@coastal/shared-ui";
 
 export function TodayAnchor({
   todayRef,

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { JobDetail } from "@/lib/jobs/queries";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@coastal/shared-ui";
 import { ChevronLeft } from "lucide-react";
 
 const variant = (s: string) => {

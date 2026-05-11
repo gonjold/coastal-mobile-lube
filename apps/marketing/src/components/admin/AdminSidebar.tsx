@@ -35,14 +35,14 @@ import { auth } from "@/lib/firebase";
 import { cn } from "@/lib/utils";
 import { useAdminModal } from "@/contexts/AdminModalContext";
 import { useCommandPalette } from "@/components/admin/CommandPalette";
-import { Button } from "@/components/ui/button";
+import { Button } from "@coastal/shared-ui";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@coastal/shared-ui";
 import {
   Tooltip,
   TooltipContent,

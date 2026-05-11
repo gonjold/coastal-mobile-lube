@@ -6,8 +6,8 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
+} from "@coastal/shared-ui";
+import { Button } from "@coastal/shared-ui";
 import { Briefcase, UserPlus } from "lucide-react";
 
 export function QuickCreate({

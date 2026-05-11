@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ScheduleJob } from "@/lib/jobs/queries";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@coastal/shared-ui";
 import { ChevronRight, MapPin } from "lucide-react";
 
 const statusVariant = (status: string) => {

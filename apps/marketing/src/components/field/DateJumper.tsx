@@ -6,8 +6,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+} from "@coastal/shared-ui";
+import { Button } from "@coastal/shared-ui";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type Props = {

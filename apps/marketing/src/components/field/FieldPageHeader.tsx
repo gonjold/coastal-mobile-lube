@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { CalendarDays } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@coastal/shared-ui";
 
 // position:fixed (not sticky) because iOS Safari's URL-bar reflow during
 // scroll breaks the sticky containing block, dropping the header out of

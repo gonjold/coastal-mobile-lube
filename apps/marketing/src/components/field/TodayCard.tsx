@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ScheduleJob } from "@/lib/jobs/queries";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@coastal/shared-ui";
+import { Badge } from "@coastal/shared-ui";
 import { CheckInButton } from "./CheckInButton";
 import { Phone, MapPin, ChevronRight } from "lucide-react";
 

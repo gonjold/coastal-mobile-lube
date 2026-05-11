@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { JobSection } from "./JobSection";
 import type { JobDetail, JobSignature } from "@/lib/jobs/queries";
-import { Button } from "@/components/ui/button";
+import { Button } from "@coastal/shared-ui";
 import { SignatureCapture } from "./SignatureCapture";
 import { CheckCircle2, Lock } from "lucide-react";
 

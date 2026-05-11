@@ -44,7 +44,7 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from "@/components/ui/command";
+} from "@coastal/shared-ui";
 
 const RECENT_KEY = "admin-cmdk-recent";
 const RECENT_MAX = 5;

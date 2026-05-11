@@ -10,8 +10,8 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
+} from "@coastal/shared-ui";
+import { Button } from "@coastal/shared-ui";
 import {
   CustomerForm,
   validateCustomer,
