@@ -36,7 +36,7 @@ async function resolveAdminAccess(
       uid: user.uid,
       email: user.email,
       displayName: user.displayName || user.email.split('@')[0],
-      role: 'admin',
+      role: 'owner',
       isActive: true,
       createdAt: serverTimestamp(),
       createdBy: 'allowlist-auto',
