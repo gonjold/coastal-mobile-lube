@@ -41,12 +41,18 @@ export async function POST(req: Request) {
     });
 
     const isProd = process.env.NODE_ENV === 'production';
+    // Scope cookie to .coastalmobilelube.com ONLY when the request host is on that apex
+    // (e.g. app.coastalmobilelube.com). On Netlify previews and the coastal-ops.netlify.app
+    // default subdomain, fall back to host-only — the browser rejects any Set-Cookie whose
+    // Domain attribute doesn't match the request host.
+    const host = req.headers.get('host') || '';
+    const onApexDomain = host.endsWith('coastalmobilelube.com');
     const cookieStore = await cookies();
     cookieStore.set('__session', sessionCookie, {
       httpOnly: true,
       secure: isProd,
       sameSite: 'lax',
-      domain: isProd ? '.coastalmobilelube.com' : undefined,
+      domain: isProd && onApexDomain ? '.coastalmobilelube.com' : undefined,
       path: '/',
       maxAge: FIVE_DAYS_SECONDS,
     });
