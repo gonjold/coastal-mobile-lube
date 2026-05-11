@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@source "../../../../packages/shared-ui/src/**/*.{ts,tsx}";
+
 /* ── Tailwind v4 theme tokens ── */
 @theme inline {
   /* Legacy Coastal hex tokens (kept for existing public-site code) */
