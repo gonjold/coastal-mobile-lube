@@ -1,12 +1,23 @@
 'use client';
 
-import { Menu, Search, Bell } from 'lucide-react';
-import { Kbd, Sheet, SheetContent } from '@coastal/shared-ui';
+import { Menu, Search, Bell, Plus } from 'lucide-react';
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  Kbd,
+  Sheet,
+  SheetContent,
+} from '@coastal/shared-ui';
 import { useLayout } from './ClientLayoutProvider';
 import { SidebarContent } from './Sidebar';
+import { useAdminModal } from '@/lib/AdminModalContext';
 
 export function TopBar() {
   const { setPaletteOpen, mobileSidebarOpen, setMobileSidebarOpen } = useLayout();
+  const { openModal } = useAdminModal();
 
   return (
     <div className="h-14 border-b border-border bg-card flex items-center px-4 md:px-6 gap-2 md:gap-4">
@@ -35,6 +46,19 @@ export function TopBar() {
           </Kbd>
         </button>
       </div>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="sm">
+            <Plus className="h-4 w-4 mr-1" /> New
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onSelect={() => openModal('booking')}>New booking</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => openModal('customer')}>New customer</DropdownMenuItem>
+          <DropdownMenuItem disabled>New invoice — A3c</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <button
         type="button"
