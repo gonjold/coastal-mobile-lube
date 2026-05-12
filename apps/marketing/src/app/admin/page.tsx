@@ -15,14 +15,14 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { db } from "@/lib/firebase";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@coastal/shared-ui";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@coastal/shared-ui";
 import { formatCurrency } from "@/lib/formatCurrency";
 import {
   type Booking,

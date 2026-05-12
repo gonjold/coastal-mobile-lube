@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { Button } from "@coastal/shared-ui";
 import { Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
 

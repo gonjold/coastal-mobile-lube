@@ -2,14 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import SignaturePad from "signature_pad";
-import { Button } from "@/components/ui/button";
+import { Button } from "@coastal/shared-ui";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
+} from "@coastal/shared-ui";
 import { Loader2, Eraser } from "lucide-react";
 import { toast } from "sonner";
 

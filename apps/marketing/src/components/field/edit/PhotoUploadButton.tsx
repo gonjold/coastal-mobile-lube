@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Camera, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@coastal/shared-ui";
 
 const CLOUD_NAME = "duy2qmmkh";
 const UPLOAD_PRESET = "coastal_field_photos";

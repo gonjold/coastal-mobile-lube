@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@coastal/shared-ui";
 import { toast } from "sonner";
 import { CustomerCombobox } from "@/components/field/forms/CustomerCombobox";
 import {

@@ -1,6 +1,6 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
+import { Input } from "@coastal/shared-ui";
 import { Label } from "@/components/ui/label";
 
 export type AssetType = "vehicle" | "boat" | "trailer" | "fleet_vehicle";

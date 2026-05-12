@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, X, User as UserIcon, Loader2 } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Input } from "@coastal/shared-ui";
+import { Button } from "@coastal/shared-ui";
 import type { CustomerSummary } from "./types";
 
 function formatPhoneShort(phone: string | null): string {

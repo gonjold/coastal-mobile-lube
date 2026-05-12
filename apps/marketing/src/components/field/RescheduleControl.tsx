@@ -10,8 +10,8 @@ import {
   SheetTitle,
   SheetDescription,
   SheetFooter,
-} from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
+} from "@coastal/shared-ui";
+import { Button } from "@coastal/shared-ui";
 import { toast } from "sonner";
 import {
   ScheduleForm,

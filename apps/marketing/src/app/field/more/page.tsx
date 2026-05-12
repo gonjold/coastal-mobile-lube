@@ -7,7 +7,7 @@ import { Settings, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { auth } from "@/lib/firebase";
-import { Button } from "@/components/ui/button";
+import { Button } from "@coastal/shared-ui";
 
 export default function MorePage() {
   const router = useRouter();

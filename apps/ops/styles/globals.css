@@ -2,3 +2,5 @@
 @import "tw-animate-css";
 @import "@coastal/shared-ui/src/styles/tokens.css";
 @import "@coastal/shared-ui/src/styles/theme.css";
+
+@source "../../../packages/shared-ui/src/**/*.{ts,tsx}";

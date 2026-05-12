@@ -19,8 +19,8 @@ import { ArrowDown, ArrowUp, ChevronsUpDown, Mail, Plus, UserPlus, Users as User
 import { db, auth } from "@/lib/firebase";
 import type { AppUser } from "../shared";
 import EditableCell from "@/components/admin/EditableCell";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@coastal/shared-ui";
+import { Button } from "@coastal/shared-ui";
 import {
   Dialog,
   DialogContent,
@@ -28,8 +28,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+} from "@coastal/shared-ui";
+import { Input } from "@coastal/shared-ui";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 

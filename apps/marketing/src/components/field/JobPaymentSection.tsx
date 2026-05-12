@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { JobSection } from "./JobSection";
 import type { JobDetail } from "@/lib/jobs/queries";
-import { Button } from "@/components/ui/button";
+import { Button } from "@coastal/shared-ui";
 import { Mail, Loader2, FileText } from "lucide-react";
 import { toast } from "sonner";
 
