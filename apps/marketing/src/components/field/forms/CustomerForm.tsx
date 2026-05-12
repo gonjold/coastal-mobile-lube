@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Input } from "@coastal/shared-ui";
-import { Label } from "@/components/ui/label";
+import { Label } from "@coastal/shared-ui";
 
 export type CustomerFormValues = {
   name: string;

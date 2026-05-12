@@ -9,16 +9,15 @@ import {
   type AppUser,
   getServiceLabel,
 } from '@/app/admin/shared';
+import { fmtMoney, fmtRelativeTime } from '@/lib/dashboard-helpers';
 import {
-  fmtMoney,
-  fmtRelativeTime,
   getLongDateLabel,
   getTodayESTISO,
   getWeekBoundsESTISO,
   bookingStartHour,
   formatBookingTimeLabel,
   dateToESTISO,
-} from '@/lib/dashboard-helpers';
+} from '@coastal/shared-ui';
 
 /* ─── Types ─────────────────────────────────────────────── */
 

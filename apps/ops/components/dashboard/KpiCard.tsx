@@ -7,9 +7,12 @@ export type KpiCardProps = {
   value: string;
   delta?: string;
   deltaTone?: 'positive' | 'negative' | 'neutral';
+  /** Optional muted secondary text shown when the primary value is zero
+   * (replaces delta in empty states). */
+  emptyHint?: string;
 };
 
-export function KpiCard({ label, value, delta, deltaTone = 'neutral' }: KpiCardProps) {
+export function KpiCard({ label, value, delta, deltaTone = 'neutral', emptyHint }: KpiCardProps) {
   const deltaClass =
     deltaTone === 'positive'
       ? 'text-emerald-600'
@@ -21,7 +24,11 @@ export function KpiCard({ label, value, delta, deltaTone = 'neutral' }: KpiCardP
     <Card className="gap-1 py-4 px-5">
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="text-2xl font-semibold tracking-tight">{value}</div>
-      {delta && <div className={`text-xs ${deltaClass}`}>{delta}</div>}
+      {emptyHint ? (
+        <div className="text-xs text-muted-foreground">{emptyHint}</div>
+      ) : delta ? (
+        <div className={`text-xs ${deltaClass}`}>{delta}</div>
+      ) : null}
     </Card>
   );
 }

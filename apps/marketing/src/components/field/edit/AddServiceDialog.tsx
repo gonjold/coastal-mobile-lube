@@ -13,7 +13,7 @@ import {
 } from "@coastal/shared-ui";
 import { Button } from "@coastal/shared-ui";
 import { Input } from "@coastal/shared-ui";
-import { Label } from "@/components/ui/label";
+import { Label } from "@coastal/shared-ui";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useServices, type Service } from "@/hooks/useServices";
 import {

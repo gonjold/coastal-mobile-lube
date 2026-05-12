@@ -16,7 +16,7 @@ import {
   Plus,
 } from "lucide-react";
 import { db } from "@/lib/firebase";
-import EditableCell from "@/components/admin/EditableCell";
+import { EditableCell } from "@coastal/shared-ui";
 import { useAdminModal } from "@/contexts/AdminModalContext";
 import { Badge } from "@coastal/shared-ui";
 import { Button } from "@coastal/shared-ui";

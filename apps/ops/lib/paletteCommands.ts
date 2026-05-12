@@ -1,6 +1,3 @@
-// A3a: nav-to-route commands only. Quick actions (New Booking, New Customer,
-// etc.) defer to A3b when the creation modals migrate over.
-
 import { SIDEBAR_SECTIONS } from './sidebarConfig';
 
 export type PaletteCommand = {
@@ -8,6 +5,8 @@ export type PaletteCommand = {
   label: string;
   group: string;
   href?: string;
+  /** Action key consumed by CommandPalette for quick actions that open modals. */
+  action?: 'open-booking-modal' | 'open-customer-modal' | 'open-merge-modal';
   disabled: boolean;
   disabledReason?: string;
 };
@@ -26,5 +25,11 @@ export function getPaletteCommands(): PaletteCommand[] {
       });
     }
   }
+  // Quick actions — wired to AdminModalContext at the CommandPalette consumer.
+  commands.push(
+    { id: 'action-new-booking', label: 'New booking', group: 'Quick actions', action: 'open-booking-modal', disabled: false },
+    { id: 'action-new-customer', label: 'New customer', group: 'Quick actions', action: 'open-customer-modal', disabled: false },
+    { id: 'action-merge-customers', label: 'Merge customers', group: 'Quick actions', action: 'open-merge-modal', disabled: false },
+  );
   return commands;
 }

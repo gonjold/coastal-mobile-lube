@@ -1,7 +1,7 @@
 "use client";
 
 import { Input } from "@coastal/shared-ui";
-import { Label } from "@/components/ui/label";
+import { Label } from "@coastal/shared-ui";
 import { TIME_WINDOW_OPTIONS, type TimeWindowKey } from "./types";
 
 export type ScheduleFormValues = {

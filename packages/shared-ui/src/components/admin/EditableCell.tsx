@@ -8,15 +8,15 @@ import {
   type ReactNode,
 } from "react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import { Input } from "@coastal/shared-ui";
+import { cn } from "../../lib/utils";
+import { Input } from "../ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "../ui/select";
 
 type EditableCellType = "text" | "email" | "tel" | "date" | "select";
 

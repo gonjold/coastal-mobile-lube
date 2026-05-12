@@ -20,7 +20,7 @@ import {
 import {
   bookingStartHour,
   formatBookingTimeLabel,
-} from '@/lib/dashboard-helpers';
+} from '@coastal/shared-ui';
 import FmReturnPathWriter from '@/components/tech/FmReturnPathWriter';
 
 export default function UnassignedBookingsPage() {

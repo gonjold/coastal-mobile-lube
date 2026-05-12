@@ -34,16 +34,16 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
     label: 'Operations',
     items: [
       { href: '/home', label: 'Home', icon: HomeIcon, available: true },
-      { href: '/schedule', label: 'Schedule', icon: Calendar, available: false, availableIn: 'A3b' },
-      { href: '/jobs', label: 'Jobs', icon: Wrench, available: false, availableIn: 'A3b' },
-      { href: '/customers', label: 'Customers', icon: Users, available: false, availableIn: 'A3b' },
+      { href: '/schedule', label: 'Schedule', icon: Calendar, available: true },
+      { href: '/jobs', label: 'Jobs', icon: Wrench, available: true },
+      { href: '/customers', label: 'Customers', icon: Users, available: true },
     ],
   },
   {
     label: 'Sales',
     items: [
       { href: '/estimates', label: 'Estimates', icon: FileText, available: false, availableIn: 'A5' },
-      { href: '/invoices', label: 'Invoices', icon: Receipt, available: false, availableIn: 'A3b' },
+      { href: '/invoices', label: 'Invoices', icon: Receipt, available: true },
       { href: '/quotes', label: 'Quick Quotes', icon: Clock, available: false, availableIn: 'A5' },
     ],
   },
@@ -56,7 +56,7 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
   {
     label: 'Admin',
     items: [
-      { href: '/team', label: 'Team', icon: Users, available: false, availableIn: 'A3b' },
+      { href: '/team', label: 'Team', icon: Users, available: true },
       { href: '/settings', label: 'Settings', icon: Settings, available: false, availableIn: 'A4' },
     ],
   },

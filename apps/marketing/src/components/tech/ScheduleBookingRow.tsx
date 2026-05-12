@@ -6,7 +6,7 @@ import { getServiceLabel } from '@/app/admin/shared';
 import {
   fmtBookingDate,
   formatBookingTimeLabel,
-} from '@/lib/dashboard-helpers';
+} from '@coastal/shared-ui';
 import { getBookingDivision } from '@/lib/schedule-filters';
 
 interface Props {
