@@ -24,6 +24,7 @@ import {
 import { db } from '@/lib/firebase';
 import type { BookingDoc } from '@/lib/queries/bookings';
 import type { Invoice } from '@coastal/shared-types';
+import { getAsset, updateAsset, type Asset } from '@/lib/assets';
 
 const STATUS_OPTIONS = ['pending', 'confirmed', 'in-progress', 'completed', 'cancelled', 'dead', 'new-lead'];
 
@@ -66,6 +67,7 @@ export default function JobDetailPage() {
   const id = params.id;
   const [booking, setBooking] = useState<BookingDoc | null>(null);
   const [invoice, setInvoice] = useState<(Invoice & { id: string }) | null>(null);
+  const [linkedAsset, setLinkedAsset] = useState<Asset | null>(null);
   const [techOptions, setTechOptions] = useState<{ uid: string; displayName: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
@@ -94,6 +96,14 @@ export default function JobDetailPage() {
           }
         }
 
+        const assetId = (b as { assetId?: string }).assetId;
+        if (assetId) {
+          const a = await getAsset(assetId);
+          if (!cancelled) setLinkedAsset(a);
+        } else if (!cancelled) {
+          setLinkedAsset(null);
+        }
+
         const techSnap = await getDocs(query(collection(db, 'users'), where('role', 'in', ['tech', 'owner'])));
         if (cancelled) return;
         setTechOptions(
@@ -115,9 +125,10 @@ export default function JobDetailPage() {
   const customerId = (booking as { customerId?: string }).customerId;
 
   async function save() {
-    if (!form) return;
+    if (!form || !booking) return;
     setSaving(true);
     try {
+      const oldStatus = booking.status;
       await updateDoc(doc(db, 'bookings', id), {
         confirmedDate: form.confirmedDate,
         timeWindow: form.timeWindow,
@@ -132,6 +143,31 @@ export default function JobDetailPage() {
         vin: form.vin,
         updatedAt: serverTimestamp(),
       });
+
+      /* Mileage propagation on transition to completed (Decision 1).
+         No backfill — Asset.mileage catches up naturally as jobs complete.
+         Reads odometerOut from the booking doc (Phase B-flat or vehicleInfo). */
+      const becomingCompleted = form.status === 'completed' && oldStatus !== 'completed';
+      const assetId = (booking as { assetId?: string }).assetId;
+      if (becomingCompleted && assetId) {
+        const odoOut =
+          (booking as { odometerOut?: number | null }).odometerOut ??
+          (booking as { vehicleInfo?: { odometerOut?: number | null } }).vehicleInfo?.odometerOut;
+        if (typeof odoOut === 'number' && odoOut > 0) {
+          try {
+            await updateAsset(assetId, {
+              mileage: odoOut,
+              lastServicedAt: new Date().toISOString(),
+            });
+          } catch (err) {
+            // Don't fail the save — the booking status update already landed.
+            toast.error('Mileage propagation failed', {
+              description: err instanceof Error ? err.message : 'Unknown error',
+            });
+          }
+        }
+      }
+
       toast.success('Saved');
       setEditing(false);
       setRefreshKey(k => k + 1);
@@ -191,6 +227,13 @@ export default function JobDetailPage() {
 
           <Card className="p-5 gap-3">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Vehicle</h2>
+            {!editing && linkedAsset?.mileage != null && (
+              <div className="text-sm text-muted-foreground">
+                Last known mileage: {linkedAsset.mileage.toLocaleString()} mi
+                {linkedAsset.lastServicedAt &&
+                  ` as of ${new Date(linkedAsset.lastServicedAt).toLocaleDateString()}`}
+              </div>
+            )}
             {editing ? (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <Field label="Year"><Input value={form.vehicleYear} onChange={e => setForm({ ...form, vehicleYear: e.target.value })} /></Field>
@@ -199,7 +242,12 @@ export default function JobDetailPage() {
                 <Field label="VIN"><Input value={form.vin} onChange={e => setForm({ ...form, vin: e.target.value })} /></Field>
               </div>
             ) : (
-              <div className="text-sm">{formatBookingVehicle(booking) || '—'}</div>
+              <>
+                <div className="text-sm">{formatBookingVehicle(booking) || '—'}</div>
+                {form.vin && (
+                  <div className="text-xs text-muted-foreground">VIN: {form.vin}</div>
+                )}
+              </>
             )}
           </Card>
 
