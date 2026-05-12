@@ -28,21 +28,7 @@ import {
   type Booking,
   toISODate,
 } from "./shared";
-
-type Invoice = {
-  id: string;
-  invoiceNumber: string;
-  customerName: string;
-  total: number;
-  status: string;
-  invoiceDate?: string;
-  dueDate?: string;
-  qbPaymentLink?: string;
-  qboFinalizeStatus?: string;
-  deleted?: boolean;
-  isTest?: boolean;
-  createdAt?: { toDate: () => Date };
-};
+import type { Invoice } from "@coastal/shared-types";
 
 function statusBadgeClass(s: string): string {
   if (s === "completed" || s === "invoiced" || s === "paid")
