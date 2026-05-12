@@ -1,11 +1,14 @@
 import { collection, getDocs, query, where, orderBy, limit as fbLimit, type QuerySnapshot, type DocumentData } from "firebase/firestore";
 import { db } from "../firebase";
 import { getCurrentWeekRange, getTodayESTISO } from "@coastal/shared-ui";
+import type { BookingShape } from "@coastal/shared-types";
 
-/** Minimal shape consumers read from the dashboard panels and KPIs. Full
- * Booking type lives in apps/marketing/src/app/admin/shared.ts; A3c
- * canonicalizes it into shared-types. */
-export interface BookingDoc {
+/** Minimal shape consumers read from the dashboard panels and KPIs. Extends
+ * shared-types BookingShape so the field-mapping helpers (formatBookingVehicle,
+ * getBookingCustomerName, etc.) accept BookingDoc directly. Full Booking type
+ * lives in apps/marketing/src/app/admin/shared.ts; A3c canonicalizes it into
+ * shared-types. */
+export interface BookingDoc extends BookingShape {
   id: string;
   status?: string;
   confirmedDate?: string;
@@ -17,8 +20,6 @@ export interface BookingDoc {
   customerEstimateSentAt?: { toDate: () => Date };
   createdAt?: { toDate: () => Date };
   assignedTechId?: string | null;
-  // Allow consumers to read additional fields without re-typing each one.
-  [key: string]: unknown;
 }
 
 const ACTIVE_WEEK_STATUSES = new Set(["confirmed", "in-progress", "completed"]);
