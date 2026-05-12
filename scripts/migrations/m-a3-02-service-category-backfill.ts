@@ -21,6 +21,7 @@ function canonicalize(raw: unknown): string | null {
 
 interface BookingDoc {
   serviceCategory?: unknown;
+  division?: unknown;
   selectedServices?: Array<{ category?: unknown; id?: unknown }>;
   vesselMake?: unknown;
   vesselYear?: unknown;
@@ -29,9 +30,17 @@ interface BookingDoc {
 }
 
 /** Derive a category from booking signals if serviceCategory is missing.
- * Order: selectedServices[0].category -> marine signal -> fleet signal ->
- * RV signal -> 'auto' as last-resort default. */
+ * Order: division (canonical source) -> selectedServices[0].category ->
+ * marine signal -> fleet signal -> RV signal -> 'auto' as last-resort default.
+ *
+ * Why division first: the 2026-05-12 prod inspection showed all 18 backfill
+ * candidates carry a canonical division ('auto' or 'rv'), while
+ * selectedServices[0].category holds user-facing labels like 'Tires & Wheels'
+ * or 'RV Oil Changes' that don't match the canonical enum. Without
+ * division-first, an RV booking would miscategorize as 'auto'. */
 function deriveCategory(b: BookingDoc): string | null {
+  const fromDivision = canonicalize(b.division);
+  if (fromDivision) return fromDivision;
   const fromSelected = b.selectedServices && b.selectedServices.length > 0
     ? canonicalize(b.selectedServices[0].category)
     : null;
@@ -45,10 +54,11 @@ function deriveCategory(b: BookingDoc): string | null {
 const migration = {
   id: 'm-a3-02-service-category-backfill',
   description:
-    'Backfill bookings.serviceCategory when missing. Derives from ' +
-    'selectedServices[0].category, falling back to vesselMake/fleetSize/rvType ' +
-    "signals, then 'auto' as last resort. Idempotent — re-running on a " +
-    'backfilled doc is a no-op.',
+    'Backfill bookings.serviceCategory when missing. Derives from division ' +
+    'first (canonical source per 2026-05-12 prod inspection), then from ' +
+    'selectedServices[0].category, then marine/fleet/RV signals, then ' +
+    "'auto' as last resort. Idempotent — re-running on a backfilled doc " +
+    'is a no-op.',
   async run(db: Firestore) {
     const result = {
       scanned: 0,
