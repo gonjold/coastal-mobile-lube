@@ -10,7 +10,7 @@ import type { AppUser, Booking } from '@/app/admin/shared';
 import { ScheduleFilters } from '@/components/tech/ScheduleFilters';
 import { ScheduleBookingRow } from '@/components/tech/ScheduleBookingRow';
 import FmReturnPathWriter from '@/components/tech/FmReturnPathWriter';
-import { bookingStartHour } from '@/lib/dashboard-helpers';
+import { bookingStartHour } from '@coastal/shared-ui';
 import {
   applyDivisionFilter,
   applySearchFilter,

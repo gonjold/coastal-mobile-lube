@@ -7,7 +7,7 @@ import type { Booking } from '@/app/admin/shared';
 import {
   getTodayESTISO,
   getWeekBoundsESTISO,
-} from '@/lib/dashboard-helpers';
+} from '@coastal/shared-ui';
 
 export type TimeFilter = 'today' | 'week' | 'month' | 'all';
 export type StatusFilter = 'all' | 'active' | 'completed' | 'cancelled';
