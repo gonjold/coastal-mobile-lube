@@ -12,6 +12,7 @@ import { CommandPalette } from '@/components/layout/CommandPalette';
 import { AdminModalProvider } from '@/lib/AdminModalContext';
 import { NewBookingModal } from '@/components/modals/NewBookingModal';
 import { NewCustomerModal } from '@/components/modals/NewCustomerModal';
+import { NewInvoiceModal } from '@/components/modals/NewInvoiceModal';
 import { CustomerMergeModal } from '@/components/modals/CustomerMergeModal';
 import { FixInvoiceDialog } from '@/components/modals/FixInvoiceDialog';
 
@@ -33,6 +34,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <UpdateToast />
           <NewBookingModal />
           <NewCustomerModal />
+          <NewInvoiceModal />
           <CustomerMergeModal />
           <FixInvoiceDialog />
           <Toaster position="bottom-right" />

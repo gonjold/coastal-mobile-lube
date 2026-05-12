@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 
-export type ModalName = 'booking' | 'customer' | 'merge' | 'fix-invoice' | null;
+export type ModalName = 'booking' | 'customer' | 'merge' | 'fix-invoice' | 'invoice' | null;
 
 export interface ModalPrefill {
   customer?: {
