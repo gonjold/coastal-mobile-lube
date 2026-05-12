@@ -16,7 +16,7 @@ import {
   Users as UsersIcon,
 } from "lucide-react";
 import { db } from "@/lib/firebase";
-import EditableCell from "@/components/admin/EditableCell";
+import { EditableCell } from "@coastal/shared-ui";
 import { getOrCreateCustomerId } from "@/lib/customers/getOrCreateCustomerId";
 import { useAdminModal } from "@/contexts/AdminModalContext";
 import { Button } from "@coastal/shared-ui";

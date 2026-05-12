@@ -41,14 +41,14 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@coastal/shared-ui";
 import { Sheet, SheetContent, SheetTitle } from "@coastal/shared-ui";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@coastal/shared-ui";
 
 type NavItem = {
   label: string;

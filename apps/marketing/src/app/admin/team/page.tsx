@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import { ArrowDown, ArrowUp, ChevronsUpDown, Mail, Plus, UserPlus, Users as UsersIcon } from "lucide-react";
 import { db, auth } from "@/lib/firebase";
 import type { AppUser } from "../shared";
-import EditableCell from "@/components/admin/EditableCell";
+import { EditableCell } from "@coastal/shared-ui";
 import { Badge } from "@coastal/shared-ui";
 import { Button } from "@coastal/shared-ui";
 import {
@@ -30,7 +30,7 @@ import {
   DialogTitle,
 } from "@coastal/shared-ui";
 import { Input } from "@coastal/shared-ui";
-import { Label } from "@/components/ui/label";
+import { Label } from "@coastal/shared-ui";
 import { cn } from "@/lib/utils";
 
 type SortKey = "name" | "email" | "role" | "active";

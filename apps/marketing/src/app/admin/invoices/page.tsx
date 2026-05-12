@@ -18,7 +18,7 @@ import {
   Receipt,
 } from "lucide-react";
 import { db } from "@/lib/firebase";
-import EditableCell from "@/components/admin/EditableCell";
+import { EditableCell } from "@coastal/shared-ui";
 import FixInvoiceDialog, {
   type ErroredInvoice,
 } from "@/components/admin/FixInvoiceDialog";
