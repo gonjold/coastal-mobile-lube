@@ -1,11 +1,18 @@
-# Marketing site root config. base = apps/marketing so Netlify finds Next.
-# This file replaces the old root netlify.toml that pointed at the (now moved)
-# src/ tree. Per-branch only — main still has src/ at root and uses no root toml.
+# Marketing site Netlify config. Build runs from the repo root so npm install
+# sees the workspaces declaration in root package.json and symlinks
+# packages/shared-ui into apps/marketing/node_modules/@coastal/shared-ui.
+# Previously base was set to apps/marketing, which scoped install too narrowly
+# and broke @coastal/shared-ui resolution starting with A3a.
 
 [build]
-  base = "apps/marketing"
-  command = "npm install && npm run build"
-  publish = ".next"
+  command = "npm install && npm run build:marketing"
+  publish = "apps/marketing/.next"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+[[redirects]]
+  from = "https://coastal-mobile-lube.netlify.app/*"
+  to = "https://coastalmobilelube.com/:splat"
+  status = 301
+  force = true
