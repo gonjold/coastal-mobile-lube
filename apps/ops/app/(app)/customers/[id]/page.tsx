@@ -1,15 +1,16 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, X, Edit3 } from 'lucide-react';
 import { doc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { Button, Card, Input } from '@coastal/shared-ui';
-import { formatBookingVehicle, formatBookingService } from '@coastal/shared-types';
+import { formatBookingService } from '@coastal/shared-types';
 import { db } from '@/lib/firebase';
 import { fetchCustomerDetail } from '@/lib/queries/customers';
+import { VehiclesEditor } from '@/components/customers/VehiclesEditor';
 
 interface FormState {
   name: string;
@@ -60,19 +61,6 @@ export default function CustomerDetailPage() {
       });
     return () => { cancelled = true; };
   }, [id, refreshKey]);
-
-  const vehicles = useMemo(() => {
-    if (!data?.bookings) return [];
-    const seen = new Set<string>();
-    const out: { label: string; bookingId: string }[] = [];
-    for (const b of data.bookings) {
-      const label = formatBookingVehicle(b);
-      if (!label || seen.has(label)) continue;
-      seen.add(label);
-      out.push({ label, bookingId: b.id });
-    }
-    return out;
-  }, [data]);
 
   if (error) return <div className="px-6 py-8 text-red-700">{error}</div>;
   if (!data) return <div className="px-6 py-8 text-muted-foreground">Loading…</div>;
@@ -181,24 +169,7 @@ export default function CustomerDetailPage() {
             )}
           </Card>
 
-          <Card className="p-5 gap-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              Vehicles ({vehicles.length})
-            </h2>
-            {vehicles.length === 0 ? (
-              <div className="text-sm text-muted-foreground">No vehicles associated yet.</div>
-            ) : (
-              <ul className="text-sm divide-y divide-border">
-                {vehicles.map(v => (
-                  <li key={v.bookingId} className="py-2">
-                    <Link href={`/jobs/${v.bookingId}`} className="hover:underline">
-                      {v.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
+          <VehiclesEditor customerId={id} />
 
           <Card className="p-5 gap-3">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
