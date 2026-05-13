@@ -216,6 +216,7 @@ export function NewBookingModal() {
   const [newCustEmail, setNewCustEmail] = useState('');
   const [newCustAddress, setNewCustAddress] = useState('');
   const [selectedServices, setSelectedServices] = useState<Service[]>([]);
+  const [showServiceDropdown, setShowServiceDropdown] = useState(false);
   /* Vehicle state */
   const [vinInput, setVinInput] = useState('');
   const [vinStatus, setVinStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -258,6 +259,7 @@ export function NewBookingModal() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const { services } = useServices();
   const customerRef = useRef<HTMLDivElement>(null);
+  const serviceRef = useRef<HTMLDivElement>(null);
 
   /* Load fee config from Firestore */
   useEffect(() => {
@@ -317,7 +319,7 @@ export function NewBookingModal() {
       .slice(0, 6);
   }, [customerQuery, customers]);
 
-  /* Close customer dropdown on outside click */
+  /* Close dropdowns on outside click */
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (
@@ -325,6 +327,12 @@ export function NewBookingModal() {
         !customerRef.current.contains(e.target as Node)
       ) {
         setShowCustomerDropdown(false);
+      }
+      if (
+        serviceRef.current &&
+        !serviceRef.current.contains(e.target as Node)
+      ) {
+        setShowServiceDropdown(false);
       }
     }
     document.addEventListener('mousedown', handleClick);
@@ -933,11 +941,17 @@ export function NewBookingModal() {
               </div>
             )}
 
-            <Command className="border border-gray-200 rounded-lg bg-white">
-              <CommandInput placeholder="Search services..." />
-              <CommandList className="max-h-[260px]">
-                <CommandEmpty>No services match.</CommandEmpty>
-                {DIVISIONS.map((div) => {
+            <div ref={serviceRef} className="relative">
+              <Command className="border border-gray-200 rounded-lg bg-white overflow-visible [&_[data-slot=command-input-wrapper]]:border-b-0">
+                <CommandInput
+                  placeholder="Search services..."
+                  onFocus={() => setShowServiceDropdown(true)}
+                  onValueChange={() => setShowServiceDropdown(true)}
+                />
+                {showServiceDropdown && (
+                  <CommandList className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-[260px]">
+                    <CommandEmpty>No services match.</CommandEmpty>
+                    {DIVISIONS.map((div) => {
                   const divServices = servicesByDivision[div];
                   if (!divServices?.length) return null;
 
@@ -999,8 +1013,10 @@ export function NewBookingModal() {
                     </CommandGroup>
                   );
                 })}
-              </CommandList>
-            </Command>
+                  </CommandList>
+                )}
+              </Command>
+            </div>
           </div>
 
           {/* ── Date + Time row ── */}
