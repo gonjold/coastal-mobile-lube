@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, X, Edit3 } from 'lucide-react';
@@ -15,7 +15,18 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { toast } from 'sonner';
-import { Badge, Button, Card, Input } from '@coastal/shared-ui';
+import {
+  Badge,
+  Button,
+  Card,
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  Input,
+} from '@coastal/shared-ui';
 import {
   formatBookingService,
   formatBookingVehicle,
@@ -24,8 +35,12 @@ import {
 import { db } from '@/lib/firebase';
 import type { BookingDoc } from '@/lib/queries/bookings';
 import type { Invoice } from '@coastal/shared-types';
+import { getAsset, updateAsset, type Asset } from '@/lib/assets';
+import { useServices, type Service } from '@/hooks/useServices';
+import { getFuelCategory } from '@/lib/vehicleApi';
 
 const STATUS_OPTIONS = ['pending', 'confirmed', 'in-progress', 'completed', 'cancelled', 'dead', 'new-lead'];
+const DIVISIONS = ['Auto', 'Marine', 'Fleet', 'RV'];
 
 interface FormState {
   confirmedDate: string;
@@ -39,9 +54,11 @@ interface FormState {
   vehicleMake: string;
   vehicleModel: string;
   vin: string;
+  selectedServices: Service[];
 }
 
 function bookingToForm(b: BookingDoc): FormState {
+  const stored = (b as { selectedServices?: Service[] }).selectedServices;
   return {
     confirmedDate: b.confirmedDate || (b as { preferredDate?: string }).preferredDate || '',
     timeWindow: b.timeWindow || '',
@@ -54,6 +71,7 @@ function bookingToForm(b: BookingDoc): FormState {
     vehicleMake: b.vehicleMake || '',
     vehicleModel: b.vehicleModel || '',
     vin: (b as { vin?: string }).vin || '',
+    selectedServices: stored ?? [],
   };
 }
 
@@ -66,12 +84,37 @@ export default function JobDetailPage() {
   const id = params.id;
   const [booking, setBooking] = useState<BookingDoc | null>(null);
   const [invoice, setInvoice] = useState<(Invoice & { id: string }) | null>(null);
+  const [linkedAsset, setLinkedAsset] = useState<Asset | null>(null);
   const [techOptions, setTechOptions] = useState<{ uid: string; displayName: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [showServiceDropdown, setShowServiceDropdown] = useState(false);
+  const serviceRef = useRef<HTMLDivElement>(null);
+  const { services } = useServices();
+
+  const servicesByDivision = useMemo(() => {
+    const groups: Record<string, Service[]> = {};
+    services.forEach((s) => {
+      if (!s.isActive) return;
+      const div = (s.division || 'auto').charAt(0).toUpperCase() + (s.division || 'auto').slice(1);
+      if (!groups[div]) groups[div] = [];
+      groups[div].push(s);
+    });
+    return groups;
+  }, [services]);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (serviceRef.current && !serviceRef.current.contains(e.target as Node)) {
+        setShowServiceDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -94,6 +137,14 @@ export default function JobDetailPage() {
           }
         }
 
+        const assetId = (b as { assetId?: string }).assetId;
+        if (assetId) {
+          const a = await getAsset(assetId);
+          if (!cancelled) setLinkedAsset(a);
+        } else if (!cancelled) {
+          setLinkedAsset(null);
+        }
+
         const techSnap = await getDocs(query(collection(db, 'users'), where('role', 'in', ['tech', 'owner'])));
         if (cancelled) return;
         setTechOptions(
@@ -113,12 +164,47 @@ export default function JobDetailPage() {
   if (!booking || !form) return <div className="px-6 py-8 text-muted-foreground">Loading…</div>;
 
   const customerId = (booking as { customerId?: string }).customerId;
+  const fuelCategory = getFuelCategory((booking as { fuelType?: string }).fuelType || '');
+
+  function toggleService(service: Service) {
+    if (!form) return;
+    const isPicked = form.selectedServices.some((s) => s.id === service.id);
+    setForm({
+      ...form,
+      selectedServices: isPicked
+        ? form.selectedServices.filter((s) => s.id !== service.id)
+        : [...form.selectedServices, service],
+    });
+  }
+
+  function removeService(id: string) {
+    if (!form) return;
+    setForm({
+      ...form,
+      selectedServices: form.selectedServices.filter((s) => s.id !== id),
+    });
+  }
 
   async function save() {
-    if (!form) return;
+    if (!form || !booking) return;
     setSaving(true);
     try {
-      await updateDoc(doc(db, 'bookings', id), {
+      const oldStatus = booking.status;
+      /* Recompute totalEstimate from form services + booking's denormalized
+         convenienceFee. Skip the mutation once an invoice exists — the
+         invoice doc is canonical for billing from that point. */
+      const hasInvoice =
+        !!booking.invoiceId ||
+        !!(booking as { qbInvoiceId?: string }).qbInvoiceId;
+      const servicesTotal = form.selectedServices.reduce(
+        (sum, s) => sum + (s.price || 0),
+        0,
+      );
+      const fee = (booking as { convenienceFee?: { amount?: number; waived?: boolean } }).convenienceFee;
+      const feeAmount = fee?.waived ? 0 : fee?.amount || 0;
+      const recomputedTotalEstimate = servicesTotal + feeAmount;
+
+      const payload: Record<string, unknown> = {
         confirmedDate: form.confirmedDate,
         timeWindow: form.timeWindow,
         confirmedArrivalWindow: form.confirmedArrivalWindow,
@@ -130,8 +216,43 @@ export default function JobDetailPage() {
         vehicleMake: form.vehicleMake,
         vehicleModel: form.vehicleModel,
         vin: form.vin,
+        selectedServices: form.selectedServices.map((s) => ({
+          id: s.id,
+          name: s.name,
+          price: s.price,
+          category: s.category,
+        })),
         updatedAt: serverTimestamp(),
-      });
+      };
+      if (!hasInvoice) {
+        payload.totalEstimate = recomputedTotalEstimate;
+      }
+      await updateDoc(doc(db, 'bookings', id), payload);
+
+      /* Mileage propagation on transition to completed (Decision 1).
+         No backfill — Asset.mileage catches up naturally as jobs complete.
+         Reads odometerOut from the booking doc (Phase B-flat or vehicleInfo). */
+      const becomingCompleted = form.status === 'completed' && oldStatus !== 'completed';
+      const assetId = (booking as { assetId?: string }).assetId;
+      if (becomingCompleted && assetId) {
+        const odoOut =
+          (booking as { odometerOut?: number | null }).odometerOut ??
+          (booking as { vehicleInfo?: { odometerOut?: number | null } }).vehicleInfo?.odometerOut;
+        if (typeof odoOut === 'number' && odoOut > 0) {
+          try {
+            await updateAsset(assetId, {
+              mileage: odoOut,
+              lastServicedAt: new Date().toISOString(),
+            });
+          } catch (err) {
+            // Don't fail the save — the booking status update already landed.
+            toast.error('Mileage propagation failed', {
+              description: err instanceof Error ? err.message : 'Unknown error',
+            });
+          }
+        }
+      }
+
       toast.success('Saved');
       setEditing(false);
       setRefreshKey(k => k + 1);
@@ -191,6 +312,13 @@ export default function JobDetailPage() {
 
           <Card className="p-5 gap-3">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Vehicle</h2>
+            {!editing && linkedAsset?.mileage != null && (
+              <div className="text-sm text-muted-foreground">
+                Last known mileage: {linkedAsset.mileage.toLocaleString()} mi
+                {linkedAsset.lastServicedAt &&
+                  ` as of ${new Date(linkedAsset.lastServicedAt).toLocaleDateString()}`}
+              </div>
+            )}
             {editing ? (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <Field label="Year"><Input value={form.vehicleYear} onChange={e => setForm({ ...form, vehicleYear: e.target.value })} /></Field>
@@ -199,13 +327,115 @@ export default function JobDetailPage() {
                 <Field label="VIN"><Input value={form.vin} onChange={e => setForm({ ...form, vin: e.target.value })} /></Field>
               </div>
             ) : (
-              <div className="text-sm">{formatBookingVehicle(booking) || '—'}</div>
+              <>
+                <div className="text-sm">{formatBookingVehicle(booking) || '—'}</div>
+                {form.vin && (
+                  <div className="text-xs text-muted-foreground">VIN: {form.vin}</div>
+                )}
+              </>
             )}
           </Card>
 
           <Card className="p-5 gap-3">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Services</h2>
-            {booking.selectedServices && booking.selectedServices.length > 0 ? (
+            {editing ? (
+              <>
+                {form.selectedServices.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {form.selectedServices.map((s) => (
+                      <span
+                        key={s.id}
+                        className="inline-flex items-center gap-1 bg-[#F0F7FF] text-[#1A5FAC] text-xs font-medium px-2.5 py-1.5 rounded-md"
+                      >
+                        {s.name}{' '}
+                        <span className="text-[#1A5FAC]/60">
+                          {typeof s.price === 'number' ? `$${s.price}` : '—'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeService(s.id)}
+                          className="text-[#1A5FAC] hover:text-red-500 cursor-pointer ml-0.5"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div ref={serviceRef} className="relative">
+                  <Command className="border border-gray-200 rounded-lg bg-white overflow-visible [&_[data-slot=command-input-wrapper]]:border-b-0">
+                    <CommandInput
+                      placeholder="Search services..."
+                      onFocus={() => setShowServiceDropdown(true)}
+                      onValueChange={() => setShowServiceDropdown(true)}
+                    />
+                    {showServiceDropdown && (
+                      <CommandList className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-[260px]">
+                        <CommandEmpty>No services match.</CommandEmpty>
+                        {DIVISIONS.map((div) => {
+                          const divServices = servicesByDivision[div];
+                          if (!divServices?.length) return null;
+
+                          /* Annotate and sort services based on fuelCategory */
+                          const annotated = divServices.map((s) => {
+                            const name = s.name.toLowerCase();
+                            const isDieselService = name.includes('diesel');
+                            const isOilChange = name.includes('oil change') || name.includes('oil service');
+                            let annotation = '';
+                            let dimmed = false;
+
+                            if (fuelCategory === 'diesel') {
+                              if (isDieselService) annotation = 'Recommended for diesel';
+                            } else if (fuelCategory === 'electric') {
+                              if (isOilChange || isDieselService) { annotation = 'Not compatible'; dimmed = true; }
+                            } else if (fuelCategory === 'hybrid') {
+                              if (isDieselService) { annotation = 'Not compatible'; dimmed = true; }
+                            } else {
+                              if (isDieselService) { annotation = 'Diesel vehicles only'; dimmed = true; }
+                            }
+                            return { service: s, annotation, dimmed };
+                          });
+                          annotated.sort((a, b) => (a.dimmed === b.dimmed ? 0 : a.dimmed ? 1 : -1));
+
+                          const heading = div === 'Auto' ? 'Automotive' : div;
+                          return (
+                            <CommandGroup key={div} heading={heading}>
+                              {annotated.map(({ service: s, annotation, dimmed }) => {
+                                const isSelected = form.selectedServices.some((sel) => sel.id === s.id);
+                                return (
+                                  <CommandItem
+                                    key={s.id}
+                                    value={`${heading} ${s.name} ${s.category}`}
+                                    onSelect={() => toggleService(s)}
+                                    className={
+                                      isSelected
+                                        ? 'bg-[#EBF4FF] text-[#1A5FAC] font-medium'
+                                        : dimmed
+                                          ? 'text-gray-400'
+                                          : ''
+                                    }
+                                  >
+                                    <span className="flex-1">{s.name}</span>
+                                    {annotation && (
+                                      <span className={`ml-2 text-[10px] font-semibold ${dimmed ? 'text-gray-400' : 'text-green-600'}`}>
+                                        {annotation}
+                                      </span>
+                                    )}
+                                    <span className="ml-2 text-gray-500">
+                                      ${s.price}
+                                    </span>
+                                  </CommandItem>
+                                );
+                              })}
+                            </CommandGroup>
+                          );
+                        })}
+                      </CommandList>
+                    )}
+                  </Command>
+                </div>
+              </>
+            ) : booking.selectedServices && booking.selectedServices.length > 0 ? (
               <ul className="text-sm divide-y divide-border">
                 {booking.selectedServices.map((s, i) => (
                   <li key={i} className="py-2 flex justify-between gap-3">

@@ -56,7 +56,7 @@ export function TopBar() {
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={() => openModal('booking')}>New booking</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => openModal('customer')}>New customer</DropdownMenuItem>
-          <DropdownMenuItem disabled>New invoice — A3c</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => openModal('invoice')}>New invoice</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 

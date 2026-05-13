@@ -402,6 +402,7 @@ export default function NewBookingModal({
         vehicleYear: vehicleYear || null,
         vehicleMake: vehicleMake || null,
         vehicleModel: vehicleModel || null,
+        vin: vinInput.trim() || null,
         fuelType: fuelType || null,
         preferredDate: date,
         timeWindow: time,
