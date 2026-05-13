@@ -61,9 +61,21 @@ interface Booking {
   vehicleYear?: string;
   vehicleMake?: string;
   vehicleModel?: string;
+  vin?: string;
+  fuelType?: string;
   vesselYear?: string;
   vesselMake?: string;
   vesselModel?: string;
+}
+
+interface CustomerVehicle {
+  year: string;
+  make: string;
+  model: string;
+  vin?: string;
+  fuelType?: string;
+  key: string;
+  label: string;
 }
 
 interface Customer {
@@ -353,23 +365,54 @@ export function NewBookingModal() {
     return groups;
   }, [services]);
 
-  /* Customer vehicles */
-  const customerVehicles = useMemo(() => {
+  /* Customer vehicles — newest booking per (Y/M/M + VIN) composite key
+     wins so VIN/fuelType captured after Patch 2 carry forward. */
+  const customerVehicles = useMemo<CustomerVehicle[]>(() => {
     if (!customer) return [];
     const matched = customers.find((c) => c.name === customer.name);
     if (!matched) return [];
-    const vehicleSet = new Set<string>();
-    matched.bookings.forEach((b) => {
-      const v = [b.vehicleYear, b.vehicleMake, b.vehicleModel]
+    const sorted = [...matched.bookings].sort((a, b) => {
+      const aT = a.createdAt?.toDate?.()?.getTime() ?? 0;
+      const bT = b.createdAt?.toDate?.()?.getTime() ?? 0;
+      return bT - aT;
+    });
+    const byKey = new Map<string, CustomerVehicle>();
+    for (const b of sorted) {
+      const ymm = [b.vehicleYear, b.vehicleMake, b.vehicleModel]
         .filter(Boolean)
         .join(' ');
-      if (v) vehicleSet.add(v);
+      if (ymm) {
+        const vin = b.vin || '';
+        const key = `v|${ymm}|${vin}`;
+        if (!byKey.has(key)) {
+          byKey.set(key, {
+            year: b.vehicleYear || '',
+            make: b.vehicleMake || '',
+            model: b.vehicleModel || '',
+            vin: b.vin,
+            fuelType: b.fuelType,
+            key,
+            label: vin ? `${ymm} · …${vin.slice(-4)}` : ymm,
+          });
+        }
+      }
       const vessel = [b.vesselYear, b.vesselMake, b.vesselModel]
         .filter(Boolean)
         .join(' ');
-      if (vessel) vehicleSet.add(vessel);
-    });
-    return Array.from(vehicleSet);
+      if (vessel) {
+        const key = `b|${vessel}`;
+        if (!byKey.has(key)) {
+          byKey.set(key, {
+            year: b.vesselYear || '',
+            make: b.vesselMake || '',
+            model: b.vesselModel || '',
+            key,
+            label: vessel,
+          });
+        }
+      }
+    }
+    return Array.from(byKey.values());
   }, [customer, customers]);
 
   /* Check if customer is first-time -> auto-waive fee */
@@ -734,29 +777,28 @@ export function NewBookingModal() {
             {/* Previous vehicles for this customer */}
             {customer && customerVehicles.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-2">
-                {customerVehicles.map((v) => (
-                  <button
-                    key={v}
-                    onClick={() => {
-                      const parts = v.split(' ');
-                      if (parts.length >= 3) {
-                        setVehicleYear(parts[0]);
-                        setVehicleMake(parts[1]);
-                        setVehicleModel(parts.slice(2).join(' '));
-                      } else if (parts.length === 2) {
-                        setVehicleMake(parts[0]);
-                        setVehicleModel(parts[1]);
-                      }
-                    }}
-                    className={`text-xs px-2.5 py-1 rounded-md cursor-pointer transition ${
-                      vehicleString === v
-                        ? 'bg-[#0B2040] text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    {v}
-                  </button>
-                ))}
+                {customerVehicles.map((v) => {
+                  const pillYmm = [v.year, v.make, v.model].filter(Boolean).join(' ');
+                  return (
+                    <button
+                      key={v.key}
+                      onClick={() => {
+                        setVehicleYear(v.year);
+                        setVehicleMake(v.make);
+                        setVehicleModel(v.model);
+                        setVinInput(v.vin || '');
+                        if (v.fuelType) setFuelType(v.fuelType);
+                      }}
+                      className={`text-xs px-2.5 py-1 rounded-md cursor-pointer transition ${
+                        vehicleString === pillYmm
+                          ? 'bg-[#0B2040] text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {v.label}
+                    </button>
+                  );
+                })}
               </div>
             )}
 
