@@ -14,6 +14,12 @@ import {
 } from 'firebase/firestore';
 import {
   Button,
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
   Dialog,
   DialogContent,
   DialogFooter,
@@ -210,7 +216,6 @@ export function NewBookingModal() {
   const [newCustEmail, setNewCustEmail] = useState('');
   const [newCustAddress, setNewCustAddress] = useState('');
   const [selectedServices, setSelectedServices] = useState<Service[]>([]);
-  const [showServiceDropdown, setShowServiceDropdown] = useState(false);
   /* Vehicle state */
   const [vinInput, setVinInput] = useState('');
   const [vinStatus, setVinStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -253,7 +258,6 @@ export function NewBookingModal() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const { services } = useServices();
   const customerRef = useRef<HTMLDivElement>(null);
-  const serviceRef = useRef<HTMLDivElement>(null);
 
   /* Load fee config from Firestore */
   useEffect(() => {
@@ -313,7 +317,7 @@ export function NewBookingModal() {
       .slice(0, 6);
   }, [customerQuery, customers]);
 
-  /* Close dropdowns on outside click */
+  /* Close customer dropdown on outside click */
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (
@@ -321,12 +325,6 @@ export function NewBookingModal() {
         !customerRef.current.contains(e.target as Node)
       ) {
         setShowCustomerDropdown(false);
-      }
-      if (
-        serviceRef.current &&
-        !serviceRef.current.contains(e.target as Node)
-      ) {
-        setShowServiceDropdown(false);
       }
     }
     document.addEventListener('mousedown', handleClick);
@@ -484,8 +482,7 @@ export function NewBookingModal() {
 
   async function handleCreate(status: 'pending' | 'draft') {
     const hasCustomer = customer || (creatingNewCustomer && newCustFirst.trim() && newCustLast.trim());
-    if (!hasCustomer || selectedServices.length === 0 || !date || !time)
-      return;
+    if (!hasCustomer || !date || !time) return;
     setSaving(true);
     try {
       const bookingData: Record<string, unknown> = {
@@ -571,7 +568,7 @@ export function NewBookingModal() {
   /* Validation */
   const hasValidCustomer = !!customer || (creatingNewCustomer && !!newCustFirst.trim() && !!newCustLast.trim());
   const isValid =
-    hasValidCustomer && selectedServices.length > 0 && !!date && !!time;
+    hasValidCustomer && !!date && !!time;
 
   const inputCls =
     'border border-gray-200 rounded-lg px-3.5 py-2.5 text-sm w-full focus:border-[#1A5FAC] focus:ring-1 focus:ring-[#1A5FAC] outline-none transition';
@@ -910,7 +907,7 @@ export function NewBookingModal() {
           {/* ── Services ── */}
           <div>
             <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
-              Service <span className="text-red-500">*</span>
+              Service
             </label>
 
             {/* Selected service pills */}
@@ -936,85 +933,74 @@ export function NewBookingModal() {
               </div>
             )}
 
-            <div ref={serviceRef} className="relative">
-              <button
-                onClick={() => setShowServiceDropdown((p) => !p)}
-                className={`${inputCls} text-left text-gray-500 cursor-pointer`}
-              >
-                {selectedServices.length === 0
-                  ? 'Select services...'
-                  : '+ Add another service'}
-              </button>
-              {showServiceDropdown && (
-                <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-[280px] overflow-y-auto">
-                  {DIVISIONS.map((div) => {
-                    const divServices = servicesByDivision[div];
-                    if (!divServices?.length) return null;
+            <Command className="border border-gray-200 rounded-lg bg-white">
+              <CommandInput placeholder="Search services..." />
+              <CommandList className="max-h-[260px]">
+                <CommandEmpty>No services match.</CommandEmpty>
+                {DIVISIONS.map((div) => {
+                  const divServices = servicesByDivision[div];
+                  if (!divServices?.length) return null;
 
-                    /* Annotate and sort services based on fuelCategory */
-                    const annotated = divServices.map((s) => {
-                      const name = s.name.toLowerCase();
-                      const isDieselService = name.includes('diesel');
-                      const isOilChange = name.includes('oil change') || name.includes('oil service');
-                      let annotation = '';
-                      let dimmed = false;
+                  /* Annotate and sort services based on fuelCategory */
+                  const annotated = divServices.map((s) => {
+                    const name = s.name.toLowerCase();
+                    const isDieselService = name.includes('diesel');
+                    const isOilChange = name.includes('oil change') || name.includes('oil service');
+                    let annotation = '';
+                    let dimmed = false;
 
-                      if (fuelCategory === 'diesel') {
-                        if (isDieselService) annotation = 'Recommended for diesel';
-                      } else if (fuelCategory === 'electric') {
-                        if (isOilChange || isDieselService) { annotation = 'Not compatible'; dimmed = true; }
-                      } else if (fuelCategory === 'hybrid') {
-                        if (isDieselService) { annotation = 'Not compatible'; dimmed = true; }
-                      } else {
-                        if (isDieselService) { annotation = 'Diesel vehicles only'; dimmed = true; }
-                      }
-                      return { service: s, annotation, dimmed };
-                    });
+                    if (fuelCategory === 'diesel') {
+                      if (isDieselService) annotation = 'Recommended for diesel';
+                    } else if (fuelCategory === 'electric') {
+                      if (isOilChange || isDieselService) { annotation = 'Not compatible'; dimmed = true; }
+                    } else if (fuelCategory === 'hybrid') {
+                      if (isDieselService) { annotation = 'Not compatible'; dimmed = true; }
+                    } else {
+                      if (isDieselService) { annotation = 'Diesel vehicles only'; dimmed = true; }
+                    }
+                    return { service: s, annotation, dimmed };
+                  });
 
-                    /* Sort: non-dimmed first */
-                    annotated.sort((a, b) => (a.dimmed === b.dimmed ? 0 : a.dimmed ? 1 : -1));
+                  /* Sort: non-dimmed first */
+                  annotated.sort((a, b) => (a.dimmed === b.dimmed ? 0 : a.dimmed ? 1 : -1));
 
-                    return (
-                      <div key={div}>
-                        <div className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50 sticky top-0">
-                          {div === 'Auto'
-                            ? 'Automotive'
-                            : div}
-                        </div>
-                        {annotated.map(({ service: s, annotation, dimmed }) => {
-                          const isSelected = selectedServices.some(
-                            (sel) => sel.id === s.id,
-                          );
-                          return (
-                            <button
-                              key={s.id}
-                              onClick={() => toggleService(s)}
-                              className={`block w-full text-left px-4 py-2.5 text-sm cursor-pointer border-b border-gray-50 ${
-                                isSelected
-                                  ? 'bg-[#EBF4FF] text-[#1A5FAC] font-medium'
-                                  : dimmed
-                                    ? 'text-gray-400'
-                                    : 'text-[#0B2040] hover:bg-gray-50'
-                              }`}
-                            >
-                              <span>{s.name}</span>
-                              {annotation && (
-                                <span className={`ml-2 text-[10px] font-semibold ${dimmed ? 'text-gray-400' : 'text-green-600'}`}>
-                                  {annotation}
-                                </span>
-                              )}
-                              <span className="float-right text-gray-500">
-                                ${s.price}
+                  const heading = div === 'Auto' ? 'Automotive' : div;
+                  return (
+                    <CommandGroup key={div} heading={heading}>
+                      {annotated.map(({ service: s, annotation, dimmed }) => {
+                        const isSelected = selectedServices.some(
+                          (sel) => sel.id === s.id,
+                        );
+                        return (
+                          <CommandItem
+                            key={s.id}
+                            value={`${heading} ${s.name} ${s.category}`}
+                            onSelect={() => toggleService(s)}
+                            className={
+                              isSelected
+                                ? 'bg-[#EBF4FF] text-[#1A5FAC] font-medium'
+                                : dimmed
+                                  ? 'text-gray-400'
+                                  : ''
+                            }
+                          >
+                            <span className="flex-1">{s.name}</span>
+                            {annotation && (
+                              <span className={`ml-2 text-[10px] font-semibold ${dimmed ? 'text-gray-400' : 'text-green-600'}`}>
+                                {annotation}
                               </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                            )}
+                            <span className="ml-2 text-gray-500">
+                              ${s.price}
+                            </span>
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandGroup>
+                  );
+                })}
+              </CommandList>
+            </Command>
           </div>
 
           {/* ── Date + Time row ── */}
