@@ -180,13 +180,16 @@ export default function CustomerDetailPage() {
             ) : (
               <ul className="text-sm divide-y divide-border">
                 {bookings.slice(0, 10).map(b => (
-                  <li key={b.id} className="py-2 flex items-center justify-between gap-3">
-                    <Link href={`/jobs/${b.id}`} className="hover:underline truncate">
-                      {formatBookingService(b)}
+                  <li key={b.id}>
+                    <Link
+                      href={`/jobs/${b.id}`}
+                      className="py-2 flex items-center justify-between gap-3 hover:underline"
+                    >
+                      <span className="truncate">{formatBookingService(b)}</span>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {b.createdAt?.toDate().toISOString().slice(0, 10) ?? '—'}
+                      </span>
                     </Link>
-                    <span className="text-xs text-muted-foreground shrink-0">
-                      {b.createdAt?.toDate().toISOString().slice(0, 10) ?? '—'}
-                    </span>
                   </li>
                 ))}
               </ul>
