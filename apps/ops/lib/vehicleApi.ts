@@ -30,7 +30,7 @@ export async function decodeVIN(vin: string): Promise<VehicleInfo | null> {
     if (!res.ok) return null;
     const json = await res.json();
     const results = json.Results?.[0];
-    if (!results || !results.ModelYear || results.ErrorCode === "1") return null;
+    if (!results || !results.ModelYear || !results.Make || !results.Model) return null;
 
     // Build engine type string e.g. "2.5L I4" or "3.5L V6"
     const displacement = results.DisplacementL || "";
