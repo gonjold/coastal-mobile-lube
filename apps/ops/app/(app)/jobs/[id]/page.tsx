@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, X, Edit3 } from 'lucide-react';
+import { nanoid } from 'nanoid';
 import {
   doc,
   getDoc,
@@ -92,6 +93,9 @@ export default function JobDetailPage() {
   const [saving, setSaving] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [showServiceDropdown, setShowServiceDropdown] = useState(false);
+  const [serviceQuery, setServiceQuery] = useState('');
+  const [customPriceInput, setCustomPriceInput] = useState('');
+  const [customPriceError, setCustomPriceError] = useState(false);
   const serviceRef = useRef<HTMLDivElement>(null);
   const { services } = useServices();
 
@@ -183,6 +187,43 @@ export default function JobDetailPage() {
       ...form,
       selectedServices: form.selectedServices.filter((s) => s.id !== id),
     });
+  }
+
+  function addCustomService() {
+    if (!form) return;
+    const name = serviceQuery.trim();
+    if (!name) return;
+    const parsed = parseFloat(customPriceInput);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      setCustomPriceError(true);
+      window.setTimeout(() => setCustomPriceError(false), 400);
+      return;
+    }
+    const bookingDivision = ((booking as { division?: string } | null)?.division || 'auto').toLowerCase() as Service['division'];
+    const custom: Service = {
+      id: `custom-${nanoid(8)}`,
+      name,
+      price: parsed,
+      description: '',
+      priceLabel: '',
+      category: 'Custom',
+      subcategory: '',
+      division: bookingDivision,
+      sortOrder: 0,
+      isActive: true,
+      showOnBooking: true,
+      showOnPricing: false,
+      bundleItems: [],
+      notes: '',
+      laborHours: 0,
+      createdAt: null,
+      updatedAt: null,
+      ...({ isCustom: true, taxable: false } as Record<string, unknown>),
+    };
+    setForm({ ...form, selectedServices: [...form.selectedServices, custom] });
+    setServiceQuery('');
+    setCustomPriceInput('');
+    setShowServiceDropdown(false);
   }
 
   async function save() {
@@ -366,8 +407,9 @@ export default function JobDetailPage() {
                   <Command className="border border-gray-200 rounded-lg bg-white overflow-visible [&_[data-slot=command-input-wrapper]]:border-b-0">
                     <CommandInput
                       placeholder="Search services..."
+                      value={serviceQuery}
                       onFocus={() => setShowServiceDropdown(true)}
-                      onValueChange={() => setShowServiceDropdown(true)}
+                      onValueChange={(v) => { setServiceQuery(v); setShowServiceDropdown(true); }}
                     />
                     {showServiceDropdown && (
                       <CommandList className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-[260px]">
@@ -430,6 +472,54 @@ export default function JobDetailPage() {
                             </CommandGroup>
                           );
                         })}
+                        {(() => {
+                          const q = serviceQuery.trim();
+                          if (q.length < 2) return null;
+                          const ql = q.toLowerCase();
+                          const exactMatch = services.some(
+                            (s) => s.isActive && s.name.toLowerCase() === ql,
+                          );
+                          if (exactMatch) return null;
+                          return (
+                            <CommandGroup heading="Custom service">
+                              <div
+                                className={`flex items-center gap-2 px-2 py-2 ${customPriceError ? 'animate-pulse' : ''}`}
+                                onMouseDown={(e) => e.preventDefault()}
+                              >
+                                <span className="flex-1 text-sm">
+                                  Create &ldquo;<span className="font-medium">{q}</span>&rdquo; as a custom service
+                                </span>
+                                <div className="relative w-24">
+                                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-500">$</span>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    inputMode="decimal"
+                                    value={customPriceInput}
+                                    onChange={(e) => { setCustomPriceInput(e.target.value); setCustomPriceError(false); }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        addCustomService();
+                                      }
+                                    }}
+                                    placeholder="0.00"
+                                    className={`w-full pl-5 pr-2 py-1.5 text-xs border rounded-md outline-none ${customPriceError ? 'border-red-400 ring-1 ring-red-200' : 'border-gray-200 focus:border-[#1A5FAC]'}`}
+                                  />
+                                </div>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  onClick={addCustomService}
+                                  className="bg-[#1A5FAC] hover:bg-[#174f94] text-white"
+                                >
+                                  Add
+                                </Button>
+                              </div>
+                            </CommandGroup>
+                          );
+                        })()}
                       </CommandList>
                     )}
                   </Command>
