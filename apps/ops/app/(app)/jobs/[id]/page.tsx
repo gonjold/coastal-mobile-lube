@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, X, Edit3 } from 'lucide-react';
+import { nanoid } from 'nanoid';
 import {
   doc,
   getDoc,
@@ -55,10 +56,22 @@ interface FormState {
   vehicleModel: string;
   vin: string;
   selectedServices: Service[];
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  customerAddress: string;
 }
 
-function bookingToForm(b: BookingDoc): FormState {
+interface CustomerDoc {
+  name?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+}
+
+function bookingToForm(b: BookingDoc, customer: CustomerDoc | null): FormState {
   const stored = (b as { selectedServices?: Service[] }).selectedServices;
+  const bName = (b as { name?: string }).name || (b as { customerName?: string }).customerName || '';
   return {
     confirmedDate: b.confirmedDate || (b as { preferredDate?: string }).preferredDate || '',
     timeWindow: b.timeWindow || '',
@@ -72,6 +85,10 @@ function bookingToForm(b: BookingDoc): FormState {
     vehicleModel: b.vehicleModel || '',
     vin: (b as { vin?: string }).vin || '',
     selectedServices: stored ?? [],
+    customerName: customer?.name ?? bName,
+    customerPhone: customer?.phone ?? (b.phone || b.customerPhone || ''),
+    customerEmail: customer?.email ?? (b.email || b.customerEmail || ''),
+    customerAddress: customer?.address ?? (b.address || ''),
   };
 }
 
@@ -83,6 +100,7 @@ export default function JobDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const [booking, setBooking] = useState<BookingDoc | null>(null);
+  const [customerDoc, setCustomerDoc] = useState<CustomerDoc | null>(null);
   const [invoice, setInvoice] = useState<(Invoice & { id: string }) | null>(null);
   const [linkedAsset, setLinkedAsset] = useState<Asset | null>(null);
   const [techOptions, setTechOptions] = useState<{ uid: string; displayName: string }[]>([]);
@@ -92,6 +110,9 @@ export default function JobDetailPage() {
   const [saving, setSaving] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [showServiceDropdown, setShowServiceDropdown] = useState(false);
+  const [serviceQuery, setServiceQuery] = useState('');
+  const [customPriceInput, setCustomPriceInput] = useState('');
+  const [customPriceError, setCustomPriceError] = useState(false);
   const serviceRef = useRef<HTMLDivElement>(null);
   const { services } = useServices();
 
@@ -128,7 +149,29 @@ export default function JobDetailPage() {
         }
         const b = { id: snap.id, ...snap.data() } as BookingDoc;
         setBooking(b);
-        setForm(bookingToForm(b));
+
+        // Customer doc (Decision 9: canonical source for customer fields)
+        const bCustomerId = (b as { customerId?: string }).customerId;
+        let cust: CustomerDoc | null = null;
+        if (bCustomerId) {
+          try {
+            const cSnap = await getDoc(doc(db, 'customers', bCustomerId));
+            if (cSnap.exists()) {
+              const data = cSnap.data() as CustomerDoc;
+              cust = {
+                name: data.name,
+                phone: data.phone,
+                email: data.email,
+                address: data.address,
+              };
+            }
+          } catch {
+            // non-fatal — fall through to booking values
+          }
+        }
+        if (cancelled) return;
+        setCustomerDoc(cust);
+        setForm(bookingToForm(b, cust));
 
         if (b.invoiceId) {
           const invSnap = await getDoc(doc(db, 'invoices', b.invoiceId));
@@ -185,6 +228,43 @@ export default function JobDetailPage() {
     });
   }
 
+  function addCustomService() {
+    if (!form) return;
+    const name = serviceQuery.trim();
+    if (!name) return;
+    const parsed = parseFloat(customPriceInput);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      setCustomPriceError(true);
+      window.setTimeout(() => setCustomPriceError(false), 400);
+      return;
+    }
+    const bookingDivision = ((booking as { division?: string } | null)?.division || 'auto').toLowerCase() as Service['division'];
+    const custom: Service = {
+      id: `custom-${nanoid(8)}`,
+      name,
+      price: parsed,
+      description: '',
+      priceLabel: '',
+      category: 'Custom',
+      subcategory: '',
+      division: bookingDivision,
+      sortOrder: 0,
+      isActive: true,
+      showOnBooking: true,
+      showOnPricing: false,
+      bundleItems: [],
+      notes: '',
+      laborHours: 0,
+      createdAt: null,
+      updatedAt: null,
+      ...({ isCustom: true, taxable: false } as Record<string, unknown>),
+    };
+    setForm({ ...form, selectedServices: [...form.selectedServices, custom] });
+    setServiceQuery('');
+    setCustomPriceInput('');
+    setShowServiceDropdown(false);
+  }
+
   async function save() {
     if (!form || !booking) return;
     setSaving(true);
@@ -229,6 +309,38 @@ export default function JobDetailPage() {
       }
       await updateDoc(doc(db, 'bookings', id), payload);
 
+      /* Decision 9: customer fields are canonical on customers/{customerId}.
+         Booking doc customer fields are NOT updated here. */
+      const bookingCustomerId = (booking as { customerId?: string }).customerId;
+      if (bookingCustomerId) {
+        const customerDirty =
+          form.customerName !== (customerDoc?.name ?? '') ||
+          form.customerPhone !== (customerDoc?.phone ?? '') ||
+          form.customerEmail !== (customerDoc?.email ?? '') ||
+          form.customerAddress !== (customerDoc?.address ?? '');
+        if (customerDirty) {
+          try {
+            await updateDoc(doc(db, 'customers', bookingCustomerId), {
+              name: form.customerName,
+              phone: form.customerPhone,
+              email: form.customerEmail,
+              address: form.customerAddress,
+              updatedAt: serverTimestamp(),
+            });
+            setCustomerDoc({
+              name: form.customerName,
+              phone: form.customerPhone,
+              email: form.customerEmail,
+              address: form.customerAddress,
+            });
+          } catch (err) {
+            toast.error('Customer save failed', {
+              description: err instanceof Error ? err.message : 'Unknown error',
+            });
+          }
+        }
+      }
+
       /* Mileage propagation on transition to completed (Decision 1).
          No backfill — Asset.mileage catches up naturally as jobs complete.
          Reads odometerOut from the booking doc (Phase B-flat or vehicleInfo). */
@@ -265,7 +377,7 @@ export default function JobDetailPage() {
 
   function cancel() {
     setEditing(false);
-    if (booking) setForm(bookingToForm(booking));
+    if (booking) setForm(bookingToForm(booking, customerDoc));
   }
 
   return (
@@ -297,16 +409,39 @@ export default function JobDetailPage() {
         <div className="lg:col-span-2 space-y-4">
           <Card className="p-5 gap-3">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Customer</h2>
-            <div className="text-sm grid grid-cols-2 gap-2">
-              <Read label="Name" value={(booking as { name?: string }).name || (booking as { customerName?: string }).customerName} />
-              <Read label="Phone" value={booking.phone || booking.customerPhone} />
-              <Read label="Email" value={booking.email || booking.customerEmail} />
-              <Read label="Address" value={booking.address} />
-            </div>
-            {customerId && (
-              <Link href={`/customers/${customerId}`} className="text-xs text-primary hover:underline">
-                Open customer profile →
-              </Link>
+            {editing && customerId ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Field label="Name"><Input value={form.customerName} onChange={e => setForm({ ...form, customerName: e.target.value })} /></Field>
+                <Field label="Phone"><Input value={form.customerPhone} onChange={e => setForm({ ...form, customerPhone: e.target.value })} /></Field>
+                <Field label="Email"><Input value={form.customerEmail} onChange={e => setForm({ ...form, customerEmail: e.target.value })} /></Field>
+                <Field label="Address"><Input value={form.customerAddress} onChange={e => setForm({ ...form, customerAddress: e.target.value })} /></Field>
+              </div>
+            ) : editing && !customerId ? (
+              <>
+                <div className="text-sm grid grid-cols-2 gap-2">
+                  <Read label="Name" value={(booking as { name?: string }).name || (booking as { customerName?: string }).customerName} />
+                  <Read label="Phone" value={booking.phone || booking.customerPhone} />
+                  <Read label="Email" value={booking.email || booking.customerEmail} />
+                  <Read label="Address" value={booking.address} />
+                </div>
+                <p className="text-xs text-muted-foreground italic">
+                  No customer record linked. Use the customer page to merge or create.
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="text-sm grid grid-cols-2 gap-2">
+                  <Read label="Name" value={form.customerName} />
+                  <Read label="Phone" value={form.customerPhone} />
+                  <Read label="Email" value={form.customerEmail} />
+                  <Read label="Address" value={form.customerAddress} />
+                </div>
+                {customerId && (
+                  <Link href={`/customers/${customerId}`} className="text-xs text-primary hover:underline">
+                    Open customer profile →
+                  </Link>
+                )}
+              </>
             )}
           </Card>
 
@@ -366,11 +501,13 @@ export default function JobDetailPage() {
                   <Command className="border border-gray-200 rounded-lg bg-white overflow-visible [&_[data-slot=command-input-wrapper]]:border-b-0">
                     <CommandInput
                       placeholder="Search services..."
+                      value={serviceQuery}
                       onFocus={() => setShowServiceDropdown(true)}
-                      onValueChange={() => setShowServiceDropdown(true)}
+                      onValueChange={(v) => { setServiceQuery(v); setShowServiceDropdown(true); }}
                     />
                     {showServiceDropdown && (
-                      <CommandList className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-[260px]">
+                      <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                      <CommandList className="max-h-[260px]">
                         <CommandEmpty>No services match.</CommandEmpty>
                         {DIVISIONS.map((div) => {
                           const divServices = servicesByDivision[div];
@@ -431,6 +568,55 @@ export default function JobDetailPage() {
                           );
                         })}
                       </CommandList>
+                      {(() => {
+                        const q = serviceQuery.trim();
+                        if (q.length < 2) return null;
+                        const ql = q.toLowerCase();
+                        const exactMatch = services.some(
+                          (s) => s.isActive && s.name.toLowerCase() === ql,
+                        );
+                        if (exactMatch) return null;
+                        return (
+                          <div className="border-t border-gray-200 bg-white px-2 py-2">
+                            <div className="px-2 pb-1 text-xs font-medium text-gray-500">Custom service</div>
+                            <div
+                              className={`flex items-center gap-2 ${customPriceError ? 'animate-pulse' : ''}`}
+                            >
+                              <span className="flex-1 text-sm px-2">
+                                Create &ldquo;<span className="font-medium">{q}</span>&rdquo; as a custom service
+                              </span>
+                              <div className="relative w-24">
+                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-500">$</span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  inputMode="decimal"
+                                  value={customPriceInput}
+                                  onChange={(e) => { setCustomPriceInput(e.target.value); setCustomPriceError(false); }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      addCustomService();
+                                    }
+                                  }}
+                                  placeholder="0.00"
+                                  className={`w-full pl-5 pr-2 py-1.5 text-xs border rounded-md outline-none ${customPriceError ? 'border-red-400 ring-1 ring-red-200' : 'border-gray-200 focus:border-[#1A5FAC]'}`}
+                                />
+                              </div>
+                              <Button
+                                type="button"
+                                size="sm"
+                                onClick={addCustomService}
+                                className="bg-[#1A5FAC] hover:bg-[#174f94] text-white"
+                              >
+                                Add
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                      </div>
                     )}
                   </Command>
                 </div>

@@ -12,6 +12,9 @@ import {
   Clock,
   BarChart3,
   Settings,
+  Package,
+  DollarSign,
+  Plug,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -57,6 +60,9 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
     label: 'Admin',
     items: [
       { href: '/team', label: 'Team', icon: Users, available: true },
+      { href: '/services', label: 'Services', icon: Package, available: true },
+      { href: '/fees', label: 'Fees', icon: DollarSign, available: true },
+      { href: '/integrations', label: 'Integrations', icon: Plug, available: true },
       { href: '/settings', label: 'Settings', icon: Settings, available: false, availableIn: 'A4' },
     ],
   },
