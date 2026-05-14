@@ -56,10 +56,22 @@ interface FormState {
   vehicleModel: string;
   vin: string;
   selectedServices: Service[];
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  customerAddress: string;
 }
 
-function bookingToForm(b: BookingDoc): FormState {
+interface CustomerDoc {
+  name?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+}
+
+function bookingToForm(b: BookingDoc, customer: CustomerDoc | null): FormState {
   const stored = (b as { selectedServices?: Service[] }).selectedServices;
+  const bName = (b as { name?: string }).name || (b as { customerName?: string }).customerName || '';
   return {
     confirmedDate: b.confirmedDate || (b as { preferredDate?: string }).preferredDate || '',
     timeWindow: b.timeWindow || '',
@@ -73,6 +85,10 @@ function bookingToForm(b: BookingDoc): FormState {
     vehicleModel: b.vehicleModel || '',
     vin: (b as { vin?: string }).vin || '',
     selectedServices: stored ?? [],
+    customerName: customer?.name ?? bName,
+    customerPhone: customer?.phone ?? (b.phone || b.customerPhone || ''),
+    customerEmail: customer?.email ?? (b.email || b.customerEmail || ''),
+    customerAddress: customer?.address ?? (b.address || ''),
   };
 }
 
@@ -84,6 +100,7 @@ export default function JobDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const [booking, setBooking] = useState<BookingDoc | null>(null);
+  const [customerDoc, setCustomerDoc] = useState<CustomerDoc | null>(null);
   const [invoice, setInvoice] = useState<(Invoice & { id: string }) | null>(null);
   const [linkedAsset, setLinkedAsset] = useState<Asset | null>(null);
   const [techOptions, setTechOptions] = useState<{ uid: string; displayName: string }[]>([]);
@@ -132,7 +149,29 @@ export default function JobDetailPage() {
         }
         const b = { id: snap.id, ...snap.data() } as BookingDoc;
         setBooking(b);
-        setForm(bookingToForm(b));
+
+        // Customer doc (Decision 9: canonical source for customer fields)
+        const bCustomerId = (b as { customerId?: string }).customerId;
+        let cust: CustomerDoc | null = null;
+        if (bCustomerId) {
+          try {
+            const cSnap = await getDoc(doc(db, 'customers', bCustomerId));
+            if (cSnap.exists()) {
+              const data = cSnap.data() as CustomerDoc;
+              cust = {
+                name: data.name,
+                phone: data.phone,
+                email: data.email,
+                address: data.address,
+              };
+            }
+          } catch {
+            // non-fatal — fall through to booking values
+          }
+        }
+        if (cancelled) return;
+        setCustomerDoc(cust);
+        setForm(bookingToForm(b, cust));
 
         if (b.invoiceId) {
           const invSnap = await getDoc(doc(db, 'invoices', b.invoiceId));
@@ -270,6 +309,38 @@ export default function JobDetailPage() {
       }
       await updateDoc(doc(db, 'bookings', id), payload);
 
+      /* Decision 9: customer fields are canonical on customers/{customerId}.
+         Booking doc customer fields are NOT updated here. */
+      const bookingCustomerId = (booking as { customerId?: string }).customerId;
+      if (bookingCustomerId) {
+        const customerDirty =
+          form.customerName !== (customerDoc?.name ?? '') ||
+          form.customerPhone !== (customerDoc?.phone ?? '') ||
+          form.customerEmail !== (customerDoc?.email ?? '') ||
+          form.customerAddress !== (customerDoc?.address ?? '');
+        if (customerDirty) {
+          try {
+            await updateDoc(doc(db, 'customers', bookingCustomerId), {
+              name: form.customerName,
+              phone: form.customerPhone,
+              email: form.customerEmail,
+              address: form.customerAddress,
+              updatedAt: serverTimestamp(),
+            });
+            setCustomerDoc({
+              name: form.customerName,
+              phone: form.customerPhone,
+              email: form.customerEmail,
+              address: form.customerAddress,
+            });
+          } catch (err) {
+            toast.error('Customer save failed', {
+              description: err instanceof Error ? err.message : 'Unknown error',
+            });
+          }
+        }
+      }
+
       /* Mileage propagation on transition to completed (Decision 1).
          No backfill — Asset.mileage catches up naturally as jobs complete.
          Reads odometerOut from the booking doc (Phase B-flat or vehicleInfo). */
@@ -306,7 +377,7 @@ export default function JobDetailPage() {
 
   function cancel() {
     setEditing(false);
-    if (booking) setForm(bookingToForm(booking));
+    if (booking) setForm(bookingToForm(booking, customerDoc));
   }
 
   return (
@@ -338,16 +409,39 @@ export default function JobDetailPage() {
         <div className="lg:col-span-2 space-y-4">
           <Card className="p-5 gap-3">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Customer</h2>
-            <div className="text-sm grid grid-cols-2 gap-2">
-              <Read label="Name" value={(booking as { name?: string }).name || (booking as { customerName?: string }).customerName} />
-              <Read label="Phone" value={booking.phone || booking.customerPhone} />
-              <Read label="Email" value={booking.email || booking.customerEmail} />
-              <Read label="Address" value={booking.address} />
-            </div>
-            {customerId && (
-              <Link href={`/customers/${customerId}`} className="text-xs text-primary hover:underline">
-                Open customer profile →
-              </Link>
+            {editing && customerId ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Field label="Name"><Input value={form.customerName} onChange={e => setForm({ ...form, customerName: e.target.value })} /></Field>
+                <Field label="Phone"><Input value={form.customerPhone} onChange={e => setForm({ ...form, customerPhone: e.target.value })} /></Field>
+                <Field label="Email"><Input value={form.customerEmail} onChange={e => setForm({ ...form, customerEmail: e.target.value })} /></Field>
+                <Field label="Address"><Input value={form.customerAddress} onChange={e => setForm({ ...form, customerAddress: e.target.value })} /></Field>
+              </div>
+            ) : editing && !customerId ? (
+              <>
+                <div className="text-sm grid grid-cols-2 gap-2">
+                  <Read label="Name" value={(booking as { name?: string }).name || (booking as { customerName?: string }).customerName} />
+                  <Read label="Phone" value={booking.phone || booking.customerPhone} />
+                  <Read label="Email" value={booking.email || booking.customerEmail} />
+                  <Read label="Address" value={booking.address} />
+                </div>
+                <p className="text-xs text-muted-foreground italic">
+                  No customer record linked. Use the customer page to merge or create.
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="text-sm grid grid-cols-2 gap-2">
+                  <Read label="Name" value={form.customerName} />
+                  <Read label="Phone" value={form.customerPhone} />
+                  <Read label="Email" value={form.customerEmail} />
+                  <Read label="Address" value={form.customerAddress} />
+                </div>
+                {customerId && (
+                  <Link href={`/customers/${customerId}`} className="text-xs text-primary hover:underline">
+                    Open customer profile →
+                  </Link>
+                )}
+              </>
             )}
           </Card>
 
