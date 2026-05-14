@@ -1033,7 +1033,8 @@ export function NewBookingModal() {
                   onValueChange={(v) => { setServiceQuery(v); setShowServiceDropdown(true); }}
                 />
                 {showServiceDropdown && (
-                  <CommandList className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-[260px]">
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                  <CommandList className="max-h-[260px]">
                     <CommandEmpty>No services match.</CommandEmpty>
                     {DIVISIONS.map((div) => {
                   const divServices = servicesByDivision[div];
@@ -1097,56 +1098,56 @@ export function NewBookingModal() {
                     </CommandGroup>
                   );
                 })}
-                {(() => {
-                  const q = serviceQuery.trim();
-                  if (q.length < 2) return null;
-                  const ql = q.toLowerCase();
-                  const exactMatch = services.some(
-                    (s) => s.isActive && s.name.toLowerCase() === ql,
-                  );
-                  if (exactMatch) return null;
-                  return (
-                    <CommandGroup heading="Custom service">
-                      <div
-                        className={`flex items-center gap-2 px-2 py-2 ${customPriceError ? 'animate-pulse' : ''}`}
-                        // keep cmdk from treating clicks here as a selection
-                        onMouseDown={(e) => e.preventDefault()}
-                      >
-                        <span className="flex-1 text-sm">
-                          Create &ldquo;<span className="font-medium">{q}</span>&rdquo; as a custom service
-                        </span>
-                        <div className="relative w-24">
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-500">$</span>
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            inputMode="decimal"
-                            value={customPriceInput}
-                            onChange={(e) => { setCustomPriceInput(e.target.value); setCustomPriceError(false); }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                addCustomService();
-                              }
-                            }}
-                            placeholder="0.00"
-                            className={`w-full pl-5 pr-2 py-1.5 text-xs border rounded-md outline-none ${customPriceError ? 'border-red-400 ring-1 ring-red-200' : 'border-gray-200 focus:border-[#1A5FAC]'}`}
-                          />
-                        </div>
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={addCustomService}
-                          className="bg-[#1A5FAC] hover:bg-[#174f94] text-white"
-                        >
-                          Add
-                        </Button>
-                      </div>
-                    </CommandGroup>
-                  );
-                })()}
                   </CommandList>
+                  {(() => {
+                    const q = serviceQuery.trim();
+                    if (q.length < 2) return null;
+                    const ql = q.toLowerCase();
+                    const exactMatch = services.some(
+                      (s) => s.isActive && s.name.toLowerCase() === ql,
+                    );
+                    if (exactMatch) return null;
+                    return (
+                      <div className="border-t border-gray-200 bg-white px-2 py-2">
+                        <div className="px-2 pb-1 text-xs font-medium text-gray-500">Custom service</div>
+                        <div
+                          className={`flex items-center gap-2 ${customPriceError ? 'animate-pulse' : ''}`}
+                        >
+                          <span className="flex-1 text-sm px-2">
+                            Create &ldquo;<span className="font-medium">{q}</span>&rdquo; as a custom service
+                          </span>
+                          <div className="relative w-24">
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-500">$</span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              inputMode="decimal"
+                              value={customPriceInput}
+                              onChange={(e) => { setCustomPriceInput(e.target.value); setCustomPriceError(false); }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  addCustomService();
+                                }
+                              }}
+                              placeholder="0.00"
+                              className={`w-full pl-5 pr-2 py-1.5 text-xs border rounded-md outline-none ${customPriceError ? 'border-red-400 ring-1 ring-red-200' : 'border-gray-200 focus:border-[#1A5FAC]'}`}
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={addCustomService}
+                            className="bg-[#1A5FAC] hover:bg-[#174f94] text-white"
+                          >
+                            Add
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  </div>
                 )}
               </Command>
             </div>
