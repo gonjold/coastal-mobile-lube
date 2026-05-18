@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Booking, FirestoreTimestamp } from "@/lib/types/booking";
+import JobCompletedPayNow from "./JobCompletedPayNow";
 
 interface Props {
   booking: Booking;
@@ -64,16 +65,8 @@ export default function JobCompleted({ booking }: Props) {
         <div className="text-sm text-slate-700">{booking.address}</div>
       </header>
 
-      {booking.invoiceNumber && (
-        <Section title="Invoice">
-          <div className="text-base font-semibold text-[#0B2040]">
-            #{booking.invoiceNumber}
-          </div>
-          <div className="mt-1 text-xs text-slate-500">
-            Draft created — admin will review and send.
-          </div>
-        </Section>
-      )}
+      <JobCompletedPayNow booking={booking} />
+
 
       <Section title="Customer">
         <div className="space-y-1 text-sm">
