@@ -37,6 +37,7 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
     label: 'Operations',
     items: [
       { href: '/home', label: 'Home', icon: HomeIcon, available: true },
+      { href: '/today', label: 'Today', icon: Clock, available: true },
       { href: '/schedule', label: 'Schedule', icon: Calendar, available: true },
       { href: '/jobs', label: 'Jobs', icon: Wrench, available: true },
       { href: '/customers', label: 'Customers', icon: Users, available: true },
