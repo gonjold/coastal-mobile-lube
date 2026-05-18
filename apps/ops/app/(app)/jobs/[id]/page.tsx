@@ -34,11 +34,13 @@ import {
   getBookingArrivalTime,
 } from '@coastal/shared-types';
 import { db } from '@/lib/firebase';
+import { useAuth } from '@/lib/useAuth';
 import type { BookingDoc } from '@/lib/queries/bookings';
 import type { Invoice } from '@coastal/shared-types';
 import { getAsset, updateAsset, type Asset } from '@/lib/assets';
 import { useServices, type Service } from '@/hooks/useServices';
 import { getFuelCategory } from '@/lib/vehicleApi';
+import TechJobDetail from '@/components/jobs/TechJobDetail';
 
 const STATUS_OPTIONS = ['pending', 'confirmed', 'in-progress', 'completed', 'cancelled', 'dead', 'new-lead'];
 const DIVISIONS = ['Auto', 'Marine', 'Fleet', 'RV'];
@@ -99,6 +101,7 @@ function formatCurrency(n: number): string {
 export default function JobDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
+  const { user, role } = useAuth();
   const [booking, setBooking] = useState<BookingDoc | null>(null);
   const [customerDoc, setCustomerDoc] = useState<CustomerDoc | null>(null);
   const [invoice, setInvoice] = useState<(Invoice & { id: string }) | null>(null);
@@ -205,6 +208,15 @@ export default function JobDetailPage() {
 
   if (error) return <div className="px-6 py-8 text-red-700">{error}</div>;
   if (!booking || !form) return <div className="px-6 py-8 text-muted-foreground">Loading…</div>;
+
+  // Role-conditional dispatch (WO-A3C Decision 3 + P3): tech assigned to this
+  // job sees TechJobDetail with the FDACS flow. Owners and unassigned techs
+  // see the existing admin-style detail view below. Mark Complete and estimate
+  // authoring interactivity are gated on assignedTechId === uid inside
+  // TechJobDetail per WO Decision 4.
+  if (role === 'tech' && booking.assignedTechId && user && booking.assignedTechId === user.uid) {
+    return <TechJobDetail bookingId={id} isAssignedTech={true} />;
+  }
 
   const customerId = (booking as { customerId?: string }).customerId;
   const fuelCategory = getFuelCategory((booking as { fuelType?: string }).fuelType || '');
