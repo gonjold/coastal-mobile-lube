@@ -79,6 +79,26 @@ export async function fetchEstimatesAwaiting(limitN = 5): Promise<BookingDoc[]> 
   return rows.slice(0, limitN);
 }
 
+/** A3d: bookings where status === 'completed' AND !invoiceId. Powers the
+ * "Pending billing" tab on /invoices. This is the unification surface that
+ * replaces the legacy "ready for invoicing" callout in marketing /admin/
+ * invoicing - bookings finished by the tech but missing an invoice draft.
+ * Post-A3d, this should be near-empty since createInvoiceDraftFromBooking
+ * writes both sides atomically; stragglers are bookings that completed
+ * before the atomic batch shipped or that came in via a path that bypassed
+ * the helper. Click-through goes to /jobs/[id] where Mark Complete (or a
+ * manual NewInvoiceModal) can create the invoice. */
+export async function fetchPendingBilling(): Promise<BookingDoc[]> {
+  const q = query(
+    collection(db, "bookings"),
+    where("status", "==", "completed"),
+  );
+  const snap = await getDocs(q);
+  return mapSnap(snap)
+    .filter(b => b.isTest !== true)
+    .filter(b => !b.invoiceId);
+}
+
 /** Sum of estimateTotal across all pipeline bookings (no limit). */
 export async function fetchPipelineSum(): Promise<{ total: number; count: number }> {
   const q = query(

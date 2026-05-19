@@ -275,17 +275,18 @@ export default function WorkInProgress({ booking }: Props) {
     // a failed sync doesn't leave the booking in 'completed' without an
     // invoice. Signature is already in Storage at this point — orphan PNG
     // is harmless.
-    const { invoiceId, invoiceNumber } = await createInvoiceDraftFromBooking(
-      booking,
-      completionSignatureUrl
-    );
+    //
+    // A3d STEP 2: createInvoiceDraftFromBooking now writes invoiceId +
+    // invoiceNumber back onto the booking atomically via writeBatch.
+    // This second updateDoc only owns the status transition + completion
+    // signature/timestamp fields, NOT the back-link (which is already
+    // committed by the time we reach this line).
+    await createInvoiceDraftFromBooking(booking, completionSignatureUrl);
     await updateDoc(doc(db, "bookings", booking.id), {
       status: "completed",
       customerCompletionSignatureUrl: completionSignatureUrl,
       customerCompletionSignedAt: serverTimestamp(),
       jobCompletedAt: serverTimestamp(),
-      invoiceId,
-      invoiceNumber,
       updatedAt: serverTimestamp(),
     });
     // onSnapshot in the page re-renders into <JobCompleted>; modal unmounts.

@@ -1,4 +1,4 @@
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { collection, doc, serverTimestamp, writeBatch } from "firebase/firestore";
 import { db } from "./firebase";
 import { getNextInvoiceNumber } from "./invoiceNumber";
 import type { Booking } from "./types/booking";
@@ -91,6 +91,22 @@ export async function createInvoiceDraftFromBooking(
     updatedAt: serverTimestamp(),
   };
 
-  const ref = await addDoc(collection(db, "invoices"), data);
-  return { invoiceId: ref.id, invoiceNumber };
+  // A3d STEP 2: atomic bidirectional link. Pre-generate the invoice doc id
+  // so we can write invoices/{id} and bookings/{bookingId}.invoiceId in a
+  // single writeBatch. Caller (WorkInProgress.handleCompleteConfirm) no
+  // longer needs to set invoiceId separately - the back-link is committed
+  // here. Caller still owns the status/completion fields on the booking.
+  const invoiceRef = doc(collection(db, "invoices"));
+  const bookingRef = doc(db, "bookings", booking.id);
+
+  const batch = writeBatch(db);
+  batch.set(invoiceRef, data);
+  batch.update(bookingRef, {
+    invoiceId: invoiceRef.id,
+    invoiceNumber,
+    updatedAt: serverTimestamp(),
+  });
+  await batch.commit();
+
+  return { invoiceId: invoiceRef.id, invoiceNumber };
 }
