@@ -99,7 +99,7 @@ export default function JobsPage() {
             placeholder="Search…"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="h-9 w-[260px]"
+            className="h-10 w-[260px]"
           />
           <Button disabled title="New booking modal lands in STEP 13">
             <Plus className="h-4 w-4 mr-1.5" strokeWidth={2} />

@@ -672,12 +672,12 @@ export default function JobDetailPage() {
             {editing ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Field label="Status">
-                  <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} className="h-9 px-2 border border-border rounded-md bg-background text-sm">
+                  <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} className="h-10 px-2 border border-border rounded-md bg-background text-sm">
                     {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </Field>
                 <Field label="Assigned tech">
-                  <select value={form.assignedTechId} onChange={e => setForm({ ...form, assignedTechId: e.target.value })} className="h-9 px-2 border border-border rounded-md bg-background text-sm">
+                  <select value={form.assignedTechId} onChange={e => setForm({ ...form, assignedTechId: e.target.value })} className="h-10 px-2 border border-border rounded-md bg-background text-sm">
                     <option value="">— Unassigned —</option>
                     {techOptions.map(t => <option key={t.uid} value={t.uid}>{t.displayName || t.uid}</option>)}
                   </select>
