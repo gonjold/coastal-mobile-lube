@@ -1,6 +1,26 @@
 'use client';
 
-import { Menu, Search, Bell, Plus } from 'lucide-react';
+/* A3f Phase 4.2: TopBar trimmed for the three-mode responsive layout.
+ *
+ * Removed:
+ * - md:hidden hamburger button (replaced by MobileTabBar at <md and the
+ *   icon Sidebar's overlay trigger at md..lg).
+ * - Sheet-based mobile-sidebar drawer (replaced by MobileTabBar +
+ *   MoreDrawer at <md and SidebarOverlay at md..lg).
+ *
+ * Kept:
+ * - Search button -> CommandPalette (visible all breakpoints).
+ * - New dropdown (booking / customer / invoice modal triggers).
+ * - Notifications bell (placeholder; not wired this sprint).
+ *
+ * `mobileSidebarOpen` state in ClientLayoutProvider still has one writer
+ * (SidebarRow.onNavigate calls setMobileSidebarOpen(false) on click) but
+ * no reader after this commit. Leaving the state in place for now to
+ * avoid touching ClientLayoutProvider + Sidebar in this commit; a
+ * follow-up cleanup sweep can retire it once Phase 5/6 are settled.
+ */
+
+import { Search, Bell, Plus } from 'lucide-react';
 import {
   Button,
   DropdownMenu,
@@ -8,28 +28,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   Kbd,
-  Sheet,
-  SheetContent,
 } from '@coastal/shared-ui';
 import { useLayout } from './ClientLayoutProvider';
-import { SidebarContent } from './Sidebar';
 import { useAdminModal } from '@/lib/AdminModalContext';
 
 export function TopBar() {
-  const { setPaletteOpen, mobileSidebarOpen, setMobileSidebarOpen } = useLayout();
+  const { setPaletteOpen } = useLayout();
   const { openModal } = useAdminModal();
 
   return (
     <div className="h-14 border-b border-border bg-card flex items-center px-4 md:px-6 gap-2 md:gap-4">
-      <button
-        type="button"
-        aria-label="Open navigation"
-        onClick={() => setMobileSidebarOpen(true)}
-        className="md:hidden h-10 w-10 rounded-md hover:bg-muted flex items-center justify-center"
-      >
-        <Menu className="w-5 h-5 text-foreground" strokeWidth={1.75} />
-      </button>
-
       <div className="flex-1 max-w-md">
         <button
           type="button"
@@ -67,12 +75,6 @@ export function TopBar() {
       >
         <Bell className="w-4 h-4 text-muted-foreground" strokeWidth={1.75} />
       </button>
-
-      <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
-        <SheetContent side="left" className="w-60 p-0 sm:max-w-none">
-          <SidebarContent />
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }
