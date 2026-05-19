@@ -13,8 +13,9 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { toast } from 'sonner';
-import { Badge, Button, EditableCell, Input } from '@coastal/shared-ui';
+import { Badge, Button, EditableCell, Input, statusBadgeVariant } from '@coastal/shared-ui';
 import { db } from '@/lib/firebase';
+import { formatPhone } from '@/lib/format';
 import { fetchPendingBilling } from '@/lib/queries/bookings';
 import type { BookingDoc } from '@/lib/queries/bookings';
 import type { Invoice } from '@coastal/shared-types';
@@ -28,12 +29,7 @@ function filterLabel(f: Filter): string {
   return f;
 }
 
-function statusBadgeVariant(s: string): 'default' | 'secondary' | 'outline' | 'destructive' {
-  if (s === 'paid') return 'default';
-  if (s === 'overdue') return 'destructive';
-  if (s === 'sent') return 'secondary';
-  return 'outline';
-}
+// A3e: statusBadgeVariant imported from @coastal/shared-ui (canonical mapping).
 
 function formatCurrency(n: number): string {
   return `$${n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -186,7 +182,7 @@ export default function InvoicesPage() {
                     return (
                       <tr key={b.id} className="border-t border-border hover:bg-muted/30 transition-colors">
                         <td className="px-4 py-2 align-middle font-semibold">{name}</td>
-                        <td className="px-4 py-2 align-middle">{phone || '—'}</td>
+                        <td className="px-4 py-2 align-middle">{formatPhone(phone, '—')}</td>
                         <td className="px-4 py-2 align-middle">{completedLabel}</td>
                         <td className="px-4 py-2 align-middle text-right">
                           <Link href={`/jobs/${b.id}`} className="text-xs font-semibold text-primary hover:underline">

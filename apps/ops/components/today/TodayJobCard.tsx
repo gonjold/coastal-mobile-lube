@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Phone, Navigation, ArrowRight } from "lucide-react";
-import { Badge, Button, Card } from "@coastal/shared-ui";
+import { Badge, Button, Card, statusBadgeVariant } from "@coastal/shared-ui";
 import {
   formatBookingService,
   formatBookingVehicle,
@@ -15,14 +15,14 @@ interface Props {
   booking: BookingDoc;
 }
 
-function statusBadge(status?: string) {
+function statusBadgeLabel(status?: string): string {
   switch (status) {
     case "in-progress":
-      return { label: "In Progress", className: "bg-amber-100 text-amber-900" };
+      return "In Progress";
     case "confirmed":
-      return { label: "Upcoming", className: "bg-sky-100 text-sky-900" };
+      return "Upcoming";
     default:
-      return { label: status ?? "Pending", className: "bg-slate-100 text-slate-700" };
+      return status ?? "Pending";
   }
 }
 
@@ -33,7 +33,7 @@ export default function TodayJobCard({ booking }: Props) {
   const phone = booking.customerPhone || booking.phone || "";
   const address = booking.address || "";
   const arrival = getBookingArrivalTime(booking);
-  const sb = statusBadge(booking.status);
+  const statusLabel = statusBadgeLabel(booking.status);
 
   const telHref = phone ? `tel:${phone.replace(/\s+/g, "")}` : undefined;
   const navHref = address
@@ -47,8 +47,8 @@ export default function TodayJobCard({ booking }: Props) {
           <div className="text-lg font-semibold text-foreground">{customerName}</div>
           <div className="text-sm text-muted-foreground">{vehicle || service}</div>
         </div>
-        <Badge variant="outline" className={sb.className}>
-          {sb.label}
+        <Badge variant={statusBadgeVariant(booking.status)}>
+          {statusLabel}
         </Badge>
       </header>
 

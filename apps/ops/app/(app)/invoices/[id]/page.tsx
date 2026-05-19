@@ -6,8 +6,9 @@ import Link from 'next/link';
 import { ArrowLeft, Save, Send, X, Edit3, ExternalLink } from 'lucide-react';
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { toast } from 'sonner';
-import { Badge, Button, Card, Input } from '@coastal/shared-ui';
+import { Badge, Button, Card, Input, statusBadgeVariant } from '@coastal/shared-ui';
 import { db } from '@/lib/firebase';
+import { formatPhone } from '@/lib/format';
 import { openSmsForInvoice } from '@/lib/payNow';
 import type { Invoice } from '@coastal/shared-types';
 import SendInvoiceModal from '@/components/invoices/SendInvoiceModal';
@@ -28,12 +29,7 @@ function formatCurrency(n: number): string {
   return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function statusVariant(s: string): 'default' | 'secondary' | 'outline' | 'destructive' {
-  if (s === 'paid') return 'default';
-  if (s === 'overdue') return 'destructive';
-  if (s === 'sent') return 'secondary';
-  return 'outline';
-}
+// A3e: statusBadgeVariant imported from @coastal/shared-ui (canonical mapping).
 
 export default function InvoiceDetailPage() {
   const params = useParams<{ id: string }>();
@@ -133,7 +129,7 @@ export default function InvoiceDetailPage() {
           <h1 className="text-2xl font-semibold tracking-tight truncate">
             {invoice.invoiceNumber || `Invoice ${id.slice(0, 8)}`}
           </h1>
-          <Badge variant={statusVariant(form.status)} className="capitalize">{form.status}</Badge>
+          <Badge variant={statusBadgeVariant(form.status)} className="capitalize">{form.status}</Badge>
           <span className="text-base font-semibold">{formatCurrency(total)}</span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -185,7 +181,7 @@ export default function InvoiceDetailPage() {
             ) : (
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <Read label="Name" value={form.customerName} />
-                <Read label="Phone" value={form.customerPhone} />
+                <Read label="Phone" value={formatPhone(form.customerPhone)} />
                 <Read label="Email" value={form.customerEmail} />
               </div>
             )}

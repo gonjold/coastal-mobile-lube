@@ -13,13 +13,14 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { toast } from 'sonner';
-import { Badge, Button, EditableCell, Input } from '@coastal/shared-ui';
+import { Badge, Button, EditableCell, Input, statusBadgeVariant } from '@coastal/shared-ui';
 import {
   formatBookingService,
   formatBookingVehicle,
   getBookingCustomerName,
 } from '@coastal/shared-types';
 import { db } from '@/lib/firebase';
+import { formatPhone } from '@/lib/format';
 import type { BookingDoc } from '@/lib/queries/bookings';
 
 const STATUS_OPTIONS = [
@@ -37,13 +38,9 @@ const ACTIVE_STATUSES = new Set(['pending', 'confirmed', 'in-progress', 'new-lea
 const COMPLETED_STATUSES = new Set(['completed', 'invoiced']);
 const CANCELLED_STATUSES = new Set(['cancelled', 'dead']);
 
-function statusVariant(s: string | undefined): 'default' | 'secondary' | 'outline' | 'destructive' {
-  if (!s) return 'outline';
-  if (COMPLETED_STATUSES.has(s)) return 'default';
-  if (s === 'confirmed' || s === 'in-progress') return 'secondary';
-  if (CANCELLED_STATUSES.has(s)) return 'destructive';
-  return 'outline';
-}
+// A3e: status badges use the canonical statusBadgeVariant from shared-ui.
+// Maps booking statuses (in-progress, confirmed, completed, cancelled, pending,
+// dead, new-lead) to the matching color-coded chip variant.
 
 export default function JobsPage() {
   const [bookings, setBookings] = useState<BookingDoc[]>([]);
@@ -159,7 +156,7 @@ export default function JobsPage() {
                   <tr key={b.id} className="border-t border-border hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-2 align-middle">
                       <div className="font-semibold">{getBookingCustomerName(b) || '(no name)'}</div>
-                      <div className="text-xs text-muted-foreground">{b.phone || b.customerPhone || b.email || b.customerEmail || ''}</div>
+                      <div className="text-xs text-muted-foreground">{formatPhone(b.phone || b.customerPhone) || b.email || b.customerEmail || ''}</div>
                     </td>
                     <td className="px-4 py-2 align-middle text-muted-foreground truncate max-w-[200px]">
                       {formatBookingVehicle(b) || '—'}
@@ -190,7 +187,7 @@ export default function JobsPage() {
                         options={STATUS_OPTIONS}
                         onSave={next => patch(b.id, { status: next })}
                         display={
-                          <Badge variant={statusVariant(b.status)} className="font-normal">
+                          <Badge variant={statusBadgeVariant(b.status)} className="font-normal capitalize">
                             {b.status || 'pending'}
                           </Badge>
                         }

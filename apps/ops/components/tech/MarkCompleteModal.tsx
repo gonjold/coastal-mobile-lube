@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { ref as storageRef, uploadString, getDownloadURL } from "firebase/storage";
 import { storage } from "@/lib/firebase";
 import SignaturePad, { SignaturePadHandle } from "./SignaturePad";
+import { formatPhone } from "@/lib/format";
 import type { Booking } from "@/lib/types/booking";
 
 interface Props {
@@ -96,7 +97,7 @@ export default function MarkCompleteModal({ booking, onConfirm, onCancel }: Prop
           <div className="space-y-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
             <div>
               <strong className="text-[#0B2040]">{customerName}</strong>
-              {customerPhone ? ` · ${customerPhone}` : ""}
+              {customerPhone ? ` · ${formatPhone(customerPhone)}` : ""}
             </div>
             <div>{vehicleDisplay}</div>
             {(v?.vin || booking.vin) && (
