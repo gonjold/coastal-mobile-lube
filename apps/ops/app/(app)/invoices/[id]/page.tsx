@@ -11,6 +11,7 @@ import { db } from '@/lib/firebase';
 import { openSmsForInvoice } from '@/lib/payNow';
 import type { Invoice } from '@coastal/shared-types';
 import SendInvoiceModal from '@/components/invoices/SendInvoiceModal';
+import EstimateHistorySection from '@/components/invoices/EstimateHistorySection';
 
 interface FormState {
   customerName: string;
@@ -242,6 +243,10 @@ export default function InvoiceDetailPage() {
               <div className="text-sm text-muted-foreground whitespace-pre-wrap">{form.notes || 'No notes.'}</div>
             )}
           </Card>
+
+          {invoice.source === 'tech_completion' && invoice.bookingId && (
+            <EstimateHistorySection bookingId={invoice.bookingId} />
+          )}
         </div>
 
         <div className="space-y-4">
