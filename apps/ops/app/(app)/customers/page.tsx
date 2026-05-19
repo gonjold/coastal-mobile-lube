@@ -8,13 +8,7 @@ import { Plus, Users as UsersIcon } from 'lucide-react';
 import { Button, EditableCell, Input } from '@coastal/shared-ui';
 import { db } from '@/lib/firebase';
 import { buildMergedCustomerList, type CustomerRow } from '@/lib/queries/customers';
-
-function formatPhone(p: string): string {
-  const d = p.replace(/\D/g, '');
-  if (d.length === 10) return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
-  if (d.length === 11 && d[0] === '1') return `(${d.slice(1, 4)}) ${d.slice(4, 7)}-${d.slice(7)}`;
-  return p;
-}
+import { formatPhone } from '@/lib/format';
 
 export default function CustomersPage() {
   const [rows, setRows] = useState<CustomerRow[] | null>(null);

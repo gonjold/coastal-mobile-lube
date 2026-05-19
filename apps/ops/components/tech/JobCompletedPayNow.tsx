@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
+import { formatPhone } from "@/lib/format";
 import { openSmsForInvoice } from "@/lib/payNow";
 import type { Booking } from "@/lib/types/booking";
 
@@ -181,7 +182,7 @@ export default function JobCompletedPayNow({ booking }: Props) {
           <>
             <p className="text-sm text-slate-600">
               {customerPhone
-                ? `Send the Pay Now link to ${customerPhone} via SMS.`
+                ? `Send the Pay Now link to ${formatPhone(customerPhone)} via SMS.`
                 : "Customer phone is missing; ask Jason to update the booking before sending."}
             </p>
             <button

@@ -2,6 +2,7 @@
 
 import { doc, updateDoc, serverTimestamp, deleteField } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { formatPhone } from "@/lib/format";
 import type { Booking, FirestoreTimestamp } from "@/lib/types/booking";
 import WorkInProgress from "./WorkInProgress";
 
@@ -60,7 +61,7 @@ export default function EstimateLocked({ booking }: Props) {
         <div className="text-sm">
           <div>{customerName}</div>
           {(booking.phone || booking.customerPhone) && (
-            <div>{booking.phone || booking.customerPhone}</div>
+            <div>{formatPhone(booking.phone || booking.customerPhone)}</div>
           )}
           {(booking.email || booking.customerEmail) && (
             <div>{booking.email || booking.customerEmail}</div>
@@ -169,7 +170,7 @@ export default function EstimateLocked({ booking }: Props) {
                   : ""}
               </div>
               {consent.authorizedOtherPerson.phone && (
-                <div>{consent.authorizedOtherPerson.phone}</div>
+                <div>{formatPhone(consent.authorizedOtherPerson.phone)}</div>
               )}
             </div>
           )}

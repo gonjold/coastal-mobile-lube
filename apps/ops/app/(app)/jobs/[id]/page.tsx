@@ -34,6 +34,7 @@ import {
   getBookingArrivalTime,
 } from '@coastal/shared-types';
 import { db } from '@/lib/firebase';
+import { formatPhone } from '@/lib/format';
 import { useAuth } from '@/lib/useAuth';
 import type { BookingDoc } from '@/lib/queries/bookings';
 import type { Invoice } from '@coastal/shared-types';
@@ -432,7 +433,7 @@ export default function JobDetailPage() {
               <>
                 <div className="text-sm grid grid-cols-2 gap-2">
                   <Read label="Name" value={(booking as { name?: string }).name || (booking as { customerName?: string }).customerName} />
-                  <Read label="Phone" value={booking.phone || booking.customerPhone} />
+                  <Read label="Phone" value={formatPhone(booking.phone || booking.customerPhone)} />
                   <Read label="Email" value={booking.email || booking.customerEmail} />
                   <Read label="Address" value={booking.address} />
                 </div>
@@ -444,7 +445,7 @@ export default function JobDetailPage() {
               <>
                 <div className="text-sm grid grid-cols-2 gap-2">
                   <Read label="Name" value={form.customerName} />
-                  <Read label="Phone" value={form.customerPhone} />
+                  <Read label="Phone" value={formatPhone(form.customerPhone)} />
                   <Read label="Email" value={form.customerEmail} />
                   <Read label="Address" value={form.customerAddress} />
                 </div>

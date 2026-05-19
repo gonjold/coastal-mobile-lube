@@ -8,6 +8,7 @@ import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { Badge, Button, Card, Input } from '@coastal/shared-ui';
 import { db } from '@/lib/firebase';
+import { formatPhone } from '@/lib/format';
 import { openSmsForInvoice } from '@/lib/payNow';
 import type { Invoice } from '@coastal/shared-types';
 import SendInvoiceModal from '@/components/invoices/SendInvoiceModal';
@@ -185,7 +186,7 @@ export default function InvoiceDetailPage() {
             ) : (
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <Read label="Name" value={form.customerName} />
-                <Read label="Phone" value={form.customerPhone} />
+                <Read label="Phone" value={formatPhone(form.customerPhone)} />
                 <Read label="Email" value={form.customerEmail} />
               </div>
             )}

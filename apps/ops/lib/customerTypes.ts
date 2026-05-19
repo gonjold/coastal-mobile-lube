@@ -39,12 +39,13 @@ export interface Customer {
   bookings: Booking[];
 }
 
+// Re-exported from the canonical formatter (A3e PRIORITY-1) so existing
+// consumers that import `formatPhone` from customerTypes keep working.
+// Placeholder differs from format.ts default (returns '-' here to preserve
+// long-standing display behavior in customer modals).
+import { formatPhone as canonicalFormatPhone } from './format';
 export function formatPhone(phone?: string): string {
-  if (!phone) return '-';
-  const d = phone.replace(/\D/g, '');
-  if (d.length === 10)
-    return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
-  return phone;
+  return canonicalFormatPhone(phone, '-');
 }
 
 export function buildCustomerList(bookings: Booking[]): Customer[] {

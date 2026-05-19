@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Booking, FirestoreTimestamp } from "@/lib/types/booking";
+import { formatPhone } from "@/lib/format";
 import JobCompletedPayNow from "./JobCompletedPayNow";
 
 interface Props {
@@ -71,7 +72,7 @@ export default function JobCompleted({ booking }: Props) {
       <Section title="Customer">
         <div className="space-y-1 text-sm">
           <div>{customerName}</div>
-          {customerPhone && <div>{customerPhone}</div>}
+          {customerPhone && <div>{formatPhone(customerPhone)}</div>}
           {customerEmail && <div>{customerEmail}</div>}
         </div>
       </Section>
@@ -265,7 +266,7 @@ export default function JobCompleted({ booking }: Props) {
                   : ""}
               </div>
               {consent.authorizedOtherPerson.phone && (
-                <div>{consent.authorizedOtherPerson.phone}</div>
+                <div>{formatPhone(consent.authorizedOtherPerson.phone)}</div>
               )}
             </div>
           )}

@@ -20,6 +20,7 @@ import {
   getBookingCustomerName,
 } from '@coastal/shared-types';
 import { db } from '@/lib/firebase';
+import { formatPhone } from '@/lib/format';
 import type { BookingDoc } from '@/lib/queries/bookings';
 
 const STATUS_OPTIONS = [
@@ -159,7 +160,7 @@ export default function JobsPage() {
                   <tr key={b.id} className="border-t border-border hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-2 align-middle">
                       <div className="font-semibold">{getBookingCustomerName(b) || '(no name)'}</div>
-                      <div className="text-xs text-muted-foreground">{b.phone || b.customerPhone || b.email || b.customerEmail || ''}</div>
+                      <div className="text-xs text-muted-foreground">{formatPhone(b.phone || b.customerPhone) || b.email || b.customerEmail || ''}</div>
                     </td>
                     <td className="px-4 py-2 align-middle text-muted-foreground truncate max-w-[200px]">
                       {formatBookingVehicle(b) || '—'}
