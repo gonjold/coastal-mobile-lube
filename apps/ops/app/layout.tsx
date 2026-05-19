@@ -1,5 +1,22 @@
 import type { Metadata, Viewport } from 'next';
+import { Plus_Jakarta_Sans, Inter } from 'next/font/google';
 import '../styles/globals.css';
+
+// A3f Phase 2: load Plus Jakarta + Inter to match marketing /admin
+// typography. globals.css :root sets --font-heading / --font-body /
+// --font-sans to the CSS variables these fonts expose.
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  display: 'swap',
+  variable: '--font-jakarta',
+});
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+});
 
 export const metadata: Metadata = {
   title: 'Coastal Ops',
@@ -27,7 +44,12 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="light" suppressHydrationWarning>
+    <html
+      lang="en"
+      data-theme="light"
+      suppressHydrationWarning
+      className={`${plusJakarta.variable} ${inter.variable}`}
+    >
       <body className="bg-background text-foreground antialiased">{children}</body>
     </html>
   );
