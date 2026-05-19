@@ -13,7 +13,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { toast } from 'sonner';
-import { Badge, Button, EditableCell, Input } from '@coastal/shared-ui';
+import { Badge, Button, EditableCell, Input, statusBadgeVariant } from '@coastal/shared-ui';
 import { db } from '@/lib/firebase';
 import { formatPhone } from '@/lib/format';
 import { fetchPendingBilling } from '@/lib/queries/bookings';
@@ -29,12 +29,7 @@ function filterLabel(f: Filter): string {
   return f;
 }
 
-function statusBadgeVariant(s: string): 'default' | 'secondary' | 'outline' | 'destructive' {
-  if (s === 'paid') return 'default';
-  if (s === 'overdue') return 'destructive';
-  if (s === 'sent') return 'secondary';
-  return 'outline';
-}
+// A3e: statusBadgeVariant imported from @coastal/shared-ui (canonical mapping).
 
 function formatCurrency(n: number): string {
   return `$${n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;

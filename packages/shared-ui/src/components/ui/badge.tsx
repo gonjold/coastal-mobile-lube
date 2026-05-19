@@ -18,6 +18,22 @@ const badgeVariants = cva(
           "border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
         ghost: "[a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
         link: "text-primary underline-offset-4 [a&]:hover:underline",
+        // A3e: status variants. Single source of truth for the status chips
+        // rendered across /jobs, /invoices, /schedule, /customers, /today.
+        // Calibrated for contrast on the warm-paper background of the ops
+        // light theme; foreground reads against background even at small
+        // badge size.
+        statusInProgress: "bg-amber-100 text-amber-900 border-amber-200",
+        statusConfirmed: "bg-sky-100 text-sky-900 border-sky-200",
+        statusCompleted: "bg-emerald-100 text-emerald-900 border-emerald-200",
+        statusDraft: "bg-slate-100 text-slate-700 border-slate-200",
+        statusSent: "bg-sky-100 text-sky-900 border-sky-200",
+        statusPaid: "bg-emerald-100 text-emerald-900 border-emerald-200",
+        statusOverdue: "bg-red-100 text-red-900 border-red-200",
+        statusCancelled: "bg-slate-100 text-slate-500 border-slate-200 line-through",
+        statusPending: "bg-stone-100 text-stone-700 border-stone-200",
+        statusDead: "bg-slate-100 text-slate-500 border-slate-200",
+        statusNewLead: "bg-violet-100 text-violet-900 border-violet-200",
       },
     },
     defaultVariants: {
@@ -25,6 +41,39 @@ const badgeVariants = cva(
     },
   }
 )
+
+/** Map a booking/invoice status string to the matching Badge variant. */
+export function statusBadgeVariant(status?: string | null): VariantProps<typeof badgeVariants>["variant"] {
+  switch (status) {
+    case "in-progress":
+    case "in_progress":
+      return "statusInProgress";
+    case "confirmed":
+      return "statusConfirmed";
+    case "completed":
+    case "invoiced":
+      return "statusCompleted";
+    case "draft":
+      return "statusDraft";
+    case "sent":
+      return "statusSent";
+    case "paid":
+      return "statusPaid";
+    case "overdue":
+      return "statusOverdue";
+    case "cancelled":
+      return "statusCancelled";
+    case "pending":
+      return "statusPending";
+    case "dead":
+      return "statusDead";
+    case "new-lead":
+    case "new_lead":
+      return "statusNewLead";
+    default:
+      return "outline";
+  }
+}
 
 function Badge({
   className,

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { collection, onSnapshot, query } from 'firebase/firestore';
-import { Badge, Button } from '@coastal/shared-ui';
+import { Badge, Button, statusBadgeVariant } from '@coastal/shared-ui';
 import {
   formatBookingService,
   formatBookingVehicle,
@@ -37,13 +37,7 @@ function startOfWeekMon(anchor: Date): Date {
   return addDays(utc, -daysFromMon);
 }
 
-function statusVariant(s: string | undefined): 'default' | 'secondary' | 'outline' | 'destructive' {
-  if (!s) return 'outline';
-  if (s === 'completed' || s === 'invoiced') return 'default';
-  if (s === 'confirmed' || s === 'in-progress') return 'secondary';
-  if (s === 'cancelled' || s === 'dead') return 'destructive';
-  return 'outline';
-}
+// A3e: statusBadgeVariant imported from @coastal/shared-ui (canonical mapping).
 
 export default function SchedulePage() {
   const [anchor, setAnchor] = useState<Date>(() => new Date());
@@ -127,7 +121,7 @@ export default function SchedulePage() {
                       >
                         <div className="flex items-center justify-between gap-1 mb-1">
                           <span className="font-semibold truncate">{getBookingCustomerName(b) || '(no name)'}</span>
-                          <Badge variant={statusVariant(b.status)} className="font-normal text-[10px] px-1.5 py-0">{b.status}</Badge>
+                          <Badge variant={statusBadgeVariant(b.status)} className="font-normal text-[10px] px-1.5 py-0">{b.status}</Badge>
                         </div>
                         <div className="text-muted-foreground truncate">{formatBookingService(b)}</div>
                         <div className="text-muted-foreground truncate">{formatBookingVehicle(b)}</div>

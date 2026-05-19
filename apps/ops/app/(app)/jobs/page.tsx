@@ -13,7 +13,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { toast } from 'sonner';
-import { Badge, Button, EditableCell, Input } from '@coastal/shared-ui';
+import { Badge, Button, EditableCell, Input, statusBadgeVariant } from '@coastal/shared-ui';
 import {
   formatBookingService,
   formatBookingVehicle,
@@ -38,13 +38,9 @@ const ACTIVE_STATUSES = new Set(['pending', 'confirmed', 'in-progress', 'new-lea
 const COMPLETED_STATUSES = new Set(['completed', 'invoiced']);
 const CANCELLED_STATUSES = new Set(['cancelled', 'dead']);
 
-function statusVariant(s: string | undefined): 'default' | 'secondary' | 'outline' | 'destructive' {
-  if (!s) return 'outline';
-  if (COMPLETED_STATUSES.has(s)) return 'default';
-  if (s === 'confirmed' || s === 'in-progress') return 'secondary';
-  if (CANCELLED_STATUSES.has(s)) return 'destructive';
-  return 'outline';
-}
+// A3e: status badges use the canonical statusBadgeVariant from shared-ui.
+// Maps booking statuses (in-progress, confirmed, completed, cancelled, pending,
+// dead, new-lead) to the matching color-coded chip variant.
 
 export default function JobsPage() {
   const [bookings, setBookings] = useState<BookingDoc[]>([]);
@@ -191,7 +187,7 @@ export default function JobsPage() {
                         options={STATUS_OPTIONS}
                         onSave={next => patch(b.id, { status: next })}
                         display={
-                          <Badge variant={statusVariant(b.status)} className="font-normal">
+                          <Badge variant={statusBadgeVariant(b.status)} className="font-normal capitalize">
                             {b.status || 'pending'}
                           </Badge>
                         }
