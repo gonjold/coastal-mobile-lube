@@ -39,6 +39,26 @@ function sanitize(input: Record<string, unknown>) {
     const v = input.status.trim();
     if (ALLOWED_STATUSES.has(v)) out.status = v;
   }
+  if ("bookingPriceOverride" in input) {
+    const raw = input.bookingPriceOverride;
+    if (raw === null) {
+      out.bookingPriceOverride = null;
+    } else if (typeof raw === "number" && Number.isFinite(raw)) {
+      // Accept positive, up-to-2-decimal numbers capped at $5000 to catch
+      // typos like 13495 vs 134.95.
+      if (raw > 0 && raw <= 5000) {
+        out.bookingPriceOverride = Math.round(raw * 100) / 100;
+      }
+    } else if (typeof raw === "string") {
+      const trimmed = raw.trim();
+      if (trimmed.length > 0 && /^\d+(\.\d{1,2})?$/.test(trimmed)) {
+        const num = parseFloat(trimmed);
+        if (num > 0 && num <= 5000) {
+          out.bookingPriceOverride = Math.round(num * 100) / 100;
+        }
+      }
+    }
+  }
   return out;
 }
 

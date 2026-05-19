@@ -1683,7 +1683,135 @@ exports.sendInvoiceWithQBPayment = onRequest(
         invoiceResult = await postInvoice(retryPayload);
       }
       if (invoiceResult.Fault) {
-        throw new Error(`QB invoice create failed: ${JSON.stringify(invoiceResult.Fault)}`);
+        // Duplicate DocNumber recovery: QB rejects when DocNumber already exists
+        // (typically because a prior send POSTed successfully but the local
+        // Firestore doc never got qbInvoiceId written back — e.g. early-writeback
+        // failure, function timeout, or the prior local doc was deleted and the
+        // generator re-minted the same number). Query QB for the existing
+        // invoice by DocNumber, hydrate qbInvoiceId locally, and route through
+        // the resend path so the customer still gets the invoice on this click.
+        const fault = invoiceResult.Fault;
+        const faultErrors = Array.isArray(fault?.Error) ? fault.Error : [];
+        const isDuplicateDocNumber = faultErrors.some((e) => {
+          const code = String(e?.code || "");
+          const message = `${e?.Message || ""} ${e?.Detail || ""}`;
+          return code === "6140" || /duplicate\s+document\s+number/i.test(message);
+        });
+
+        if (isDuplicateDocNumber && invoiceId && invoiceNumber) {
+          console.warn(
+            `[QB-DUP] Duplicate DocNumber=${invoiceNumber} detected; attempting reconcile`
+          );
+          const escapedDoc = String(invoiceNumber).replace(/'/g, "\\'");
+          const qbQueryUrl = `${baseUrl}/query?minorversion=75&query=${encodeURIComponent(
+            `select Id, DocNumber from Invoice where DocNumber = '${escapedDoc}'`
+          )}`;
+          const queryResp = await fetch(qbQueryUrl, {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              Accept: "application/json",
+            },
+          });
+          const queryJson = await queryResp.json();
+          const found = queryJson?.QueryResponse?.Invoice?.[0];
+          if (!found?.Id) {
+            console.error(
+              `[QB-DUP] Reconcile failed for DocNumber=${invoiceNumber}: QB query returned no invoice`,
+              JSON.stringify(queryJson)
+            );
+            throw new Error(
+              `QB invoice create failed: ${JSON.stringify(fault)}`
+            );
+          }
+          const reconciledQbId = String(found.Id);
+          console.log(
+            `[QB-DUP] Reconciled DocNumber=${invoiceNumber} -> qbInvoiceId=${reconciledQbId}; hydrating local doc and routing to resend`
+          );
+
+          await firestoreDb.collection("invoices").doc(invoiceId).update({
+            qbInvoiceId: reconciledQbId,
+            qbDocNumber: invoiceNumber,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+          existingData = {
+            ...(existingData || {}),
+            qbInvoiceId: reconciledQbId,
+            qbDocNumber: invoiceNumber,
+          };
+
+          if (isFdacs) {
+            const sendTo = customerEmail || existingData.customerEmail || "";
+            const transporter = nodemailer.createTransport({
+              service: "gmail",
+              auth: { user: gmailUser.value(), pass: gmailAppPassword.value() },
+            });
+            const fromAddr = `"Coastal Mobile Lube" <${gmailUser.value()}>`;
+            const fdacsResendInvoice = { ...existingData, customerEmail: sendTo };
+
+            await sendFdacsCustomerEmail({
+              invoiceId,
+              invoice: fdacsResendInvoice,
+              paymentLink: existingData.qbPaymentLink || "",
+              recipientEmail: sendTo,
+              transporter,
+              fromAddr,
+            });
+
+            await firestoreDb.collection("invoices").doc(invoiceId).update({
+              status: "sent",
+              sentDate: new Date().toISOString(),
+              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+
+            const resendInvoiceRef = firestoreDb.collection("invoices").doc(invoiceId);
+            const resendAttach = await uploadFdacsPdfToQb({
+              invoice: fdacsResendInvoice,
+              invoiceId,
+              qbInvoiceId: reconciledQbId,
+              accessToken,
+              realmId,
+              invoiceRef: resendInvoiceRef,
+            });
+
+            return res.status(200).json({
+              success: true,
+              action: "reconciled",
+              mode: "fdacs",
+              qbInvoiceId: reconciledQbId,
+              qbAttachableId:
+                resendAttach?.attachableId || existingData.qbAttachableId,
+            });
+          }
+
+          const sendTo = customerEmail || existingData.customerEmail || "";
+          const sendResponse = await fetch(
+            `${baseUrl}/invoice/${reconciledQbId}/send?sendTo=${encodeURIComponent(sendTo)}&minorversion=75`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                Accept: "application/json",
+              },
+            }
+          );
+          if (!sendResponse.ok) {
+            const errBody = await sendResponse.text();
+            console.error("[QB-DUP] Legacy reconcile send failed:", errBody);
+            throw new Error(`QB reconcile send failed: ${sendResponse.status}`);
+          }
+          await firestoreDb.collection("invoices").doc(invoiceId).update({
+            status: "sent",
+            sentDate: new Date().toISOString(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+          return res.status(200).json({
+            success: true,
+            action: "reconciled",
+            qbInvoiceId: reconciledQbId,
+          });
+        }
+
+        throw new Error(`QB invoice create failed: ${JSON.stringify(fault)}`);
       }
 
       const qbInvoiceId = invoiceResult.Invoice?.Id;

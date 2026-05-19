@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import AdminBadge from "./AdminBadge";
 import {
   type Booking,
@@ -81,6 +82,10 @@ export default function ScheduleDetailPanel({
   const [confirmDuration, setConfirmDuration] = useState('60');
   const [confirmSending, setConfirmSending] = useState(false);
   const [assignableUsers, setAssignableUsers] = useState<AppUser[]>([]);
+  const [priceEditing, setPriceEditing] = useState(false);
+  const [priceDraft, setPriceDraft] = useState("");
+  const [priceSaving, setPriceSaving] = useState(false);
+  const [priceError, setPriceError] = useState<string | null>(null);
 
   /* Load all active users (admin + tech) for assignment dropdown */
   useEffect(() => {
@@ -119,6 +124,66 @@ export default function ScheduleDetailPanel({
   useEffect(() => {
     setShowConfirmForm(false);
   }, [booking?.id]);
+
+  /* Reset price-override editor when booking changes */
+  useEffect(() => {
+    setPriceEditing(false);
+    setPriceDraft("");
+    setPriceError(null);
+  }, [booking?.id]);
+
+  async function patchBookingPrice(bookingId: string, value: number | null) {
+    const res = await fetch(`/api/admin/bookings/${bookingId}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ bookingPriceOverride: value }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error((err as { error?: string }).error || `HTTP ${res.status}`);
+    }
+  }
+
+  async function handleSavePriceOverride(bookingId: string) {
+    const trimmed = priceDraft.trim();
+    if (!/^\d+(\.\d{1,2})?$/.test(trimmed)) {
+      setPriceError("Enter a price like 134.95");
+      return;
+    }
+    const num = parseFloat(trimmed);
+    if (!(num > 0) || num > 5000) {
+      setPriceError("Price must be between $0.01 and $5000");
+      return;
+    }
+    setPriceError(null);
+    setPriceSaving(true);
+    try {
+      await patchBookingPrice(bookingId, Math.round(num * 100) / 100);
+      setPriceEditing(false);
+      toast.success("Price override saved");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Save failed";
+      setPriceError(msg);
+    } finally {
+      setPriceSaving(false);
+    }
+  }
+
+  async function handleClearPriceOverride(bookingId: string) {
+    setPriceSaving(true);
+    setPriceError(null);
+    try {
+      await patchBookingPrice(bookingId, null);
+      setPriceEditing(false);
+      toast.success("Price override cleared");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Clear failed";
+      setPriceError(msg);
+      toast.error(msg);
+    } finally {
+      setPriceSaving(false);
+    }
+  }
 
   /* Pre-fill confirm form from booking data */
   useEffect(() => {
@@ -214,8 +279,13 @@ export default function ScheduleDetailPanel({
   const timeDisplay = b.confirmedArrivalWindow || formatTimeWindow(b.timeWindow) || "—";
   const division = getDivisionLabel(b);
 
-  const price = b.selectedServices?.reduce((sum, s) => sum + (s.price || 0), 0);
-  const priceDisplay = price ? formatCurrency(price) : "—";
+  const catalogPrice = b.selectedServices?.reduce((sum, s) => sum + (s.price || 0), 0) || 0;
+  const hasOverride =
+    typeof b.bookingPriceOverride === "number" && b.bookingPriceOverride > 0;
+  const effectivePrice = hasOverride
+    ? (b.bookingPriceOverride as number)
+    : catalogPrice;
+  const priceDisplay = effectivePrice ? formatCurrency(effectivePrice) : "—";
 
   /* Primary action config */
   let primaryLabel = "";
@@ -314,14 +384,120 @@ export default function ScheduleDetailPanel({
             { label: "Date + Time", value: `${dateDisplay} · ${timeDisplay}` },
             { label: "Duration", value: b.estimatedDuration || "~1 hour" },
             { label: "Division", value: division },
-            { label: "Price", value: priceDisplay },
-            { label: "Source", value: b.source || "—" },
           ] as { label: string; value: string }[]).map((row) => (
             <div key={row.label} className="flex justify-between py-2 border-b border-gray-50">
               <span className="text-[13px] text-gray-500">{row.label}</span>
               <span className="text-[13px] font-medium text-[#0B2040] text-right max-w-[60%]">{row.value}</span>
             </div>
           ))}
+
+          {/* Price row — supports per-booking override */}
+          <div className="py-2 border-b border-gray-50">
+            <div className="flex justify-between items-start">
+              <span className="text-[13px] text-gray-500">Price</span>
+              <div className="text-right max-w-[60%]">
+                {priceEditing ? (
+                  <div className="flex flex-col items-end gap-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[13px] text-gray-500">$</span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={priceDraft}
+                        onChange={(e) => setPriceDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && b.id) {
+                            e.preventDefault();
+                            handleSavePriceOverride(b.id);
+                          } else if (e.key === "Escape") {
+                            setPriceEditing(false);
+                            setPriceError(null);
+                          }
+                        }}
+                        disabled={priceSaving}
+                        autoFocus
+                        placeholder="0.00"
+                        className="w-24 rounded border border-gray-300 px-2 py-1 text-[13px] text-right text-[#0B2040]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => b.id && handleSavePriceOverride(b.id)}
+                        disabled={priceSaving}
+                        className="rounded bg-[#16A34A] px-2 py-1 text-[11px] font-semibold text-white disabled:opacity-60 cursor-pointer"
+                      >
+                        {priceSaving ? "Saving…" : "Save"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPriceEditing(false);
+                          setPriceError(null);
+                        }}
+                        disabled={priceSaving}
+                        className="rounded border border-gray-300 px-2 py-1 text-[11px] text-gray-700 disabled:opacity-60 cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                    {priceError && (
+                      <span className="text-[11px] text-[#B91C1C]">{priceError}</span>
+                    )}
+                    {hasOverride && (
+                      <span className="text-[11px] text-gray-500">
+                        catalog: {formatCurrency(catalogPrice)}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-end gap-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[13px] font-medium text-[#0B2040]">
+                        {priceDisplay}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPriceDraft(
+                            hasOverride
+                              ? String(b.bookingPriceOverride)
+                              : catalogPrice
+                                ? String(catalogPrice.toFixed(2))
+                                : "",
+                          );
+                          setPriceError(null);
+                          setPriceEditing(true);
+                        }}
+                        className="rounded border border-[#1A5FAC] px-2 py-0.5 text-[11px] font-semibold text-[#1A5FAC] hover:bg-[#1A5FAC] hover:text-white transition cursor-pointer"
+                      >
+                        Override
+                      </button>
+                    </div>
+                    {hasOverride && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-gray-500">
+                          (catalog: {formatCurrency(catalogPrice)})
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => b.id && handleClearPriceOverride(b.id)}
+                          disabled={priceSaving}
+                          className="text-[11px] text-[#B91C1C] underline disabled:opacity-60 cursor-pointer"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Source row */}
+          <div className="flex justify-between py-2 border-b border-gray-50">
+            <span className="text-[13px] text-gray-500">Source</span>
+            <span className="text-[13px] font-medium text-[#0B2040] text-right max-w-[60%]">{b.source || "—"}</span>
+          </div>
 
           {/* Contact */}
           <p className="text-[11px] font-bold text-gray-500 uppercase tracking-[0.06em] mb-3 mt-6">Contact</p>
