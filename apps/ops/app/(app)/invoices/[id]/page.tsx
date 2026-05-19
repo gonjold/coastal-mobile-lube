@@ -8,6 +8,7 @@ import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { Badge, Button, Card, Input } from '@coastal/shared-ui';
 import { db } from '@/lib/firebase';
+import { openSmsForInvoice } from '@/lib/payNow';
 import type { Invoice } from '@coastal/shared-types';
 
 interface FormState {
@@ -260,6 +261,23 @@ export default function InvoiceDetailPage() {
                 </a>
               )}
             </dl>
+            {invoice.qbPaymentLink && !invoice.paidDate && invoice.customerPhone && (
+              <Button
+                size="sm"
+                className="mt-2 w-full"
+                onClick={() => openSmsForInvoice(
+                  { invoiceNumber: invoice.invoiceNumber, qbPaymentLink: invoice.qbPaymentLink as string },
+                  { name: invoice.customerName ?? '', phone: invoice.customerPhone ?? '' },
+                )}
+              >
+                Pay Now (send SMS)
+              </Button>
+            )}
+            {invoice.qbPaymentLink && !invoice.paidDate && !invoice.customerPhone && (
+              <div className="mt-2 text-xs text-muted-foreground">
+                Add a customer phone to enable Pay Now SMS.
+              </div>
+            )}
             {invoice.qboFinalizeStatus === 'error' && (
               <Button variant="outline" size="sm" disabled title="Fix-invoice dialog lands in STEP 13">
                 Retry QB

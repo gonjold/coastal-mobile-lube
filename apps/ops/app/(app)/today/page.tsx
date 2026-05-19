@@ -1,0 +1,115 @@
+"use client";
+
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Button } from "@coastal/shared-ui";
+import type { BookingDoc } from "@/lib/queries/bookings";
+import {
+  partitionToday,
+  subscribeTodayJobs,
+  type TodayView,
+} from "@/lib/queries/today";
+import TodayHeader from "@/components/today/TodayHeader";
+import TodayJobCard from "@/components/today/TodayJobCard";
+import TodayEmptyState from "@/components/today/TodayEmptyState";
+
+const VIEWS: TodayView[] = ["in-progress", "upcoming", "unassigned"];
+
+function isView(v: string | null): v is TodayView {
+  return v === "in-progress" || v === "upcoming" || v === "unassigned";
+}
+
+function TodayPageInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [jobs, setJobs] = useState<BookingDoc[] | null>(null);
+
+  useEffect(() => {
+    const unsub = subscribeTodayJobs(setJobs);
+    return () => {
+      unsub();
+    };
+  }, []);
+
+  const partitions = useMemo(
+    () => (jobs ? partitionToday(jobs) : null),
+    [jobs],
+  );
+
+  const requested = searchParams.get("view");
+  const defaultView: TodayView =
+    partitions && partitions["in-progress"].length > 0 ? "in-progress" : "upcoming";
+  const view: TodayView = isView(requested) ? requested : defaultView;
+
+  function switchView(next: TodayView) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("view", next);
+    router.replace(`/today?${params.toString()}`);
+  }
+
+  const counts = {
+    inProgress: partitions?.["in-progress"].length ?? 0,
+    upcoming: partitions?.upcoming.length ?? 0,
+    unassigned: partitions?.unassigned.length ?? 0,
+  };
+
+  const rows = partitions?.[view] ?? [];
+
+  return (
+    <div className="flex flex-col gap-4 p-4 lg:gap-6 lg:p-6">
+      <TodayHeader
+        inProgressCount={counts.inProgress}
+        upcomingCount={counts.upcoming}
+        unassignedCount={counts.unassigned}
+      />
+
+      <nav className="flex flex-wrap gap-2" role="tablist">
+        {VIEWS.map((v) => (
+          <Button
+            key={v}
+            role="tab"
+            aria-selected={v === view}
+            variant={v === view ? "default" : "outline"}
+            className="min-h-[48px]"
+            onClick={() => switchView(v)}
+          >
+            {labelFor(v)}
+            <span className="ml-2 text-xs opacity-75">
+              {v === "in-progress"
+                ? counts.inProgress
+                : v === "upcoming"
+                  ? counts.upcoming
+                  : counts.unassigned}
+            </span>
+          </Button>
+        ))}
+      </nav>
+
+      {!partitions ? (
+        <div className="text-sm text-muted-foreground">Loading today's jobs…</div>
+      ) : rows.length === 0 ? (
+        <TodayEmptyState view={view} />
+      ) : (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5">
+          {rows.map((b) => (
+            <TodayJobCard key={b.id} booking={b} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function labelFor(v: TodayView): string {
+  if (v === "in-progress") return "In Progress";
+  if (v === "upcoming") return "Upcoming";
+  return "Unassigned";
+}
+
+export default function TodayPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading…</div>}>
+      <TodayPageInner />
+    </Suspense>
+  );
+}
