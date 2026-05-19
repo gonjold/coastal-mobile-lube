@@ -156,9 +156,9 @@ export default function InvoicesPage() {
             <table className="w-full text-[13px]">
               <thead>
                 <tr className="bg-muted/50">
-                  <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Customer</th>
-                  <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Phone</th>
-                  <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Completed</th>
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Customer</th>
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Phone</th>
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Completed</th>
                   <th className="px-4 py-2.5"></th>
                 </tr>
               </thead>
@@ -181,10 +181,10 @@ export default function InvoicesPage() {
                     const completedLabel = completedAt ? completedAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
                     return (
                       <tr key={b.id} className="border-t border-border hover:bg-muted/30 transition-colors">
-                        <td className="px-4 py-2 align-middle font-semibold">{name}</td>
-                        <td className="px-4 py-2 align-middle">{formatPhone(phone, '—')}</td>
-                        <td className="px-4 py-2 align-middle">{completedLabel}</td>
-                        <td className="px-4 py-2 align-middle text-right">
+                        <td className="px-4 py-3 align-middle font-semibold">{name}</td>
+                        <td className="px-4 py-3 align-middle">{formatPhone(phone, '—')}</td>
+                        <td className="px-4 py-3 align-middle">{completedLabel}</td>
+                        <td className="px-4 py-3 align-middle text-right">
                           <Link href={`/jobs/${b.id}`} className="text-xs font-semibold text-primary hover:underline">
                             Open job →
                           </Link>
@@ -199,12 +199,12 @@ export default function InvoicesPage() {
             <table className="w-full text-[13px]">
               <thead>
                 <tr className="bg-muted/50">
-                  <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Invoice</th>
-                  <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Customer</th>
-                  <th className="px-4 py-2.5 text-right font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Total</th>
-                  <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Due</th>
-                  <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Status</th>
-                  <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">QB</th>
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Invoice</th>
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Customer</th>
+                  <th className="px-4 py-3 text-right font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Total</th>
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Due</th>
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Status</th>
+                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">QB</th>
                   <th className="px-4 py-2.5"></th>
                 </tr>
               </thead>
@@ -226,10 +226,10 @@ export default function InvoicesPage() {
                     const total = typeof inv.qbTotalAmount === 'number' ? inv.qbTotalAmount : inv.total;
                     return (
                       <tr key={inv.id} className="border-t border-border hover:bg-muted/30 transition-colors">
-                        <td className="px-4 py-2 align-middle font-semibold">{inv.invoiceNumber || inv.id.slice(0, 8)}</td>
-                        <td className="px-4 py-2 align-middle">{inv.customerName}</td>
-                        <td className="px-4 py-2 align-middle text-right">{formatCurrency(total)}</td>
-                        <td className="px-4 py-2 align-middle w-[160px]">
+                        <td className="px-4 py-3 align-middle font-semibold">{inv.invoiceNumber || inv.id.slice(0, 8)}</td>
+                        <td className="px-4 py-3 align-middle">{inv.customerName}</td>
+                        <td className="px-4 py-3 align-middle text-right">{formatCurrency(total)}</td>
+                        <td className="px-4 py-3 align-middle w-[160px]">
                           <EditableCell
                             type="date"
                             value={inv.dueDate || ''}
@@ -237,13 +237,13 @@ export default function InvoicesPage() {
                             placeholder="set due"
                           />
                         </td>
-                        <td className="px-4 py-2 align-middle w-[120px]">
+                        <td className="px-4 py-3 align-middle w-[120px]">
                           <Badge variant={statusBadgeVariant(inv.status)} className="font-normal capitalize">{inv.status}</Badge>
                         </td>
-                        <td className="px-4 py-2 align-middle text-xs text-muted-foreground">
+                        <td className="px-4 py-3 align-middle text-xs text-muted-foreground">
                           {inv.qboFinalizeStatus === 'error' ? <span className="text-red-700">error</span> : inv.qbDocNumber ?? '—'}
                         </td>
-                        <td className="px-4 py-2 align-middle text-right">
+                        <td className="px-4 py-3 align-middle text-right">
                           <Link href={`/invoices/${inv.id}`} className="text-xs font-semibold text-primary hover:underline">
                             Open →
                           </Link>

@@ -94,11 +94,11 @@ export default function CustomersPage() {
           <table className="w-full text-[13px]">
             <thead>
               <tr className="bg-muted/50">
-                <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Name</th>
-                <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Phone</th>
-                <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Email</th>
-                <th className="px-4 py-2.5 text-right font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Jobs</th>
-                <th className="px-4 py-2.5 text-right font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Profile</th>
+                <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Name</th>
+                <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Phone</th>
+                <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Email</th>
+                <th className="px-4 py-3 text-right font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Jobs</th>
+                <th className="px-4 py-3 text-right font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Profile</th>
               </tr>
             </thead>
             <tbody>
@@ -116,13 +116,13 @@ export default function CustomersPage() {
               ) : (
                 filtered.map(row => (
                   <tr key={row.customerId ?? row.key} className="border-t border-border align-middle">
-                    <td className="px-4 py-2">
+                    <td className="px-4 py-3">
                       <EditableCell
                         value={row.name}
                         onSave={next => patchCustomer(row, { name: next })}
                       />
                     </td>
-                    <td className="px-4 py-2">
+                    <td className="px-4 py-3">
                       <EditableCell
                         type="tel"
                         value={row.phone}
@@ -130,15 +130,15 @@ export default function CustomersPage() {
                         onSave={next => patchCustomer(row, { phone: next })}
                       />
                     </td>
-                    <td className="px-4 py-2">
+                    <td className="px-4 py-3">
                       <EditableCell
                         type="email"
                         value={row.email}
                         onSave={next => patchCustomer(row, { email: next })}
                       />
                     </td>
-                    <td className="px-4 py-2 text-right text-muted-foreground">{row.totalBookings}</td>
-                    <td className="px-4 py-2 text-right">
+                    <td className="px-4 py-3 text-right text-muted-foreground">{row.totalBookings}</td>
+                    <td className="px-4 py-3 text-right">
                       <Link
                         href={`/customers/${row.customerId ?? row.key}`}
                         className="text-xs font-semibold text-primary hover:underline"

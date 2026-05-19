@@ -79,12 +79,12 @@ export default function TeamPage() {
           <table className="w-full text-[13px]">
             <thead>
               <tr className="bg-muted/50">
-                <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Name</th>
-                <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Email</th>
-                <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Role</th>
-                <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Status</th>
-                <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Created</th>
-                <th className="px-4 py-2.5 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Last login</th>
+                <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Name</th>
+                <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Email</th>
+                <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Role</th>
+                <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Status</th>
+                <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Created</th>
+                <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Last login</th>
               </tr>
             </thead>
             <tbody>
@@ -100,9 +100,9 @@ export default function TeamPage() {
               ) : (
                 users.map(u => (
                   <tr key={u.uid} className="border-t border-border align-middle">
-                    <td className="px-4 py-2 font-semibold">{u.displayName || '(no name)'}</td>
-                    <td className="px-4 py-2 text-muted-foreground">{u.email}</td>
-                    <td className="px-4 py-2 w-[160px]">
+                    <td className="px-4 py-3 font-semibold">{u.displayName || '(no name)'}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{u.email}</td>
+                    <td className="px-4 py-3 w-[160px]">
                       <EditableCell
                         type="select"
                         value={u.role}
@@ -111,7 +111,7 @@ export default function TeamPage() {
                         display={<Badge variant={roleVariant(u.role)} className="font-normal capitalize">{u.role.replace('_', ' ')}</Badge>}
                       />
                     </td>
-                    <td className="px-4 py-2 w-[120px]">
+                    <td className="px-4 py-3 w-[120px]">
                       <EditableCell
                         type="select"
                         value={u.isActive ? 'true' : 'false'}
