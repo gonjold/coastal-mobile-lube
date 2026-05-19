@@ -1427,6 +1427,76 @@ exports.sendInvoiceWithQBPayment = onRequest(
       const { accessToken, realmId } = await getQBAccessToken();
       const baseUrl = `https://${QB_BASE}/v3/company/${realmId}`;
 
+      // Defensive helper: if the local Firestore doc is missing qbPaymentLink
+      // (and/or QB-authoritative totals), fetch them from QB and persist.
+      // Called from resend + reconcile paths where the orphaned-state
+      // scenario (prior send POSTed to QB but early-writeback failed locally)
+      // leaves the doc without the link that powers the Pay Now button.
+      // Safe to call when fields already exist — short-circuits.
+      async function ensureQbPaymentLinkAndTotals(qbInvoiceIdToFetch, currentExistingData) {
+        if (currentExistingData?.qbPaymentLink) {
+          return {
+            paymentLink: currentExistingData.qbPaymentLink,
+            existingData: currentExistingData,
+          };
+        }
+        try {
+          const linkResponse = await fetch(
+            `${baseUrl}/invoice/${qbInvoiceIdToFetch}?minorversion=75&include=invoiceLink`,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                Accept: "application/json",
+              },
+            }
+          );
+          const linkResult = await linkResponse.json();
+          const qbInv = linkResult?.Invoice;
+          const paymentLink = qbInv?.InvoiceLink || "";
+          const update = {};
+          if (paymentLink) update.qbPaymentLink = paymentLink;
+          const qbTotalAmount =
+            qbInv?.TotalAmt != null ? parseFloat(qbInv.TotalAmt) : null;
+          const qbTaxAmount =
+            qbInv?.TxnTaxDetail?.TotalTax != null
+              ? parseFloat(qbInv.TxnTaxDetail.TotalTax)
+              : 0;
+          const qbSubtotal =
+            qbTotalAmount != null
+              ? Math.round((qbTotalAmount - qbTaxAmount) * 100) / 100
+              : null;
+          if (qbTotalAmount != null && currentExistingData?.qbTotalAmount == null) {
+            update.qbTotalAmount = qbTotalAmount;
+          }
+          if (qbSubtotal != null && currentExistingData?.qbSubtotal == null) {
+            update.qbSubtotal = qbSubtotal;
+          }
+          if (currentExistingData?.qbTaxAmount == null) {
+            update.qbTaxAmount = qbTaxAmount;
+          }
+          let updatedExistingData = currentExistingData;
+          if (Object.keys(update).length > 0 && invoiceId) {
+            await firestoreDb.collection("invoices").doc(invoiceId).update(update);
+            updatedExistingData = { ...(currentExistingData || {}), ...update };
+            console.log(
+              `[QB-LINK] Hydrated invoice ${invoiceId} (qbInvoiceId=${qbInvoiceIdToFetch}): link=${
+                paymentLink ? "yes" : "no"
+              }, fields=${Object.keys(update).join(",")}`
+            );
+          }
+          return { paymentLink, existingData: updatedExistingData };
+        } catch (linkErr) {
+          console.error(
+            `[QB-LINK] Defensive link/totals fetch failed for qbInvoiceId=${qbInvoiceIdToFetch}:`,
+            linkErr
+          );
+          return {
+            paymentLink: currentExistingData?.qbPaymentLink || "",
+            existingData: currentExistingData,
+          };
+        }
+      }
+
       // Fetch existing invoice doc once (used by resend path AND by source-branch
       // logic at the email step). May be null for create-only flows that don't
       // have an invoiceId yet.
@@ -1443,6 +1513,16 @@ exports.sendInvoiceWithQBPayment = onRequest(
         // generic template). Re-render the FDACS body + PDF and deliver via our
         // own SMTP path using the stored qbPaymentLink.
         if (isFdacs) {
+          // Defensive: hydrate qbPaymentLink + totals from QB if missing
+          // locally. Covers prior-reconciled invoices whose orphaned-state
+          // origin left these fields unpopulated; without this, the resend
+          // email would ship without the Pay Now button.
+          const hydrated = await ensureQbPaymentLinkAndTotals(
+            existingData.qbInvoiceId,
+            existingData
+          );
+          existingData = hydrated.existingData;
+
           const sendTo = customerEmail || existingData.customerEmail || "";
           const transporter = nodemailer.createTransport({
             service: "gmail",
@@ -1454,7 +1534,7 @@ exports.sendInvoiceWithQBPayment = onRequest(
           await sendFdacsCustomerEmail({
             invoiceId,
             invoice: fdacsResendInvoice,
-            paymentLink: existingData.qbPaymentLink || "",
+            paymentLink: hydrated.paymentLink,
             recipientEmail: sendTo,
             transporter,
             fromAddr,
@@ -1489,6 +1569,15 @@ exports.sendInvoiceWithQBPayment = onRequest(
 
         // Legacy resend: keep QB's /invoice/{Id}/send (preserves existing
         // manual_admin behavior — generic QB template, no PDF attachment).
+        // Defensive: hydrate qbPaymentLink + totals if missing locally.
+        // QB's send template includes its own payment link, but keeping
+        // local Firestore in sync helps admin views and future flows.
+        const legacyHydrated = await ensureQbPaymentLinkAndTotals(
+          existingData.qbInvoiceId,
+          existingData
+        );
+        existingData = legacyHydrated.existingData;
+
         const sendTo = customerEmail || existingData.customerEmail || "";
         const sendResponse = await fetch(
           `${baseUrl}/invoice/${existingData.qbInvoiceId}/send?sendTo=${encodeURIComponent(sendTo)}&minorversion=75`,
@@ -1740,6 +1829,17 @@ exports.sendInvoiceWithQBPayment = onRequest(
           };
 
           if (isFdacs) {
+            // Reconcile by definition means the prior send aborted before
+            // persisting qbPaymentLink locally. Fetch from QB so the
+            // customer email includes the Pay Now button. (The helper's
+            // existing-link short-circuit is a no-op here since orphaned
+            // state has no link by construction.)
+            const reconcileHydrated = await ensureQbPaymentLinkAndTotals(
+              reconciledQbId,
+              existingData
+            );
+            existingData = reconcileHydrated.existingData;
+
             const sendTo = customerEmail || existingData.customerEmail || "";
             const transporter = nodemailer.createTransport({
               service: "gmail",
@@ -1751,7 +1851,7 @@ exports.sendInvoiceWithQBPayment = onRequest(
             await sendFdacsCustomerEmail({
               invoiceId,
               invoice: fdacsResendInvoice,
-              paymentLink: existingData.qbPaymentLink || "",
+              paymentLink: reconcileHydrated.paymentLink,
               recipientEmail: sendTo,
               transporter,
               fromAddr,
