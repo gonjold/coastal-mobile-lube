@@ -29,7 +29,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@coastal/shared-ui";
-import { SIDEBAR_SECTIONS, type SidebarItem as SidebarItemType } from "@/lib/sidebarConfig";
+import { getSidebarGroups, type NavItem } from "@/lib/nav";
+import { useAuth } from "@/lib/useAuth";
 import { useLayout } from "./ClientLayoutProvider";
 import { SidebarOverlay } from "./SidebarOverlay";
 
@@ -37,8 +38,12 @@ type SidebarVariant = "full" | "icon";
 
 export function SidebarContent({ variant = "full" }: { variant?: SidebarVariant } = {}) {
   const pathname = usePathname();
+  const { role } = useAuth();
   const { setMobileSidebarOpen } = useLayout();
   const [overlayOpen, setOverlayOpen] = useState(false);
+  // A3f Phase 3: role-filtered nav. Tech sees 4 items only; owner sees 14.
+  const groups = getSidebarGroups(role);
+  const flatItems = groups.flatMap((g) => g.items);
 
   if (variant === "icon") {
     return (
@@ -54,7 +59,7 @@ export function SidebarContent({ variant = "full" }: { variant?: SidebarVariant 
           </button>
           <TooltipProvider delayDuration={150}>
             <nav className="flex-1 w-full py-2 px-2 space-y-1 overflow-y-auto" aria-label="Icon navigation">
-              {SIDEBAR_SECTIONS.flatMap((section) => section.items).map((item) => {
+              {flatItems.map((item) => {
                 const Icon = item.icon;
                 const active =
                   item.available &&
@@ -105,7 +110,7 @@ export function SidebarContent({ variant = "full" }: { variant?: SidebarVariant 
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto">
-        {SIDEBAR_SECTIONS.map((section) => (
+        {groups.map((section) => (
           <div key={section.label}>
             <div className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               {section.label}
@@ -141,7 +146,7 @@ function SidebarRow({
   active,
   onNavigate,
 }: {
-  item: SidebarItemType;
+  item: NavItem;
   active: boolean;
   onNavigate: () => void;
 }) {
@@ -157,15 +162,6 @@ function SidebarRow({
       <Link href={item.href} className={`${baseClasses} ${activeClasses}`} onClick={onNavigate}>
         <Icon className="w-4 h-4 shrink-0" strokeWidth={active ? 2 : 1.75} />
         <span className="flex-1">{item.label}</span>
-        {item.badge && (
-          <span
-            className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-              active ? "bg-primary-foreground/20 text-primary-foreground" : "bg-accent/15 text-accent-text"
-            }`}
-          >
-            {item.badge}
-          </span>
-        )}
       </Link>
     );
   }

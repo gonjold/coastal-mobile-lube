@@ -22,7 +22,8 @@ import {
   SheetTitle,
 } from "@coastal/shared-ui";
 import { Wrench } from "lucide-react";
-import { SIDEBAR_SECTIONS } from "@/lib/sidebarConfig";
+import { getSidebarGroups } from "@/lib/nav";
+import { useAuth } from "@/lib/useAuth";
 
 interface Props {
   open: boolean;
@@ -31,6 +32,10 @@ interface Props {
 
 export function SidebarOverlay({ open, onOpenChange }: Props) {
   const pathname = usePathname();
+  const { role } = useAuth();
+  // A3f Phase 3: same role-filter source as Sidebar so overlay never shows
+  // items the sidebar hid.
+  const groups = getSidebarGroups(role);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -44,7 +49,7 @@ export function SidebarOverlay({ open, onOpenChange }: Props) {
           </SheetTitle>
         </SheetHeader>
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6" aria-label="Sidebar overlay navigation">
-          {SIDEBAR_SECTIONS.map((section) => (
+          {groups.map((section) => (
             <div key={section.label}>
               <div className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 {section.label}
@@ -73,17 +78,6 @@ export function SidebarOverlay({ open, onOpenChange }: Props) {
                           aria-hidden="true"
                         />
                         <span className="flex-1">{item.label}</span>
-                        {item.badge && (
-                          <span
-                            className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                              active
-                                ? "bg-primary-foreground/20 text-primary-foreground"
-                                : "bg-accent/15 text-accent-text"
-                            }`}
-                          >
-                            {item.badge}
-                          </span>
-                        )}
                       </Link>
                     );
                   }
