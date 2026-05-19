@@ -1,7 +1,14 @@
 /* Canonical Invoice shape, lifted from apps/marketing/src/app/admin/invoicing/page.tsx
  * Includes all FDACS Phase B/C fields and QB-authoritative totals. The ad-hoc
  * stripped-down shape that used to live in apps/marketing/src/app/admin/page.tsx
- * has been removed; both apps now import this type. */
+ * has been removed; both apps now import this type.
+ *
+ * A3d (Decision 2): converted from a single interface with optional bookingId
+ * + source into a discriminated union. TechCompletionInvoice REQUIRES
+ * bookingId (and source: 'tech_completion') so any consumer reading
+ * invoice.bookingId after narrowing to the tech-completion arm is
+ * compile-time guaranteed non-null. ManualInvoice keeps bookingId optional
+ * for the legacy /admin/invoicing manual-create path. */
 
 export interface InvoiceLineItem {
   serviceName: string;
@@ -12,7 +19,7 @@ export interface InvoiceLineItem {
   taxable: boolean;
 }
 
-export interface Invoice {
+interface InvoiceCommon {
   id: string;
   invoiceNumber: string;
   customerName: string;
@@ -48,8 +55,7 @@ export interface Invoice {
   deletedAt?: { toDate: () => Date };
   deletedBy?: string;
 
-  /* FDACS Phase B — copied from parent booking at invoice creation. */
-  bookingId?: string | null;
+  /* FDACS Phase B - copied from parent booking at invoice creation. */
   vehicleInfo?: {
     year?: string | number | null;
     make?: string | null;
@@ -67,10 +73,7 @@ export interface Invoice {
   jobCompletedAt?: { toDate: () => Date } | null;
   assignedTechId?: string | null;
 
-  /* FDACS Phase C — invoice draft auto-created at job completion.
-   * 'tech_completion' invoices are auto-generated from the tech app's
-   * Mark Complete flow; 'manual' (or unset) come from /admin/invoicing. */
-  source?: "tech_completion" | "manual" | null;
+  /* FDACS Phase C - invoice draft auto-created at job completion. */
   customerEstimateSignatureUrl?: string | null;
   customerEstimateSignedAt?: { toDate: () => Date } | null;
   customerCompletionSignatureUrl?: string | null;
@@ -90,4 +93,26 @@ export interface Invoice {
     note?: string;
     lineItemIds: string[];
   }>;
+}
+
+/** Invoice auto-generated from the tech app's Mark Complete flow.
+ * bookingId is REQUIRED (atomic bidirectional link, A3d STEP 2). */
+export interface TechCompletionInvoice extends InvoiceCommon {
+  source: "tech_completion";
+  bookingId: string;
+}
+
+/** Invoice manually created from /admin/invoicing or NewInvoiceModal. */
+export interface ManualInvoice extends InvoiceCommon {
+  source?: "manual" | null;
+  bookingId?: string | null;
+}
+
+export type Invoice = TechCompletionInvoice | ManualInvoice;
+
+/** Type guard for narrowing reads of Invoice union into the tech-completion
+ * arm. Use at consumer sites that need invoice.bookingId compile-time
+ * guaranteed non-null. */
+export function isTechCompletionInvoice(inv: Invoice): inv is TechCompletionInvoice {
+  return inv.source === "tech_completion";
 }
