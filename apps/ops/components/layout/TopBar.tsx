@@ -25,7 +25,7 @@ export function TopBar() {
         type="button"
         aria-label="Open navigation"
         onClick={() => setMobileSidebarOpen(true)}
-        className="md:hidden h-9 w-9 rounded-md hover:bg-muted flex items-center justify-center"
+        className="md:hidden h-10 w-10 rounded-md hover:bg-muted flex items-center justify-center"
       >
         <Menu className="w-5 h-5 text-foreground" strokeWidth={1.75} />
       </button>
@@ -34,7 +34,7 @@ export function TopBar() {
         <button
           type="button"
           onClick={() => setPaletteOpen(true)}
-          className="w-full h-9 pl-9 pr-16 text-sm bg-muted/60 border border-border rounded-md text-left text-muted-foreground hover:bg-muted relative focus:outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className="w-full h-10 pl-9 pr-16 text-sm bg-muted/60 border border-border rounded-md text-left text-muted-foreground hover:bg-muted relative focus:outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
           <Search
             className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
@@ -63,7 +63,7 @@ export function TopBar() {
       <button
         type="button"
         aria-label="Notifications"
-        className="h-9 w-9 rounded-md hover:bg-muted flex items-center justify-center"
+        className="h-10 w-10 rounded-md hover:bg-muted flex items-center justify-center"
       >
         <Bell className="w-4 h-4 text-muted-foreground" strokeWidth={1.75} />
       </button>
