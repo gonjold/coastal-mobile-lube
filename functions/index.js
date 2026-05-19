@@ -367,6 +367,7 @@ exports.sendConfirmationEmail = onRequest(
       await transporter.sendMail({
         from: `"Coastal Mobile Lube" <${gmailUser.value()}>`,
         to: booking.email,
+        bcc: "info@coastalmobilelube.com",
         subject: `Service Confirmed — Coastal Mobile Lube & Tire`,
         html: customerHtml,
       });
@@ -574,7 +575,7 @@ exports.sendBookingConfirmation = onRequest(
       await transporter.sendMail({
         from: `"Coastal Mobile Lube & Tire" <${gmailUser.value()}>`,
         to: customerEmail,
-        cc: "info@coastalmobilelube.com",
+        bcc: "info@coastalmobilelube.com",
         subject: `Appointment Confirmed - ${formattedDate}, ${confirmedTime}`,
         html: htmlEmail,
         icalEvent: {
@@ -1023,6 +1024,7 @@ exports.sendInvoiceEmail = onRequest(
       await transporter.sendMail({
         from: `"Coastal Mobile Lube" <${gmailUser.value()}>`,
         to: customerEmail,
+        bcc: "info@coastalmobilelube.com",
         replyTo: "info@coastalmobilelube.com",
         subject: `Invoice ${invoiceNumber} — Coastal Mobile Lube & Tire`,
         html: invoiceHtml,
@@ -1901,7 +1903,7 @@ exports.sendInvoiceWithQBPayment = onRequest(
         await transporter.sendMail({
           from: fromAddr,
           to: customerEmail,
-          cc: "info@coastalmobilelube.com",
+          bcc: "info@coastalmobilelube.com",
           replyTo: "info@coastalmobilelube.com",
           subject: `Invoice ${invoiceNumber} - Coastal Mobile Lube & Tire`,
           html: htmlEmail,
@@ -2048,7 +2050,7 @@ exports.sendCancellationEmail = onRequest(
       await transporter.sendMail({
         from: `"Coastal Mobile Lube" <${gmailUser.value()}>`,
         to: customerEmail,
-        cc: "info@coastalmobilelube.com",
+        bcc: "info@coastalmobilelube.com",
         subject: "Your Coastal Mobile Lube appointment has been cancelled",
         text: `Cancelled: ${customerName} - ${serviceName}. Check admin dashboard.`,
         html: cancellationHtml,
@@ -2551,6 +2553,7 @@ async function sendFdacsCustomerEmail({
   await transporter.sendMail({
     from: fromAddr,
     to: recipientEmail || invoice.customerEmail,
+    bcc: 'info@coastalmobilelube.com',
     replyTo: 'info@coastalmobilelube.com',
     subject: `Invoice ${invoice.invoiceNumber} - Coastal Mobile Lube & Tire`,
     html,
