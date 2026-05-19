@@ -230,8 +230,17 @@ function buildGoogleCalendarUrl(booking) {
 const { onRequest } = require("firebase-functions/v2/https");
 
 const allowedOrigins = [
+  // Marketing origins (original).
   "https://coastal-mobile-lube.netlify.app",
   "https://coastalmobilelube.com",
+  // Ops origins (A3d STEP 7 follow-up). The ops Send-invoice flow on
+  // /invoices/[id] POSTs to these Cloud Functions from the browser; without
+  // these entries the preflight rejects with "Failed to fetch". Preview
+  // deploy URLs follow the pattern {hash}--coastal-ops.netlify.app so a
+  // regex is needed alongside the production app + default Netlify origin.
+  "https://app.coastalmobilelube.com",
+  "https://coastal-ops.netlify.app",
+  /^https:\/\/[a-z0-9]+--coastal-ops\.netlify\.app$/,
   "http://localhost:3000",
 ];
 
