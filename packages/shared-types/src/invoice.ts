@@ -35,6 +35,8 @@ interface InvoiceCommon {
   dueDate: string;
   paidDate?: string;
   paidAmount?: number;
+  /** ISO date string written by the Cloud Function on successful send. */
+  sentDate?: string;
   division?: string;
   jobReference?: string;
   vehicle?: string;

@@ -3,13 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, X, Edit3, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Save, Send, X, Edit3, ExternalLink } from 'lucide-react';
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { Badge, Button, Card, Input } from '@coastal/shared-ui';
 import { db } from '@/lib/firebase';
 import { openSmsForInvoice } from '@/lib/payNow';
 import type { Invoice } from '@coastal/shared-types';
+import SendInvoiceModal from '@/components/invoices/SendInvoiceModal';
 
 interface FormState {
   customerName: string;
@@ -42,6 +43,7 @@ export default function InvoiceDetailPage() {
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [showSendModal, setShowSendModal] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -140,10 +142,34 @@ export default function InvoiceDetailPage() {
               <Button size="sm" onClick={save} disabled={saving}><Save className="h-4 w-4 mr-1" /> {saving ? 'Saving…' : 'Save'}</Button>
             </>
           ) : (
-            <Button variant="outline" size="sm" onClick={() => setEditing(true)}><Edit3 className="h-4 w-4 mr-1" /> Edit</Button>
+            <>
+              {invoice.status !== 'paid' && (
+                <Button
+                  size="sm"
+                  onClick={() => setShowSendModal(true)}
+                  disabled={!invoice.customerEmail}
+                  title={invoice.customerEmail ? 'Send invoice email to customer' : 'Add a customer email to enable Send'}
+                >
+                  <Send className="h-4 w-4 mr-1" />
+                  {invoice.status === 'sent' ? 'Resend' : 'Send'}
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={() => setEditing(true)}><Edit3 className="h-4 w-4 mr-1" /> Edit</Button>
+            </>
           )}
         </div>
       </header>
+
+      {showSendModal && (
+        <SendInvoiceModal
+          invoice={invoice}
+          onClose={() => setShowSendModal(false)}
+          onSent={(sentDateISO) => {
+            setInvoice((prev) => prev ? { ...prev, status: 'sent', sentDate: sentDateISO } as typeof prev : prev);
+            setForm((prev) => prev ? { ...prev, status: 'sent' } : prev);
+          }}
+        />
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 space-y-4">
