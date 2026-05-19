@@ -720,9 +720,12 @@ function InvoicingPageInner() {
         return !hasMatchingInvoice;
       })
       .map((b) => {
-        // Estimate amount from selected services or catalog lookup
+        // Estimate amount from selected services or catalog lookup.
+        // bookingPriceOverride (if set on the booking) takes precedence.
         let amount = 0;
-        if (b.selectedServices?.length) {
+        if (typeof b.bookingPriceOverride === "number" && b.bookingPriceOverride > 0) {
+          amount = b.bookingPriceOverride;
+        } else if (b.selectedServices?.length) {
           amount = b.selectedServices.reduce((sum, s) => sum + (s.price || 0), 0);
         } else if (b.service) {
           const match = catalogItems.find((s) => s.name.toLowerCase() === b.service!.toLowerCase());
@@ -751,18 +754,24 @@ function InvoicingPageInner() {
         // FDACS Phase B — copy bookingId + vehicleInfo + tech-captured fields
         Object.assign(f, fdacsFieldsFromBooking(b));
 
-        // Build line items from service field, looking up price from catalog
+        // Build line items from service field, looking up price from catalog.
+        // bookingPriceOverride (if set) takes precedence over the catalog price.
         const serviceName = b.service || "";
+        const overridePrice =
+          typeof b.bookingPriceOverride === "number" && b.bookingPriceOverride > 0
+            ? b.bookingPriceOverride
+            : null;
         if (serviceName) {
           const match = catalogItems.find(
             (s) => s.name.toLowerCase() === serviceName.toLowerCase()
           );
+          const unit = overridePrice != null ? overridePrice : (match?.price ?? 0);
           f.lineItems = [
             {
-              serviceName,
+              serviceName: overridePrice != null ? `${serviceName} (custom)` : serviceName,
               quantity: 1,
-              unitPrice: match?.price ?? 0,
-              lineTotal: match?.price ?? 0,
+              unitPrice: unit,
+              lineTotal: unit,
               taxable: inferTaxable(serviceName),
             },
           ];
@@ -797,8 +806,26 @@ function InvoicingPageInner() {
     // FDACS Phase B — copy bookingId + vehicleInfo + tech-captured fields
     Object.assign(f, fdacsFieldsFromBooking(b));
 
-    // Build line items from the booking's services
-    if (b.selectedServices?.length) {
+    // Build line items from the booking's services.
+    // When bookingPriceOverride is set, collapse selectedServices into a single
+    // aggregated line named "<primary service> (custom)" at the override price.
+    const overridePrice =
+      typeof b.bookingPriceOverride === "number" && b.bookingPriceOverride > 0
+        ? b.bookingPriceOverride
+        : null;
+
+    if (overridePrice != null && b.selectedServices?.length) {
+      const primaryName = b.selectedServices[0]?.name || b.service || "Service";
+      f.lineItems = [
+        {
+          serviceName: `${primaryName} (custom)`,
+          quantity: 1,
+          unitPrice: overridePrice,
+          lineTotal: overridePrice,
+          taxable: inferTaxable(primaryName),
+        },
+      ];
+    } else if (b.selectedServices?.length) {
       f.lineItems = b.selectedServices.map((s) => ({
         serviceName: s.name,
         quantity: 1,
@@ -808,12 +835,13 @@ function InvoicingPageInner() {
       }));
     } else if (b.service) {
       const match = catalogItems.find((s) => s.name.toLowerCase() === b.service!.toLowerCase());
+      const unit = overridePrice != null ? overridePrice : (match?.price ?? 0);
       f.lineItems = [
         {
-          serviceName: b.service,
+          serviceName: overridePrice != null ? `${b.service} (custom)` : b.service,
           quantity: 1,
-          unitPrice: match?.price ?? 0,
-          lineTotal: match?.price ?? 0,
+          unitPrice: unit,
+          lineTotal: unit,
           taxable: inferTaxable(b.service),
         },
       ];

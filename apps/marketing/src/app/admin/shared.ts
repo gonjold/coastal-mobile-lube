@@ -29,6 +29,10 @@ export interface Booking {
   service?: string;
   serviceCategory?: string;
   selectedServices?: Array<{ id: string; name: string; price: number | null; category: string }>;
+  // Per-booking manual price override. When non-null, supersedes the sum of
+  // selectedServices[].price downstream (e.g. invoice creation collapses
+  // selectedServices into a single aggregated line at this amount).
+  bookingPriceOverride?: number | null;
   source?: string;
   type?: string;
   status?: string;
