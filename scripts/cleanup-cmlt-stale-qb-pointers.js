@@ -232,7 +232,7 @@ function buildMarkdownReport({ mode, invoiceNumber, found, plans, results }) {
 
 async function main() {
   console.log(
-    `=== CMLT stale qbInvoiceId cleanup (${explicitMode}) — target=${TARGET_INVOICE_NUMBER} ===\n`,
+    `=== CMLT stale qbInvoiceId cleanup (${explicitMode}) target=${TARGET_INVOICE_NUMBER} ===\n`,
   );
 
   const found = await findTargetInvoice(TARGET_INVOICE_NUMBER);
