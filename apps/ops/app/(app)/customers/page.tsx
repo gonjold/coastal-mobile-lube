@@ -9,6 +9,7 @@ import { Button, EditableCell, Input } from '@coastal/shared-ui';
 import { db } from '@/lib/firebase';
 import { buildMergedCustomerList, type CustomerRow } from '@/lib/queries/customers';
 import { formatPhone } from '@/lib/format';
+import { CustomerCard } from '@/components/cards/CustomerCard';
 
 export default function CustomersPage() {
   const router = useRouter();
@@ -90,78 +91,83 @@ export default function CustomersPage() {
 
       {error && <div className="text-sm text-red-700 py-4">{error}</div>}
 
-      <div className="rounded-lg border border-border bg-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-[13px]">
-            <thead>
-              <tr className="bg-muted/50">
-                <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Name</th>
-                <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Phone</th>
-                <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Email</th>
-                <th className="px-4 py-3 text-right font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Jobs</th>
-              </tr>
-            </thead>
-            <tbody>
-              {!rows ? (
-                <tr>
-                  <td colSpan={4} className="py-12 text-center text-sm text-muted-foreground">Loading…</td>
-                </tr>
-              ) : filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="py-12 text-center">
-                    <UsersIcon className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    <div className="text-sm text-muted-foreground">No customers yet. Add your first customer to get started.</div>
-                  </td>
-                </tr>
-              ) : (
-                filtered.map(row => {
-                  const customerId = row.customerId ?? row.key;
-                  const stop = (e: React.MouseEvent) => e.stopPropagation();
-                  return (
-                    <tr
-                      key={customerId}
-                      role="link"
-                      tabIndex={0}
-                      aria-label={`Open customer ${row.name || customerId}`}
-                      onClick={() => router.push(`/customers/${customerId}`)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          router.push(`/customers/${customerId}`);
-                        }
-                      }}
-                      className="border-t border-border align-middle cursor-pointer hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset transition-colors"
-                    >
-                      <td className="px-4 py-3" onClick={stop}>
-                        <EditableCell
-                          value={row.name}
-                          onSave={next => patchCustomer(row, { name: next })}
-                        />
-                      </td>
-                      <td className="px-4 py-3" onClick={stop}>
-                        <EditableCell
-                          type="tel"
-                          value={row.phone}
-                          display={row.phone ? formatPhone(row.phone) : undefined}
-                          onSave={next => patchCustomer(row, { phone: next })}
-                        />
-                      </td>
-                      <td className="px-4 py-3" onClick={stop}>
-                        <EditableCell
-                          type="email"
-                          value={row.email}
-                          onSave={next => patchCustomer(row, { email: next })}
-                        />
-                      </td>
-                      <td className="px-4 py-3 text-right text-muted-foreground">{row.totalBookings}</td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+      {/* A3f Phase 6A.4: card/table swap at lg. Loading + empty states
+          hoisted above the swap. */}
+      {!rows ? (
+        <div className="rounded-lg border border-border bg-card py-12 text-center text-sm text-muted-foreground">
+          Loading…
         </div>
-      </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-lg border border-border bg-card py-12 text-center">
+          <UsersIcon className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+          <div className="text-sm text-muted-foreground">No customers yet. Add your first customer to get started.</div>
+        </div>
+      ) : (
+        <>
+          <div className="lg:hidden space-y-2.5">
+            {filtered.map(row => <CustomerCard key={row.customerId ?? row.key} row={row} />)}
+          </div>
+          <div className="hidden lg:block rounded-lg border border-border bg-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-[13px]">
+                <thead>
+                  <tr className="bg-muted/50">
+                    <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Name</th>
+                    <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Phone</th>
+                    <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Email</th>
+                    <th className="px-4 py-3 text-right font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Jobs</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map(row => {
+                    const customerId = row.customerId ?? row.key;
+                    const stop = (e: React.MouseEvent) => e.stopPropagation();
+                    return (
+                      <tr
+                        key={customerId}
+                        role="link"
+                        tabIndex={0}
+                        aria-label={`Open customer ${row.name || customerId}`}
+                        onClick={() => router.push(`/customers/${customerId}`)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            router.push(`/customers/${customerId}`);
+                          }
+                        }}
+                        className="border-t border-border align-middle cursor-pointer hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset transition-colors"
+                      >
+                        <td className="px-4 py-3" onClick={stop}>
+                          <EditableCell
+                            value={row.name}
+                            onSave={next => patchCustomer(row, { name: next })}
+                          />
+                        </td>
+                        <td className="px-4 py-3" onClick={stop}>
+                          <EditableCell
+                            type="tel"
+                            value={row.phone}
+                            display={row.phone ? formatPhone(row.phone) : undefined}
+                            onSave={next => patchCustomer(row, { phone: next })}
+                          />
+                        </td>
+                        <td className="px-4 py-3" onClick={stop}>
+                          <EditableCell
+                            type="email"
+                            value={row.email}
+                            onSave={next => patchCustomer(row, { email: next })}
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-right text-muted-foreground">{row.totalBookings}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
