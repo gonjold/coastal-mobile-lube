@@ -4,3 +4,87 @@
 @import "@coastal/shared-ui/src/styles/theme.css";
 
 @source "../../../packages/shared-ui/src/**/*.{ts,tsx}";
+
+/* A3f Phase 2: ops color/typography/density tokens overridden to match
+ * marketing /admin verbatim. Imports above pull in the shared-ui defaults
+ * (warm-yellow hue, system-ui body, navy-on-navy ring). Overrides below
+ * shift to marketing's HSL palette (warm-neutral, slightly cooler border),
+ * Jakarta/Inter font family, and orange focus ring on navy primary.
+ *
+ * Source: apps/marketing/src/app/globals.css lines 88-113 (verbatim HSL
+ * values; do not modify marketing). Tailwind v4 theme.css picks the
+ * variables up automatically; no @theme inline change needed.
+ *
+ * packages/shared-ui/* is frozen for this sprint; that's why this override
+ * lives in apps/ops/* instead of mutating tokens.css directly. */
+:root,
+:root[data-theme="light"] {
+  /* Surfaces (warm-neutral baseline; match marketing) */
+  --background: 30 25% 97%;
+  --foreground: 215 30% 12%;
+  --muted: 30 15% 92%;
+  --muted-foreground: 215 15% 38%;
+  --card: 0 0% 100%;
+  --card-foreground: 215 30% 12%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 215 30% 12%;
+  --border: 30 15% 86%;
+  --input: 30 15% 86%;
+
+  /* Coastal brand: navy primary, orange accent.
+   * --ring set to orange (matches marketing) so focus is visible against
+   * the navy primary button bg. Was var(--primary) = navy-on-navy. */
+  --primary: 215 67% 14%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 22 73% 52%;
+  --accent-foreground: 0 0% 100%;
+  --accent-text: 22 73% 38%;
+  --secondary: 30 15% 94%;
+  --secondary-foreground: 215 30% 12%;
+  --ring: 22 73% 52%;
+
+  /* State colors unchanged from shared-ui defaults; included so the
+   * cascade keeps the warm baseline together. */
+  --destructive: 0 70% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 145 50% 40%;
+  --warning: 35 90% 50%;
+  --info: 210 70% 50%;
+
+  /* Typography: Jakarta for headings + body, Inter for sans utility.
+   * Variables populated by next/font in apps/ops/app/layout.tsx. */
+  --font-heading: var(--font-jakarta), system-ui, sans-serif;
+  --font-body: var(--font-jakarta), system-ui, sans-serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+
+  /* Marketing radius semantics (additive; do not conflict with --radius). */
+  --radius-card: 14px;
+  --radius-button: 8px;
+  --radius-pill: 20px;
+  --radius-input: 8px;
+
+  --line-height-heading: 1.15;
+  --line-height-body: 1.65;
+  --letter-spacing-heading: -0.5px;
+}
+
+/* Body font + smoothing match marketing (apps/marketing/src/app/globals.css
+ * lines 146-154). Background uses --background HSL var so dark/vivid themes
+ * still work; marketing forces #ffffff because the public site has dark
+ * sections, but ops is the admin chrome and benefits from the warm tint. */
+body {
+  font-family: var(--font-body);
+  color: hsl(var(--foreground));
+  line-height: var(--line-height-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    line-height: var(--line-height-heading);
+    letter-spacing: var(--letter-spacing-heading);
+    font-weight: 700;
+  }
+}

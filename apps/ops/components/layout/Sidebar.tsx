@@ -1,18 +1,109 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Wrench } from 'lucide-react';
-import { Kbd } from '@coastal/shared-ui';
-import { SIDEBAR_SECTIONS, type SidebarItem as SidebarItemType } from '@/lib/sidebarConfig';
-import { useLayout } from './ClientLayoutProvider';
+/* A3f Phase 1.4: Sidebar accepts a `variant` prop ('full' | 'icon', default
+ * 'full') so Phase 4 can mount two instances at different breakpoints:
+ *
+ * - 'full' (default): 240px wide column with section headers + icon + label
+ *   rows + ⌘K footer. Unchanged from the pre-A3f behavior.
+ * - 'icon': 72px wide column with icon-only rows. Each row is a button
+ *   that opens the SidebarOverlay (Phase 1.5), where the user picks a
+ *   labeled destination. Hover tooltip surfaces the label inline for
+ *   discoverability at the md breakpoint (768-1023px).
+ *
+ * Data source intentionally stays on SIDEBAR_SECTIONS for Phase 1. Phase
+ * 3 swaps to getSidebarGroups(role) for role-based filtering. Likewise,
+ * the default-export Sidebar() wrapper keeps the existing
+ * `hidden md:flex w-60` aside so the existing (app) layout call site sees
+ * zero visual change in Phase 1; Phase 4 introduces variant-specific
+ * breakpoint visibility classes.
+ */
 
-export function SidebarContent() {
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { Wrench } from "lucide-react";
+import {
+  Kbd,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@coastal/shared-ui";
+import { getSidebarGroups, type NavItem } from "@/lib/nav";
+import { useAuth } from "@/lib/useAuth";
+import { SidebarOverlay } from "./SidebarOverlay";
+
+type SidebarVariant = "full" | "icon";
+
+export function SidebarContent({ variant = "full" }: { variant?: SidebarVariant } = {}) {
   const pathname = usePathname();
-  const { setMobileSidebarOpen } = useLayout();
+  const { role } = useAuth();
+  const [overlayOpen, setOverlayOpen] = useState(false);
+  // A3f Phase 3: role-filtered nav. Tech sees 4 items only; owner sees 14.
+  const groups = getSidebarGroups(role);
+  const flatItems = groups.flatMap((g) => g.items);
 
+  if (variant === "icon") {
+    return (
+      <>
+        <div className="flex h-full flex-col bg-card border-r border-border w-[72px] items-center">
+          <button
+            type="button"
+            onClick={() => setOverlayOpen(true)}
+            aria-label="Expand navigation"
+            className="w-12 h-12 my-3 rounded-lg bg-primary flex items-center justify-center hover:bg-primary/90 transition-colors"
+          >
+            <Wrench className="w-5 h-5 text-primary-foreground" strokeWidth={1.75} aria-hidden="true" />
+          </button>
+          <TooltipProvider delayDuration={150}>
+            <nav className="flex-1 w-full py-2 px-2 space-y-1 overflow-y-auto" aria-label="Icon navigation">
+              {flatItems.map((item) => {
+                const Icon = item.icon;
+                const active =
+                  item.available &&
+                  (pathname === item.href || pathname.startsWith(`${item.href}/`));
+                return (
+                  <Tooltip key={item.href}>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => setOverlayOpen(true)}
+                        disabled={!item.available}
+                        aria-label={item.label}
+                        className={`w-12 h-12 mx-auto rounded-md flex items-center justify-center transition-colors ${
+                          active
+                            ? "bg-primary text-primary-foreground"
+                            : item.available
+                              ? "text-foreground hover:bg-muted"
+                              : "text-muted-foreground/50 cursor-not-allowed"
+                        }`}
+                      >
+                        <Icon className="w-5 h-5 shrink-0" strokeWidth={active ? 2 : 1.75} aria-hidden="true" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">{item.label}</TooltipContent>
+                  </Tooltip>
+                );
+              })}
+            </nav>
+          </TooltipProvider>
+        </div>
+        <SidebarOverlay open={overlayOpen} onOpenChange={setOverlayOpen} />
+      </>
+    );
+  }
+
+  /* A3f Phase 6A polish round 2 FIX B: the parent <aside> is a flex
+   * container (display:flex, w-60). Without an explicit width or
+   * flex-grow on this content div, it shrinks to its intrinsic content
+   * width — ~180px — leaving ~60px of phantom empty space between the
+   * sidebar's visible border-r and main content. Adding 'w-full' makes
+   * the content fill the 240px aside, so the visible right edge aligns
+   * with the aside boundary and the gutter to main content is just
+   * lg:px-8 (32px). The icon variant above is unaffected because it
+   * already declares w-[72px] explicitly. */
   return (
-    <div className="flex h-full flex-col bg-card border-r border-border">
+    <div className="flex h-full w-full flex-col bg-card border-r border-border">
       <div className="px-5 py-5 border-b border-border">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
@@ -26,7 +117,7 @@ export function SidebarContent() {
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-6 overflow-y-auto">
-        {SIDEBAR_SECTIONS.map((section) => (
+        {groups.map((section) => (
           <div key={section.label}>
             <div className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               {section.label}
@@ -37,7 +128,6 @@ export function SidebarContent() {
                   key={item.href}
                   item={item}
                   active={pathname === item.href}
-                  onNavigate={() => setMobileSidebarOpen(false)}
                 />
               ))}
             </div>
@@ -60,37 +150,22 @@ export function SidebarContent() {
 function SidebarRow({
   item,
   active,
-  onNavigate,
 }: {
-  item: SidebarItemType;
+  item: NavItem;
   active: boolean;
-  onNavigate: () => void;
 }) {
   const Icon = item.icon;
   const baseClasses =
-    'w-full px-3 py-1.5 rounded-md flex items-center gap-2 text-sm text-left transition-colors';
+    "w-full px-3 py-1.5 rounded-md flex items-center gap-2 text-sm text-left transition-colors";
   const activeClasses = active
-    ? 'bg-primary text-primary-foreground'
-    : 'text-foreground hover:bg-muted';
+    ? "bg-primary text-primary-foreground"
+    : "text-foreground hover:bg-muted";
 
   if (item.available) {
     return (
-      <Link
-        href={item.href}
-        className={`${baseClasses} ${activeClasses}`}
-        onClick={onNavigate}
-      >
+      <Link href={item.href} className={`${baseClasses} ${activeClasses}`}>
         <Icon className="w-4 h-4 shrink-0" strokeWidth={active ? 2 : 1.75} />
         <span className="flex-1">{item.label}</span>
-        {item.badge && (
-          <span
-            className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-              active ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-accent/15 text-accent-text'
-            }`}
-          >
-            {item.badge}
-          </span>
-        )}
       </Link>
     );
   }
@@ -113,10 +188,22 @@ function SidebarRow({
   );
 }
 
-export function Sidebar() {
+interface SidebarProps {
+  variant?: SidebarVariant;
+  className?: string;
+}
+
+/** Default aside wrapper. When called without props (existing layout.tsx
+ * call site), renders the unchanged `hidden md:flex w-60` full sidebar
+ * at md+ breakpoints. Phase 4 introduces breakpoint-specific call sites
+ * via the `className` override (e.g. `hidden md:flex lg:hidden` for the
+ * icon variant). */
+export function Sidebar({ variant = "full", className }: SidebarProps = {}) {
+  const widthClass = variant === "icon" ? "w-[72px]" : "w-60";
+  const defaultVisibility = "hidden md:flex";
   return (
-    <aside className="hidden md:flex w-60 min-h-screen shrink-0">
-      <SidebarContent />
+    <aside className={`${className ?? defaultVisibility} ${widthClass} min-h-screen shrink-0`}>
+      <SidebarContent variant={variant} />
     </aside>
   );
 }

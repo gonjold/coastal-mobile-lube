@@ -29,7 +29,7 @@ function LoginForm() {
         setError('Could not establish session. Please try again.');
         return;
       }
-      router.replace('/home');
+      router.replace('/today');
     } catch {
       setError('Sign in failed. Please try again.');
     } finally {

@@ -2,7 +2,6 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@coastal/shared-ui";
 import type { BookingDoc } from "@/lib/queries/bookings";
 import {
   partitionToday,
@@ -12,8 +11,13 @@ import {
 import TodayHeader from "@/components/today/TodayHeader";
 import TodayJobCard from "@/components/today/TodayJobCard";
 import TodayEmptyState from "@/components/today/TodayEmptyState";
+import { Segmented, type SegmentedItem } from "@/components/ui/Segmented";
 
-const VIEWS: TodayView[] = ["in-progress", "upcoming", "unassigned"];
+const SEGMENT_ITEMS: SegmentedItem<TodayView>[] = [
+  { key: "in-progress", label: "In Progress" },
+  { key: "upcoming", label: "Upcoming" },
+  { key: "unassigned", label: "Unassigned" },
+];
 
 function isView(v: string | null): v is TodayView {
   return v === "in-progress" || v === "upcoming" || v === "unassigned";
@@ -47,8 +51,8 @@ function TodayPageInner() {
     router.replace(`/today?${params.toString()}`);
   }
 
-  const counts = {
-    inProgress: partitions?.["in-progress"].length ?? 0,
+  const counts: Record<TodayView, number> = {
+    "in-progress": partitions?.["in-progress"].length ?? 0,
     upcoming: partitions?.upcoming.length ?? 0,
     unassigned: partitions?.unassigned.length ?? 0,
   };
@@ -57,33 +61,17 @@ function TodayPageInner() {
 
   return (
     <div className="flex flex-col gap-4 p-4 lg:gap-6 lg:p-6">
-      <TodayHeader
-        inProgressCount={counts.inProgress}
-        upcomingCount={counts.upcoming}
-        unassignedCount={counts.unassigned}
-      />
+      <TodayHeader />
 
-      <nav className="flex flex-wrap gap-2" role="tablist">
-        {VIEWS.map((v) => (
-          <Button
-            key={v}
-            role="tab"
-            aria-selected={v === view}
-            variant={v === view ? "default" : "outline"}
-            className="min-h-[48px]"
-            onClick={() => switchView(v)}
-          >
-            {labelFor(v)}
-            <span className="ml-2 text-xs opacity-75">
-              {v === "in-progress"
-                ? counts.inProgress
-                : v === "upcoming"
-                  ? counts.upcoming
-                  : counts.unassigned}
-            </span>
-          </Button>
-        ))}
-      </nav>
+      {/* A3f Polish Round 3 Unit 3: three big In-Progress/Upcoming/
+          Unassigned buttons replaced by the unified Segmented bar so the
+          status filter sits on one compact row and never wraps. */}
+      <Segmented<TodayView>
+        ariaLabel="Today status filter"
+        items={SEGMENT_ITEMS.map((it) => ({ ...it, count: counts[it.key] }))}
+        value={view}
+        onChange={switchView}
+      />
 
       {!partitions ? (
         <div className="text-sm text-muted-foreground">Loading today's jobs…</div>
@@ -98,12 +86,6 @@ function TodayPageInner() {
       )}
     </div>
   );
-}
-
-function labelFor(v: TodayView): string {
-  if (v === "in-progress") return "In Progress";
-  if (v === "upcoming") return "Upcoming";
-  return "Unassigned";
 }
 
 export default function TodayPage() {

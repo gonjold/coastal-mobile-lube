@@ -1,12 +1,9 @@
 "use client";
 
-import { Card } from "@coastal/shared-ui";
-
-interface Props {
-  inProgressCount: number;
-  upcomingCount: number;
-  unassignedCount: number;
-}
+/* A3f Polish Round 3 Unit 3: TodayHeader now renders just the date in
+ * the WO page-title scale (20/600 mobile, 24/600 lg+). The earlier
+ * "X in progress, Y upcoming, Z unassigned" prose retired since the
+ * Segmented status bar below it carries those counts. */
 
 function formatToday(): string {
   const d = new Date();
@@ -17,22 +14,10 @@ function formatToday(): string {
   });
 }
 
-export default function TodayHeader({
-  inProgressCount,
-  upcomingCount,
-  unassignedCount,
-}: Props) {
+export default function TodayHeader() {
   return (
-    <Card className="flex flex-col gap-2 p-4 lg:flex-row lg:items-center lg:justify-between lg:p-5">
-      <div>
-        <h1 className="text-xl font-semibold text-foreground lg:text-2xl">
-          {formatToday()}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {inProgressCount} in progress, {upcomingCount} upcoming,{" "}
-          {unassignedCount} unassigned.
-        </p>
-      </div>
-    </Card>
+    <h1 className="text-[20px] lg:text-2xl font-semibold tracking-tight text-[#0B2040]">
+      {formatToday()}
+    </h1>
   );
 }

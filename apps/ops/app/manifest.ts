@@ -10,7 +10,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'Coastal Mobile Lube Ops',
     short_name: 'Coastal Ops',
     description: 'Operations console for Coastal Mobile Lube & Tire',
-    start_url: '/home',
+    start_url: '/today',
     scope: '/',
     display: 'standalone',
     orientation: 'portrait',
