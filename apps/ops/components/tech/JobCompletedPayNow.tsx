@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { formatPhone } from "@/lib/format";
 import { openSmsForInvoice } from "@/lib/payNow";
 import type { Booking } from "@/lib/types/booking";
@@ -21,27 +21,20 @@ interface InvoiceLite {
   customerPhone?: string;
 }
 
-const SEND_INVOICE_ENDPOINT =
-  "https://us-east1-coastal-mobile-lube.cloudfunctions.net/sendInvoiceWithQBPayment";
-
-// Pay Now post-completion panel. Reads invoices/{booking.invoiceId} via
-// onSnapshot. Three states:
-// 1. invoice.status === 'draft' or no qbPaymentLink yet:
-//    Show "Send invoice + generate Pay Now link" CTA. One-tap fires
-//    sendInvoiceWithQBPayment Cloud Function (idempotent on qbInvoiceId
-//    server-side, plus a client submittingRef guard for double-tap).
-// 2. invoice.qbPaymentLink populated and not paid:
-//    Show "Send payment link via SMS" CTA. Tap opens iOS Messages
-//    with prefilled body via openSmsForInvoice.
-// 3. invoice.paidDate set:
-//    Show paid status, no button.
+// Post-completion panel for the tech. Reads invoices/{booking.invoiceId} via
+// onSnapshot. A2A3-U3: techs no longer auto-send invoices. The invoice is
+// created in draft at Mark Complete; the owner reviews and sends from the
+// office app. The tech panel reflects that handoff and only surfaces the SMS
+// Pay Now shortcut once the owner has sent the invoice (qbPaymentLink set).
+//
+// States:
+// 1. Draft (no qbPaymentLink): show review-handoff notice.
+// 2. qbPaymentLink populated, not paid: show "Send payment link via SMS".
+// 3. paidDate set: show paid status.
 export default function JobCompletedPayNow({ booking }: Props) {
   const invoiceId = booking.invoiceId;
   const [invoice, setInvoice] = useState<InvoiceLite | null>(null);
-  const [sending, setSending] = useState(false);
-  const [sentMessage, setSentMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const sendingRef = useRef(false);
 
   useEffect(() => {
     if (!invoiceId) return;
@@ -89,53 +82,6 @@ export default function JobCompletedPayNow({ booking }: Props) {
     );
   }
 
-  async function handleSendInvoice() {
-    if (sendingRef.current) return;
-    if (!invoice) return;
-    sendingRef.current = true;
-    setSending(true);
-    setError(null);
-    setSentMessage(null);
-    try {
-      const idToken = await auth.currentUser?.getIdToken();
-      const body = {
-        invoiceId: invoice.id,
-        invoiceNumber: invoice.invoiceNumber,
-        customerName,
-        customerEmail: booking.customerEmail || booking.email || "",
-        customerPhone,
-        customerAddress: booking.address || "",
-        customerId: "",
-        lineItems: [],
-        subtotal: 0,
-        tax: 0,
-        convenienceFee: 0,
-        total: 0,
-        vehicle: "",
-        dueDate: "",
-      };
-      const res = await fetch(SEND_INVOICE_ENDPOINT, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
-        },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new Error(`Send failed (${res.status}): ${text || "unknown"}`);
-      }
-      setSentMessage("Invoice sent. Payment link will appear in a moment.");
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Unknown error";
-      setError(msg);
-    } finally {
-      sendingRef.current = false;
-      setSending(false);
-    }
-  }
-
   function handleSendSms() {
     if (!invoice || !invoice.qbPaymentLink) return;
     const opened = openSmsForInvoice(
@@ -160,23 +106,9 @@ export default function JobCompletedPayNow({ booking }: Props) {
       </div>
       <div className="mt-2 space-y-3">
         {!invoice.qbPaymentLink && (
-          <>
-            <p className="text-sm text-slate-600">
-              Send the invoice email and generate a customer payment link.
-            </p>
-            <button
-              onClick={handleSendInvoice}
-              disabled={sending}
-              className="w-full min-h-[48px] rounded-lg bg-[#0B2040] px-4 py-3 text-base font-semibold text-white shadow disabled:opacity-50"
-            >
-              {sending ? "Sending…" : "Send invoice + generate Pay Now link"}
-            </button>
-            {sentMessage && (
-              <div className="rounded bg-emerald-50 p-2 text-sm text-emerald-700">
-                {sentMessage}
-              </div>
-            )}
-          </>
+          <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
+            Draft created. The owner will review and send this invoice.
+          </div>
         )}
         {invoice.qbPaymentLink && (
           <>
