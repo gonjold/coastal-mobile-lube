@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, Send, X, Edit3, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Save, Send, X, Edit3, ExternalLink, RotateCcw, Lock } from 'lucide-react';
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { Badge, Button, Card, Input, statusBadgeVariant } from '@coastal/shared-ui';
@@ -24,7 +24,6 @@ interface FormState {
   dueDate: string;
   paidDate: string;
   notes: string;
-  status: Invoice['status'];
 }
 
 function formatCurrency(n: number): string {
@@ -43,6 +42,7 @@ export default function InvoiceDetailPage() {
   const [saving, setSaving] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [showSendModal, setShowSendModal] = useState(false);
+  const [revising, setRevising] = useState(false);
   const { openModal } = useAdminModal();
 
   useEffect(() => {
@@ -65,7 +65,6 @@ export default function InvoiceDetailPage() {
           dueDate: inv.dueDate ?? '',
           paidDate: inv.paidDate ?? '',
           notes: inv.notes ?? '',
-          status: inv.status,
         });
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load invoice');
@@ -80,7 +79,18 @@ export default function InvoiceDetailPage() {
   const total = typeof invoice.qbTotalAmount === 'number' ? invoice.qbTotalAmount : invoice.total;
 
   async function save() {
-    if (!form) return;
+    if (!form || !invoice) return;
+    // Guard: only draft invoices may be edited.
+    if (invoice.status !== 'draft') {
+      toast.error('Invoice is locked', {
+        description:
+          invoice.status === 'paid'
+            ? 'Paid invoices cannot be edited.'
+            : 'Sent invoices are read-only. Use Revise to reopen.',
+      });
+      setEditing(false);
+      return;
+    }
     setSaving(true);
     try {
       await updateDoc(doc(db, 'invoices', id), {
@@ -91,7 +101,6 @@ export default function InvoiceDetailPage() {
         dueDate: form.dueDate,
         paidDate: form.paidDate,
         notes: form.notes,
-        status: form.status,
         updatedAt: serverTimestamp(),
       });
       toast.success('Saved');
@@ -115,8 +124,27 @@ export default function InvoiceDetailPage() {
         dueDate: invoice.dueDate ?? '',
         paidDate: invoice.paidDate ?? '',
         notes: invoice.notes ?? '',
-        status: invoice.status,
       });
+    }
+  }
+
+  async function revise() {
+    if (!invoice) return;
+    if (invoice.status !== 'sent') return;
+    setRevising(true);
+    try {
+      await updateDoc(doc(db, 'invoices', id), {
+        status: 'draft',
+        updatedAt: serverTimestamp(),
+      });
+      setInvoice((prev) => (prev ? ({ ...prev, status: 'draft' } as typeof prev) : prev));
+      toast.success('Invoice reopened for edits');
+    } catch (err) {
+      toast.error('Revise failed', {
+        description: err instanceof Error ? err.message : 'Unknown error',
+      });
+    } finally {
+      setRevising(false);
     }
   }
 
@@ -130,30 +158,45 @@ export default function InvoiceDetailPage() {
           <h1 className="text-2xl font-semibold tracking-tight truncate">
             {invoice.invoiceNumber || `Invoice ${id.slice(0, 8)}`}
           </h1>
-          <Badge variant={statusBadgeVariant(form.status)} className="capitalize">{form.status}</Badge>
+          <Badge variant={statusBadgeVariant(invoice.status)} className="capitalize">{invoice.status}</Badge>
           <span className="text-base font-semibold">{formatCurrency(total)}</span>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           {editing ? (
             <>
               <Button variant="outline" size="sm" onClick={cancel} disabled={saving}><X className="h-4 w-4 mr-1" /> Cancel</Button>
               <Button size="sm" onClick={save} disabled={saving}><Save className="h-4 w-4 mr-1" /> {saving ? 'Saving…' : 'Save'}</Button>
             </>
-          ) : (
+          ) : invoice.status === 'draft' ? (
             <>
-              {invoice.status !== 'paid' && (
-                <Button
-                  size="sm"
-                  onClick={() => setShowSendModal(true)}
-                  disabled={!invoice.customerEmail}
-                  title={invoice.customerEmail ? 'Send invoice email to customer' : 'Add a customer email to enable Send'}
-                >
-                  <Send className="h-4 w-4 mr-1" />
-                  {invoice.status === 'sent' ? 'Resend' : 'Send'}
-                </Button>
-              )}
               <Button variant="outline" size="sm" onClick={() => setEditing(true)}><Edit3 className="h-4 w-4 mr-1" /> Edit</Button>
+              <Button
+                size="sm"
+                onClick={() => setShowSendModal(true)}
+                disabled={!invoice.customerEmail}
+                title={invoice.customerEmail ? 'Send invoice email to customer' : 'Add a customer email to enable Send'}
+              >
+                <Send className="h-4 w-4 mr-1" /> Send
+              </Button>
             </>
+          ) : invoice.status === 'sent' || invoice.status === 'overdue' ? (
+            <>
+              <Button variant="outline" size="sm" onClick={revise} disabled={revising}>
+                <RotateCcw className="h-4 w-4 mr-1" /> {revising ? 'Revising…' : 'Revise'}
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => setShowSendModal(true)}
+                disabled={!invoice.customerEmail}
+                title={invoice.customerEmail ? 'Resend invoice email' : 'Add a customer email to enable Resend'}
+              >
+                <Send className="h-4 w-4 mr-1" /> Resend
+              </Button>
+            </>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Lock className="h-4 w-4" /> Paid invoices are locked.
+            </span>
           )}
         </div>
       </header>
@@ -242,11 +285,7 @@ export default function InvoiceDetailPage() {
                 <Field label="Issue date"><Input type="date" value={form.invoiceDate} onChange={e => setForm({ ...form, invoiceDate: e.target.value })} /></Field>
                 <Field label="Due date"><Input type="date" value={form.dueDate} onChange={e => setForm({ ...form, dueDate: e.target.value })} /></Field>
                 <Field label="Paid date"><Input type="date" value={form.paidDate} onChange={e => setForm({ ...form, paidDate: e.target.value })} /></Field>
-                <Field label="Status">
-                  <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value as Invoice['status'] })} className="h-10 px-2 border border-border rounded-md bg-background text-sm">
-                    {(['draft', 'sent', 'paid', 'overdue'] as const).map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </Field>
+                <p className="text-xs text-muted-foreground">Status changes via Send / Revise / Pay Now.</p>
               </div>
             ) : (
               <dl className="text-sm space-y-1">
