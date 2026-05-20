@@ -19,6 +19,8 @@ import { formatPhone } from '@/lib/format';
 import { fetchPendingBilling } from '@/lib/queries/bookings';
 import type { BookingDoc } from '@/lib/queries/bookings';
 import type { Invoice } from '@coastal/shared-types';
+import { InvoiceCard } from '@/components/cards/InvoiceCard';
+import { JobCard } from '@/components/cards/JobCard';
 
 type Filter = 'all' | 'draft' | 'sent' | 'paid' | 'overdue' | 'pending-billing';
 
@@ -151,85 +153,99 @@ export default function InvoicesPage() {
         ))}
       </div>
 
-      <div className="rounded-lg border border-border bg-card overflow-hidden">
-        <div className="overflow-x-auto">
-          {filter === 'pending-billing' ? (
-            <table className="w-full text-[13px]">
-              <thead>
-                <tr className="bg-muted/50">
-                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Customer</th>
-                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Phone</th>
-                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Completed</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredPending.length === 0 ? (
-                  <tr>
-                    <td colSpan={3} className="py-12">
-                      <div className="flex flex-col items-center text-center">
-                        <Receipt className="h-10 w-10 text-muted-foreground/40" strokeWidth={1.5} />
-                        <h3 className="mt-3 text-base font-semibold">No completed jobs awaiting an invoice</h3>
-                        <p className="mt-1 text-sm text-muted-foreground">Mark Complete on tech jobs creates the invoice draft automatically.</p>
-                      </div>
-                    </td>
+      {/* A3f Phase 6A.3: card/table swap at lg. Pending Billing rows
+          navigate to /jobs/[bookingId] so they re-use JobCard; invoice
+          rows use InvoiceCard. Loading/empty states hoisted above the
+          swap so they render once per filter. */}
+      {filter === 'pending-billing' ? (
+        filteredPending.length === 0 ? (
+          <div className="rounded-lg border border-border bg-card py-12">
+            <div className="flex flex-col items-center text-center">
+              <Receipt className="h-10 w-10 text-muted-foreground/40" strokeWidth={1.5} />
+              <h3 className="mt-3 text-base font-semibold">No completed jobs awaiting an invoice</h3>
+              <p className="mt-1 text-sm text-muted-foreground">Mark Complete on tech jobs creates the invoice draft automatically.</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="lg:hidden space-y-2.5">
+              {filteredPending.map(b => <JobCard key={b.id} booking={b} />)}
+            </div>
+            <div className="hidden lg:block rounded-lg border border-border bg-card overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-[13px]">
+                  <thead>
+                    <tr className="bg-muted/50">
+                      <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Customer</th>
+                      <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Phone</th>
+                      <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Completed</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredPending.map(b => {
+                      const name = b.customerName || (b as { name?: string }).name || 'Customer';
+                      const phone = b.customerPhone || b.phone || '';
+                      const completedAt = (b as { jobCompletedAt?: { toDate: () => Date } }).jobCompletedAt?.toDate?.();
+                      const completedLabel = completedAt ? completedAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+                      return (
+                        <tr
+                          key={b.id}
+                          role="link"
+                          tabIndex={0}
+                          aria-label={`Open job for ${name}`}
+                          onClick={() => router.push(`/jobs/${b.id}`)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              router.push(`/jobs/${b.id}`);
+                            }
+                          }}
+                          className="border-t border-border cursor-pointer hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset transition-colors"
+                        >
+                          <td className="px-4 py-3 align-middle font-semibold">{name}</td>
+                          <td className="px-4 py-3 align-middle">{formatPhone(phone, '—')}</td>
+                          <td className="px-4 py-3 align-middle">{completedLabel}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )
+      ) : loading ? (
+        <div className="rounded-lg border border-border bg-card py-12 text-center text-sm text-muted-foreground">
+          Loading…
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-lg border border-border bg-card py-12">
+          <div className="flex flex-col items-center text-center">
+            <Receipt className="h-10 w-10 text-muted-foreground/40" strokeWidth={1.5} />
+            <h3 className="mt-3 text-base font-semibold">No invoices in this view</h3>
+            <p className="mt-1 text-sm text-muted-foreground">Adjust filters above or create a new invoice.</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="lg:hidden space-y-2.5">
+            {filtered.map(inv => <InvoiceCard key={inv.id} invoice={inv} />)}
+          </div>
+          <div className="hidden lg:block rounded-lg border border-border bg-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-[13px]">
+                <thead>
+                  <tr className="bg-muted/50">
+                    <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Invoice</th>
+                    <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Customer</th>
+                    <th className="px-4 py-3 text-right font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Total</th>
+                    <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Due</th>
+                    <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Status</th>
+                    <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">QB</th>
                   </tr>
-                ) : (
-                  filteredPending.map(b => {
-                    const name = b.customerName || (b as { name?: string }).name || 'Customer';
-                    const phone = b.customerPhone || b.phone || '';
-                    const completedAt = (b as { jobCompletedAt?: { toDate: () => Date } }).jobCompletedAt?.toDate?.();
-                    const completedLabel = completedAt ? completedAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
-                    return (
-                      <tr
-                        key={b.id}
-                        role="link"
-                        tabIndex={0}
-                        aria-label={`Open job for ${name}`}
-                        onClick={() => router.push(`/jobs/${b.id}`)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            router.push(`/jobs/${b.id}`);
-                          }
-                        }}
-                        className="border-t border-border cursor-pointer hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset transition-colors"
-                      >
-                        <td className="px-4 py-3 align-middle font-semibold">{name}</td>
-                        <td className="px-4 py-3 align-middle">{formatPhone(phone, '—')}</td>
-                        <td className="px-4 py-3 align-middle">{completedLabel}</td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          ) : (
-            <table className="w-full text-[13px]">
-              <thead>
-                <tr className="bg-muted/50">
-                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Invoice</th>
-                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Customer</th>
-                  <th className="px-4 py-3 text-right font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Total</th>
-                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Due</th>
-                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Status</th>
-                  <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">QB</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan={6} className="py-12 text-center text-sm text-muted-foreground">Loading…</td></tr>
-                ) : filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="py-12">
-                      <div className="flex flex-col items-center text-center">
-                        <Receipt className="h-10 w-10 text-muted-foreground/40" strokeWidth={1.5} />
-                        <h3 className="mt-3 text-base font-semibold">No invoices in this view</h3>
-                        <p className="mt-1 text-sm text-muted-foreground">Adjust filters above or create a new invoice.</p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  filtered.map(inv => {
+                </thead>
+                <tbody>
+                  {filtered.map(inv => {
                     const total = typeof inv.qbTotalAmount === 'number' ? inv.qbTotalAmount : inv.total;
                     const invoiceLabel = inv.invoiceNumber || inv.id.slice(0, 8);
                     const stop = (e: React.MouseEvent) => e.stopPropagation();
@@ -267,13 +283,13 @@ export default function InvoicesPage() {
                         </td>
                       </tr>
                     );
-                  })
-                )}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
