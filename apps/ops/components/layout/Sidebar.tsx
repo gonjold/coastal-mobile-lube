@@ -31,7 +31,6 @@ import {
 } from "@coastal/shared-ui";
 import { getSidebarGroups, type NavItem } from "@/lib/nav";
 import { useAuth } from "@/lib/useAuth";
-import { useLayout } from "./ClientLayoutProvider";
 import { SidebarOverlay } from "./SidebarOverlay";
 
 type SidebarVariant = "full" | "icon";
@@ -39,7 +38,6 @@ type SidebarVariant = "full" | "icon";
 export function SidebarContent({ variant = "full" }: { variant?: SidebarVariant } = {}) {
   const pathname = usePathname();
   const { role } = useAuth();
-  const { setMobileSidebarOpen } = useLayout();
   const [overlayOpen, setOverlayOpen] = useState(false);
   // A3f Phase 3: role-filtered nav. Tech sees 4 items only; owner sees 14.
   const groups = getSidebarGroups(role);
@@ -121,7 +119,6 @@ export function SidebarContent({ variant = "full" }: { variant?: SidebarVariant 
                   key={item.href}
                   item={item}
                   active={pathname === item.href}
-                  onNavigate={() => setMobileSidebarOpen(false)}
                 />
               ))}
             </div>
@@ -144,11 +141,9 @@ export function SidebarContent({ variant = "full" }: { variant?: SidebarVariant 
 function SidebarRow({
   item,
   active,
-  onNavigate,
 }: {
   item: NavItem;
   active: boolean;
-  onNavigate: () => void;
 }) {
   const Icon = item.icon;
   const baseClasses =
@@ -159,7 +154,7 @@ function SidebarRow({
 
   if (item.available) {
     return (
-      <Link href={item.href} className={`${baseClasses} ${activeClasses}`} onClick={onNavigate}>
+      <Link href={item.href} className={`${baseClasses} ${activeClasses}`}>
         <Icon className="w-4 h-4 shrink-0" strokeWidth={active ? 2 : 1.75} />
         <span className="flex-1">{item.label}</span>
       </Link>
