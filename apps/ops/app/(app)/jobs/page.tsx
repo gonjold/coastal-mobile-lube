@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { CalendarCheck, Plus } from 'lucide-react';
 import {
   collection,
@@ -43,6 +43,7 @@ const CANCELLED_STATUSES = new Set(['cancelled', 'dead']);
 // dead, new-lead) to the matching color-coded chip variant.
 
 export default function JobsPage() {
+  const router = useRouter();
   const [bookings, setBookings] = useState<BookingDoc[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -133,17 +134,16 @@ export default function JobsPage() {
                 <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Date</th>
                 <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Time</th>
                 <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Status</th>
-                <th className="px-4 py-2.5"></th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-sm text-muted-foreground">Loading…</td>
+                  <td colSpan={6} className="py-12 text-center text-sm text-muted-foreground">Loading…</td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12">
+                  <td colSpan={6} className="py-12">
                     <div className="flex flex-col items-center text-center">
                       <CalendarCheck className="h-10 w-10 text-muted-foreground/40" strokeWidth={1.5} />
                       <h3 className="mt-3 text-base font-semibold">No jobs in this view</h3>
@@ -152,54 +152,66 @@ export default function JobsPage() {
                   </td>
                 </tr>
               ) : (
-                filtered.map(b => (
-                  <tr key={b.id} className="border-t border-border hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3 align-middle">
-                      <div className="font-semibold">{getBookingCustomerName(b) || '(no name)'}</div>
-                      <div className="text-xs text-muted-foreground">{formatPhone(b.phone || b.customerPhone) || b.email || b.customerEmail || ''}</div>
-                    </td>
-                    <td className="px-4 py-3 align-middle text-muted-foreground truncate max-w-[200px]">
-                      {formatBookingVehicle(b) || '—'}
-                    </td>
-                    <td className="px-4 py-3 align-middle text-muted-foreground truncate max-w-[260px]">
-                      {formatBookingService(b)}
-                    </td>
-                    <td className="px-4 py-3 align-middle w-[160px]">
-                      <EditableCell
-                        type="date"
-                        value={b.confirmedDate || b.preferredDate || ''}
-                        onSave={next => patch(b.id, { confirmedDate: next })}
-                        placeholder="set date"
-                      />
-                    </td>
-                    <td className="px-4 py-3 align-middle w-[160px]">
-                      <EditableCell
-                        type="text"
-                        value={b.timeWindow || ''}
-                        onSave={next => patch(b.id, { timeWindow: next })}
-                        placeholder="set window"
-                      />
-                    </td>
-                    <td className="px-4 py-3 align-middle w-[160px]">
-                      <EditableCell
-                        type="select"
-                        value={b.status || 'pending'}
-                        options={STATUS_OPTIONS}
-                        onSave={next => patch(b.id, { status: next })}
-                        display={
-                          <Badge variant={statusBadgeVariant(b.status)} className="font-normal capitalize">
-                            {b.status || 'pending'}
-                          </Badge>
+                filtered.map(b => {
+                  const customerName = getBookingCustomerName(b) || '(no name)';
+                  const stop = (e: React.MouseEvent) => e.stopPropagation();
+                  return (
+                    <tr
+                      key={b.id}
+                      role="link"
+                      tabIndex={0}
+                      aria-label={`Open job for ${customerName}`}
+                      onClick={() => router.push(`/jobs/${b.id}`)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          router.push(`/jobs/${b.id}`);
                         }
-                      />
-                    </td>
-                    <td className="px-4 py-3 align-middle w-[90px] text-right">
-                      <Link href={`/jobs/${b.id}`} className="text-xs font-semibold text-primary hover:underline">
-                        Open →
-                      </Link>
-                    </td>
-                  </tr>
-                ))
+                      }}
+                      className="border-t border-border cursor-pointer hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset transition-colors"
+                    >
+                      <td className="px-4 py-3 align-middle">
+                        <div className="font-semibold">{customerName}</div>
+                        <div className="text-xs text-muted-foreground">{formatPhone(b.phone || b.customerPhone) || b.email || b.customerEmail || ''}</div>
+                      </td>
+                      <td className="px-4 py-3 align-middle text-muted-foreground truncate max-w-[200px]">
+                        {formatBookingVehicle(b) || '—'}
+                      </td>
+                      <td className="px-4 py-3 align-middle text-muted-foreground truncate max-w-[260px]">
+                        {formatBookingService(b)}
+                      </td>
+                      <td className="px-4 py-3 align-middle w-[160px]" onClick={stop}>
+                        <EditableCell
+                          type="date"
+                          value={b.confirmedDate || b.preferredDate || ''}
+                          onSave={next => patch(b.id, { confirmedDate: next })}
+                          placeholder="set date"
+                        />
+                      </td>
+                      <td className="px-4 py-3 align-middle w-[160px]" onClick={stop}>
+                        <EditableCell
+                          type="text"
+                          value={b.timeWindow || ''}
+                          onSave={next => patch(b.id, { timeWindow: next })}
+                          placeholder="set window"
+                        />
+                      </td>
+                      <td className="px-4 py-3 align-middle w-[160px]" onClick={stop}>
+                        <EditableCell
+                          type="select"
+                          value={b.status || 'pending'}
+                          options={STATUS_OPTIONS}
+                          onSave={next => patch(b.id, { status: next })}
+                          display={
+                            <Badge variant={statusBadgeVariant(b.status)} className="font-normal capitalize">
+                              {b.status || 'pending'}
+                            </Badge>
+                          }
+                        />
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
