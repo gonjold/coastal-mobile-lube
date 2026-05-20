@@ -1427,6 +1427,166 @@ exports.sendInvoiceWithQBPayment = onRequest(
       const { accessToken, realmId } = await getQBAccessToken();
       const baseUrl = `https://${QB_BASE}/v3/company/${realmId}`;
 
+      // Defensive helper: if the local Firestore doc is missing qbPaymentLink
+      // (and/or QB-authoritative totals), fetch them from QB and persist.
+      // Called from resend + reconcile paths where the orphaned-state
+      // scenario (prior send POSTed to QB but early-writeback failed locally)
+      // leaves the doc without the link that powers the Pay Now button.
+      // Safe to call when fields already exist — short-circuits.
+      async function ensureQbPaymentLinkAndTotals(qbInvoiceIdToFetch, currentExistingData) {
+        if (currentExistingData?.qbPaymentLink) {
+          return {
+            paymentLink: currentExistingData.qbPaymentLink,
+            existingData: currentExistingData,
+          };
+        }
+        try {
+          const linkResponse = await fetch(
+            `${baseUrl}/invoice/${qbInvoiceIdToFetch}?minorversion=75&include=invoiceLink`,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                Accept: "application/json",
+              },
+            }
+          );
+          const linkResult = await linkResponse.json();
+          // Defensive: if QB returned a Fault (e.g. code 610 Object Not Found
+          // for a deleted invoice) OR no Invoice object, do NOT write spurious
+          // fields (qbTaxAmount=0 etc.). The Path 3 verification gate upstream
+          // should have already cleared a stale qbInvoiceId before we got
+          // here, but this defends if the gate is somehow bypassed.
+          if (linkResult?.Fault) {
+            console.warn(
+              `[QB-LINK] QB returned Fault for qbInvoiceId=${qbInvoiceIdToFetch}; skipping hydration:`,
+              JSON.stringify(linkResult.Fault)
+            );
+            return {
+              paymentLink: currentExistingData?.qbPaymentLink || "",
+              existingData: currentExistingData,
+            };
+          }
+          const qbInv = linkResult?.Invoice;
+          if (!qbInv) {
+            console.warn(
+              `[QB-LINK] QB returned no Invoice and no Fault for qbInvoiceId=${qbInvoiceIdToFetch}; skipping hydration`
+            );
+            return {
+              paymentLink: currentExistingData?.qbPaymentLink || "",
+              existingData: currentExistingData,
+            };
+          }
+          const paymentLink = qbInv.InvoiceLink || "";
+          const update = {};
+          if (paymentLink) update.qbPaymentLink = paymentLink;
+          const qbTotalAmount =
+            qbInv?.TotalAmt != null ? parseFloat(qbInv.TotalAmt) : null;
+          const qbTaxAmount =
+            qbInv?.TxnTaxDetail?.TotalTax != null
+              ? parseFloat(qbInv.TxnTaxDetail.TotalTax)
+              : 0;
+          const qbSubtotal =
+            qbTotalAmount != null
+              ? Math.round((qbTotalAmount - qbTaxAmount) * 100) / 100
+              : null;
+          if (qbTotalAmount != null && currentExistingData?.qbTotalAmount == null) {
+            update.qbTotalAmount = qbTotalAmount;
+          }
+          if (qbSubtotal != null && currentExistingData?.qbSubtotal == null) {
+            update.qbSubtotal = qbSubtotal;
+          }
+          if (currentExistingData?.qbTaxAmount == null) {
+            update.qbTaxAmount = qbTaxAmount;
+          }
+          let updatedExistingData = currentExistingData;
+          if (Object.keys(update).length > 0 && invoiceId) {
+            await firestoreDb.collection("invoices").doc(invoiceId).update(update);
+            updatedExistingData = { ...(currentExistingData || {}), ...update };
+            console.log(
+              `[QB-LINK] Hydrated invoice ${invoiceId} (qbInvoiceId=${qbInvoiceIdToFetch}): link=${
+                paymentLink ? "yes" : "no"
+              }, fields=${Object.keys(update).join(",")}`
+            );
+          }
+          return { paymentLink, existingData: updatedExistingData };
+        } catch (linkErr) {
+          console.error(
+            `[QB-LINK] Defensive link/totals fetch failed for qbInvoiceId=${qbInvoiceIdToFetch}:`,
+            linkErr
+          );
+          return {
+            paymentLink: currentExistingData?.qbPaymentLink || "",
+            existingData: currentExistingData,
+          };
+        }
+      }
+
+      // Verification helper: fetch the QB invoice referenced by a local
+      // qbInvoiceId and confirm it exists AND its DocNumber matches what
+      // we expect. Returns:
+      //   { valid: true,  qbInvoice }
+      //   { valid: false, reason: "STALE"|"MISMATCH", detail }
+      // Transient errors (network, unexpected Fault) THROW so admin retries
+      // — we never silently clear a pointer on a transient failure.
+      async function verifyQbInvoiceMatches(qbInvoiceIdToVerify, expectedDocNumber) {
+        let resp, body;
+        try {
+          resp = await fetch(
+            `${baseUrl}/invoice/${qbInvoiceIdToVerify}?minorversion=75&include=invoiceLink`,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                Accept: "application/json",
+              },
+            }
+          );
+          body = await resp.json();
+        } catch (netErr) {
+          throw new Error(
+            `QB verify fetch failed for invoice ${qbInvoiceIdToVerify}: ${netErr.message}`
+          );
+        }
+        if (body?.Fault) {
+          const errs = Array.isArray(body.Fault.Error) ? body.Fault.Error : [];
+          const isNotFound = errs.some(
+            (e) => String(e?.code || "") === "610"
+          );
+          if (isNotFound) {
+            return {
+              valid: false,
+              reason: "STALE",
+              detail: "QB returned 610 Object Not Found",
+            };
+          }
+          throw new Error(
+            `QB verify returned unexpected Fault for invoice ${qbInvoiceIdToVerify}: ${JSON.stringify(body.Fault)}`
+          );
+        }
+        if (!resp.ok && !body?.Invoice) {
+          throw new Error(
+            `QB verify HTTP ${resp.status} for invoice ${qbInvoiceIdToVerify}`
+          );
+        }
+        const qbInv = body?.Invoice;
+        if (!qbInv) {
+          throw new Error(
+            `QB verify returned no Invoice and no Fault for ${qbInvoiceIdToVerify}`
+          );
+        }
+        if (
+          expectedDocNumber &&
+          qbInv.DocNumber &&
+          qbInv.DocNumber !== expectedDocNumber
+        ) {
+          return {
+            valid: false,
+            reason: "MISMATCH",
+            detail: `belongs to QB DocNumber ${qbInv.DocNumber} not expected ${expectedDocNumber}`,
+          };
+        }
+        return { valid: true, qbInvoice: qbInv };
+      }
+
       // Fetch existing invoice doc once (used by resend path AND by source-branch
       // logic at the email step). May be null for create-only flows that don't
       // have an invoiceId yet.
@@ -1437,12 +1597,57 @@ exports.sendInvoiceWithQBPayment = onRequest(
       }
       const isFdacs = existingData?.source === 'tech_completion';
 
+      // Verification gate: before trusting a local qbInvoiceId pointer,
+      // confirm the QB record exists AND its DocNumber matches our local
+      // invoiceNumber. Catches two failure modes:
+      //   STALE     — local points to a QB invoice that's been deleted in QB
+      //   MISMATCH  — local points to a different QB invoice (cross-customer
+      //               leak risk; e.g. CMLT-2026-005 → QB Id=4 → CMLT-2026-007)
+      // On either: clear local qbInvoiceId/qbAttachableId/qbPaymentLink + audit
+      // fields, strip in-memory copies, and fall through to create. On
+      // transient QB errors, the helper THROWS so the admin retries — we never
+      // silently clear a pointer on a network blip.
+      if (invoiceId && existingData?.qbInvoiceId) {
+        const expectedDoc = existingData.invoiceNumber || invoiceNumber;
+        const v = await verifyQbInvoiceMatches(
+          existingData.qbInvoiceId,
+          expectedDoc
+        );
+        if (!v.valid) {
+          console.warn(
+            `[QB-${v.reason}] Local qbInvoiceId=${existingData.qbInvoiceId} ${v.detail}; clearing local pointer and falling through to create (invoiceNumber=${expectedDoc})`
+          );
+          await firestoreDb.collection("invoices").doc(invoiceId).update({
+            qbInvoiceId: admin.firestore.FieldValue.delete(),
+            qbAttachableId: admin.firestore.FieldValue.delete(),
+            qbPaymentLink: admin.firestore.FieldValue.delete(),
+            qbStaleClearedAt: admin.firestore.FieldValue.serverTimestamp(),
+            qbStaleClearedReason: v.reason,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+          existingData = { ...existingData };
+          delete existingData.qbInvoiceId;
+          delete existingData.qbAttachableId;
+          delete existingData.qbPaymentLink;
+        }
+      }
+
       // 0. Resend path: if this Coastal invoice already has a QB invoice...
       if (invoiceId && existingData?.qbInvoiceId) {
         // FDACS resend: bypass QB's /invoice/{Id}/send (which would deliver QB's
         // generic template). Re-render the FDACS body + PDF and deliver via our
         // own SMTP path using the stored qbPaymentLink.
         if (isFdacs) {
+          // Defensive: hydrate qbPaymentLink + totals from QB if missing
+          // locally. Covers prior-reconciled invoices whose orphaned-state
+          // origin left these fields unpopulated; without this, the resend
+          // email would ship without the Pay Now button.
+          const hydrated = await ensureQbPaymentLinkAndTotals(
+            existingData.qbInvoiceId,
+            existingData
+          );
+          existingData = hydrated.existingData;
+
           const sendTo = customerEmail || existingData.customerEmail || "";
           const transporter = nodemailer.createTransport({
             service: "gmail",
@@ -1454,7 +1659,7 @@ exports.sendInvoiceWithQBPayment = onRequest(
           await sendFdacsCustomerEmail({
             invoiceId,
             invoice: fdacsResendInvoice,
-            paymentLink: existingData.qbPaymentLink || "",
+            paymentLink: hydrated.paymentLink,
             recipientEmail: sendTo,
             transporter,
             fromAddr,
@@ -1489,6 +1694,15 @@ exports.sendInvoiceWithQBPayment = onRequest(
 
         // Legacy resend: keep QB's /invoice/{Id}/send (preserves existing
         // manual_admin behavior — generic QB template, no PDF attachment).
+        // Defensive: hydrate qbPaymentLink + totals if missing locally.
+        // QB's send template includes its own payment link, but keeping
+        // local Firestore in sync helps admin views and future flows.
+        const legacyHydrated = await ensureQbPaymentLinkAndTotals(
+          existingData.qbInvoiceId,
+          existingData
+        );
+        existingData = legacyHydrated.existingData;
+
         const sendTo = customerEmail || existingData.customerEmail || "";
         const sendResponse = await fetch(
           `${baseUrl}/invoice/${existingData.qbInvoiceId}/send?sendTo=${encodeURIComponent(sendTo)}&minorversion=75`,
@@ -1740,6 +1954,17 @@ exports.sendInvoiceWithQBPayment = onRequest(
           };
 
           if (isFdacs) {
+            // Reconcile by definition means the prior send aborted before
+            // persisting qbPaymentLink locally. Fetch from QB so the
+            // customer email includes the Pay Now button. (The helper's
+            // existing-link short-circuit is a no-op here since orphaned
+            // state has no link by construction.)
+            const reconcileHydrated = await ensureQbPaymentLinkAndTotals(
+              reconciledQbId,
+              existingData
+            );
+            existingData = reconcileHydrated.existingData;
+
             const sendTo = customerEmail || existingData.customerEmail || "";
             const transporter = nodemailer.createTransport({
               service: "gmail",
@@ -1751,7 +1976,7 @@ exports.sendInvoiceWithQBPayment = onRequest(
             await sendFdacsCustomerEmail({
               invoiceId,
               invoice: fdacsResendInvoice,
-              paymentLink: existingData.qbPaymentLink || "",
+              paymentLink: reconcileHydrated.paymentLink,
               recipientEmail: sendTo,
               transporter,
               fromAddr,
