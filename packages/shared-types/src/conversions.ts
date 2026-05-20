@@ -1,22 +1,8 @@
-import type {
-  WizardSelection,
-  FdacsEstimateItem,
-  CustomerEstimateItem,
-  InvoiceLineItem,
-} from './lineItems';
-
-export function wizardToFdacs(_w: WizardSelection): FdacsEstimateItem {
-  throw new Error('wizardToFdacs: not implemented in A1. Lands in A3.');
-}
-
-export function customerEstimateToFdacs(_c: CustomerEstimateItem): FdacsEstimateItem {
-  throw new Error('customerEstimateToFdacs: not implemented in A1. Lands in A3.');
-}
-
-export function fdacsToInvoice(_f: FdacsEstimateItem): InvoiceLineItem {
-  throw new Error('fdacsToInvoice: not implemented in A1. Lands in A3.');
-}
-
-export function customerEstimateToInvoice(_c: CustomerEstimateItem): InvoiceLineItem {
-  throw new Error('customerEstimateToInvoice: not implemented in A1. Lands in A3.');
-}
+// Removed in Phase A (WO-COASTAL-PHASE-A-STABILIZATION).
+// The four throwing stubs (wizardToFdacs, customerEstimateToFdacs,
+// fdacsToInvoice, customerEstimateToInvoice) had zero call sites and
+// risked surprising any future caller with a runtime throw.
+// Real conversions are inline in apps/ops/lib/invoiceFromBooking.ts
+// and the booking write paths. Reimplement here in Phase B if the
+// estimate-invoice continuity work needs a shared shape converter.
+export {};

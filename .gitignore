@@ -64,3 +64,54 @@ node_modules/
 apps/ops/public/sw.js
 apps/ops/public/workbox-*.js
 apps/ops/public/swe-worker-*.js
+
+# Phase A Unit 5 housekeeping. Keep `git status` clean of session-only scratch.
+# Patterns intentionally narrow so they do not shadow tracked files
+# (gitignore is a no-op on already-tracked paths but stays explicit here).
+
+# Catch-all archive directory for loose legacy work orders, codebase maps,
+# session checkpoints, ad-hoc notes that nobody wants to delete but nobody
+# wants in `git status` either. Suggested move:
+#   mkdir -p _local && git status --porcelain \
+#     | awk '/^?? /{print substr($0,4)}' \
+#     | grep -E '^(WO-|COASTAL-|SESSION-|DIAGNOSTIC|GOLDCO|QB-GROUNDTRUTH|SITE-AUDIT|PASS[0-9]|HOMEPAGE-)' \
+#     | xargs -I{} mv {} _local/
+/_local/
+
+# Local Claude Code state (worktrees, settings, output transcripts)
+/.claude/
+
+# Sprint-workspace mirror at root; the real one is ~/work/coastal-cutover-sprint
+/outputs/
+
+# Local one-off functions scripts (production functions/* tracked normally)
+/functions/scripts/
+
+# Per-session scratch
+/AWAITING-JON.md
+
+# Stray non-npm package-manager lockfiles (repo uses npm workspaces)
+/deno.lock
+/deno.lock.bak*
+/pnpm-lock.yaml
+/pnpm-workspace.yaml
+
+# Local mockup scratch (mockup-01-ops-home-owner.jsx is currently untracked
+# at root; the canonical copy lives in the sprint workspace inputs/)
+/booking-cms-mockup.jsx
+/mockup-*.jsx
+
+# Local one-off scripts. Each pattern is narrow so it does NOT shadow
+# tracked scripts (e.g. scripts/verify-*.js and scripts/wo-t*.js are tracked).
+/scripts/probe-*.js
+/scripts/inspect-*.js
+/scripts/wipe-*.js
+/scripts/wo45-*.js
+/scripts/a3d-*.js
+/scripts/a3d-*.ts
+/scripts/qb-query-*.js
+/scripts/backup-*.js
+/scripts/diagnose-*.js
+/scripts/find-*.js
+/scripts/list-*.js
+/scripts/cleanup-pre-launch-*.js

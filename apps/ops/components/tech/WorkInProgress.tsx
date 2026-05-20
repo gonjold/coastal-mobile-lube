@@ -289,6 +289,16 @@ export default function WorkInProgress({ booking }: Props) {
       jobCompletedAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
+    // Best-effort: push the booking's latest vehicle data and odometerOut
+    // to the linked asset so the customer's VehiclesEditor shows current
+    // mileage on the next visit. Server-side because assets writes require
+    // the owner/admin custom claim per firestore.rules. Never blocks the
+    // completion path: the booking + invoice are already committed.
+    void fetch(`/api/field/jobs/${booking.id}/complete-asset-sync`, {
+      method: "POST",
+    }).catch((err) => {
+      console.warn("complete-asset-sync failed (non-blocking)", err);
+    });
     // onSnapshot in the page re-renders into <JobCompleted>; modal unmounts.
   }
 
