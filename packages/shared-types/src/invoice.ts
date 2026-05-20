@@ -17,6 +17,12 @@ export interface InvoiceLineItem {
   lineTotal: number;
   /** Sent to QB as TaxCodeRef "TAX"/"NON". Missing → false (safe default). */
   taxable: boolean;
+  /** Distinguishes parts from services on the line-item editor. Drives the
+   * FDACS condition pill. Optional for back-compat with pre-A2A3 docs. */
+  kind?: "service" | "part";
+  /** FDACS part condition. Required for parts on completion-time writes; the
+   * editor enforces a default of "New" when kind flips to "part". */
+  partsCondition?: "New" | "Used" | "Rebuilt" | "Reconditioned" | null;
 }
 
 interface InvoiceCommon {

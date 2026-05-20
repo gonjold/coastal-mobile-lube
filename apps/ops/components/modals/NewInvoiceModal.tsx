@@ -1,12 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Plus, Trash2 } from 'lucide-react';
 import {
   addDoc,
   collection,
-  doc,
-  getDoc,
   getDocs,
   onSnapshot,
   query,
@@ -22,7 +21,7 @@ import {
   DialogTitle,
   Input,
 } from '@coastal/shared-ui';
-import { db, auth } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { useAdminModal } from '@/lib/AdminModalContext';
 import { useServices, type Service } from '@/hooks/useServices';
 import { nextInvoiceNumberFromList } from '@/lib/invoiceNumber';
@@ -102,6 +101,7 @@ function assetLabel(a: Asset): string {
 
 export function NewInvoiceModal() {
   const { activeModal, prefill, closeModal } = useAdminModal();
+  const router = useRouter();
   const open = activeModal === 'invoice';
 
   const { services } = useServices({ activeOnly: true });
@@ -296,7 +296,7 @@ export function NewInvoiceModal() {
     !!form.customerName.trim() &&
     form.lineItems.some((li) => li.serviceName.trim() && (li.lineTotal || 0) > 0);
 
-  async function handleSave(target: 'draft' | 'sent') {
+  async function handleSave() {
     if (!isValid || saving) return;
     setSaving(true);
     try {
@@ -317,7 +317,9 @@ export function NewInvoiceModal() {
         subtotal,
         taxAmount,
         total,
-        status: target,
+        // A2A3-U3: manual create always lands in draft. Owner reviews and
+        // sends from /invoices/[id]; never bypass the review window.
+        status: 'draft' as const,
         notes: form.notes || null,
         invoiceDate: form.invoiceDate || null,
         dueDate: form.dueDate || null,
@@ -326,78 +328,11 @@ export function NewInvoiceModal() {
         updatedAt: serverTimestamp(),
       };
       const newRef = await addDoc(collection(db, 'invoices'), docData);
-
-      if (target === 'sent' && form.customerEmail) {
-        /* Mirror marketing's send path: QB-connected uses sendInvoiceWithQBPayment,
-           otherwise sendInvoiceEmail. Match marketing endpoint shapes verbatim. */
-        try {
-          const idToken = await auth.currentUser?.getIdToken();
-          const qbDoc = await getDoc(doc(db, 'settings', 'quickbooks'));
-          const qbConnected = qbDoc.exists() && !!qbDoc.data()?.accessToken;
-          const endpoint = qbConnected
-            ? 'https://us-east1-coastal-mobile-lube.cloudfunctions.net/sendInvoiceWithQBPayment'
-            : 'https://us-east1-coastal-mobile-lube.cloudfunctions.net/sendInvoiceEmail';
-          const body = qbConnected
-            ? {
-                invoiceId: newRef.id,
-                invoiceNumber: docData.invoiceNumber,
-                customerName: docData.customerName,
-                customerEmail: form.customerEmail,
-                customerPhone: form.customerPhone || '',
-                customerAddress: form.customerAddress || '',
-                customerId: form.customerId || '',
-                lineItems: filteredItems,
-                subtotal,
-                tax: taxAmount,
-                convenienceFee: 0,
-                total,
-                vehicle: form.vehicle || '',
-                dueDate: form.dueDate || '',
-              }
-            : {
-                invoiceId: newRef.id,
-                customerEmail: form.customerEmail,
-                customerName: docData.customerName,
-                customerPhone: form.customerPhone || '',
-                invoiceNumber: docData.invoiceNumber,
-                lineItems: filteredItems,
-                subtotal,
-                taxAmount,
-                total,
-                notes: form.notes || '',
-                vehicle: form.vehicle || '',
-                invoiceDate: form.invoiceDate || '',
-                dueDate: form.dueDate || '',
-              };
-          const res = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
-            },
-            body: JSON.stringify(body),
-          });
-          if (!res.ok) {
-            toast.error('Invoice saved, but send failed', {
-              description: `HTTP ${res.status}`,
-            });
-          } else {
-            toast.success(`Invoice ${docData.invoiceNumber} sent to ${form.customerEmail}`);
-          }
-        } catch (err) {
-          toast.error('Invoice saved, but send failed', {
-            description: err instanceof Error ? err.message : 'Network error',
-          });
-        }
-      } else {
-        toast.success(
-          target === 'sent'
-            ? `Invoice ${docData.invoiceNumber} marked as sent`
-            : `Invoice ${docData.invoiceNumber} saved as draft`,
-        );
-      }
-
+      toast.success(`Draft ${docData.invoiceNumber} created`, {
+        description: 'Review and send from the invoice page.',
+      });
       closeModal();
+      router.push(`/invoices/${newRef.id}`);
     } catch (err) {
       toast.error('Save failed', {
         description: err instanceof Error ? err.message : 'Unknown error',
@@ -616,11 +551,8 @@ export function NewInvoiceModal() {
 
         <DialogFooter>
           <Button variant="outline" onClick={closeModal} disabled={saving}>Cancel</Button>
-          <Button variant="outline" onClick={() => handleSave('draft')} disabled={!isValid || saving}>
-            Save as draft
-          </Button>
-          <Button onClick={() => handleSave('sent')} disabled={!isValid || saving}>
-            {saving ? 'Saving…' : 'Send'}
+          <Button onClick={handleSave} disabled={!isValid || saving}>
+            {saving ? 'Creating…' : 'Create draft'}
           </Button>
         </DialogFooter>
       </DialogContent>
