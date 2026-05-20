@@ -66,7 +66,7 @@ export default function CustomersPage() {
   }
 
   return (
-    <div className="px-4 lg:px-8 py-6 max-w-[1400px] mx-auto">
+    <div className="px-4 lg:px-8 py-6 max-w-[1400px]">
       {/* A3f Phase 6A polish: header stacks below lg so search + new
           don't crash at 375px. New customer button hides below lg
           (TopBar 'New' covers md..lg; FAB covers <md). Search goes

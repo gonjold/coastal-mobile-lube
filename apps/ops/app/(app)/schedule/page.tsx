@@ -72,7 +72,7 @@ export default function SchedulePage() {
   const rangeLabel = `${toIso(days[0]).slice(5)} – ${toIso(days[6]).slice(5)}`;
 
   return (
-    <div className="px-4 lg:px-8 py-6 max-w-[1400px] mx-auto">
+    <div className="px-4 lg:px-8 py-6 max-w-[1400px]">
       {/* A3f Phase 6A.8: header stacks on mobile so the week nav row
           doesn't clip at 375px. New booking button hides below md (FAB
           carries the create action there). */}

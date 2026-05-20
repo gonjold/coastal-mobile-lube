@@ -67,7 +67,7 @@ export default function TeamPage() {
   }
 
   return (
-    <div className="px-4 lg:px-8 py-6 max-w-[1200px] mx-auto">
+    <div className="px-4 lg:px-8 py-6 max-w-[1200px]">
       <header className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight">Team</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
