@@ -146,7 +146,15 @@ export default function JobsPage() {
           </div>
           <div className="hidden lg:block rounded-lg border border-border bg-card overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-[13px]">
+              <table className="w-full text-[13px] table-fixed">
+                <colgroup>
+                  <col className="w-[22%]" />
+                  <col className="w-[16%]" />
+                  <col className="w-[22%]" />
+                  <col className="w-[14%]" />
+                  <col className="w-[12%]" />
+                  <col className="w-[14%]" />
+                </colgroup>
                 <thead>
               <tr className="bg-muted/50">
                 <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Customer</th>
@@ -177,16 +185,16 @@ export default function JobsPage() {
                       className="border-t border-border cursor-pointer hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset transition-colors"
                     >
                       <td className="px-4 py-3 align-middle">
-                        <div className="font-semibold">{customerName}</div>
-                        <div className="text-xs text-muted-foreground">{formatPhone(b.phone || b.customerPhone) || b.email || b.customerEmail || ''}</div>
+                        <div className="font-semibold truncate">{customerName}</div>
+                        <div className="text-xs text-muted-foreground truncate">{formatPhone(b.phone || b.customerPhone) || b.email || b.customerEmail || ''}</div>
                       </td>
-                      <td className="px-4 py-3 align-middle text-muted-foreground truncate max-w-[200px]">
+                      <td className="px-4 py-3 align-middle text-muted-foreground truncate">
                         {formatBookingVehicle(b) || '—'}
                       </td>
-                      <td className="px-4 py-3 align-middle text-muted-foreground truncate max-w-[260px]">
+                      <td className="px-4 py-3 align-middle text-muted-foreground truncate">
                         {formatBookingService(b)}
                       </td>
-                      <td className="px-4 py-3 align-middle w-[160px]" onClick={stop}>
+                      <td className="px-4 py-3 align-middle whitespace-nowrap" onClick={stop}>
                         <EditableCell
                           type="date"
                           value={b.confirmedDate || b.preferredDate || ''}
@@ -194,7 +202,7 @@ export default function JobsPage() {
                           placeholder="set date"
                         />
                       </td>
-                      <td className="px-4 py-3 align-middle w-[160px]" onClick={stop}>
+                      <td className="px-4 py-3 align-middle whitespace-nowrap" onClick={stop}>
                         <EditableCell
                           type="text"
                           value={b.timeWindow || ''}
@@ -202,7 +210,7 @@ export default function JobsPage() {
                           placeholder="set window"
                         />
                       </td>
-                      <td className="px-4 py-3 align-middle w-[160px]" onClick={stop}>
+                      <td className="px-4 py-3 align-middle whitespace-nowrap" onClick={stop}>
                         <EditableCell
                           type="select"
                           value={b.status || 'pending'}

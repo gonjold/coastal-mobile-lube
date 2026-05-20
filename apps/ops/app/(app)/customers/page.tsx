@@ -109,7 +109,13 @@ export default function CustomersPage() {
           </div>
           <div className="hidden lg:block rounded-lg border border-border bg-card overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-[13px]">
+              <table className="w-full text-[13px] table-fixed">
+                <colgroup>
+                  <col className="w-[28%]" />
+                  <col className="w-[20%]" />
+                  <col className="w-[40%]" />
+                  <col className="w-[12%]" />
+                </colgroup>
                 <thead>
                   <tr className="bg-muted/50">
                     <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Name</th>
@@ -137,13 +143,13 @@ export default function CustomersPage() {
                         }}
                         className="border-t border-border align-middle cursor-pointer hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset transition-colors"
                       >
-                        <td className="px-4 py-3" onClick={stop}>
+                        <td className="px-4 py-3 truncate" onClick={stop}>
                           <EditableCell
                             value={row.name}
                             onSave={next => patchCustomer(row, { name: next })}
                           />
                         </td>
-                        <td className="px-4 py-3" onClick={stop}>
+                        <td className="px-4 py-3 whitespace-nowrap" onClick={stop}>
                           <EditableCell
                             type="tel"
                             value={row.phone}
@@ -151,14 +157,14 @@ export default function CustomersPage() {
                             onSave={next => patchCustomer(row, { phone: next })}
                           />
                         </td>
-                        <td className="px-4 py-3" onClick={stop}>
+                        <td className="px-4 py-3 truncate" onClick={stop}>
                           <EditableCell
                             type="email"
                             value={row.email}
                             onSave={next => patchCustomer(row, { email: next })}
                           />
                         </td>
-                        <td className="px-4 py-3 text-right text-muted-foreground">{row.totalBookings}</td>
+                        <td className="px-4 py-3 text-right tabular-nums whitespace-nowrap text-muted-foreground">{row.totalBookings}</td>
                       </tr>
                     );
                   })}

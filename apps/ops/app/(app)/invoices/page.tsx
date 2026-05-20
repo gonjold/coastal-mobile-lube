@@ -173,7 +173,12 @@ export default function InvoicesPage() {
             </div>
             <div className="hidden lg:block rounded-lg border border-border bg-card overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-[13px]">
+                <table className="w-full text-[13px] table-fixed">
+                  <colgroup>
+                    <col className="w-[42%]" />
+                    <col className="w-[23%]" />
+                    <col className="w-[35%]" />
+                  </colgroup>
                   <thead>
                     <tr className="bg-muted/50">
                       <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Customer</th>
@@ -202,9 +207,9 @@ export default function InvoicesPage() {
                           }}
                           className="border-t border-border cursor-pointer hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset transition-colors"
                         >
-                          <td className="px-4 py-3 align-middle font-semibold">{name}</td>
-                          <td className="px-4 py-3 align-middle">{formatPhone(phone, '—')}</td>
-                          <td className="px-4 py-3 align-middle">{completedLabel}</td>
+                          <td className="px-4 py-3 align-middle font-semibold truncate">{name}</td>
+                          <td className="px-4 py-3 align-middle whitespace-nowrap">{formatPhone(phone, '—')}</td>
+                          <td className="px-4 py-3 align-middle whitespace-nowrap">{completedLabel}</td>
                         </tr>
                       );
                     })}
@@ -233,7 +238,15 @@ export default function InvoicesPage() {
           </div>
           <div className="hidden lg:block rounded-lg border border-border bg-card overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-[13px]">
+              <table className="w-full text-[13px] table-fixed">
+                <colgroup>
+                  <col className="w-[14%]" />
+                  <col className="w-[26%]" />
+                  <col className="w-[12%]" />
+                  <col className="w-[16%]" />
+                  <col className="w-[12%]" />
+                  <col className="w-[20%]" />
+                </colgroup>
                 <thead>
                   <tr className="bg-muted/50">
                     <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Invoice</th>
@@ -264,10 +277,10 @@ export default function InvoicesPage() {
                         }}
                         className="border-t border-border cursor-pointer hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset transition-colors"
                       >
-                        <td className="px-4 py-3 align-middle font-semibold">{invoiceLabel}</td>
-                        <td className="px-4 py-3 align-middle">{inv.customerName}</td>
-                        <td className="px-4 py-3 align-middle text-right">{formatCurrency(total)}</td>
-                        <td className="px-4 py-3 align-middle w-[160px]" onClick={stop}>
+                        <td className="px-4 py-3 align-middle font-semibold tabular-nums truncate">{invoiceLabel}</td>
+                        <td className="px-4 py-3 align-middle truncate">{inv.customerName}</td>
+                        <td className="px-4 py-3 align-middle text-right tabular-nums whitespace-nowrap">{formatCurrency(total)}</td>
+                        <td className="px-4 py-3 align-middle whitespace-nowrap" onClick={stop}>
                           <EditableCell
                             type="date"
                             value={inv.dueDate || ''}
@@ -275,10 +288,10 @@ export default function InvoicesPage() {
                             placeholder="set due"
                           />
                         </td>
-                        <td className="px-4 py-3 align-middle w-[120px]">
+                        <td className="px-4 py-3 align-middle whitespace-nowrap">
                           <Badge variant={statusBadgeVariant(inv.status)} className="font-normal capitalize">{inv.status}</Badge>
                         </td>
-                        <td className="px-4 py-3 align-middle text-xs text-muted-foreground">
+                        <td className="px-4 py-3 align-middle text-xs text-muted-foreground truncate">
                           {inv.qboFinalizeStatus === 'error' ? <span className="text-red-700">error</span> : inv.qbDocNumber ?? '—'}
                         </td>
                       </tr>

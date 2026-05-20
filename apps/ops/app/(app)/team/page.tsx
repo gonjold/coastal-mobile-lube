@@ -94,7 +94,15 @@ export default function TeamPage() {
           </div>
           <div className="hidden lg:block rounded-lg border border-border bg-card overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-[13px]">
+              <table className="w-full text-[13px] table-fixed">
+                <colgroup>
+                  <col className="w-[22%]" />
+                  <col className="w-[28%]" />
+                  <col className="w-[14%]" />
+                  <col className="w-[11%]" />
+                  <col className="w-[12%]" />
+                  <col className="w-[13%]" />
+                </colgroup>
                 <thead>
                   <tr className="bg-muted/50">
                     <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Name</th>
@@ -115,9 +123,9 @@ export default function TeamPage() {
                     const stop = (e: React.MouseEvent) => e.stopPropagation();
                     return (
                       <tr key={u.uid} className="border-t border-border align-middle">
-                        <td className="px-4 py-3 font-semibold">{u.displayName || '(no name)'}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{u.email}</td>
-                        <td className="px-4 py-3 w-[160px]" onClick={stop}>
+                        <td className="px-4 py-3 font-semibold truncate">{u.displayName || '(no name)'}</td>
+                        <td className="px-4 py-3 text-muted-foreground truncate">{u.email}</td>
+                        <td className="px-4 py-3 whitespace-nowrap" onClick={stop}>
                           <EditableCell
                             type="select"
                             value={u.role}
@@ -126,7 +134,7 @@ export default function TeamPage() {
                             display={<Badge variant={roleVariant(u.role)} className="font-normal capitalize">{u.role.replace('_', ' ')}</Badge>}
                           />
                         </td>
-                        <td className="px-4 py-3 w-[120px]" onClick={stop}>
+                        <td className="px-4 py-3 whitespace-nowrap" onClick={stop}>
                           <EditableCell
                             type="select"
                             value={u.isActive ? 'true' : 'false'}
@@ -135,10 +143,10 @@ export default function TeamPage() {
                             display={<Badge variant={u.isActive ? 'default' : 'outline'} className="font-normal">{u.isActive ? 'Active' : 'Inactive'}</Badge>}
                           />
                         </td>
-                        <td className="px-4 py-2 text-xs text-muted-foreground">
+                        <td className="px-4 py-2 text-xs text-muted-foreground whitespace-nowrap tabular-nums">
                           {u.createdAt?.toDate().toISOString().slice(0, 10) ?? '—'}
                         </td>
-                        <td className="px-4 py-2 text-xs text-muted-foreground">
+                        <td className="px-4 py-2 text-xs text-muted-foreground whitespace-nowrap tabular-nums">
                           {u.lastLoginAt?.toDate().toISOString().slice(0, 10) ?? 'never'}
                         </td>
                       </tr>
