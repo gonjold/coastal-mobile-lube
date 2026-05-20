@@ -1,27 +1,27 @@
 /* A3f Phase 1.1: role-based nav helper - single source of truth for sidebar,
- * mobile tab bar, More drawer, command palette. Replaces the role-blind
- * SIDEBAR_SECTIONS export in sidebarConfig.ts as the data layer; Phase 3
- * rewires consumers to read from here.
+ * mobile tab bar, More drawer, command palette.
  *
  * Two role-shaped item lists:
- * - OWNER_NAV: 10 active routes (Home/Today/Schedule/Jobs/Customers/Invoices/
- *   Team/Services/Fees/Integrations) + 4 future-locked stubs (Estimates,
+ * - OWNER_NAV: 10 active routes + 4 future-locked stubs (Estimates,
  *   Quick Quotes, Reports, Settings).
- * - TECH_NAV: 4 routes only (Today/Jobs/Schedule/Customers). Direct URL
- *   access to other routes is silently redirected by Phase 3's middleware
- *   guard; no "no permission" surface.
+ * - TECH_NAV: 4 routes only (Today/Schedule/Customers/Jobs). Direct URL
+ *   access to other routes is silently redirected by RouteGuard.
  *
- * admin_only role gets the OWNER_NAV today. Future divergence (if needed)
- * can branch off in getNavItemsForRole.
+ * admin_only role gets OWNER_NAV.
  *
  * tabBarOrder convention:
- * - 1-4: primary tabs in MobileTabBar (renders in this exact order)
+ * - 1-4: primary tabs in MobileTabBar (rendered in this exact order)
  * - 5+:  overflow items in More drawer
  * - undefined: sidebar-only (no mobile representation)
  *
- * The four OWNER tabBar items (Today/Jobs/Customers/Invoices) and the four
- * TECH tabBar items (Today/Jobs/Schedule/Customers) match the WO-A3F locked
- * decision.
+ * Round 3 Unit 6 layout:
+ * - Owner tab bar = Today / Schedule / Jobs (3 primary tabs; the
+ *   MobileTabBar paints an elevated center create button between Schedule
+ *   and Jobs and a More entry to the right).
+ * - Owner drawer = Home / Customers / Invoices / Team / Services / Fees /
+ *   Integrations (7 items, in that order).
+ * - Tech tab bar = Today / Schedule / Customers / Jobs (4 primary tabs,
+ *   no center button, no drawer).
  */
 import type { LucideIcon } from "lucide-react";
 import {
@@ -57,13 +57,13 @@ export interface NavItem {
 const OWNER_NAV: NavItem[] = [
   // Operations
   { href: "/today", label: "Today", icon: Clock, available: true, group: "Operations", tabBarOrder: 1 },
-  { href: "/jobs", label: "Jobs", icon: Wrench, available: true, group: "Operations", tabBarOrder: 2 },
-  { href: "/customers", label: "Customers", icon: Users, available: true, group: "Operations", tabBarOrder: 3 },
+  { href: "/schedule", label: "Schedule", icon: Calendar, available: true, group: "Operations", tabBarOrder: 2 },
+  { href: "/jobs", label: "Jobs", icon: Wrench, available: true, group: "Operations", tabBarOrder: 3 },
   { href: "/home", label: "Home", icon: Home, available: true, group: "Operations", tabBarOrder: 5 },
-  { href: "/schedule", label: "Schedule", icon: Calendar, available: true, group: "Operations", tabBarOrder: 6 },
+  { href: "/customers", label: "Customers", icon: Users, available: true, group: "Operations", tabBarOrder: 6 },
 
   // Sales
-  { href: "/invoices", label: "Invoices", icon: Receipt, available: true, group: "Sales", tabBarOrder: 4 },
+  { href: "/invoices", label: "Invoices", icon: Receipt, available: true, group: "Sales", tabBarOrder: 7 },
   { href: "/estimates", label: "Estimates", icon: FileText, available: false, availableIn: "A5", group: "Sales" },
   { href: "/quotes", label: "Quick Quotes", icon: Quote, available: false, availableIn: "A5", group: "Sales" },
 
@@ -71,18 +71,18 @@ const OWNER_NAV: NavItem[] = [
   { href: "/reports", label: "Reports", icon: BarChart3, available: false, availableIn: "A7", group: "Insights" },
 
   // Admin
-  { href: "/team", label: "Team", icon: Users, available: true, group: "Admin", tabBarOrder: 7 },
-  { href: "/services", label: "Services", icon: Package, available: true, group: "Admin", tabBarOrder: 8 },
-  { href: "/fees", label: "Fees", icon: DollarSign, available: true, group: "Admin", tabBarOrder: 9 },
-  { href: "/integrations", label: "Integrations", icon: Plug, available: true, group: "Admin", tabBarOrder: 10 },
+  { href: "/team", label: "Team", icon: Users, available: true, group: "Admin", tabBarOrder: 8 },
+  { href: "/services", label: "Services", icon: Package, available: true, group: "Admin", tabBarOrder: 9 },
+  { href: "/fees", label: "Fees", icon: DollarSign, available: true, group: "Admin", tabBarOrder: 10 },
+  { href: "/integrations", label: "Integrations", icon: Plug, available: true, group: "Admin", tabBarOrder: 11 },
   { href: "/settings", label: "Settings", icon: Settings, available: false, availableIn: "A4", group: "Admin" },
 ];
 
 const TECH_NAV: NavItem[] = [
   { href: "/today", label: "Today", icon: Clock, available: true, group: "Operations", tabBarOrder: 1 },
-  { href: "/jobs", label: "Jobs", icon: Wrench, available: true, group: "Operations", tabBarOrder: 2 },
-  { href: "/schedule", label: "Schedule", icon: Calendar, available: true, group: "Operations", tabBarOrder: 3 },
-  { href: "/customers", label: "Customers", icon: Users, available: true, group: "Operations", tabBarOrder: 4 },
+  { href: "/schedule", label: "Schedule", icon: Calendar, available: true, group: "Operations", tabBarOrder: 2 },
+  { href: "/customers", label: "Customers", icon: Users, available: true, group: "Operations", tabBarOrder: 3 },
+  { href: "/jobs", label: "Jobs", icon: Wrench, available: true, group: "Operations", tabBarOrder: 4 },
 ];
 
 /** Full nav list for a role, including future-locked items. Sidebar consumers

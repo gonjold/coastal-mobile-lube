@@ -1,14 +1,18 @@
 "use client";
 
-/* A3f Phase 6A.7 / Polish Round 3 Unit 2: mobile-only floating action
- * button for the create menu. Renders below md only; at md+ the TopBar
- * "New" dropdown reappears. Sits bottom-right above MobileTabBar.
+/* A3f Phase 6A.7 / Polish Round 3 Unit 2 + Unit 6: mobile-only floating
+ * action button for the create menu. Renders below md only; at md+ the
+ * TopBar "New" dropdown reappears. Sits bottom-right above MobileTabBar.
+ *
+ * Round 3 Unit 6: owner / admin_only now use the elevated center create
+ * button inside MobileTabBar, so the floating FAB returns null for those
+ * roles to avoid two competing create affordances. Tech still relies on
+ * this FAB as the mobile create entry point.
  *
  * Context-aware: /jobs, /today, /schedule open New booking; /invoices
  * opens New invoice; /customers opens New customer. Single tap on a
- * scoped route opens the matching modal directly. On neutral pages
- * (home, team, services, fees, integrations) it falls back to a
- * dropdown so every create action stays reachable.
+ * scoped route opens the matching modal directly. On neutral pages it
+ * falls back to a dropdown so every create action stays reachable.
  *
  * Round 3 size + shadow per WO: 48px circle, shadow
  * 0 4px 12px rgba(224,123,45,0.40), white plus glyph.
@@ -26,6 +30,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@coastal/shared-ui";
+import { useAuth } from "@/lib/useAuth";
 import { useAdminModal } from "@/lib/AdminModalContext";
 
 type PrimaryAction = "booking" | "customer" | "invoice";
@@ -80,10 +85,14 @@ function useScrollHidden(): boolean {
 }
 
 export function NewActionFAB() {
+  const { role } = useAuth();
   const { openModal } = useAdminModal();
   const pathname = usePathname() ?? "";
   const primary = primaryActionForPath(pathname);
   const hidden = useScrollHidden();
+
+  // Owner / admin use the elevated center button in MobileTabBar instead.
+  if (role !== "tech") return null;
 
   return (
     <div
