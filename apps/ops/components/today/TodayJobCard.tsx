@@ -68,11 +68,11 @@ export default function TodayJobCard({ booking }: Props) {
       className="flex flex-col gap-4 p-4 lg:p-5 cursor-pointer hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
     >
       <header className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-lg font-semibold text-foreground">{customerName}</div>
-          <div className="text-sm text-muted-foreground">{vehicle || service}</div>
+        <div className="min-w-0 flex-1">
+          <div className="text-lg font-semibold text-foreground truncate">{customerName}</div>
+          <div className="text-sm text-muted-foreground truncate">{vehicle || service}</div>
         </div>
-        <Badge variant={statusBadgeVariant(booking.status)}>
+        <Badge variant={statusBadgeVariant(booking.status)} className="shrink-0">
           {statusLabel}
         </Badge>
       </header>

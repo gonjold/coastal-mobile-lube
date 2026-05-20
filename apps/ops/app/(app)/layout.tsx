@@ -34,12 +34,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 breakpoints via className overrides; both stay hidden <md. */}
             <Sidebar variant="icon" className="hidden md:flex lg:hidden" />
             <Sidebar variant="full" className="hidden lg:flex" />
-            <div className="flex-1 min-h-screen flex flex-col">
+            {/* A3f Phase 6A polish round 2: min-w-0 on the flex-1 main
+                column lets it shrink below its content's intrinsic
+                min-width (default min-width: auto on flex items prevents
+                this). Without it, any wide child (sub-page, TopBar item,
+                etc.) forces the column past viewport on mobile, dragging
+                the page into horizontal scroll and clipping the bell. */}
+            <div className="flex-1 min-w-0 min-h-screen flex flex-col">
               <TopBar />
               {/* pb-20 on mobile gives the fixed bottom tab bar (h-16 + safe
                   area) clearance so page content doesn't slide under it.
-                  md:pb-0 because tab bar is hidden md+. */}
-              <main className="flex-1 pb-20 md:pb-0">
+                  md:pb-0 because tab bar is hidden md+. min-w-0 here too so
+                  the inner page wrapper can shrink. */}
+              <main className="flex-1 min-w-0 pb-20 md:pb-0">
                 <RouteGuard>{children}</RouteGuard>
               </main>
             </div>

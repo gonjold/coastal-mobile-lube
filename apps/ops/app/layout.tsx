@@ -50,7 +50,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
       className={`${plusJakarta.variable} ${inter.variable}`}
     >
-      <body className="bg-background text-foreground antialiased">{children}</body>
+      {/* A3f Phase 6A polish round 2: overflow-x-clip on <body> kills any
+          residual horizontal scroll caused by an off-screen child without
+          breaking position:sticky / fixed (overflow-x-hidden would). */}
+      <body className="bg-background text-foreground antialiased overflow-x-clip">{children}</body>
     </html>
   );
 }
