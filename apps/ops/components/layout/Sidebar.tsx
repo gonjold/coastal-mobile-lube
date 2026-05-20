@@ -93,8 +93,17 @@ export function SidebarContent({ variant = "full" }: { variant?: SidebarVariant 
     );
   }
 
+  /* A3f Phase 6A polish round 2 FIX B: the parent <aside> is a flex
+   * container (display:flex, w-60). Without an explicit width or
+   * flex-grow on this content div, it shrinks to its intrinsic content
+   * width — ~180px — leaving ~60px of phantom empty space between the
+   * sidebar's visible border-r and main content. Adding 'w-full' makes
+   * the content fill the 240px aside, so the visible right edge aligns
+   * with the aside boundary and the gutter to main content is just
+   * lg:px-8 (32px). The icon variant above is unaffected because it
+   * already declares w-[72px] explicitly. */
   return (
-    <div className="flex h-full flex-col bg-card border-r border-border">
+    <div className="flex h-full w-full flex-col bg-card border-r border-border">
       <div className="px-5 py-5 border-b border-border">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
