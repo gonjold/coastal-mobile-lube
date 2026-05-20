@@ -52,9 +52,9 @@ export function JobCard({ booking }: Props) {
 
   return (
     <OpsCard href={`/jobs/${booking.id}`} ariaLabel={`Open job for ${customerName}`}>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2.5">
         <div className="flex items-start justify-between gap-3">
-          <div className="text-[15.5px] font-semibold leading-tight text-foreground min-w-0 truncate">
+          <div className="text-[15px] font-semibold leading-tight text-[#0B2040] min-w-0 truncate">
             {customerName}
           </div>
           <Badge variant={statusBadgeVariant(booking.status)} className="capitalize shrink-0">
@@ -63,19 +63,19 @@ export function JobCard({ booking }: Props) {
         </div>
 
         {service && (
-          <div className="text-sm font-medium text-foreground truncate">{service}</div>
+          <div className="text-[14px] font-medium text-[#0B2040] truncate">{service}</div>
         )}
 
         {vehicle && (
-          <div className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground min-w-0">
+          <div className="flex items-center gap-1.5 text-[13px] text-[#0B2040]/58 min-w-0">
             <Car className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
             <span className="truncate">{vehicle}</span>
           </div>
         )}
 
         {(dateTimeLabel || phoneHref) && (
-          <div className="mt-2 pt-2 border-t border-border flex items-center justify-between gap-3 text-[12.5px]">
-            <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
+          <div className="mt-1.5 pt-2.5 border-t border-[#0B2040]/8 flex items-center justify-between gap-3 text-[13px]">
+            <div className="flex items-center gap-1.5 text-[#0B2040]/58 min-w-0">
               <Calendar className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
               <span className="truncate">{dateTimeLabel || "Date TBD"}</span>
             </div>

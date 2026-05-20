@@ -78,7 +78,7 @@ export default function SchedulePage() {
           carries the create action there). */}
       <header className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between lg:gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Schedule</h1>
+          <h1 className="text-[20px] lg:text-2xl font-semibold tracking-tight text-[#0B2040]">Schedule</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Week view · click a card to open the job</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">

@@ -43,7 +43,7 @@ export function OpsCard({ href, ariaLabel, children, className }: Props) {
           router.push(href);
         }
       }}
-      className={`block w-full rounded-[14px] border border-border bg-card p-4 cursor-pointer hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors ${className ?? ""}`}
+      className={`block w-full rounded-[14px] border border-[#0B2040]/8 bg-white p-4 shadow-[0_1px_2px_rgba(11,32,64,0.06)] cursor-pointer hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors ${className ?? ""}`}
     >
       {children}
     </div>

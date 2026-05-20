@@ -37,10 +37,10 @@ function roleBadgeVariant(role: string): "default" | "secondary" | "outline" {
 
 export function TeamCard({ user }: Props) {
   return (
-    <div className="block w-full rounded-[14px] border border-border bg-card p-4">
-      <div className="flex flex-col gap-2">
+    <div className="block w-full rounded-[14px] border border-[#0B2040]/8 bg-white p-4 shadow-[0_1px_2px_rgba(11,32,64,0.06)]">
+      <div className="flex flex-col gap-2.5">
         <div className="flex items-start justify-between gap-3">
-          <div className="text-[15.5px] font-semibold leading-tight text-foreground min-w-0 truncate">
+          <div className="text-[15px] font-semibold leading-tight text-[#0B2040] min-w-0 truncate">
             {user.displayName || "(no name)"}
           </div>
           <Badge variant={user.isActive ? "default" : "outline"} className="shrink-0">
@@ -54,7 +54,7 @@ export function TeamCard({ user }: Props) {
           </Badge>
         </div>
 
-        <div className="text-[13.5px] text-muted-foreground truncate">
+        <div className="text-[13px] text-[#0B2040]/58 truncate">
           {user.email}
         </div>
       </div>

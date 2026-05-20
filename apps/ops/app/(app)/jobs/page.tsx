@@ -95,7 +95,7 @@ export default function JobsPage() {
           below lg. */}
       <header className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between lg:gap-4">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight">Jobs</h1>
+          <h1 className="text-[20px] lg:text-2xl font-semibold tracking-tight text-[#0B2040]">Jobs</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             {filtered.length} job{filtered.length !== 1 ? 's' : ''} · click date, time, or status to edit
           </p>

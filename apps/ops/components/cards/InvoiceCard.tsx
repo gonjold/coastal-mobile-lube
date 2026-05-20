@@ -37,9 +37,9 @@ export function InvoiceCard({ invoice }: Props) {
       href={`/invoices/${invoice.id}`}
       ariaLabel={`Open invoice ${invoiceLabel}`}
     >
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2.5">
         <div className="flex items-start justify-between gap-3">
-          <div className="text-[15.5px] font-semibold text-primary tabular-nums leading-tight truncate">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[#0B2040]/45 tabular-nums truncate">
             {invoiceLabel}
           </div>
           <Badge variant={statusBadgeVariant(invoice.status)} className="capitalize shrink-0">
@@ -48,12 +48,12 @@ export function InvoiceCard({ invoice }: Props) {
         </div>
 
         {invoice.customerName && (
-          <div className="text-[13.5px] text-foreground truncate">{invoice.customerName}</div>
+          <div className="text-[15px] font-semibold text-[#0B2040] leading-tight truncate">{invoice.customerName}</div>
         )}
 
-        <div className="mt-2 pt-2 border-t border-border flex items-center justify-between gap-3">
-          <div className="text-[12.5px] text-muted-foreground">{dateLabel || "—"}</div>
-          <div className="text-[17px] font-bold text-primary tabular-nums shrink-0">
+        <div className="mt-1.5 pt-2.5 border-t border-[#0B2040]/8 flex items-center justify-between gap-3">
+          <div className="text-[13px] text-[#0B2040]/58">{dateLabel || "Date TBD"}</div>
+          <div className="text-[15px] font-bold text-[#0B2040] tabular-nums shrink-0">
             {formatCurrency(total)}
           </div>
         </div>

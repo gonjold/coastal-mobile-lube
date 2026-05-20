@@ -122,7 +122,7 @@ export default function InvoicesPage() {
           below lg. */}
       <header className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between lg:gap-4">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight">Invoices</h1>
+          <h1 className="text-[20px] lg:text-2xl font-semibold tracking-tight text-[#0B2040]">Invoices</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             {filter === 'pending-billing'
               ? `${rowCount} completed job${rowCount !== 1 ? 's' : ''} awaiting invoice draft`

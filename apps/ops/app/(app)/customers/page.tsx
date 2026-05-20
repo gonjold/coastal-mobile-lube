@@ -73,7 +73,7 @@ export default function CustomersPage() {
           full-width below lg. */}
       <header className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between lg:gap-4">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight">Customers</h1>
+          <h1 className="text-[20px] lg:text-2xl font-semibold tracking-tight text-[#0B2040]">Customers</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             {rows ? `${filtered.length} customer${filtered.length !== 1 ? 's' : ''}` : 'Loading…'}
             {rows && ' · click a name, phone, or email cell to edit'}

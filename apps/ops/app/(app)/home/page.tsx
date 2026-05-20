@@ -51,7 +51,7 @@ export default function HomePage() {
   return (
     <div className="px-4 md:px-6 py-6 max-w-6xl mx-auto">
       <div className="mb-1 flex flex-col md:flex-row md:items-baseline md:justify-between gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">{todayLabel}</h1>
+        <h1 className="text-[20px] lg:text-2xl font-semibold tracking-tight text-[#0B2040]">{todayLabel}</h1>
         {subStat && (
           <div className="text-sm text-muted-foreground">{subStat}</div>
         )}

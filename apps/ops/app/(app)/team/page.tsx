@@ -69,7 +69,7 @@ export default function TeamPage() {
   return (
     <div className="px-4 lg:px-8 py-6 max-w-[1200px]">
       <header className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Team</h1>
+        <h1 className="text-[20px] lg:text-2xl font-semibold tracking-tight text-[#0B2040]">Team</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
           {users.length} member{users.length !== 1 ? 's' : ''} · click role or status to edit
         </p>

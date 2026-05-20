@@ -42,13 +42,13 @@ export function CustomerCard({ row }: Props) {
 
   return (
     <OpsCard href={`/customers/${id}`} ariaLabel={`Open customer ${row.name || id}`}>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2.5">
         <div className="flex items-start justify-between gap-3">
-          <div className="text-[15.5px] font-semibold leading-tight text-foreground min-w-0 truncate">
+          <div className="text-[15px] font-semibold leading-tight text-[#0B2040] min-w-0 truncate">
             {row.name || "(no name)"}
           </div>
           <ChevronRight
-            className="h-5 w-5 text-muted-foreground shrink-0"
+            className="h-5 w-5 text-[#0B2040]/45 shrink-0"
             strokeWidth={1.5}
             aria-hidden="true"
           />
@@ -58,7 +58,7 @@ export function CustomerCard({ row }: Props) {
           <a
             href={phoneHref}
             onClick={(e) => e.stopPropagation()}
-            className="flex items-center gap-1.5 text-[13.5px] text-[#1A5FAC] font-semibold hover:underline w-fit"
+            className="flex items-center gap-1.5 text-[13px] text-[#1A5FAC] font-semibold hover:underline w-fit"
             aria-label={`Call ${row.name || "customer"} at ${phoneDisplay}`}
           >
             <Phone className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
@@ -67,13 +67,13 @@ export function CustomerCard({ row }: Props) {
         )}
 
         {row.email && (
-          <div className="flex items-center gap-1.5 text-[13.5px] text-muted-foreground min-w-0">
+          <div className="flex items-center gap-1.5 text-[13px] text-[#0B2040]/58 min-w-0">
             <Mail className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
             <span className="truncate">{row.email}</span>
           </div>
         )}
 
-        <div className="mt-2 pt-2 border-t border-border text-[12px] text-muted-foreground">
+        <div className="mt-1.5 pt-2.5 border-t border-[#0B2040]/8 text-[11px] font-semibold uppercase tracking-[0.05em] text-[#0B2040]/45">
           {activity}
         </div>
       </div>
