@@ -31,6 +31,15 @@ exports.onNewBooking = onDocumentCreated(
     const booking = event.data.data();
     const bookingId = event.params.bookingId;
 
+    // Phase A WO Unit 3: suppress the owner page-out for test bookings.
+    // The booking doc is already written (this is an onDocumentCreated
+    // trigger); we only skip the admin notification email so synthetic
+    // test bookings stop paging jon@jgoldco.com.
+    if (booking && booking.isTest === true) {
+      console.log(`Skipping admin notification for test booking ${bookingId}`);
+      return;
+    }
+
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
