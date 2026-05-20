@@ -21,14 +21,16 @@ import type { BookingDoc } from '@/lib/queries/bookings';
 import type { Invoice } from '@coastal/shared-types';
 import { InvoiceCard } from '@/components/cards/InvoiceCard';
 import { JobCard } from '@/components/cards/JobCard';
+import { StatusFilterDropdown, type StatusFilterItem } from '@/components/ui/StatusFilterDropdown';
 
 type Filter = 'all' | 'draft' | 'sent' | 'paid' | 'overdue' | 'pending-billing';
 
 const FILTERS: Filter[] = ['all', 'draft', 'sent', 'paid', 'overdue', 'pending-billing'];
 
 function filterLabel(f: Filter): string {
+  if (f === 'all') return 'All invoices';
   if (f === 'pending-billing') return 'Pending billing';
-  return f;
+  return f.charAt(0).toUpperCase() + f.slice(1);
 }
 
 // A3e: statusBadgeVariant imported from @coastal/shared-ui (canonical mapping).
@@ -109,6 +111,33 @@ export default function InvoicesPage() {
 
   const rowCount = filter === 'pending-billing' ? filteredPending.length : filtered.length;
 
+  // A3f Polish Round 3 Unit 4: per-filter counts computed once over the
+  // unfiltered sources so the dropdown trigger and rows always show the
+  // real population, not the post-filter slice.
+  const filterCounts: Record<Filter, number> = useMemo(() => {
+    const counts: Record<Filter, number> = {
+      all: invoices.length,
+      draft: 0,
+      sent: 0,
+      paid: 0,
+      overdue: 0,
+      'pending-billing': pendingBilling.length,
+    };
+    for (const inv of invoices) {
+      const s = inv.status;
+      if (s === 'draft' || s === 'sent' || s === 'paid' || s === 'overdue') {
+        counts[s] += 1;
+      }
+    }
+    return counts;
+  }, [invoices, pendingBilling]);
+
+  const filterItems: StatusFilterItem<Filter>[] = FILTERS.map(f => ({
+    key: f,
+    label: filterLabel(f),
+    count: filterCounts[f],
+  }));
+
   async function patch(id: string, p: Record<string, unknown>) {
     await updateDoc(doc(db, 'invoices', id), { ...p, updatedAt: serverTimestamp() });
     toast.success('Saved');
@@ -143,22 +172,18 @@ export default function InvoicesPage() {
         </div>
       </header>
 
-      {/* A3f Phase 6A.7: 6-segment segmented control <lg (2x3 grid, no
-          horizontal scroll), pill row lg+. */}
-      <div className="mb-4 grid grid-cols-2 sm:grid-cols-3 gap-1 rounded-lg border border-border bg-card p-1 text-xs lg:flex lg:items-center lg:gap-2 lg:border-0 lg:bg-transparent lg:p-0">
-        {FILTERS.map(f => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`h-9 rounded-md capitalize text-xs font-medium truncate transition-colors lg:h-auto lg:px-3 lg:py-1 lg:rounded-full lg:border ${
-              filter === f
-                ? 'bg-primary text-primary-foreground lg:border-primary'
-                : 'text-muted-foreground hover:bg-muted lg:bg-card lg:border-border'
-            }`}
-          >
-            {filterLabel(f)}
-          </button>
-        ))}
+      {/* A3f Polish Round 3 Unit 4: 2x3 grid segmented control replaced
+          by a full-width anchored StatusFilterDropdown per
+          coastal-invoice-dropdown-final.jsx. Used at all widths since
+          the dropdown reads cleanly on desktop too and lets the lg+
+          table breathe. */}
+      <div className="mb-4 lg:max-w-sm">
+        <StatusFilterDropdown<Filter>
+          ariaLabel="Filter invoices by status"
+          items={filterItems}
+          value={filter}
+          onChange={setFilter}
+        />
       </div>
 
       {/* A3f Phase 6A.3: card/table swap at lg. Pending Billing rows
