@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { doc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { Plus, Users as UsersIcon } from 'lucide-react';
@@ -11,6 +11,7 @@ import { buildMergedCustomerList, type CustomerRow } from '@/lib/queries/custome
 import { formatPhone } from '@/lib/format';
 
 export default function CustomersPage() {
+  const router = useRouter();
   const [rows, setRows] = useState<CustomerRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -98,56 +99,64 @@ export default function CustomersPage() {
                 <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Phone</th>
                 <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Email</th>
                 <th className="px-4 py-3 text-right font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Jobs</th>
-                <th className="px-4 py-3 text-right font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Profile</th>
               </tr>
             </thead>
             <tbody>
               {!rows ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-sm text-muted-foreground">Loading…</td>
+                  <td colSpan={4} className="py-12 text-center text-sm text-muted-foreground">Loading…</td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center">
+                  <td colSpan={4} className="py-12 text-center">
                     <UsersIcon className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                     <div className="text-sm text-muted-foreground">No customers yet. Add your first customer to get started.</div>
                   </td>
                 </tr>
               ) : (
-                filtered.map(row => (
-                  <tr key={row.customerId ?? row.key} className="border-t border-border align-middle">
-                    <td className="px-4 py-3">
-                      <EditableCell
-                        value={row.name}
-                        onSave={next => patchCustomer(row, { name: next })}
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <EditableCell
-                        type="tel"
-                        value={row.phone}
-                        display={row.phone ? formatPhone(row.phone) : undefined}
-                        onSave={next => patchCustomer(row, { phone: next })}
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <EditableCell
-                        type="email"
-                        value={row.email}
-                        onSave={next => patchCustomer(row, { email: next })}
-                      />
-                    </td>
-                    <td className="px-4 py-3 text-right text-muted-foreground">{row.totalBookings}</td>
-                    <td className="px-4 py-3 text-right">
-                      <Link
-                        href={`/customers/${row.customerId ?? row.key}`}
-                        className="text-xs font-semibold text-primary hover:underline"
-                      >
-                        Open →
-                      </Link>
-                    </td>
-                  </tr>
-                ))
+                filtered.map(row => {
+                  const customerId = row.customerId ?? row.key;
+                  const stop = (e: React.MouseEvent) => e.stopPropagation();
+                  return (
+                    <tr
+                      key={customerId}
+                      role="link"
+                      tabIndex={0}
+                      aria-label={`Open customer ${row.name || customerId}`}
+                      onClick={() => router.push(`/customers/${customerId}`)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          router.push(`/customers/${customerId}`);
+                        }
+                      }}
+                      className="border-t border-border align-middle cursor-pointer hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset transition-colors"
+                    >
+                      <td className="px-4 py-3" onClick={stop}>
+                        <EditableCell
+                          value={row.name}
+                          onSave={next => patchCustomer(row, { name: next })}
+                        />
+                      </td>
+                      <td className="px-4 py-3" onClick={stop}>
+                        <EditableCell
+                          type="tel"
+                          value={row.phone}
+                          display={row.phone ? formatPhone(row.phone) : undefined}
+                          onSave={next => patchCustomer(row, { phone: next })}
+                        />
+                      </td>
+                      <td className="px-4 py-3" onClick={stop}>
+                        <EditableCell
+                          type="email"
+                          value={row.email}
+                          onSave={next => patchCustomer(row, { email: next })}
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-right text-muted-foreground">{row.totalBookings}</td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
