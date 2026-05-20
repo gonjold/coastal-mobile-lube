@@ -89,21 +89,25 @@ export default function JobsPage() {
 
   return (
     <div className="px-4 lg:px-8 py-6 max-w-[1400px] mx-auto">
-      <header className="mb-4 flex items-end justify-between gap-4 flex-wrap">
-        <div>
+      {/* A3f Phase 6A polish: header stacks below lg so search + new
+          don't crash at 375px. New booking button hides below lg (TopBar
+          'New' covers md..lg; FAB covers <md). Search goes full-width
+          below lg. */}
+      <header className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between lg:gap-4">
+        <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight">Jobs</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             {filtered.length} job{filtered.length !== 1 ? 's' : ''} · click date, time, or status to edit
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full lg:w-auto">
           <Input
             placeholder="Search…"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="h-10 w-[260px]"
+            className="h-10 flex-1 lg:flex-none lg:w-[260px]"
           />
-          <Button disabled title="New booking modal lands in STEP 13">
+          <Button disabled title="New booking modal lands in STEP 13" className="hidden lg:inline-flex">
             <Plus className="h-4 w-4 mr-1.5" strokeWidth={2} />
             New booking
           </Button>
