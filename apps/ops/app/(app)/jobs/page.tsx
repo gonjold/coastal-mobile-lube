@@ -22,6 +22,7 @@ import {
 import { db } from '@/lib/firebase';
 import { formatPhone } from '@/lib/format';
 import type { BookingDoc } from '@/lib/queries/bookings';
+import { JobCard } from '@/components/cards/JobCard';
 
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending' },
@@ -123,10 +124,30 @@ export default function JobsPage() {
         ))}
       </div>
 
-      <div className="rounded-lg border border-border bg-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-[13px]">
-            <thead>
+      {/* A3f Phase 6A.2: card/table swap at lg. <lg renders cards; lg+ renders
+          the table. Loading + empty states are shared above both branches so
+          they only appear once regardless of viewport. */}
+      {loading ? (
+        <div className="rounded-lg border border-border bg-card py-12 text-center text-sm text-muted-foreground">
+          Loading…
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-lg border border-border bg-card py-12">
+          <div className="flex flex-col items-center text-center">
+            <CalendarCheck className="h-10 w-10 text-muted-foreground/40" strokeWidth={1.5} />
+            <h3 className="mt-3 text-base font-semibold">No jobs in this view</h3>
+            <p className="mt-1 text-sm text-muted-foreground">Adjust filters above or create a new booking.</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="lg:hidden space-y-2.5">
+            {filtered.map(b => <JobCard key={b.id} booking={b} />)}
+          </div>
+          <div className="hidden lg:block rounded-lg border border-border bg-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-[13px]">
+                <thead>
               <tr className="bg-muted/50">
                 <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Customer</th>
                 <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Vehicle</th>
@@ -137,22 +158,7 @@ export default function JobsPage() {
               </tr>
             </thead>
             <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="py-12 text-center text-sm text-muted-foreground">Loading…</td>
-                </tr>
-              ) : filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-12">
-                    <div className="flex flex-col items-center text-center">
-                      <CalendarCheck className="h-10 w-10 text-muted-foreground/40" strokeWidth={1.5} />
-                      <h3 className="mt-3 text-base font-semibold">No jobs in this view</h3>
-                      <p className="mt-1 text-sm text-muted-foreground">Adjust filters above or create a new booking.</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filtered.map(b => {
+              {filtered.map(b => {
                   const customerName = getBookingCustomerName(b) || '(no name)';
                   const stop = (e: React.MouseEvent) => e.stopPropagation();
                   return (
@@ -211,12 +217,13 @@ export default function JobsPage() {
                       </td>
                     </tr>
                   );
-                })
-              )}
-            </tbody>
-          </table>
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+        </>
+      )}
     </div>
   );
 }
