@@ -23,6 +23,7 @@ import { db } from '@/lib/firebase';
 import { formatPhone } from '@/lib/format';
 import type { BookingDoc } from '@/lib/queries/bookings';
 import { JobCard } from '@/components/cards/JobCard';
+import { Segmented } from '@/components/ui/Segmented';
 
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending' },
@@ -82,6 +83,17 @@ export default function JobsPage() {
     return [...rows].sort((a, b) => (a.confirmedDate || '').localeCompare(b.confirmedDate || ''));
   }, [bookings, filter, search]);
 
+  const filterCounts: Record<Filter, number> = useMemo(() => {
+    const counts = { active: 0, completed: 0, cancelled: 0, all: bookings.length };
+    for (const b of bookings) {
+      const s = typeof b.status === 'string' ? b.status : '';
+      if (ACTIVE_STATUSES.has(s)) counts.active += 1;
+      else if (COMPLETED_STATUSES.has(s)) counts.completed += 1;
+      else if (CANCELLED_STATUSES.has(s)) counts.cancelled += 1;
+    }
+    return counts;
+  }, [bookings]);
+
   async function patch(id: string, p: Record<string, unknown>) {
     await updateDoc(doc(db, 'bookings', id), { ...p, updatedAt: serverTimestamp() });
     toast.success('Saved');
@@ -114,22 +126,21 @@ export default function JobsPage() {
         </div>
       </header>
 
-      {/* A3f Phase 6A.7: full-width segmented control <lg (no horizontal
-          scroll), pill row lg+. 4 equal segments below lg per WO. */}
-      <div className="mb-4 grid grid-cols-4 gap-1 rounded-lg border border-border bg-card p-1 text-xs lg:flex lg:items-center lg:gap-2 lg:border-0 lg:bg-transparent lg:p-0">
-        {(['active', 'completed', 'cancelled', 'all'] as Filter[]).map(f => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`h-9 rounded-md capitalize text-xs font-medium transition-colors lg:h-auto lg:px-3 lg:py-1 lg:rounded-full lg:border ${
-              filter === f
-                ? 'bg-primary text-primary-foreground lg:border-primary'
-                : 'text-muted-foreground hover:bg-muted lg:bg-card lg:border-border'
-            }`}
-          >
-            {f}
-          </button>
-        ))}
+      {/* A3f Polish Round 3 Unit 3: migrated to the unified Segmented
+          primitive so Jobs and Today share one look. Counts inline,
+          flex 1 0 auto so labels never truncate. */}
+      <div className="mb-4">
+        <Segmented<Filter>
+          ariaLabel="Jobs status filter"
+          items={[
+            { key: 'active', label: 'Active', count: filterCounts.active },
+            { key: 'completed', label: 'Completed', count: filterCounts.completed },
+            { key: 'cancelled', label: 'Cancelled', count: filterCounts.cancelled },
+            { key: 'all', label: 'All', count: filterCounts.all },
+          ]}
+          value={filter}
+          onChange={setFilter}
+        />
       </div>
 
       {/* A3f Phase 6A.2: card/table swap at lg. <lg renders cards; lg+ renders
