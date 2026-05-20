@@ -73,21 +73,24 @@ export default function SchedulePage() {
 
   return (
     <div className="px-4 lg:px-8 py-6 max-w-[1400px] mx-auto">
-      <header className="mb-6 flex items-end justify-between gap-4 flex-wrap">
+      {/* A3f Phase 6A.8: header stacks on mobile so the week nav row
+          doesn't clip at 375px. New booking button hides below md (FAB
+          carries the create action there). */}
+      <header className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between lg:gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Schedule</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Week view · click a card to open the job</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setAnchor(d => addDays(d, -7))}>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={() => setAnchor(d => addDays(d, -7))} aria-label="Previous week">
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="sm" onClick={() => setAnchor(new Date())}>Today</Button>
-          <Button variant="outline" size="sm" onClick={() => setAnchor(d => addDays(d, 7))}>
+          <Button variant="outline" size="sm" onClick={() => setAnchor(d => addDays(d, 7))} aria-label="Next week">
             <ChevronRight className="h-4 w-4" />
           </Button>
-          <span className="text-sm text-muted-foreground ml-2">{rangeLabel}</span>
-          <Button disabled title="New booking modal lands in STEP 13" className="ml-2">
+          <span className="text-sm text-muted-foreground ml-1 whitespace-nowrap">{rangeLabel}</span>
+          <Button disabled title="New booking modal lands in STEP 13" className="hidden md:inline-flex ml-2">
             <Plus className="h-4 w-4 mr-1.5" strokeWidth={2} />
             New booking
           </Button>
@@ -113,19 +116,25 @@ export default function SchedulePage() {
                   {dayBookings.length === 0 ? (
                     <div className="text-xs text-muted-foreground py-4 text-center">No jobs scheduled</div>
                   ) : (
+                    /* A3f Phase 6A.8: day tile adopts JobCard-mini styling —
+                       softer rounded-[10px], bg-card with border, time
+                       first (most useful on a day tile), name+status row,
+                       service + vehicle truncated below. */
                     dayBookings.map(b => (
                       <Link
                         key={b.id}
                         href={`/jobs/${b.id}`}
-                        className="block bg-muted/30 hover:bg-muted/60 border border-border rounded p-2 text-xs"
+                        className="block bg-card hover:bg-muted/40 border border-border rounded-[10px] p-2.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       >
-                        <div className="flex items-center justify-between gap-1 mb-1">
-                          <span className="font-semibold truncate">{getBookingCustomerName(b) || '(no name)'}</span>
-                          <Badge variant={statusBadgeVariant(b.status)} className="font-normal text-[10px] px-1.5 py-0">{b.status}</Badge>
+                        <div className="text-[11px] font-semibold tabular-nums text-primary mb-1">{getBookingArrivalTime(b) || '—'}</div>
+                        <div className="flex items-center justify-between gap-1.5 mb-1">
+                          <span className="text-[13px] font-semibold leading-tight truncate text-foreground">{getBookingCustomerName(b) || '(no name)'}</span>
+                          <Badge variant={statusBadgeVariant(b.status)} className="font-normal text-[10px] px-1.5 py-0 shrink-0">{b.status}</Badge>
                         </div>
                         <div className="text-muted-foreground truncate">{formatBookingService(b)}</div>
-                        <div className="text-muted-foreground truncate">{formatBookingVehicle(b)}</div>
-                        <div className="text-muted-foreground">{getBookingArrivalTime(b)}</div>
+                        {formatBookingVehicle(b) && (
+                          <div className="text-muted-foreground truncate">{formatBookingVehicle(b)}</div>
+                        )}
                       </Link>
                     ))
                   )}
