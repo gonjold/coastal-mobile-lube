@@ -475,7 +475,10 @@ export default function ServicesPage() {
           </div>
         </div>
 
-        <div className="grid gap-4" style={{ gridTemplateColumns: "340px 1fr" }}>
+        {/* A3f Phase 6A.9: collapse to single column below lg so the
+            340px CategoryList + Selected panel don't fight for width on
+            tablet/mobile. */}
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-[340px_1fr]">
           <CategoryList
             categories={divisionCategories}
             services={divisionServices}
