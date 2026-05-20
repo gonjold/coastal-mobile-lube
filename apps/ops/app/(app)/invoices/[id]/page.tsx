@@ -14,6 +14,7 @@ import { useAdminModal } from '@/lib/AdminModalContext';
 import type { Invoice } from '@coastal/shared-types';
 import SendInvoiceModal from '@/components/invoices/SendInvoiceModal';
 import EstimateHistorySection from '@/components/invoices/EstimateHistorySection';
+import InvoiceLineItemEditor from '@/components/invoices/InvoiceLineItemEditor';
 
 interface FormState {
   customerName: string;
@@ -77,8 +78,6 @@ export default function InvoiceDetailPage() {
   if (!invoice || !form) return <div className="px-6 py-8 text-muted-foreground">Loading…</div>;
 
   const total = typeof invoice.qbTotalAmount === 'number' ? invoice.qbTotalAmount : invoice.total;
-  const subtotal = typeof invoice.qbSubtotal === 'number' ? invoice.qbSubtotal : invoice.subtotal;
-  const tax = typeof invoice.qbTaxAmount === 'number' ? invoice.qbTaxAmount : invoice.taxAmount;
 
   async function save() {
     if (!form) return;
@@ -189,45 +188,33 @@ export default function InvoiceDetailPage() {
             )}
           </Card>
 
-          <Card className="p-5 gap-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Services & parts</h2>
-            {invoice.lineItems && invoice.lineItems.length > 0 ? (
-              <table className="w-full text-[13px]">
-                <thead>
-                  <tr className="text-left text-xs text-muted-foreground border-b border-border">
-                    <th className="py-2">Description</th>
-                    <th className="py-2 text-right w-16">Qty</th>
-                    <th className="py-2 text-right w-24">Rate</th>
-                    <th className="py-2 text-right w-24">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {invoice.lineItems.map((li, i) => (
-                    <tr key={i} className="border-b border-border last:border-0">
-                      <td className="py-2">{li.serviceName}</td>
-                      <td className="py-2 text-right">{li.quantity}</td>
-                      <td className="py-2 text-right">{formatCurrency(li.unitPrice)}</td>
-                      <td className="py-2 text-right">{formatCurrency(li.lineTotal)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div className="text-sm text-muted-foreground">No line items.</div>
-            )}
-          </Card>
+          <InvoiceLineItemEditor
+            invoice={invoice}
+            editable={invoice.status === 'draft'}
+            onPersisted={({ lineItems, subtotal: nextSubtotal, taxAmount: nextTax, total: nextTotal }) => {
+              setInvoice((prev) =>
+                prev
+                  ? ({
+                      ...prev,
+                      lineItems,
+                      subtotal: nextSubtotal,
+                      taxAmount: nextTax,
+                      total: nextTotal,
+                    } as typeof prev)
+                  : prev,
+              );
+            }}
+          />
 
-          <Card className="p-5 gap-2">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Totals</h2>
-            <dl className="text-sm space-y-1">
-              <div className="flex justify-between"><dt>Subtotal</dt><dd>{formatCurrency(subtotal)}</dd></div>
-              <div className="flex justify-between"><dt>Tax</dt><dd>{formatCurrency(tax)}</dd></div>
-              <div className="flex justify-between font-semibold border-t border-border pt-1"><dt>Total</dt><dd>{formatCurrency(total)}</dd></div>
-              {invoice.paidAmount != null && invoice.paidAmount > 0 && (
-                <div className="flex justify-between text-emerald-700"><dt>Paid</dt><dd>{formatCurrency(invoice.paidAmount)}</dd></div>
-              )}
-            </dl>
-          </Card>
+          {invoice.paidAmount != null && invoice.paidAmount > 0 && (
+            <Card className="p-5 gap-2">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Paid</h2>
+              <div className="flex justify-between text-sm text-emerald-700">
+                <span>Paid amount</span>
+                <span className="font-medium">{formatCurrency(invoice.paidAmount)}</span>
+              </div>
+            </Card>
+          )}
 
           <Card className="p-5 gap-3">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Notes</h2>
