@@ -10,6 +10,7 @@ import { Badge, Button, Card, Input, statusBadgeVariant } from '@coastal/shared-
 import { db } from '@/lib/firebase';
 import { formatPhone } from '@/lib/format';
 import { openSmsForInvoice } from '@/lib/payNow';
+import { useAdminModal } from '@/lib/AdminModalContext';
 import type { Invoice } from '@coastal/shared-types';
 import SendInvoiceModal from '@/components/invoices/SendInvoiceModal';
 import EstimateHistorySection from '@/components/invoices/EstimateHistorySection';
@@ -41,6 +42,7 @@ export default function InvoiceDetailPage() {
   const [saving, setSaving] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [showSendModal, setShowSendModal] = useState(false);
+  const { openModal } = useAdminModal();
 
   useEffect(() => {
     let cancelled = false;
@@ -306,7 +308,12 @@ export default function InvoiceDetailPage() {
               </div>
             )}
             {invoice.qboFinalizeStatus === 'error' && (
-              <Button variant="outline" size="sm" disabled title="Fix-invoice dialog lands in STEP 13">
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2 w-full"
+                onClick={() => openModal('fix-invoice', { invoiceId: invoice.id })}
+              >
                 Retry QB
               </Button>
             )}
