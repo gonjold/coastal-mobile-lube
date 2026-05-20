@@ -54,7 +54,7 @@ export default function IntegrationsPage() {
         <h1 className="text-xl font-bold text-[#0B2040]">Integrations</h1>
         <p className="text-[13px] text-gray-500 mt-0.5">Connected services</p>
       </header>
-      <div className="px-4 lg:px-8 py-6 max-w-[1400px] mx-auto space-y-6">
+      <div className="px-4 lg:px-8 py-6 max-w-[1400px] space-y-6">
         {/* QuickBooks */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <h2 className="text-lg font-bold text-[#0B2040] mb-4">QuickBooks Online</h2>

@@ -254,7 +254,7 @@ export default function InvoiceDetailPage() {
                 <Field label="Due date"><Input type="date" value={form.dueDate} onChange={e => setForm({ ...form, dueDate: e.target.value })} /></Field>
                 <Field label="Paid date"><Input type="date" value={form.paidDate} onChange={e => setForm({ ...form, paidDate: e.target.value })} /></Field>
                 <Field label="Status">
-                  <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value as Invoice['status'] })} className="h-9 px-2 border border-border rounded-md bg-background text-sm">
+                  <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value as Invoice['status'] })} className="h-10 px-2 border border-border rounded-md bg-background text-sm">
                     {(['draft', 'sent', 'paid', 'overdue'] as const).map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </Field>

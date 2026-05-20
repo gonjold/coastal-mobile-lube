@@ -133,7 +133,7 @@ export default function SelectedCategoryPanel({
           style={{ borderColor: BORDER }}
         >
           <div
-            className="grid px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-gray-500 border-b"
+            className="grid px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-gray-500 border-b"
             style={{
               gridTemplateColumns: gridCols,
               borderColor: BORDER,

@@ -500,7 +500,7 @@ export function NewInvoiceModal() {
               <select
                 value={form.assetId}
                 onChange={(e) => pickAsset(e.target.value)}
-                className="h-9 px-2 border border-border rounded-md bg-background text-sm w-full"
+                className="h-10 px-2 border border-border rounded-md bg-background text-sm w-full"
               >
                 <option value="">— No vehicle —</option>
                 {assets.map((a) => (
@@ -528,7 +528,7 @@ export function NewInvoiceModal() {
                         const svc = services.find((s) => s.id === e.target.value);
                         if (svc) setLineFromService(i, svc);
                       }}
-                      className="h-9 px-2 border border-border rounded-md bg-background text-sm flex-1"
+                      className="h-10 px-2 border border-border rounded-md bg-background text-sm flex-1"
                     >
                       <option value="">— Pick a service —</option>
                       {services.map((s) => (

@@ -11,14 +11,17 @@ import {
   CommandItem,
 } from '@coastal/shared-ui';
 import { getPaletteCommands, type PaletteCommand } from '@/lib/paletteCommands';
+import { useAuth } from '@/lib/useAuth';
 import { useLayout } from './ClientLayoutProvider';
 import { useAdminModal } from '@/lib/AdminModalContext';
 
 export function CommandPalette() {
   const router = useRouter();
+  const { role } = useAuth();
   const { paletteOpen, setPaletteOpen } = useLayout();
   const { openModal } = useAdminModal();
-  const commands = useMemo(getPaletteCommands, []);
+  // A3f Phase 3: tech ⌘K shows only the 4 tech nav commands + quick actions.
+  const commands = useMemo(() => getPaletteCommands(role), [role]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, PaletteCommand[]>();

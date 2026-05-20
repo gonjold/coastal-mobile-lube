@@ -107,7 +107,7 @@ export function NewCustomerModal() {
             <Input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />
           </Field>
           <Field label="Type">
-            <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value as CustomerType })} className="h-9 px-2 border border-border rounded-md bg-background text-sm w-full">
+            <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value as CustomerType })} className="h-10 px-2 border border-border rounded-md bg-background text-sm w-full">
               <option value="Residential">Residential</option>
               <option value="Commercial">Commercial</option>
             </select>
