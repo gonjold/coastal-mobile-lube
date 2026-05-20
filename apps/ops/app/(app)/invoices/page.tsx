@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Receipt, Plus } from 'lucide-react';
 import {
   collection,
@@ -36,6 +36,7 @@ function formatCurrency(n: number): string {
 }
 
 export default function InvoicesPage() {
+  const router = useRouter();
   const [invoices, setInvoices] = useState<(Invoice & { id: string })[]>([]);
   const [pendingBilling, setPendingBilling] = useState<BookingDoc[]>([]);
   const [loading, setLoading] = useState(true);
@@ -159,13 +160,12 @@ export default function InvoicesPage() {
                   <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Customer</th>
                   <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Phone</th>
                   <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Completed</th>
-                  <th className="px-4 py-2.5"></th>
                 </tr>
               </thead>
               <tbody>
                 {filteredPending.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="py-12">
+                    <td colSpan={3} className="py-12">
                       <div className="flex flex-col items-center text-center">
                         <Receipt className="h-10 w-10 text-muted-foreground/40" strokeWidth={1.5} />
                         <h3 className="mt-3 text-base font-semibold">No completed jobs awaiting an invoice</h3>
@@ -180,15 +180,23 @@ export default function InvoicesPage() {
                     const completedAt = (b as { jobCompletedAt?: { toDate: () => Date } }).jobCompletedAt?.toDate?.();
                     const completedLabel = completedAt ? completedAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
                     return (
-                      <tr key={b.id} className="border-t border-border hover:bg-muted/30 transition-colors">
+                      <tr
+                        key={b.id}
+                        role="link"
+                        tabIndex={0}
+                        aria-label={`Open job for ${name}`}
+                        onClick={() => router.push(`/jobs/${b.id}`)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            router.push(`/jobs/${b.id}`);
+                          }
+                        }}
+                        className="border-t border-border cursor-pointer hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset transition-colors"
+                      >
                         <td className="px-4 py-3 align-middle font-semibold">{name}</td>
                         <td className="px-4 py-3 align-middle">{formatPhone(phone, '—')}</td>
                         <td className="px-4 py-3 align-middle">{completedLabel}</td>
-                        <td className="px-4 py-3 align-middle text-right">
-                          <Link href={`/jobs/${b.id}`} className="text-xs font-semibold text-primary hover:underline">
-                            Open job →
-                          </Link>
-                        </td>
                       </tr>
                     );
                   })
@@ -205,15 +213,14 @@ export default function InvoicesPage() {
                   <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Due</th>
                   <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">Status</th>
                   <th className="px-4 py-3 text-left font-semibold text-muted-foreground text-[12px] uppercase tracking-wide">QB</th>
-                  <th className="px-4 py-2.5"></th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={7} className="py-12 text-center text-sm text-muted-foreground">Loading…</td></tr>
+                  <tr><td colSpan={6} className="py-12 text-center text-sm text-muted-foreground">Loading…</td></tr>
                 ) : filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12">
+                    <td colSpan={6} className="py-12">
                       <div className="flex flex-col items-center text-center">
                         <Receipt className="h-10 w-10 text-muted-foreground/40" strokeWidth={1.5} />
                         <h3 className="mt-3 text-base font-semibold">No invoices in this view</h3>
@@ -224,12 +231,27 @@ export default function InvoicesPage() {
                 ) : (
                   filtered.map(inv => {
                     const total = typeof inv.qbTotalAmount === 'number' ? inv.qbTotalAmount : inv.total;
+                    const invoiceLabel = inv.invoiceNumber || inv.id.slice(0, 8);
+                    const stop = (e: React.MouseEvent) => e.stopPropagation();
                     return (
-                      <tr key={inv.id} className="border-t border-border hover:bg-muted/30 transition-colors">
-                        <td className="px-4 py-3 align-middle font-semibold">{inv.invoiceNumber || inv.id.slice(0, 8)}</td>
+                      <tr
+                        key={inv.id}
+                        role="link"
+                        tabIndex={0}
+                        aria-label={`Open invoice ${invoiceLabel}`}
+                        onClick={() => router.push(`/invoices/${inv.id}`)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            router.push(`/invoices/${inv.id}`);
+                          }
+                        }}
+                        className="border-t border-border cursor-pointer hover:bg-muted/50 focus-visible:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset transition-colors"
+                      >
+                        <td className="px-4 py-3 align-middle font-semibold">{invoiceLabel}</td>
                         <td className="px-4 py-3 align-middle">{inv.customerName}</td>
                         <td className="px-4 py-3 align-middle text-right">{formatCurrency(total)}</td>
-                        <td className="px-4 py-3 align-middle w-[160px]">
+                        <td className="px-4 py-3 align-middle w-[160px]" onClick={stop}>
                           <EditableCell
                             type="date"
                             value={inv.dueDate || ''}
@@ -242,11 +264,6 @@ export default function InvoicesPage() {
                         </td>
                         <td className="px-4 py-3 align-middle text-xs text-muted-foreground">
                           {inv.qboFinalizeStatus === 'error' ? <span className="text-red-700">error</span> : inv.qbDocNumber ?? '—'}
-                        </td>
-                        <td className="px-4 py-3 align-middle text-right">
-                          <Link href={`/invoices/${inv.id}`} className="text-xs font-semibold text-primary hover:underline">
-                            Open →
-                          </Link>
                         </td>
                       </tr>
                     );
