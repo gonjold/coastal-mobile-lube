@@ -139,13 +139,17 @@ export default function InvoicesPage() {
         </div>
       </header>
 
-      <div className="mb-4 flex items-center gap-2 text-xs">
+      {/* A3f Phase 6A.7: 6-segment segmented control <lg (2x3 grid, no
+          horizontal scroll), pill row lg+. */}
+      <div className="mb-4 grid grid-cols-3 gap-1 rounded-lg border border-border bg-card p-1 text-xs lg:flex lg:items-center lg:gap-2 lg:border-0 lg:bg-transparent lg:p-0">
         {FILTERS.map(f => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-3 py-1 rounded-full border text-xs capitalize ${
-              filter === f ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-muted-foreground border-border hover:bg-muted'
+            className={`h-9 rounded-md capitalize text-xs font-medium truncate transition-colors lg:h-auto lg:px-3 lg:py-1 lg:rounded-full lg:border ${
+              filter === f
+                ? 'bg-primary text-primary-foreground lg:border-primary'
+                : 'text-muted-foreground hover:bg-muted lg:bg-card lg:border-border'
             }`}
           >
             {filterLabel(f)}

@@ -55,9 +55,11 @@ export function TopBar() {
         </button>
       </div>
 
+      {/* A3f Phase 6A.7: New dropdown is desktop-only; mobile uses the
+          NewActionFAB rendered from the app layout. */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button size="sm">
+          <Button size="sm" className="hidden md:inline-flex">
             <Plus className="h-4 w-4 mr-1" /> New
           </Button>
         </DropdownMenuTrigger>

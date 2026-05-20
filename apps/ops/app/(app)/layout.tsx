@@ -7,6 +7,7 @@ import { InstallPrompt } from '@/components/InstallPrompt';
 import { UpdateToast } from '@/components/UpdateToast';
 import { ClientLayoutProvider } from '@/components/layout/ClientLayoutProvider';
 import { MobileTabBar } from '@/components/layout/MobileTabBar';
+import { NewActionFAB } from '@/components/layout/NewActionFAB';
 import { RouteGuard } from '@/components/layout/RouteGuard';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { TopBar } from '@/components/layout/TopBar';
@@ -43,6 +44,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </main>
             </div>
             <MobileTabBar />
+            <NewActionFAB />
             <CommandPalette />
           </div>
           <InstallPrompt />
